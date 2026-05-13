@@ -64,7 +64,7 @@ function renderMarkdown(raw) {
         .map(cell => `<${tag} class="guide-td">${cell.trim()}</${tag}>`).join('');
     const head = `<thead><tr>${toCell(rows[0], 'th')}</tr></thead>`;
     const body = rows.slice(1).map(r => `<tr>${toCell(r, 'td')}</tr>`).join('');
-    return `<table class="guide-table"><${head}<tbody>${body}</tbody></table>`;
+    return `<table class="guide-table"><thead><tr>${toCell(rows[0], 'th')}</tr></thead><tbody>${body}</tbody></table>`;
   });
 
   // Unordered list lines  - item

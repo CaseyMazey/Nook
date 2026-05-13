@@ -263,9 +263,9 @@ ul { list-style: none; }
 ========================================== */
 
 /* ---- Layout ---- */
-#guide-layout { display: grid; grid-template-columns: 210px 1fr; gap: 16px; align-items: start; height: calc(100vh - 100px);}
-#guide-category-list-panel { position: sticky; top: 0; max-height: calc(100vh - 120px); overflow-y: auto;}
-#guide-content { min-height: 300px;}
+#guide-layout { display: grid; grid-template-columns: 210px 1fr; gap: 16px; align-items: start; }
+#guide-category-list-panel { position: sticky; top: 0; max-height: calc(100vh - 160px); overflow-y: auto; }
+#guide-content { min-height: 300px; }
 
 /* ---- Sidebar category items ---- */
 .guide-category-item { display: flex; align-items: center; gap: 8px; width: 100%; padding: 9px 12px; border-radius: var(--radius-sm); font-size: 13px; color: var(--text-2); text-align: left; transition: background var(--transition), color var(--transition); position: relative;}
@@ -341,15 +341,15 @@ ul { list-style: none; }
 .guide-inline-code { font-family: var(--mono); font-size: 12.5px; background: var(--accent-soft); border: 1px solid var(--border-strong); border-radius: 4px; padding: 1px 6px; color: var(--text);}
 
 /* Code block */
-.guide-code-block { background: #1a1a1a; border-radius: var(--radius); overflow: hidden; margin: 14px 0; border: 1px solid rgba(255,255,255,0.06);}
-[data-theme="dark"]
-.guide-code-block { background: #111; border-color: rgba(255,255,255,0.08);}
-.guide-code-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; background: rgba(255,255,255,0.04); border-bottom: 1px solid rgba(255,255,255,0.06); min-height: 36px;}
-.guide-code-lang { font-family: var(--mono); font-size: 11px; color: rgba(255,255,255,0.35); text-transform: lowercase; letter-spacing: 0.05em;}
-.guide-copy-btn { display: inline-flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: 11px; color: rgba(255,255,255,0.4); padding: 3px 8px; border-radius: 4px; transition: background 0.15s, color 0.15s; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); background: none;}
-.guide-copy-btn:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.8);}
+.guide-code-block { background: var(--accent-soft); border-radius: var(--radius); overflow: hidden; margin: 14px 0; border: 1px solid var(--border-strong);}
+[data-theme="dark"] .guide-code-block { background: #1e1e1e; border-color: rgba(255,255,255,0.08);}
+.guide-code-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; background: var(--border); border-bottom: 1px solid var(--border-strong); min-height: 36px;}
+[data-theme="dark"] .guide-code-header { background: rgba(255,255,255,0.04); border-bottom-color: rgba(255,255,255,0.06);}
+.guide-code-lang { font-family: var(--mono); font-size: 11px; color: var(--text-3); text-transform: lowercase; letter-spacing: 0.05em;}
+.guide-copy-btn { display: inline-flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: 11px; color: var(--text-2); padding: 3px 8px; border-radius: 4px; transition: background 0.15s, color 0.15s; cursor: pointer; border: 1px solid var(--border-strong); background: none;}
+.guide-copy-btn:hover { background: var(--surface); color: var(--text);}
 .guide-code-pre { padding: 16px 18px; overflow-x: auto; margin: 0;}
-.guide-code-pre code { font-family: var(--mono); font-size: 13px; line-height: 1.7; color: #e2e8f0; display: block; white-space: pre;}
+.guide-code-pre code { font-family: var(--mono); font-size: 13px; line-height: 1.7; color: var(--text); display: block; white-space: pre;}
 
 /* ---- Guide modal ---- */
 .guide-modal-box { width: 700px; max-width: calc(100vw - 40px); max-height: 92vh;}
@@ -369,6 +369,17 @@ ul { list-style: none; }
 .guide-emoji-btn:hover { background: var(--accent-soft); border-color: var(--border-strong); transform: scale(1.12);}
 .guide-emoji-btn.active { border-color: var(--event-color); background: var(--event-color-bg); box-shadow: 0 0 0 2px var(--event-color-bg);}
 
+/* ---- Tables ---- */
+.guide-table { width: 100%; border-collapse: collapse; margin: 12px 0 16px; font-size: 13.5px; }
+.guide-table th.guide-td { text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-3); padding: 8px 14px; border-bottom: 2px solid var(--border-strong); }
+.guide-table td.guide-td { padding: 10px 14px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: top; }
+.guide-table tbody tr:last-child td.guide-td { border-bottom: none; }
+.guide-table tbody tr:hover td.guide-td { background: var(--accent-soft); }
+ 
+/* ---- Text Marker ==text== ---- */
+.guide-mark { background: #fef08a; color: var(--text); border-radius: 2px; padding: 0 2px; }
+[data-theme="dark"] .guide-mark { background: #854d0e; color: #fef9c3; }
+ 
 /* =========================
    CALENDAR — FIX: today uses border not fill
 ========================= */
