@@ -301,6 +301,10 @@ document.getElementById('note-modal-save').addEventListener('click',()=>{
     if(!generalTodos) generalTodos=[];
     generalTodos.push({id:crypto.randomUUID(),text,done:false});
     saveTodos(); renderTodos(); closeNoteModal();
+  } else if(noteModalKey==='__shopping__'){
+    if(!shoppingList) shoppingList=[];
+    shoppingList.push({id:crypto.randomUUID(),text,done:false});
+    saveShoppingList(); renderShoppingList(); closeNoteModal();
   } else {
     if(!notes[noteModalKey]) notes[noteModalKey]=[];
     notes[noteModalKey].push(text); saveNotes(); renderNotes(); closeNoteModal();
@@ -460,3 +464,38 @@ document.getElementById('add-todo-btn').addEventListener('click', ()=>{
 });
 
 renderTodos();
+
+// =========================
+// EINKAUFSLISTE
+// =========================
+
+function saveShoppingList(){ DB.set('shoppingList', shoppingList); }
+
+function renderShoppingList(){
+  const ul = document.getElementById('shopping-list');
+  if(!ul) return;
+  ul.innerHTML = '';
+  (shoppingList||[]).forEach((item, idx)=>{
+    const li = document.createElement('li'); li.className = 'checklist-item' + (item.done?' done':'');
+    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = item.done;
+    cb.addEventListener('change', ()=>{ item.done = cb.checked; saveShoppingList(); renderShoppingList(); });
+    const span = document.createElement('span'); span.textContent = item.text;
+    const del = document.createElement('button'); del.className = 'note-del'; del.textContent = '✕';
+    del.addEventListener('click', ()=>{ shoppingList.splice(idx,1); saveShoppingList(); renderShoppingList(); });
+    li.append(cb, span, del); ul.appendChild(li);
+  });
+  if(!shoppingList||shoppingList.length===0){
+    const empty = document.createElement('div'); empty.className='empty-state'; empty.textContent='Noch keine Einträge.';
+    ul.appendChild(empty);
+  }
+}
+
+document.getElementById('add-shopping-btn').addEventListener('click', ()=>{
+  noteModalKey = '__shopping__';
+  document.getElementById('note-modal-title').textContent = 'Einkaufsliste — Eintrag hinzufügen';
+  document.getElementById('note-modal-input').value = '';
+  document.getElementById('note-modal-overlay').classList.remove('hidden');
+  setTimeout(()=>document.getElementById('note-modal-input').focus(), 50);
+});
+
+renderShoppingList();

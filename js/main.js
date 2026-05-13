@@ -27,6 +27,7 @@ const state = {
   selectedPriority: 2,
   editingEvent: null,
   activeSubjectId: null,
+  activeGuideCategoryId: null,
   editingCard: null,
   learnQueue: [], learnIndex: 0, learnFlipped: false,
   learnSubjId: null, learnGroupId: null,
@@ -44,6 +45,7 @@ let darkMode         = DB.get('darkMode', false);
 let colors           = DB.get('colors', DEFAULT_COLORS);
 let customTiles      = DB.get('customTiles', []);
 let generalTodos     = DB.get('generalTodos', []);
+let shoppingList     = DB.get('shoppingList', []);
 let subjects         = DB.get('subjects', []);
 
 let clockEnabled     = DB.get('clockEnabled', false);
@@ -127,6 +129,7 @@ document.querySelectorAll('.nav-btn').forEach(btn=>{
 function renderView(name) {
   if(name==='today')     { renderBlocks(); renderTasks(); renderNotes(); renderCustomTiles(); refreshTodayTextareas(); }
   if(name==='flashcards'){ renderSubjectList(); }
+  if(name==='guides')    { initGuides(); }
   if(name==='calendar')  { renderCalendar(); }
   if(name==='budget')    { renderBudget(); }
   if(name==='games')     { initGames(); }

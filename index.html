@@ -31,6 +31,10 @@
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="9" rx="2" stroke="currentColor" stroke-width="1.5" fill="none" opacity=".7"/><path d="M5 7h6M5 9.5h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
           Karteikarten
         </button></li>
+        <li><button class="nav-btn" data-view="guides">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="9" rx="2" stroke="currentColor" stroke-width="1.5" fill="none" opacity=".7"/><path d="M5 7h6M5 9.5h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+          Anleitungen
+        </button></li>
         <li><button class="nav-btn" data-view="calendar">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" stroke-width="1.5" fill="none" opacity=".6"/><path d="M5 2v2M11 2v2M2 7h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
           Kalender
@@ -105,10 +109,16 @@
               </div>
               <ul class="note-list" id="note-list-terms"></ul>
             </div>
-            <div id="custom-tiles"></div>
+            <div class="panel" id="panel-shopping">
+              <div class="panel-header">
+                <span class="panel-label">Einkaufsliste</span>
+                <button class="icon-btn" id="add-shopping-btn">+</button>
+              </div>
+              <ul class="checklist" id="shopping-list"></ul>
+            </div>
           </div>
 
-          <div id="today-right">
+          <div id="today-middle">
             <div class="panel" id="panel-todo">
               <div class="panel-header">
                 <span class="panel-label">To Do</span>
@@ -140,6 +150,10 @@
               <textarea id="quicknote" placeholder="Gedanken, Fragen, Reminders..."></textarea>
             </div>
           </div>
+
+          <div id="today-right">
+            <div id="custom-tiles"></div>
+          </div>
         </div>
       </section>
 
@@ -167,6 +181,53 @@
               </div>
               <div id="group-list"></div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- GUIDES -->
+      <section id="view-guides" class="view">
+        <div class="view-header">
+          <h1 class="view-title">Anleitungen</h1>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <div class="guide-search-wrap">
+              <svg class="guide-search-icon" width="14" height="14" viewBox="0 0 16 16" fill="none">
+                <circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" stroke-width="1.5"/>
+                <path d="M10 10l3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+              <input id="guide-search-input" class="guide-search-input" type="text" placeholder="Suchen…">
+            </div>
+            <button class="btn-primary" id="add-guide-category-btn">+ Kategorie</button>
+          </div>
+        </div>
+
+        <div id="guide-layout">
+          <!-- Left sidebar: category list -->
+          <div id="guide-category-list-panel" class="panel">
+            <div class="panel-header"><span class="panel-label">Kategorien</span></div>
+            <div id="guide-category-list"></div>
+            <div id="guide-category-empty" class="empty-state">Noch keine Kategorien.</div>
+          </div>
+
+          <!-- Right: content area -->
+          <div id="guide-content">
+            <!-- Placeholder -->
+            <div id="guide-placeholder" class="empty-state full" style="flex-direction:column;gap:8px;">
+              <svg width="40" height="40" viewBox="0 0 40 40" fill="none" opacity=".25">
+                <rect x="6" y="4" width="28" height="32" rx="4" stroke="currentColor" stroke-width="2"/>
+                <path d="M12 13h16M12 19h16M12 25h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              </svg>
+              <span>Kategorie auswählen oder suchen</span>
+            </div>
+
+            <!-- Category guide list -->
+            <div id="guide-category-view" class="hidden">
+              <div id="guide-cat-header" class="guide-cat-header"></div>
+              <div id="guide-cat-list" class="guide-cat-list"></div>
+            </div>
+
+            <!-- Single guide detail -->
+            <div id="guide-detail-view" class="hidden guide-detail-view"></div>
           </div>
         </div>
       </section>
@@ -603,6 +664,108 @@
     </div>
   </div>
 
+  <!-- Guide Category Modal -->
+  <div id="guide-cat-modal-overlay" class="modal-backdrop hidden">
+    <div class="modal-box" style="width:440px;">
+      <div class="modal-head">
+        <span id="guide-cat-modal-title">Neue Kategorie</span>
+        <button class="modal-x" id="guide-cat-modal-close">✕</button>
+      </div>
+      <div class="modal-row">
+        <label>Name</label>
+        <input type="text" class="modal-input" id="guide-cat-name-input" placeholder="z.B. Git &amp; GitHub">
+      </div>
+      <div class="modal-row">
+        <label>Icon</label>
+        <div class="guide-emoji-grid" id="guide-emoji-grid">
+          <button class="guide-emoji-btn active" data-emoji="📁">📁</button>
+          <button class="guide-emoji-btn" data-emoji="🐙">🐙</button>
+          <button class="guide-emoji-btn" data-emoji="🐧">🐧</button>
+          <button class="guide-emoji-btn" data-emoji="🖥️">🖥️</button>
+          <button class="guide-emoji-btn" data-emoji="🏫">🏫</button>
+          <button class="guide-emoji-btn" data-emoji="🎮">🎮</button>
+          <button class="guide-emoji-btn" data-emoji="🌐">🌐</button>
+          <button class="guide-emoji-btn" data-emoji="📖">📖</button>
+          <button class="guide-emoji-btn" data-emoji="⚙️">⚙️</button>
+          <button class="guide-emoji-btn" data-emoji="🔧">🔧</button>
+          <button class="guide-emoji-btn" data-emoji="💡">💡</button>
+          <button class="guide-emoji-btn" data-emoji="🧪">🧪</button>
+          <button class="guide-emoji-btn" data-emoji="🐍">🐍</button>
+          <button class="guide-emoji-btn" data-emoji="☕">☕</button>
+          <button class="guide-emoji-btn" data-emoji="🦀">🦀</button>
+          <button class="guide-emoji-btn" data-emoji="🗄️">🗄️</button>
+          <button class="guide-emoji-btn" data-emoji="🔐">🔐</button>
+          <button class="guide-emoji-btn" data-emoji="📡">📡</button>
+          <button class="guide-emoji-btn" data-emoji="🧩">🧩</button>
+          <button class="guide-emoji-btn" data-emoji="✏️">✏️</button>
+        </div>
+      </div>
+      <div class="modal-row">
+        <label>Eigenes Emoji <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-3)">(optional)</span></label>
+        <input type="text" class="modal-input" id="guide-cat-emoji-custom" placeholder="Emoji eingeben…" maxlength="4" style="width:120px;">
+      </div>
+      <div class="modal-actions">
+        <button id="guide-cat-modal-cancel" class="btn-ghost">Abbrechen</button>
+        <button id="guide-cat-modal-save" class="btn-primary">Erstellen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Guide Modal -->
+  <div id="guide-modal-overlay" class="modal-backdrop hidden">
+    <div class="modal-box guide-modal-box">
+      <div class="modal-head">
+        <span id="guide-modal-title">Neue Anleitung</span>
+        <button class="modal-x" id="guide-modal-close">✕</button>
+      </div>
+
+      <div class="modal-row">
+        <label>Titel</label>
+        <input type="text" class="modal-input" id="guide-modal-title-input" placeholder="z.B. Git Grundbefehle">
+      </div>
+      <div class="modal-row">
+        <label>Kurzbeschreibung</label>
+        <input type="text" class="modal-input" id="guide-modal-desc-input" placeholder="Worum geht's?">
+      </div>
+      <div class="modal-row">
+        <label>Tags <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-3)">(kommagetrennt)</span></label>
+        <input type="text" class="modal-input" id="guide-modal-tags-input" placeholder="git, terminal, basics">
+      </div>
+
+      <!-- Editor / Preview tabs -->
+      <div class="guide-modal-tabs">
+        <button class="guide-modal-tab active" id="guide-modal-tab-editor">Editor</button>
+        <button class="guide-modal-tab" id="guide-modal-tab-preview">Vorschau</button>
+        <div class="guide-modal-snippets">
+          <button class="guide-snippet-btn" data-snippet="h2" title="## Überschrift">H2</button>
+          <button class="guide-snippet-btn" data-snippet="h3" title="### Unterüberschrift">H3</button>
+          <button class="guide-snippet-btn" data-snippet="bold" title="**fett**"><strong>B</strong></button>
+          <button class="guide-snippet-btn" data-snippet="code" title="Code-Block">{ }</button>
+          <button class="guide-snippet-btn" data-snippet="list" title="Liste">☰</button>
+          <button class="guide-snippet-btn" data-snippet="hr" title="Trennlinie">—</button>
+          <button class="guide-snippet-btn" data-snippet="mark" title="Text markieren ==text==">▐</button>
+        </div>
+      </div>
+
+      <!-- Editor pane -->
+      <div id="guide-modal-editor-pane">
+        <textarea class="modal-textarea guide-modal-editor"
+          id="guide-modal-content-input"
+          placeholder="Inhalt in Markdown schreiben…"></textarea>
+      </div>
+
+      <!-- Preview pane -->
+      <div id="guide-modal-preview-pane" class="hidden">
+        <div id="guide-modal-preview-content" class="guide-detail-content guide-preview-box"></div>
+      </div>
+
+      <div class="modal-actions">
+        <button id="guide-modal-cancel" class="btn-ghost">Abbrechen</button>
+        <button id="guide-modal-save" class="btn-primary">Speichern</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Recurring Budget Modal -->
   <div id="recurring-modal-overlay" class="modal-backdrop hidden">
     <div class="modal-box" style="width:440px;">
@@ -685,6 +848,7 @@
   <script src="js/calendar.js"></script>
   <script src="js/today.js"></script>
   <script src="js/flashcards.js"></script>
+  <script src="js/guides.js"></script>
   <script src="js/budget.js"></script>
   <script src="js/games.js"></script>
   <script src="js/settings.js"></script>
