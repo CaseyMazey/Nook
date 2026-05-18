@@ -21,7 +21,7 @@ const DEFAULT_BLOCKS = [
 const DEFAULT_COLORS = { event: '#2563eb', prio1: '#dc2626', prio2: '#2563eb', prio3: '#6b7280' };
 
 const state = {
-  currentDate: new Date(DB.get('currentDate') || new Date().toISOString()),
+  currentDate: new Date(),
   currentWeekId: null,
   editingTask: null,
   selectedPriority: 2,

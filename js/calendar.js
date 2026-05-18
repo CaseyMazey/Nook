@@ -68,48 +68,67 @@ function renderCalendar(){
   const grid=document.getElementById('calendar-grid'); grid.innerHTML='';
   const year=calDate.getFullYear(), month=calDate.getMonth();
   document.getElementById('cal-title').textContent=calDate.toLocaleDateString('de-DE',{month:'long',year:'numeric'});
+
+  // KW-Header + Wochentage (8 Spalten)
+  const kwHead=document.createElement('div'); kwHead.className='cal-day-name cal-kw-head'; kwHead.textContent='KW'; grid.appendChild(kwHead);
   ['Mo','Di','Mi','Do','Fr','Sa','So'].forEach(d=>{
     const el=document.createElement('div'); el.className='cal-day-name'; el.textContent=d; grid.appendChild(el);
   });
+
   const firstDay=new Date(year,month,1);
-  const startOffset=(firstDay.getDay()+6)%7;
+  const startOffset=(firstDay.getDay()+6)%7; // 0=Mo
   const daysInMonth=new Date(year,month+1,0).getDate();
   const daysInPrev=new Date(year,month,0).getDate();
-  for(let i=startOffset-1;i>=0;i--){
-    const el=document.createElement('div'); el.className='cal-day other-month'; el.textContent=daysInPrev-i; grid.appendChild(el);
-  }
-  for(let d=1;d<=daysInMonth;d++){
-    const date=new Date(year,month,d), weekId=getWeekId(date), key=dateKey(date);
-    const dayEvs=(events[key]||[]).slice().sort((a,b)=>(a.time||'').localeCompare(b.time||''));
-    const dayTasks=(tasks[weekId]||[]).filter(t=>!t.done);
-    const el=document.createElement('div');
-    // FIX: is-today uses border highlight, not black background
-    el.className='cal-day'+(isToday(date)?' is-today':'')+(date.getDay()===0||date.getDay()===6?' weekend':'');
-    el.style.cursor='pointer';
-    const num=document.createElement('span'); num.className='cal-day-num'; num.textContent=d; el.appendChild(num);
-    const items=document.createElement('div'); items.className='cal-items';
-    let shown=0;
-    dayEvs.forEach(ev=>{
-      if(shown>=3) return; shown++;
-      const pill=document.createElement('div');
-      pill.className='cal-event-pill'+(ev.countdown?' countdown-pill':'');
-      pill.textContent=(ev.time?ev.time+' ':'')+ev.title; pill.title=ev.notes||'';
-      items.appendChild(pill);
+
+  // Alle Tage sammeln: Vormonat + aktuell + Folge
+  const allDays=[];
+  for(let i=startOffset-1;i>=0;i--)
+    allDays.push({date:new Date(year,month-1,daysInPrev-i),otherMonth:true});
+  for(let d=1;d<=daysInMonth;d++)
+    allDays.push({date:new Date(year,month,d),otherMonth:false});
+  const remainder=(7-(allDays.length%7))%7;
+  for(let d=1;d<=remainder;d++)
+    allDays.push({date:new Date(year,month+1,d),otherMonth:true});
+
+  // Wochenweise rendern → KW-Label am Anfang jeder Zeile
+  for(let i=0;i<allDays.length;i+=7){
+    const week=allDays.slice(i,i+7);
+
+    // KW-Zelle anhand des ersten Tags der Zeile
+    const kwEl=document.createElement('div'); kwEl.className='cal-kw-cell';
+    kwEl.textContent=getISOWeek(week[0].date); grid.appendChild(kwEl);
+
+    week.forEach(({date,otherMonth})=>{
+      const key=dateKey(date), weekId=getWeekId(date);
+      const dayEvs=(events[key]||[]).slice().sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+      const dayTasks=(tasks[weekId]||[]).filter(t=>!t.done);
+      const el=document.createElement('div');
+      el.className='cal-day'
+        +(otherMonth?' other-month':'')
+        +(isToday(date)?' is-today':'')
+        +(date.getDay()===0||date.getDay()===6?' weekend':'');
+      el.style.cursor='pointer';
+      const num=document.createElement('span'); num.className='cal-day-num'; num.textContent=date.getDate(); el.appendChild(num);
+      const items=document.createElement('div'); items.className='cal-items';
+      let shown=0;
+      dayEvs.forEach(ev=>{
+        if(shown>=3) return; shown++;
+        const pill=document.createElement('div');
+        pill.className='cal-event-pill'+(ev.countdown?' countdown-pill':'');
+        pill.textContent=(ev.time?ev.time+' ':'')+ev.title; pill.title=ev.notes||'';
+        items.appendChild(pill);
+      });
+      dayTasks.forEach(t=>{
+        if(shown>=3) return; shown++;
+        const pill=document.createElement('div'); pill.className=`cal-task-pill prio-${t.priority}`; pill.textContent=t.title;
+        items.appendChild(pill);
+      });
+      const totalAll=dayEvs.length+dayTasks.length;
+      if(totalAll>shown){const more=document.createElement('div');more.className='cal-more';more.textContent=`+${totalAll-shown} weitere`;items.appendChild(more);}
+      el.appendChild(items);
+      if(!otherMonth) el.addEventListener('click',()=>openCalDayModal(key,date));
+      grid.appendChild(el);
     });
-    dayTasks.forEach(t=>{
-      if(shown>=3) return; shown++;
-      const pill=document.createElement('div'); pill.className=`cal-task-pill prio-${t.priority}`; pill.textContent=t.title;
-      items.appendChild(pill);
-    });
-    const totalAll=dayEvs.length+dayTasks.length;
-    if(totalAll>shown){const more=document.createElement('div');more.className='cal-more';more.textContent=`+${totalAll-shown} weitere`;items.appendChild(more);}
-    el.appendChild(items);
-    el.addEventListener('click',()=>openCalDayModal(key,date));
-    grid.appendChild(el);
-  }
-  const total=startOffset+daysInMonth, remainder=(7-(total%7))%7;
-  for(let d=1;d<=remainder;d++){
-    const el=document.createElement('div'); el.className='cal-day other-month'; el.textContent=d; grid.appendChild(el);
   }
 }
 
