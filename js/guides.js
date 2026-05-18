@@ -26,18 +26,57 @@ function findGuide(guideId) {
   return null;
 }
 
+
+// ── Code Bookmarks ────────────────────────────────────────
+let guideBookmarks = DB.get('guideBookmarks', {}); // { [guideId]: [blockId, ...] }
+let bookmarkNavIndex = 0; // current position in bookmark navigation
+
+function saveBookmarks() { DB.set('guideBookmarks', guideBookmarks); }
+
+// Stable block ID: hash of content + position index
+function makeBlockId(guideId, code, index) {
+  let hash = 0;
+  const str = guideId + index + code.slice(0, 80);
+  for (let i = 0; i < str.length; i++) { hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0; }
+  return 'cb-' + Math.abs(hash).toString(36);
+}
+
+function isBookmarked(guideId, blockId) {
+  return (guideBookmarks[guideId] || []).includes(blockId);
+}
+
+function toggleBookmark(guideId, blockId) {
+  if (!guideBookmarks[guideId]) guideBookmarks[guideId] = [];
+  const idx = guideBookmarks[guideId].indexOf(blockId);
+  if (idx === -1) guideBookmarks[guideId].push(blockId);
+  else guideBookmarks[guideId].splice(idx, 1);
+  saveBookmarks();
+}
+
+function getBookmarkedBlocks(guideId) {
+  const ids = guideBookmarks[guideId] || [];
+  return ids.map(id => document.getElementById(id)).filter(Boolean);
+}
+
 // ── Markdown + Code renderer ─────────────────────────────
 // Lightweight renderer: headings, bold, italic, code blocks,
 // inline code, lists, horizontal rules, links.
 
-function renderMarkdown(raw) {
+function renderMarkdown(raw, guideId = null) {
   if (!raw) return '';
   let html = escHtml(raw);
 
   // Fenced code blocks  ```lang\n...\n```
+  let _blockIndex = 0;
   html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
+    const blockId  = guideId ? makeBlockId(guideId, code, _blockIndex++) : null;
+    const idAttr   = blockId ? `id="${blockId}"` : '';
+    const bookmarked = guideId ? isBookmarked(guideId, blockId) : false;
+    const bmBtn    = guideId
+      ? `<button class="guide-bookmark-btn ${bookmarked ? 'active' : ''}" onclick="handleBookmarkClick(this,'${guideId}','${blockId}')" title="Code-Block merken">${bookmarked ? '★' : '☆'}</button>`
+      : '';
     const langLabel = `<span class="guide-code-lang">${lang || 'code'}</span>`;
-    return `<div class="guide-code-block"><div class="guide-code-header">${langLabel}<button class="guide-copy-btn" onclick="copyCode(this)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="5" y="5" width="9" height="9" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M3 11V3a2 2 0 0 1 2-2h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> Copy</button></div><pre class="guide-code-pre"><code>${code.trimEnd()}</code></pre></div>`;
+    return `<div class="guide-code-block" ${idAttr}><div class="guide-code-header">${langLabel}<div class="guide-code-header-right">${bmBtn}<button class="guide-copy-btn" onclick="copyCode(this)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="5" y="5" width="9" height="9" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M3 11V3a2 2 0 0 1 2-2h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> Copy</button></div></div><pre class="guide-code-pre"><code>${code.trimEnd()}</code></pre></div>`;
   });
 
   // Inline code `...`
@@ -101,6 +140,15 @@ function renderMarkdown(raw) {
 
   return html;
 }
+
+// Bookmark click handler (global so onclick works)
+window.handleBookmarkClick = function(btn, guideId, blockId) {
+  toggleBookmark(guideId, blockId);
+  const active = isBookmarked(guideId, blockId);
+  btn.classList.toggle('active', active);
+  btn.textContent = active ? '★' : '☆';
+  renderBookmarkNav(guideId);
+};
 
 // Copy code button handler (global so onclick works)
 window.copyCode = function(btn) {
@@ -429,7 +477,7 @@ function renderSingleGuide(guideId) {
     </svg>
     ${escHtml(category.name)}
   `;
-  back.addEventListener('click', () => { activeGuideId = null; renderGuideContent(); });
+  back.addEventListener('click', () => { hideGuideScrollBtn(); activeGuideId = null; renderGuideContent(); });
 
   // Header
   const header = document.createElement('div');
@@ -474,10 +522,91 @@ function renderSingleGuide(guideId) {
   // Content
   const content = document.createElement('div');
   content.className = 'guide-detail-content';
-  content.innerHTML = renderMarkdown(guide.content || '');
+  content.innerHTML = renderMarkdown(guide.content || '', guide.id);
 
-  view.append(back, header, content);
-  // Apply syntax highlighting after DOM insertion
+  // Bookmark navigation bar
+  const bmNav = buildBookmarkNav(guide.id);
+
+  view.append(back, header, bmNav, content);
+  renderBookmarkNav(guide.id, bmNav);
+  showGuideScrollBtn();
+}
+
+// ── Bookmark Navigation ───────────────────────────────────
+
+function buildBookmarkNav(guideId) {
+  const nav = document.createElement('div');
+  nav.className = 'guide-bm-nav';
+  nav.id = 'guide-bm-nav';
+  // nav is rendered after DOM insertion — see renderSingleGuide
+  return nav;
+}
+
+function renderBookmarkNav(guideId, navEl) {
+  const nav = navEl || document.getElementById('guide-bm-nav');
+  if (!nav) return;
+  const ids = guideBookmarks[guideId] || [];
+  // filter to only blocks that exist in DOM
+  const blocks = ids.map(id => document.getElementById(id)).filter(Boolean);
+  const count  = blocks.length;
+  bookmarkNavIndex = Math.min(bookmarkNavIndex, Math.max(0, count - 1));
+
+  nav.innerHTML = '';
+  if (count === 0) {
+    nav.innerHTML = '<span class="guide-bm-empty">Keine Code-Bookmarks — ☆ auf einem Codeblock klicken</span>';
+    nav.classList.add('empty');
+    return;
+  }
+  nav.classList.remove('empty');
+
+  const prevBtn = document.createElement('button');
+  prevBtn.className = 'guide-bm-btn';
+  prevBtn.innerHTML = '↑';
+  prevBtn.title = 'Vorheriger Bookmark';
+  prevBtn.disabled = count === 0;
+  prevBtn.addEventListener('click', () => { bookmarkNavIndex = (bookmarkNavIndex - 1 + count) % count; jumpToBookmark(blocks[bookmarkNavIndex]); renderBookmarkNav(guideId); });
+
+  const label = document.createElement('span');
+  label.className = 'guide-bm-label';
+  label.textContent = `Bookmark ${bookmarkNavIndex + 1} / ${count}`;
+
+  const nextBtn = document.createElement('button');
+  nextBtn.className = 'guide-bm-btn';
+  nextBtn.innerHTML = '↓';
+  nextBtn.title = 'Nächster Bookmark';
+  nextBtn.disabled = count === 0;
+  nextBtn.addEventListener('click', () => { bookmarkNavIndex = (bookmarkNavIndex + 1) % count; jumpToBookmark(blocks[bookmarkNavIndex]); renderBookmarkNav(guideId); });
+
+  nav.append(prevBtn, label, nextBtn);
+}
+
+function jumpToBookmark(el) {
+  if (!el) return;
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  el.classList.remove('guide-bm-flash');
+  void el.offsetWidth;
+  el.classList.add('guide-bm-flash');
+  setTimeout(() => el.classList.remove('guide-bm-flash'), 900);
+}
+
+function showGuideScrollBtn() {
+  let btn = document.getElementById('guide-scroll-top');
+  if (!btn) {
+    btn = document.createElement('button');
+    btn.id = 'guide-scroll-top';
+    btn.title = 'Nach oben';
+    btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 12V4M4 7l4-4 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    btn.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+    document.body.appendChild(btn);
+  }
+  btn.classList.add('visible');
+}
+
+function hideGuideScrollBtn() {
+  const btn = document.getElementById('guide-scroll-top');
+  if (btn) btn.classList.remove('visible');
 }
 
 // ── Search ────────────────────────────────────────────────

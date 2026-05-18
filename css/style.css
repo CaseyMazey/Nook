@@ -381,6 +381,34 @@ ul { list-style: none; }
 [data-theme="dark"] .guide-mark { background: #854d0e; color: #fef9c3; }
  
 /* =========================
+   GUIDES — Code Bookmarks
+   ans Ende von style.css anhängen
+========================= */
+
+/* ---- Code block header: rechts-Gruppe für Bookmark + Copy ---- */
+.guide-code-header-right { display: flex; align-items: center; gap: 6px; }
+
+/* ---- Bookmark button auf Codeblock ---- */
+.guide-bookmark-btn { display: inline-flex; align-items: center; justify-content: center; font-size: 14px; width: 26px; height: 26px; border-radius: 4px; border: 1px solid var(--border); background: var(--surface); color: var(--text-3); cursor: pointer; transition: color 0.15s, background 0.15s, border-color 0.15s; line-height: 1; }
+.guide-bookmark-btn:hover { color: #d97706; border-color: #d97706; background: #fef3c7; }
+.guide-bookmark-btn.active { color: #d97706; border-color: #d97706; background: #fef3c7; }
+[data-theme="dark"] .guide-bookmark-btn:hover,
+[data-theme="dark"] .guide-bookmark-btn.active { background: #422006; border-color: #92400e; color: #fbbf24; }
+
+/* ---- Bookmark navigation bar ---- */
+.guide-bm-nav { display: flex; align-items: center; gap: 10px; padding: 8px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 20px; font-size: 13px; }
+.guide-bm-nav.empty { justify-content: center; }
+.guide-bm-empty { color: var(--text-3); font-size: 12px; }
+.guide-bm-btn { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: var(--radius-sm); border: 1px solid var(--border-strong); background: var(--bg); color: var(--text-2); font-size: 14px; cursor: pointer; transition: all 0.15s; flex-shrink: 0; }
+.guide-bm-btn:hover:not(:disabled) { background: var(--accent-soft); color: var(--text); border-color: var(--text-3); }
+.guide-bm-btn:disabled { opacity: 0.35; cursor: default; }
+.guide-bm-label { flex: 1; text-align: center; font-size: 12px; font-family: var(--mono); color: var(--text-2); }
+
+/* ---- Flash animation when jumping to bookmark ---- */
+@keyframes guide-bm-glow { 0% { box-shadow: 0 0 0 0 rgba(217,119,6,0.5); } 50% { box-shadow: 0 0 0 6px rgba(217,119,6,0.15); } 100% { box-shadow: 0 0 0 0 rgba(217,119,6,0); } }
+.guide-bm-flash { animation: guide-bm-glow 0.9s ease-out; border-color: #d97706 !important; }
+
+/* =========================
    CALENDAR — FIX: today uses border not fill
 ========================= */
 .cal-nav { display: flex; gap: 8px; }
@@ -1227,3 +1255,8 @@ ul { list-style: none; }
   margin-top: 4px;
   align-self: center;
 }
+
+/* ---- Guide Scroll-to-top Button (ans Ende von style.css) ---- */
+#guide-scroll-top { position: fixed; bottom: 28px; right: 28px; width: 40px; height: 40px; border-radius: 50%; background: var(--surface); border: 1px solid var(--border-strong); color: var(--text-2); display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.12); cursor: pointer; opacity: 0; pointer-events: none; transform: translateY(8px); transition: opacity 0.2s ease, transform 0.2s ease, background 0.15s, color 0.15s; z-index: 999; }
+#guide-scroll-top.visible { opacity: 1; pointer-events: auto; transform: translateY(0); }
+#guide-scroll-top:hover { background: var(--text); color: var(--accent-fg); border-color: var(--text); }
