@@ -5,6 +5,9 @@
 let activeGame = 'ttt';
 let gameHighscores = DB.get('gameHighscores', { ttt: {}, memory: {}, snake: 0 });
 function saveHighscores(){ DB.set('gameHighscores', gameHighscores); }
+window.gameHighscores = gameHighscores;
+window.saveHighscores = saveHighscores;
+window.renderAllHighscores = renderAllHighscores;
 
 function initGames(){
   document.querySelectorAll('.games-tab').forEach(btn=>{
@@ -14,12 +17,12 @@ function initGames(){
       activeGame = g;
       document.querySelectorAll('.games-tab').forEach(b=>b.classList.toggle('active',b===btn));
       document.querySelectorAll('.game-card').forEach(p=>p.classList.toggle('hidden',p.id!==`game-${g}`));
-      if(g==='ttt')    { initTTT();    renderAllHighscores(); }
+      if(g==='ttt')    { initTTT();    window.TicTacToeGame.initTTT(); }
       if(g==='memory') { initMemory(); resumeMemoryTimer(); renderMemoryHighscores(); }
       if(g==='snake')  { initSnake();  renderAllHighscores(); }
     });
   });
-  initTTT();
+  window.TicTacToeGame.initTTT();
   renderAllHighscores();
 }
 
