@@ -1,0 +1,9 @@
+{
+  "id": "snake",
+  "name": "Snake",
+  "icon": "〜",
+  "version": "1.0",
+  "author": "Casey",
+  "description": "Fris das Essen, werde länger, überlebe.",
+  "highscoreLabel": "Highscore"
+}

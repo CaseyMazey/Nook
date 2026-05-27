@@ -1,0 +1,7 @@
+{
+  "games": [
+    "tictactoe",
+    "memory",
+    "snake"
+  ]
+}

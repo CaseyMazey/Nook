@@ -295,170 +295,17 @@
       <section id="view-games" class="view games-view">
         <h1 class="view-title" style="margin-bottom:20px;">Spiele</h1>
 
-        <!-- Tab bar -->
-        <div class="games-tabs">
-          <button class="games-tab active" data-game="ttt">
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M2 6h14M2 12h14M6 2v14M12 2v14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-            Tic-Tac-Toe
-          </button>
-          <button class="games-tab" data-game="memory">
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2" y="2" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="10" y="2" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="2" y="10" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="10" y="10" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.6"/></svg>
-            Memory
-          </button>
-          <button class="games-tab" data-game="snake">
-            〜
-            Snake
-          </button>
-        </div>
+        <!-- Tab bar — filled dynamically by games.js -->
+        <div class="games-tabs"></div>
 
         <!-- Two-column layout: game area + highscore -->
         <div class="games-layout">
 
-          <!-- LEFT: Game panels -->
-          <div class="games-area">
+          <!-- LEFT: Game containers — filled dynamically by games.js -->
+          <div class="games-area"></div>
 
-            <!-- TIC-TAC-TOE -->
-            <div id="game-ttt" class="game-card">
-              <div class="game-card-left">
-                <div class="game-card-title-block" style="padding:24px 28px 0;">
-                  <h2 class="game-card-title">Tic-Tac-Toe</h2>
-                  <p class="game-card-sub">Klassisches 3×3 Spiel.</p>
-                </div>
-
-                <div class="game-setting-group">
-                  <span class="game-setting-label">Spielmodus</span>
-                  <div class="game-toggle-group">
-                    <button class="game-toggle-btn active" id="ttt-opt-ai">
-                      <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="5" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M2 13c0-3 11-3 11 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
-                      vs KI
-                    </button>
-                    <button class="game-toggle-btn" id="ttt-opt-p2">
-                      <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="5" cy="5" r="2" stroke="currentColor" stroke-width="1.4"/><circle cx="10" cy="5" r="2" stroke="currentColor" stroke-width="1.4"/><path d="M1 13c0-2.5 4-2.5 4-2.5s4 0 4 2.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
-                      vs Spieler 2
-                    </button>
-                  </div>
-                </div>
-
-                <div class="game-setting-group" id="ttt-diff-group">
-                  <span class="game-setting-label">Schwierigkeit</span>
-                  <div class="game-toggle-group">
-                    <button class="game-toggle-btn" id="ttt-diff-easy">Leicht</button>
-                    <button class="game-toggle-btn active" id="ttt-diff-medium">Mittel</button>
-                    <button class="game-toggle-btn" id="ttt-diff-hard">Schwer</button>
-                  </div>
-                </div>
-              </div>
-
-              <div class="game-card-right">
-                <div id="ttt-status" class="ttt-status-new"></div>
-                <div id="ttt-board" class="ttt-board-new"></div>
-                <div id="ttt-score" class="ttt-score-new"></div>
-              </div>
-
-              <div class="game-card-footer">
-                <button class="game-action-btn" id="ttt-reset-btn">
-                  <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M2 7.5A5.5 5.5 0 0 1 12.5 4M2 7.5l2-2M2 7.5l2 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                  Neues Spiel starten
-                </button>
-              </div>
-            </div>
-
-            <!-- MEMORY -->
-            <div id="game-memory" class="game-card hidden">
-              <div class="game-card-title-block" style="padding:24px 28px 0;">
-                <h2 class="game-card-title">Memory</h2>
-                <p class="game-card-sub">Finde alle Kartenpaare.</p>
-              </div>
-
-              <!-- Setup screen -->
-              <div id="memory-setup" class="memory-setup-screen">
-                <div class="game-setting-group">
-                  <span class="game-setting-label">Kartenpaare: <span id="memory-pairs-label">8</span></span>
-                  <input type="range" id="memory-pairs-slider" min="3" max="20" value="8" class="mem-slider"/>
-                  <div class="mem-slider-marks">
-                    <span>3</span><span>8</span><span>14</span><span>20</span>
-                  </div>
-                </div>
-                <button class="game-action-btn" id="memory-start-btn" style="width:auto;align-self:flex-start;padding:12px 32px;font-size:14px;">
-                  Spielen
-                </button>
-              </div>
-
-              <!-- Active game -->
-              <div id="memory-game" class="hidden">
-                <div class="memory-active-header">
-                  <div id="memory-stats" class="memory-stats-new"></div>
-                  <div style="display:flex;gap:8px;">
-                    <button class="game-toggle-btn" id="memory-abort-btn">Beenden</button>
-                    <button class="game-toggle-btn" id="memory-reset-btn">Neu</button>
-                  </div>
-                </div>
-                <div id="memory-board" class="memory-board-new"></div>
-              </div>
-
-              <!-- Done screen -->
-              <div id="memory-done" class="memory-done-new hidden"></div>
-            </div>
-
-            <!-- SNAKE -->
-            <div id="game-snake" class="game-card hidden">
-              <div class="game-card-title-block" style="padding:24px 28px 0;">
-                <h2 class="game-card-title">Snake</h2>
-                <p class="game-card-sub">Fris das Essen, werde länger, überlebe.</p>
-              </div>
-              <div class="snake-area">
-                <div class="snake-left">
-                  <div id="snake-status" class="snake-status-new"></div>
-                  <canvas id="snake-canvas" width="380" height="380"></canvas>
-                  <div id="snake-hint" class="snake-hint-new">Pfeiltasten oder WASD · Leertaste zum Starten</div>
-                  <button class="game-action-btn" id="snake-reset-btn" style="margin:0 28px 24px;">
-                    <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M2 7.5A5.5 5.5 0 0 1 12.5 4M2 7.5l2-2M2 7.5l2 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    Neues Spiel starten
-                  </button>
-                </div>
-                <div class="snake-right">
-                  <div class="game-setting-label" style="margin-bottom:12px;">Steuerung</div>
-                  <div class="snake-controls-grid">
-                    <div></div><div class="snake-key">↑ W</div><div></div>
-                    <div class="snake-key">← A</div><div class="snake-key">↓ S</div><div class="snake-key">→ D</div>
-                  </div>
-                  <div class="snake-key snake-key-space" style="margin-top:12px;">Leertaste — Start</div>
-                </div>
-              </div>
-            </div>
-
-          </div><!-- end games-area -->
-
-          <!-- RIGHT: Unified highscore panel -->
-          <div class="games-hs-panel">
-            <div class="games-hs-title">
-              <span>🏆</span> Highscore
-            </div>
-            <div id="games-hs-ttt" class="games-hs-entry">
-              <div class="games-hs-icon ttt-icon"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M2 6h14M2 12h14M6 2v14M12 2v14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
-              <div class="games-hs-info">
-                <div class="games-hs-game">Tic-Tac-Toe</div>
-                <div class="games-hs-desc">Siege als X</div>
-              </div>
-              <div class="games-hs-value" id="hs-val-ttt">—</div>
-            </div>
-            <div id="games-hs-memory" class="games-hs-entry">
-              <div class="games-hs-icon mem-icon"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2" y="2" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="10" y="2" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="2" y="10" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="10" y="10" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.6"/></svg></div>
-              <div class="games-hs-info">
-                <div class="games-hs-game">Memory</div>
-                <div class="games-hs-desc">Beste Zeit</div>
-              </div>
-              <div class="games-hs-value" id="hs-val-memory">—</div>
-            </div>
-            <div id="games-hs-snake" class="games-hs-entry">
-              <div class="games-hs-icon snake-icon">〜</div>
-              <div class="games-hs-info">
-                <div class="games-hs-game">Snake</div>
-                <div class="games-hs-desc">Highscore</div>
-              </div>
-              <div class="games-hs-value" id="hs-val-snake">—</div>
-            </div>
-          </div>
+          <!-- RIGHT: Highscore panel — filled dynamically by games.js -->
+          <div class="games-hs-panel"></div>
 
         </div><!-- end games-layout -->
       </section>
@@ -853,7 +700,8 @@
   <script src="js/flashcards.js"></script>
   <script src="js/guides.js"></script>
   <script src="js/budget.js"></script>
-  <script src="games/tictactoe/game.js"></script>
+  <!-- Spiele werden dynamisch von games.js über games/games.json geladen -->
+  <!-- Kein manuelles <script> mehr nötig wenn ein neues Spiel hinzukommt -->
   <script src="js/games.js"></script>
   <script src="js/settings.js"></script>
 </body>
