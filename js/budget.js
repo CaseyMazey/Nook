@@ -201,37 +201,54 @@ function calcFinancialStatus() {
 }
 
 function renderFinancialStatus(fs) {
-  const existing = document.getElementById('budget-status-bar');
-  if (existing) existing.remove();
-  if (!fs) return;
+  // Update kontostand display in new card layout
+  const ksDisplay = document.getElementById('b-ks-display');
+  if (ksDisplay) {
+    if (kontostand === null) {
+      ksDisplay.textContent = '—';
+      ksDisplay.className = 'b-ks-value';
+    } else {
+      ksDisplay.textContent = (kontostand >= 0 ? '+' : '') + kontostand.toFixed(2) + ' €';
+      ksDisplay.className = 'b-ks-value' + (kontostand < 0 ? ' negative' : '');
+    }
+  }
 
-  const bar = document.createElement('div');
-  bar.id = 'budget-status-bar';
-  bar.className = `budget-status-bar budget-status-${fs.status}`;
+  // Render status into the right panel of the kontostand card
+  const statusInner = document.getElementById('b-status-inner');
+  if (!statusInner) return;
 
-  const labels    = { green: 'Stabil', yellow: 'Aufpassen', red: 'Kritisch' };
-  const mustIcon  = fs.mustCovered ? '✓' : '✗';
-  const needIcon  = fs.needCovered ? '✓' : (fs.mustCovered ? '–' : '✗');
-  const wantIcon  = fs.wantCovered ? '✓' : '–';
-  const mustClass = fs.mustCovered ? 'status-check-ok' : 'status-check-bad';
-  const needClass = fs.needCovered ? 'status-check-ok' : (fs.mustCovered ? 'status-check-warn' : 'status-check-bad');
-  const wantClass = fs.wantCovered ? 'status-check-ok' : 'status-check-neutral';
+  if (!fs) {
+    statusInner.innerHTML = '<div class="b-status-header"><span class="b-status-dot" style="background:#ccc"></span><span class="b-status-text">Kontostand nicht gesetzt</span></div>';
+    return;
+  }
 
-  bar.innerHTML = `
-    <div class="budget-status-left">
-      <span class="budget-status-dot budget-status-dot-${fs.status}"></span>
-      <span class="budget-status-label">${labels[fs.status]}</span>
+  const labels   = { green: 'Stabil', yellow: 'Aufpassen', red: 'Kritisch' };
+  const dotColor = { green: 'green', yellow: 'yellow', red: 'red' };
+
+  const checks = [
+    { label: 'Muss-Ausgaben sind abgedeckt',    covered: fs.mustCovered },
+    { label: 'Brauche-Ausgaben sind abgedeckt', covered: fs.needCovered },
+    { label: 'Möchte-Ausgaben sind abgedeckt',  covered: fs.wantCovered },
+  ];
+
+  // Build hint text from first non-"all ok" hint, or positive summary
+  const hintHtml = fs.hints.length > 1
+    ? `<div class="b-status-hint ${fs.status !== 'green' ? (fs.status === 'red' ? 'bad' : 'warn') : ''}">${fs.hints[1].text}</div>`
+    : (fs.hints[0] ? `<div class="b-status-hint">${fs.hints[0].text}</div>` : '');
+
+  statusInner.innerHTML = `
+    <div class="b-status-header">
+      <span class="b-status-dot ${dotColor[fs.status]}"></span>
+      <span class="b-status-text">Status: <span class="status-word ${dotColor[fs.status]}">${labels[fs.status]}</span></span>
     </div>
-    <div class="budget-status-checks">
-      <span class="budget-status-check ${mustClass}"><span class="status-check-icon">${mustIcon}</span> Muss</span>
-      <span class="budget-status-check ${needClass}"><span class="status-check-icon">${needIcon}</span> Brauche</span>
-      <span class="budget-status-check ${wantClass}"><span class="status-check-icon">${wantIcon}</span> Möchte</span>
+    <div class="b-checklist">
+      ${checks.map(c => `
+        <div class="b-check-item">
+          <span class="b-check-icon ${c.covered ? 'ok' : (fs.status === 'red' ? 'bad' : 'warn')}">${c.covered ? '✓' : '✗'}</span>
+          <span>${c.label}</span>
+        </div>`).join('')}
     </div>
-    <div class="budget-status-hints">
-      ${fs.hints.map(h => `<span class="budget-status-hint budget-hint-${h.type}">${h.icon} ${h.text}</span>`).join('')}
-    </div>`;
-
-  document.getElementById('budget-summary-bar').after(bar);
+    ${hintHtml}`;
 }
 
 // =========================
@@ -250,18 +267,47 @@ function renderBudget(){
   const totalIn = recIncome+otIncome, totalOut = recExpense+otExpense, balance = totalIn-totalOut;
 
   document.getElementById('budget-summary-bar').innerHTML = `
-    <div class="budget-summary-grid">
-      <div class="budget-stat income">
-        <div class="budget-stat-label">Einnahmen &middot; ${budgetMonthLabel(now)}</div>
-        <div class="budget-stat-value">+${totalIn.toFixed(2)} &euro;</div>
+    <div class="budget-kpi-grid">
+      <div class="budget-kpi-card">
+        <div class="budget-kpi-left">
+          <div class="budget-kpi-label">Einnahmen</div>
+          <div class="budget-kpi-value income">+${totalIn.toLocaleString('de-DE', {minimumFractionDigits:2})} &euro;</div>
+          <div class="budget-kpi-sub">Im ${now.toLocaleDateString('de-DE',{month:'long'})}</div>
+        </div>
+        <div class="budget-kpi-icon green">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+            <path d="M14 24 C14 24 5 19 5 11 C5 7 9 4 14 4 C19 4 23 7 23 11 C23 19 14 24 14 24Z" stroke="currentColor" stroke-width="1.5" fill="none"/>
+            <path d="M14 24 L14 4" stroke="currentColor" stroke-width="1" opacity=".5"/>
+            <path d="M14 13 C11 10 7 10 5.5 12" stroke="currentColor" stroke-width="1" opacity=".5"/>
+            <path d="M14 17 C17 14 21 14 22.5 16" stroke="currentColor" stroke-width="1" opacity=".5"/>
+          </svg>
+        </div>
       </div>
-      <div class="budget-stat expense">
-        <div class="budget-stat-label">Ausgaben &middot; ${budgetMonthLabel(now)}</div>
-        <div class="budget-stat-value">-${totalOut.toFixed(2)} &euro;</div>
+      <div class="budget-kpi-card">
+        <div class="budget-kpi-left">
+          <div class="budget-kpi-label">Ausgaben</div>
+          <div class="budget-kpi-value expense">-${totalOut.toLocaleString('de-DE', {minimumFractionDigits:2})} &euro;</div>
+          <div class="budget-kpi-sub">Im ${now.toLocaleDateString('de-DE',{month:'long'})}</div>
+        </div>
+        <div class="budget-kpi-icon red">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+            <path d="M14 6 L14 22M8 16 L14 22 L20 16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
       </div>
-      <div class="budget-stat ${balance>=0?'positive':'negative'}">
-        <div class="budget-stat-label">Verfügbar</div>
-        <div class="budget-stat-value">${balance>=0?'+':''}${balance.toFixed(2)} &euro;</div>
+      <div class="budget-kpi-card">
+        <div class="budget-kpi-left">
+          <div class="budget-kpi-label">Verfügbar</div>
+          <div class="budget-kpi-value ${balance>=0?'positive':'negative'}">${balance>=0?'+':''}${Math.abs(balance).toLocaleString('de-DE', {minimumFractionDigits:2})} &euro;</div>
+          <div class="budget-kpi-sub">Aktuell verfügbar</div>
+        </div>
+        <div class="budget-kpi-icon olive">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+            <rect x="4" y="8" width="20" height="14" rx="3" stroke="currentColor" stroke-width="1.5" fill="none"/>
+            <path d="M4 12h20" stroke="currentColor" stroke-width="1.5"/>
+            <circle cx="19" cy="17" r="2" fill="currentColor" opacity=".6"/>
+          </svg>
+        </div>
       </div>
     </div>`;
 
@@ -269,76 +315,111 @@ function renderBudget(){
 
   document.getElementById('budget-month-label').textContent = budgetMonthLabel(budgetMonth);
 
-  // One-time list
-  const viewMk     = budgetMonthKey(budgetMonth);
+  // One-time list — grouped: income first, then expenses
+  const viewMk      = budgetMonthKey(budgetMonth);
   const onetimeList = document.getElementById('budget-onetime-list');
   onetimeList.innerHTML = '';
-  const otEntries  = budgetOnetime.filter(e => e.monthKey === viewMk);
+  const otEntries   = budgetOnetime.filter(e => e.monthKey === viewMk);
+
   if (otEntries.length === 0) {
     onetimeList.innerHTML = '<div class="empty-state">Keine einmaligen Buchungen in diesem Monat.</div>';
   } else {
-    otEntries.forEach(e => {
-      onetimeList.appendChild(makeBudgetRow({
-        name: e.name, amount: e.amount, type: e.type,
-        priority: e.priority || 'need', paid: e.paid || false,
-        onDel:        () => { budgetOnetime = budgetOnetime.filter(x => x.id !== e.id); saveBudgetOnetime(); renderBudget(); },
-        onPaidToggle: () => {
-          const nowPaid = !e.paid;
-          e.paid = nowPaid;
-          // Mutate kontostand to reflect this real transaction
-          if (nowPaid) {
-            kontostand += e.type === 'income' ? e.amount : -e.amount;
-          } else {
-            kontostand += e.type === 'income' ? -e.amount : e.amount;
+    const otIncomes  = otEntries.filter(e => e.type === 'income');
+    const otExpenses = otEntries.filter(e => e.type === 'expense');
+
+    function renderOtGroup(entries, type) {
+      if (!entries.length) return;
+      const header = document.createElement('div');
+      header.className = 'b-section-label';
+      header.innerHTML = `<span class="b-section-dot ${type}"></span>${type === 'income' ? 'Einnahmen' : 'Ausgaben'}`;
+      onetimeList.appendChild(header);
+
+      entries.forEach(e => {
+        onetimeList.appendChild(makeBudgetRow({
+          name: e.name, amount: e.amount, type: e.type,
+          priority: e.priority || 'need', paid: e.paid || false,
+          onDel:        () => { budgetOnetime = budgetOnetime.filter(x => x.id !== e.id); saveBudgetOnetime(); renderBudget(); },
+          onPaidToggle: () => {
+            const nowPaid = !e.paid;
+            e.paid = nowPaid;
+            if (nowPaid) { kontostand += e.type === 'income' ? e.amount : -e.amount; }
+            else         { kontostand += e.type === 'income' ? -e.amount : e.amount; }
+            DB.set('kontostand', kontostand);
+            saveBudgetOnetime();
+            renderBudget();
           }
-          DB.set('kontostand', kontostand);
-          saveBudgetOnetime();
-          renderBudget();
-        }
-      }));
+        }));
+      });
+    }
+
+    renderOtGroup(otIncomes,  'income');
+    renderOtGroup(otExpenses, 'expense');
+  }
+
+  // Recurring list — grouped: income first, then expenses
+  // Within each group: sorted by priority (must→need→want), then by day
+  const prioOrder = { must: 0, need: 1, want: 2, none: 1 };
+  function sortRecEntries(arr) {
+    return arr.slice().sort((a, b) => {
+      const pa = prioOrder[a.priority] ?? 1;
+      const pb = prioOrder[b.priority] ?? 1;
+      if (pa !== pb) return pa - pb;
+      const da = a.freq === 'monthly' ? (a.day || 1) : (a.dateDay || 1);
+      const db = b.freq === 'monthly' ? (b.day || 1) : (b.dateDay || 1);
+      return da - db;
     });
   }
 
-  // Recurring list — sorted: must first, then need, then want; within same priority by day
-  const prioOrder = { must: 0, need: 1, want: 2, none: 1 };
-  const sortedRecurring = [...budgetRecurring].sort((a, b) => {
-    const pa = prioOrder[a.priority] ?? 1;
-    const pb = prioOrder[b.priority] ?? 1;
-    if (pa !== pb) return pa - pb;
-    const da = a.freq === 'monthly' ? (a.day || 1) : (a.dateDay || 1);
-    const db = b.freq === 'monthly' ? (b.day || 1) : (b.dateDay || 1);
-    return da - db;
-  });
+  const recIncomes  = sortRecEntries(budgetRecurring.filter(r => r.type === 'income'));
+  const recExpenses = sortRecEntries(budgetRecurring.filter(r => r.type === 'expense'));
 
   const recList = document.getElementById('budget-recurring-list');
   recList.innerHTML = '';
-  if (sortedRecurring.length === 0) {
+
+  if (budgetRecurring.length === 0) {
     recList.innerHTML = '<div class="empty-state">Noch keine wiederkehrenden Posten.</div>';
   } else {
-    sortedRecurring.forEach(r => {
-      const sub = r.freq === 'monthly'
-        ? `jeden ${r.day}.`
-        : `${r.dateDay}.${String(r.dateMonth).padStart(2,'0')}. · jährlich`;
-      const recPaid = isRecurringPaid(r.id, viewMk);
-      recList.appendChild(makeBudgetRow({
-        name: r.name, amount: r.amount, type: r.type,
-        priority: r.priority || 'need', paid: recPaid, subtitle: sub,
-        onEdit:       () => openRecurringModal(r),
-        onDel:        () => { budgetRecurring = budgetRecurring.filter(x => x.id !== r.id); saveBudgetRecurring(); renderBudget(); },
-        onPaidToggle: () => {
-          const nowPaid = !recPaid;
-          setRecurringPaid(r.id, viewMk, nowPaid);
-          // Mutate kontostand to reflect this real transaction
-          if (nowPaid) {
-            kontostand += r.type === 'income' ? r.amount : -r.amount;
-          } else {
-            kontostand += r.type === 'income' ? -r.amount : r.amount;
+    function renderRecGroup(entries, type) {
+      if (!entries.length) return;
+      // Group header
+      const header = document.createElement('div');
+      header.className = 'b-section-label';
+      header.innerHTML = `<span class="b-section-dot ${type}"></span>${type === 'income' ? 'Einnahmen' : 'Ausgaben'}`;
+      recList.appendChild(header);
+
+      entries.forEach(r => {
+        const sub = r.freq === 'monthly'
+          ? `Monatlich · ${r.day}.`
+          : `${r.dateDay}.${String(r.dateMonth).padStart(2,'0')}. · Jährlich`;
+        const recPaid = isRecurringPaid(r.id, viewMk);
+        recList.appendChild(makeBudgetRow({
+          name: r.name, amount: r.amount, type: r.type,
+          priority: r.priority || 'need', paid: recPaid, subtitle: sub,
+          onEdit:       () => openRecurringModal(r),
+          onDel:        () => { budgetRecurring = budgetRecurring.filter(x => x.id !== r.id); saveBudgetRecurring(); renderBudget(); },
+          onPaidToggle: () => {
+            const nowPaid = !recPaid;
+            setRecurringPaid(r.id, viewMk, nowPaid);
+            if (nowPaid) { kontostand += r.type === 'income' ? r.amount : -r.amount; }
+            else         { kontostand += r.type === 'income' ? -r.amount : r.amount; }
+            DB.set('kontostand', kontostand);
+            renderBudget();
           }
-          DB.set('kontostand', kontostand);
-          renderBudget();
-        }
-      }));
-    });
+        }));
+      });
+
+      // Sum row
+      const total = entries.reduce((s, r) => s + r.amount, 0);
+      const sumRow = document.createElement('div');
+      sumRow.className = 'b-sum-row';
+      sumRow.innerHTML = `
+        <span class="b-sum-label">Summe ${type === 'income' ? 'Einnahmen' : 'Ausgaben'}</span>
+        <span class="b-sum-value ${type}">${type === 'income' ? '+' : '-'}${total.toLocaleString('de-DE',{minimumFractionDigits:2})} €</span>`;
+      recList.appendChild(sumRow);
+    }
+
+    renderRecGroup(recIncomes,  'income');
+    renderRecGroup(recExpenses, 'expense');
   }
 
   renderBudgetTimeline();
@@ -355,98 +436,81 @@ function renderLiquidity() {
   const container = document.getElementById('budget-liquidity');
   container.innerHTML = '';
 
-  // Kontostand bar
-  const kBar = document.createElement('div');
-  kBar.className = 'liquidity-kontostand-bar';
-  if (kontostand === null) {
-    kBar.innerHTML = `
-      <span class="liquidity-kontostand-label">Kontostand nicht gesetzt</span>
-      <button class="btn-ghost liquidity-edit-btn" id="kontostand-edit-btn" style="font-size:12px;padding:4px 12px;">Kontostand eingeben</button>`;
-  } else {
-    kBar.innerHTML = `
-      <span class="liquidity-kontostand-label">Kontostand</span>
-      <span class="liquidity-kontostand-value" style="color:${kontostand>=0?'var(--budget-income)':'var(--budget-expense)'}">
-        ${kontostand>=0?'+':''}${kontostand.toFixed(2)} €
-      </span>
-      <button class="btn-ghost liquidity-edit-btn" id="kontostand-edit-btn" style="font-size:12px;padding:4px 12px;">Anpassen</button>`;
-  }
-  container.appendChild(kBar);
-  document.getElementById('kontostand-edit-btn').addEventListener('click', openKontostandModal);
+  // Update kontostand adjust button binding (the button is in the static HTML)
+  const ksBtn = document.getElementById('kontostand-edit-btn');
+  if (ksBtn) ksBtn.addEventListener('click', openKontostandModal);
 
-  // Get the central projection — bail if not available
   const proj = calcMonthProjection();
-  if (!proj) return;
+
+  // If no kontostand set, show prompt inside liquidity area
+  if (kontostand === null) {
+    container.innerHTML = `
+      <div class="b-liquidity-card" style="align-items:center;justify-content:center;min-height:180px;">
+        <div style="text-align:center;">
+          <div class="b-liq-title" style="margin-bottom:12px;">Liquiditätsvorschau</div>
+          <p style="font-size:13px;color:var(--b-warm-gray);margin-bottom:16px;">Kein Kontostand gesetzt.</p>
+          <button class="budget-action-btn outlined" onclick="openKontostandModal()">Kontostand eingeben</button>
+        </div>
+      </div>`;
+    return;
+  }
+
+  if (!proj || budgetRecurring.length === 0) {
+    container.innerHTML = `
+      <div class="b-liquidity-card" style="min-height:180px;">
+        <div class="b-liq-header">
+          <span class="b-liq-title">Liquiditätsvorschau</span>
+        </div>
+        <p style="font-size:13px;color:var(--b-warm-gray);padding:8px 0;">Keine wiederkehrenden Buchungen vorhanden.</p>
+      </div>`;
+    return;
+  }
 
   const {
-    kontostand: ks, pendingIncome, pendingExpense, endOfMonth,
+    pendingIncome, pendingExpense, endOfMonth,
     nextMonthDate, firstIncomeDay, expensesBefore,
     byPrio, totalBeforeSalary, gap, canAfford,
   } = proj;
 
-  const now           = new Date();
+  const now = new Date();
 
-  const grid = document.createElement('div');
-  grid.className = 'liquidity-grid';
+  const card = document.createElement('div');
+  card.className = 'b-liquidity-card' + (canAfford ? '' : ' warn');
 
-  // Card 1: This month
-  const card1 = document.createElement('div');
-  card1.className = 'liquidity-card';
-  card1.innerHTML = `
-    <div class="liquidity-card-title">Dieser Monat</div>
-    <div class="liquidity-row">
-      <span class="liquidity-row-label">Kontostand jetzt</span>
-      <span class="liquidity-row-value">${fmtEur(ks)}</span>
-    </div>
-    <div class="liquidity-row">
-      <span class="liquidity-row-label">Noch eingehend</span>
-      <span class="liquidity-row-value income">+${pendingIncome.toFixed(2)} €</span>
-    </div>
-    <div class="liquidity-row">
-      <span class="liquidity-row-label">Noch ausgehend</span>
-      <span class="liquidity-row-value expense">-${pendingExpense.toFixed(2)} €</span>
-    </div>
-    <div class="liquidity-divider"></div>
-    <div class="liquidity-row liquidity-row-total">
-      <span class="liquidity-row-label">Voraussichtlich Ende ${now.toLocaleDateString('de-DE',{month:'long'})}</span>
-      <span class="liquidity-row-value ${endOfMonth>=0?'income':'expense'}">${fmtEur(endOfMonth)}</span>
-    </div>`;
-
-  // Card 2: Next month — expenses grouped by priority (must first)
+  // Expenses before salary grouped by priority
   const expenseGroupHTML = ['must','need','want'].map(prio => {
     const items = expensesBefore.filter(i => i.priority === prio);
     if (!items.length) return '';
     return items.map(i => `
-      <div class="liquidity-expense-item">
+      <div class="b-liq-expense-item">
         <span>${i.name} ${priorityBadge(i.priority)}</span>
-        <span class="expense">-${i.amount.toFixed(2)} €</span>
+        <span class="expense">-${i.amount.toLocaleString('de-DE',{minimumFractionDigits:2})} €</span>
       </div>`).join('');
   }).join('');
 
-  const card2 = document.createElement('div');
-  card2.className = `liquidity-card ${canAfford ? 'liquidity-ok' : 'liquidity-warn'}`;
   const nextMonthName = nextMonthDate.toLocaleDateString('de-DE', {month:'long'});
-  card2.innerHTML = `
-    <div class="liquidity-card-title">
-      ${nextMonthName}
-      <span class="liquidity-status-badge ${canAfford?'ok':'warn'}">${canAfford ? '✓ Ausreichend' : '⚠ Puffer fehlt'}</span>
+
+  card.innerHTML = `
+    <div class="b-liq-header">
+      <span class="b-liq-title">Liquiditätsvorschau &middot; ${nextMonthName}</span>
+      <span class="b-liq-badge ${canAfford ? 'ok' : 'warn'}">${canAfford ? '✓ Ausreichend' : '⚠ Puffer fehlt'}</span>
     </div>
-    <div class="liquidity-row">
-      <span class="liquidity-row-label">Du startest mit</span>
-      <span class="liquidity-row-value ${endOfMonth>=0?'income':'expense'}">${fmtEur(endOfMonth)}</span>
+    <div class="b-liq-row">
+      <span class="b-liq-row-label">Du startest mit</span>
+      <span class="b-liq-row-value ${endOfMonth >= 0 ? 'income' : 'expense'}">${endOfMonth >= 0 ? '+' : ''}${endOfMonth.toLocaleString('de-DE',{minimumFractionDigits:2})} €</span>
     </div>
-    <div class="liquidity-row">
-      <span class="liquidity-row-label">Ausgaben vor ${firstIncomeDay>28?'Monatsende':'Tag '+firstIncomeDay} (vor Gehalt)</span>
-      <span class="liquidity-row-value expense">-${totalBeforeSalary.toFixed(2)} €</span>
+    <div class="b-liq-row">
+      <span class="b-liq-row-label">Ausgaben vor ${firstIncomeDay > 28 ? 'Monatsende' : 'Tag ' + firstIncomeDay} (vor Gehalt)</span>
+      <span class="b-liq-row-value expense">-${totalBeforeSalary.toLocaleString('de-DE',{minimumFractionDigits:2})} €</span>
     </div>
-    ${expenseGroupHTML ? `<div class="liquidity-expense-list">${expenseGroupHTML}</div>` : ''}
-    <div class="liquidity-divider"></div>
-    <div class="liquidity-row liquidity-row-total">
-      <span class="liquidity-row-label">${canAfford ? 'Puffer nach Ausgaben' : 'Fehlender Betrag'}</span>
-      <span class="liquidity-row-value ${canAfford?'income':'expense'}">${canAfford?'+':''}${gap.toFixed(2)} €</span>
+    ${expenseGroupHTML ? `<div class="b-liq-expense-list">${expenseGroupHTML}</div>` : ''}
+    <div class="b-liq-divider"></div>
+    <div class="b-liq-total-row">
+      <span class="b-liq-total-label">${canAfford ? 'Puffer nach Ausgaben' : 'Fehlender Betrag'}</span>
+      <span class="b-liq-total-value ${canAfford ? 'income' : 'expense'}">${canAfford ? '+' : ''}${gap.toLocaleString('de-DE',{minimumFractionDigits:2})} €</span>
     </div>`;
 
-  grid.append(card1, card2);
-  container.appendChild(grid);
+  container.appendChild(card);
 }
 
 function fmtEur(amount) {
@@ -874,4 +938,19 @@ document.getElementById('goal-tx-save').addEventListener('click', () => {
   document.getElementById('goal-tx-modal-overlay').classList.add('hidden');
   renderBudgetGoals();
   goalTxTarget = null;
+});
+
+// Wire secondary add-buttons in redesigned layout
+document.addEventListener('DOMContentLoaded', () => {
+  const r2 = document.getElementById('add-recurring-btn-2');
+  if (r2) r2.addEventListener('click', () => document.getElementById('add-recurring-btn').click());
+  const o2 = document.getElementById('add-onetime-btn-2');
+  if (o2) o2.addEventListener('click', () => document.getElementById('add-onetime-btn').click());
+  const g2 = document.getElementById('add-goal-btn-2');
+  if (g2) g2.addEventListener('click', () => document.getElementById('add-goal-btn').click());
+  // Month nav buttons in header picker
+  const mprev = document.getElementById('budget-month-nav-prev');
+  if (mprev) mprev.addEventListener('click', () => document.getElementById('budget-month-prev').click());
+  const mnext = document.getElementById('budget-month-nav-next');
+  if (mnext) mnext.addEventListener('click', () => document.getElementById('budget-month-next').click());
 });

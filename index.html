@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="games/tictactoe/style.css">
   <link rel="stylesheet" href="games/snake/style.css">
   <link rel="stylesheet" href="games/memory/style.css">
+  <link rel="stylesheet" href="css/budget.css" />
   <style>
     /* =========================
        TASKS — erledigte sichtbar
@@ -618,44 +619,104 @@
 
       <!-- BUDGET -->
       <section id="view-budget" class="view">
-        <div class="view-header">
-          <h1 class="view-title">Budget</h1>
-          <div style="display:flex;gap:8px;">
-            <button class="btn-ghost" id="add-goal-btn">+ Sparziel</button>
-            <button class="btn-ghost" id="add-onetime-btn">+ Einmalig</button>
-            <button class="btn-primary" id="add-recurring-btn">+ Wiederkehrend</button>
+        <div id="budget-dashboard">
+
+          <!-- HEADER -->
+          <div id="budget-header">
+            <div id="budget-title-block">
+              <h1>Budget</h1>
+              <p>Deine Übersicht. Deine Sicherheit.</p>
+            </div>
+            <div id="budget-actions">
+              <div id="budget-month-picker">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" stroke-width="1.5" fill="none" opacity=".6"/>
+                  <path d="M5 2v2M11 2v2M2 7h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+                <button id="budget-month-nav-prev">&#8249;</button>
+                <span id="budget-month-label" style="flex:1;text-align:center;"></span>
+                <button id="budget-month-nav-next">&#8250;</button>
+              </div>
+              <button class="budget-action-btn outlined" id="add-goal-btn">+ Sparziel</button>
+              <button class="budget-action-btn outlined" id="add-onetime-btn">+ Einmalig</button>
+              <button class="budget-action-btn filled" id="add-recurring-btn">+ Wiederkehrend</button>
+            </div>
           </div>
-        </div>
-        <div id="budget-summary-bar"></div>
-        <div id="budget-liquidity"></div>
-        <div id="budget-layout">
-          <div id="budget-left">
-            <div class="panel">
-              <div class="panel-header">
-                <span class="panel-label">Einmalige Buchungen</span>
-                <div style="display:flex;align-items:center;gap:8px;">
-                  <button class="week-btn" id="budget-month-prev">&#8249;</button>
-                  <span id="budget-month-label" style="font-size:12px;font-family:var(--mono);color:var(--text-2);min-width:100px;text-align:center;"></span>
-                  <button class="week-btn" id="budget-month-next">&#8250;</button>
+
+          <!-- KPI SUMMARY BAR (rendered by JS into .budget-kpi-grid) -->
+          <div id="budget-summary-bar"></div>
+
+          <!-- ROW 2: KONTOSTAND + LIQUIDITY -->
+          <div id="budget-row2">
+
+            <!-- Kontostand & Status card (rendered by JS) -->
+            <div id="budget-kontostand-card">
+              <div id="budget-kontostand-left">
+                <div>
+                  <div class="b-ks-label">Kontostand &amp; Status</div>
+                  <div class="b-ks-value" id="b-ks-display">—</div>
+                  <div class="b-ks-sublabel">Aktueller Kontostand</div>
                 </div>
+                <button class="b-ks-adjust-btn" id="kontostand-edit-btn">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                    <path d="M11 2l3 3-9 9H2v-3L11 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/>
+                  </svg>
+                  Anpassen
+                </button>
+              </div>
+              <div id="budget-kontostand-right">
+                <div id="b-status-inner">
+                  <!-- filled by renderFinancialStatus -->
+                </div>
+                <svg class="b-leaf-deco" width="90" height="90" viewBox="0 0 90 90" fill="none">
+                  <path d="M45 80 C45 80 10 65 10 35 C10 15 30 5 45 5 C60 5 80 15 80 35 C80 65 45 80 45 80Z" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                  <path d="M45 80 L45 5" stroke="currentColor" stroke-width="1" opacity=".5"/>
+                  <path d="M45 35 C35 25 20 25 15 30" stroke="currentColor" stroke-width="1" opacity=".4"/>
+                  <path d="M45 50 C55 40 70 40 75 45" stroke="currentColor" stroke-width="1" opacity=".4"/>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Liquidity forecast (rendered by JS) -->
+            <div id="budget-liquidity"></div>
+
+          </div>
+
+          <!-- ROW 3: RECURRING / ONETIME / GOALS -->
+          <div id="budget-row3">
+
+            <!-- Wiederkehrende Posten -->
+            <div class="b-card" id="budget-recurring-card">
+              <div class="b-card-header">
+                <span class="b-card-title">Wiederkehrende Posten</span>
+                <button class="b-card-add-btn" id="add-recurring-btn-2">+ Hinzufügen</button>
+              </div>
+              <div id="budget-recurring-list" class="budget-list"></div>
+            </div>
+
+            <!-- Einmalige Buchungen -->
+            <div class="b-card" id="budget-onetime-card">
+              <div class="b-card-header">
+                <span class="b-card-title">Einmalige Buchungen</span>
+                <button class="b-card-add-btn" id="add-onetime-btn-2">+ Hinzufügen</button>
               </div>
               <div id="budget-onetime-list" class="budget-list"></div>
             </div>
-            <div class="panel">
-              <div class="panel-header"><span class="panel-label">Wiederkehrende Posten</span></div>
-              <div id="budget-recurring-list" class="budget-list"></div>
-            </div>
-          </div>
-          <div id="budget-right">
-            <div class="panel">
-              <div class="panel-header"><span class="panel-label">N&#228;chste Buchungen</span></div>
-              <div id="budget-timeline" class="budget-list"></div>
-            </div>
-            <div class="panel">
-              <div class="panel-header"><span class="panel-label">Sparziele</span></div>
+
+            <!-- Sparziele -->
+            <div class="b-card" id="budget-goals-card">
+              <div class="b-card-header">
+                <span class="b-card-title">Sparziele</span>
+                <button class="b-card-add-btn" id="add-goal-btn-2">+ Ziel hinzufügen</button>
+              </div>
               <div id="budget-goals-list" class="budget-list"></div>
             </div>
+
           </div>
+
+          <!-- Nächste Buchungen (timeline) — hidden card, still rendered for JS -->
+          <div id="budget-timeline" style="display:none;"></div>
+
         </div>
       </section>
 
