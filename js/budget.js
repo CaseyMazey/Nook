@@ -65,26 +65,19 @@ function setRecurringPaid(id, mk, val) { DB.set(recurringPaidKey(id, mk), val); 
 
 // =========================
 // CENTRAL PROJECTION
-// The single source of truth for all financial calculations.
-// Both the status bar and the liquidity forecast use this.
+// Single source of truth for all financial calculations.
 //
-// CLEARING MODEL:
-// kontostand is the manually-set real balance (the user's starting point).
-// Recurring entries this month fall into exactly one of three buckets:
+// MODEL:
+// kontostand is the real current balance — mutated directly when the user
+// confirms a booking (paid toggle). It already reflects all confirmed
+// transactions. calcMonthProjection only adds what is still PENDING.
 //
-//   CLEARED  — paid=true (manually confirmed) OR day < today (auto-past)
-//              → treat as already reflected in kontostand; adjust the base
-//   PENDING  — not paid AND day >= today
-//              → still upcoming; count as pending
+// pending = unpaid AND (day >= today for recurring)
+// endOfMonth = kontostand + pendingIncome - pendingExpense
 //
-// adjustedKontostand = kontostand + sum(cleared income) - sum(cleared expense)
-// endOfMonth         = adjustedKontostand + pendingIncome - pendingExpense
-//
-// This means: marking income as paid raises the forecast immediately,
-// marking an expense as paid lowers it — exactly as the user expects.
-// The raw kontostand in localStorage is never mutated automatically.
-// Reset is free: paid flags are stored per month-key, so next month
-// every entry starts fresh as pending again automatically.
+// Doppelverrechnung is impossible by design:
+// The paid-toggle mutates kontostand exactly once (on the state change),
+// then saves. On re-render the entry is already marked paid and skipped.
 // =========================
 
 function calcMonthProjection() {
@@ -98,41 +91,26 @@ function calcMonthProjection() {
 
   const curRecItems = getMonthRecurringItems(curYear, curMonth);
 
-  // Split recurring items into cleared vs still-pending
-  let clearedIncome  = 0;
-  let clearedExpense = 0;
+  // Pending = not yet paid AND not yet past (day >= today)
   let pendingIncome  = 0;
   let pendingExpense = 0;
-
   curRecItems.forEach(item => {
-    const paid    = isRecurringPaid(item.id, curMk);
-    const cleared = paid || item.day < todayDay; // past day = auto-cleared
-    if (cleared) {
-      if (item.type === 'income') clearedIncome  += item.amount;
-      else                        clearedExpense += item.amount;
-    } else {
+    if (!isRecurringPaid(item.id, curMk) && item.day >= todayDay) {
       if (item.type === 'income') pendingIncome  += item.amount;
       else                        pendingExpense += item.amount;
     }
   });
 
-  // One-time entries this month
-  budgetOnetime.filter(e => e.monthKey === curMk).forEach(e => {
-    if (e.paid) {
-      if (e.type === 'income') clearedIncome  += e.amount;
-      else                     clearedExpense += e.amount;
-    } else {
-      if (e.type === 'income') pendingIncome  += e.amount;
-      else                     pendingExpense += e.amount;
-    }
+  // One-time entries: unpaid only
+  budgetOnetime.filter(e => e.monthKey === curMk && !e.paid).forEach(e => {
+    if (e.type === 'income') pendingIncome  += e.amount;
+    else                     pendingExpense += e.amount;
   });
 
-  // Effective balance = user's base + everything already cleared this cycle
-  const adjustedKontostand = kontostand + clearedIncome - clearedExpense;
-  // Projected end-of-month = adjusted base + what's still coming
-  const endOfMonth = adjustedKontostand + pendingIncome - pendingExpense;
+  // kontostand already includes all confirmed transactions
+  const endOfMonth = kontostand + pendingIncome - pendingExpense;
 
-  // --- Next month: expenses before first income (before salary) ---
+  // --- Next month: expenses before first income ---
   const nextMonthDate  = new Date(curYear, now.getMonth() + 1, 1);
   const nextMonth      = nextMonthDate.getMonth() + 1;
   const nextYear       = nextMonthDate.getFullYear();
@@ -158,7 +136,7 @@ function calcMonthProjection() {
   const needCovered = afterNeed >= 0;
   const wantCovered = afterWant >= 0;
 
-  // Open must-expenses still pending this month
+  // Still-pending must-expenses this month
   const openMust = curRecItems
     .filter(i => i.type === 'expense' && i.priority === 'must'
                  && !isRecurringPaid(i.id, curMk) && i.day >= todayDay)
@@ -168,9 +146,7 @@ function calcMonthProjection() {
       .reduce((s, e) => s + e.amount, 0);
 
   return {
-    kontostand, adjustedKontostand,
-    clearedIncome, clearedExpense,
-    pendingIncome, pendingExpense, endOfMonth,
+    kontostand, pendingIncome, pendingExpense, endOfMonth,
     nextMonthDate, firstIncomeDay, expensesBefore,
     byPrio, totalBeforeSalary, gap, canAfford,
     afterMust, afterNeed, afterWant,
@@ -306,7 +282,19 @@ function renderBudget(){
         name: e.name, amount: e.amount, type: e.type,
         priority: e.priority || 'need', paid: e.paid || false,
         onDel:        () => { budgetOnetime = budgetOnetime.filter(x => x.id !== e.id); saveBudgetOnetime(); renderBudget(); },
-        onPaidToggle: () => { e.paid = !e.paid; saveBudgetOnetime(); renderBudget(); }
+        onPaidToggle: () => {
+          const nowPaid = !e.paid;
+          e.paid = nowPaid;
+          // Mutate kontostand to reflect this real transaction
+          if (nowPaid) {
+            kontostand += e.type === 'income' ? e.amount : -e.amount;
+          } else {
+            kontostand += e.type === 'income' ? -e.amount : e.amount;
+          }
+          DB.set('kontostand', kontostand);
+          saveBudgetOnetime();
+          renderBudget();
+        }
       }));
     });
   }
@@ -337,7 +325,18 @@ function renderBudget(){
         priority: r.priority || 'need', paid: recPaid, subtitle: sub,
         onEdit:       () => openRecurringModal(r),
         onDel:        () => { budgetRecurring = budgetRecurring.filter(x => x.id !== r.id); saveBudgetRecurring(); renderBudget(); },
-        onPaidToggle: () => { setRecurringPaid(r.id, viewMk, !recPaid); renderBudget(); }
+        onPaidToggle: () => {
+          const nowPaid = !recPaid;
+          setRecurringPaid(r.id, viewMk, nowPaid);
+          // Mutate kontostand to reflect this real transaction
+          if (nowPaid) {
+            kontostand += r.type === 'income' ? r.amount : -r.amount;
+          } else {
+            kontostand += r.type === 'income' ? -r.amount : r.amount;
+          }
+          DB.set('kontostand', kontostand);
+          renderBudget();
+        }
       }));
     });
   }
