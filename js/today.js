@@ -16,8 +16,6 @@ function updateCountdown() {
   const container=document.getElementById('countdown-display');
   container.innerHTML='';
   const candidates=[];
-  const examTarget=new Date(examDate); examTarget.setHours(0,0,0,0);
-  candidates.push({id:'__exam__',title:'bis Prüfung',daysLeft:Math.ceil((examTarget-now)/86400000)});
   Object.entries(events).forEach(([key,dayEvs])=>{
     dayEvs.forEach(ev=>{
       if(!ev.countdown) return;
@@ -26,14 +24,12 @@ function updateCountdown() {
       if(days>=0) candidates.push({id:ev.id,title:ev.title,daysLeft:days});
     });
   });
-  const visible=candidates.filter(c=>{
-    if(c.id==='__exam__') return countdownVisible['__exam__']!==false;
-    return countdownVisible[c.id]===true;
-  }).sort((a,b)=>a.daysLeft-b.daysLeft);
-  const toShow=visible.length>0?visible:[candidates[0]].filter(Boolean);
-  toShow.forEach(item=>{
+  const visible=candidates
+    .filter(c=>countdownVisible[c.id]===true)
+    .sort((a,b)=>a.daysLeft-b.daysLeft);
+  visible.forEach(item=>{
     const entry=document.createElement('div'); entry.className='countdown-entry';
-    const days=document.createElement('span'); days.className='countdown-days'; days.textContent=Math.max(0,item.daysLeft);
+    const days=document.createElement('span'); days.className='countdown-days'; days.textContent=item.daysLeft;
     const label=document.createElement('span'); label.className='countdown-label'; label.textContent=item.title;
     entry.append(days,label); container.appendChild(entry);
   });
@@ -84,13 +80,10 @@ function renderClock() {
     const hAngle=(h*30+mi*0.5)*Math.PI/180-Math.PI/2;
     const mAngle=(mi*6+s*0.1)*Math.PI/180-Math.PI/2;
     const sAngle=s*6*Math.PI/180-Math.PI/2;
-
     const hand=(angle,len,stroke,sw)=>{
       const x=cx+Math.cos(angle)*len, y=cy+Math.sin(angle)*len;
       return `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round"/>`;
     };
-
-    // Hour markers
     let markers='';
     for(let i=0;i<12;i++){
       const a=i*30*Math.PI/180-Math.PI/2;
@@ -98,7 +91,6 @@ function renderClock() {
       const x2=cx+Math.cos(a)*r, y2=cy+Math.sin(a)*r;
       markers+=`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="var(--text-3)" stroke-width="1.5"/>`;
     }
-
     w.innerHTML=`<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
       <circle cx="${cx}" cy="${cy}" r="${r}" fill="var(--surface)" stroke="var(--border-strong)" stroke-width="1.5"/>
       ${markers}
@@ -112,6 +104,8 @@ function renderClock() {
 
 // =========================
 // BLOCKS
+// Verwendet getTasksForBlockView() → datum-basiert, nicht wochenbasiert.
+// Erledigte Tasks werden abgeschwächt dargestellt aber NICHT versteckt.
 // =========================
 
 function saveBlocks() { DB.set('blocks',blocks); }
@@ -123,7 +117,6 @@ function renderBlocks() {
   blocks.forEach(block=>{
     const isActive=activeBlock&&activeBlock.id===block.id&&isToday(state.currentDate);
     const slot=document.createElement('div');
-    // FIX: active block uses colored border instead of background fill
     slot.className='block-slot'+(block.free?' free':'')+(isActive?' active-block':'');
     const time=document.createElement('div'); time.className='block-time'; time.textContent=`${block.start} – ${block.end}`;
     const label=document.createElement('div'); label.className='block-label'; label.textContent=block.label;
@@ -132,43 +125,73 @@ function renderBlocks() {
     const ul=document.createElement('ul'); ul.className='block-tasks'; ul.id=`block-${block.id}`;
     slot.append(time,label,ul); row.appendChild(slot);
   });
-  getWeekTasks(state.currentWeekId).filter(t=>!t.done).forEach(task=>{
+
+  // Datum-basiert: alle Tasks für den angezeigten Tag holen
+  const dayTasks = getTasksForBlockView();
+  dayTasks.forEach(task=>{
     const ul=document.getElementById(`block-${task.block}`); if(!ul) return;
-    const li=document.createElement('li'); li.textContent=task.title; ul.appendChild(li);
+    const li=document.createElement('li');
+    li.className = task.done ? 'block-task-done' : '';
+    li.textContent=task.title;
+    ul.appendChild(li);
   });
 }
 
 // =========================
-// TASKS
+// TASKS — Aufgaben-Kachel
+// Verwendet getTasksForTile() → zeigt Tasks der aktuellen Woche.
+// Erledigte Tasks bleiben sichtbar bis 7 Tage nach Erledigung.
 // =========================
 
-function getWeekTasks(weekId) { return tasks[weekId]||[]; }
-function saveTasks() { DB.set('tasks',tasks); }
+function saveTasks() { DB.set('tasks', tasks); }
 
 function renderTasks() {
-  const weekId=state.currentWeekId;
   const list=document.getElementById('task-list');
   const empty=document.getElementById('task-empty');
   const count=document.getElementById('task-count');
   list.innerHTML='';
-  const weekTasks=[...getWeekTasks(weekId)].sort((a,b)=>a.priority-b.priority||a.title.localeCompare(b.title));
-  count.textContent=weekTasks.filter(t=>!t.done).length||'';
-  if(weekTasks.length===0){empty.classList.remove('hidden');return;}
+
+  const tileTasks = getTasksForTile();
+  const openTasks = tileTasks.filter(t=>!t.done).sort((a,b)=>a.priority-b.priority||a.title.localeCompare(b.title));
+  const doneTasks = tileTasks.filter(t=>t.done).sort((a,b)=>(b.completedAt||0)-(a.completedAt||0));
+
+  count.textContent = openTasks.length || '';
+
+  if(tileTasks.length===0){ empty.classList.remove('hidden'); return; }
   empty.classList.add('hidden');
-  weekTasks.forEach(task=>{
-    const li=document.createElement('li'); li.className='task-item'+(task.done?' done':'');
-    const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=task.done;
-    cb.addEventListener('change',()=>{task.done=cb.checked;saveTasks();renderTasks();renderBlocks();});
-    const dot=document.createElement('div'); dot.className='prio-dot'; dot.dataset.prio=task.priority;
-    const info=document.createElement('div'); info.className='task-info';
-    const title=document.createElement('span'); title.className='task-title'; title.textContent=task.title;
-    title.addEventListener('click',()=>openTaskModal(task)); info.appendChild(title);
-    if(task.notes){const sub=document.createElement('span');sub.className='task-sub';sub.textContent=task.notes;info.appendChild(sub);}
-    const badge=document.createElement('span'); badge.className='task-block-badge'; badge.textContent=`B${task.block}`;
-    const del=document.createElement('button'); del.className='task-delete'; del.textContent='✕';
-    del.addEventListener('click',()=>{tasks[weekId]=tasks[weekId].filter(t=>t.id!==task.id);saveTasks();renderTasks();renderBlocks();});
-    li.append(cb,dot,info,badge,del); list.appendChild(li);
+
+  openTasks.forEach(task=>list.appendChild(buildTaskItem(task)));
+
+  if(doneTasks.length>0){
+    const divider=document.createElement('div');
+    divider.className='task-done-divider';
+    divider.textContent='Erledigt';
+    list.appendChild(divider);
+    doneTasks.forEach(task=>list.appendChild(buildTaskItem(task)));
+  }
+}
+
+function buildTaskItem(task) {
+  const li=document.createElement('li'); li.className='task-item'+(task.done?' done':'');
+  const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=task.done;
+  cb.addEventListener('change',()=>{
+    task.done=cb.checked;
+    task.completedAt=cb.checked?Date.now():null;
+    saveTasks(); renderTasks(); renderBlocks();
   });
+  const dot=document.createElement('div'); dot.className='prio-dot'; dot.dataset.prio=task.priority;
+  const info=document.createElement('div'); info.className='task-info';
+  const title=document.createElement('span'); title.className='task-title'; title.textContent=task.title;
+  title.addEventListener('click',()=>openTaskModal(task)); info.appendChild(title);
+  if(task.notes){const sub=document.createElement('span');sub.className='task-sub';sub.textContent=task.notes;info.appendChild(sub);}
+  const badge=document.createElement('span'); badge.className='task-block-badge'; badge.textContent=`B${task.block}`;
+  const del=document.createElement('button'); del.className='task-delete'; del.textContent='✕';
+  del.addEventListener('click',()=>{
+    tasks=tasks.filter(t=>t.id!==task.id);
+    saveTasks(); renderTasks(); renderBlocks();
+  });
+  li.append(cb,dot,info,badge,del);
+  return li;
 }
 
 // =========================
@@ -215,11 +238,24 @@ document.getElementById('modal-save').addEventListener('click',()=>{
   const title=document.getElementById('modal-task-input').value.trim(); if(!title) return;
   const block=Number(document.getElementById('modal-block-select').value);
   const notesTxt=document.getElementById('modal-task-notes').value.trim();
-  const weekId=state.currentWeekId;
-  if(!tasks[weekId]) tasks[weekId]=[];
-  if(state.editingTask){Object.assign(state.editingTask,{title,block,priority:state.selectedPriority,notes:notesTxt});}
-  else{tasks[weekId].push({id:crypto.randomUUID(),title,done:false,priority:state.selectedPriority,block,notes:notesTxt});}
-  saveTasks();closeTaskModal();renderTasks();renderBlocks();
+
+  if(state.editingTask){
+    // Bestehendem Task aktualisieren — createdAt bleibt erhalten
+    Object.assign(state.editingTask,{title,block,priority:state.selectedPriority,notes:notesTxt});
+  } else {
+    // Neuen Task anlegen — createdAt = jetzt
+    tasks.push({
+      id:          crypto.randomUUID(),
+      title,
+      notes:       notesTxt,
+      priority:    state.selectedPriority,
+      block,
+      done:        false,
+      createdAt:   Date.now(),
+      completedAt: null,
+    });
+  }
+  saveTasks(); closeTaskModal(); renderTasks(); renderBlocks();
 });
 
 // =========================
@@ -286,11 +322,9 @@ document.getElementById('note-modal-close').addEventListener('click',closeNoteMo
 document.getElementById('note-modal-cancel').addEventListener('click',closeNoteModal);
 document.getElementById('note-modal-overlay').addEventListener('click',e=>{if(e.target===document.getElementById('note-modal-overlay'))closeNoteModal();});
 
-// Unified note save — handles both regular notes and custom tile lists
 document.getElementById('note-modal-save').addEventListener('click',()=>{
   const text=document.getElementById('note-modal-input').value.trim();
   if(!text||!noteModalKey) return;
-
   if(noteModalKey.startsWith('__custom__')){
     const tileId=noteModalKey.replace('__custom__','');
     const tile=customTiles.find(t=>t.id===tileId); if(!tile) return;
@@ -316,7 +350,7 @@ document.querySelectorAll('.add-note-btn').forEach(btn=>{
 });
 
 // =========================
-// CUSTOM TILES — FIX: list items now have checkboxes
+// CUSTOM TILES
 // =========================
 
 function saveCustomTiles(){DB.set('customTiles',customTiles);}
@@ -329,7 +363,6 @@ function renderCustomTiles(){
     const header=document.createElement('div'); header.className='panel-header';
     const label=document.createElement('span'); label.className='panel-label'; label.textContent=tile.title;
     const right=document.createElement('div'); right.style.cssText='display:flex;gap:6px;align-items:center;';
-
     if(tile.type==='list'){
       const addBtn=document.createElement('button'); addBtn.className='icon-btn'; addBtn.textContent='+';
       addBtn.addEventListener('click',()=>{
@@ -341,7 +374,6 @@ function renderCustomTiles(){
       });
       right.appendChild(addBtn);
     }
-
     const delBtn=document.createElement('button'); delBtn.className='icon-btn'; delBtn.textContent='✕';
     delBtn.style.opacity='0';
     panel.addEventListener('mouseenter',()=>delBtn.style.opacity='1');
@@ -349,15 +381,12 @@ function renderCustomTiles(){
     delBtn.addEventListener('click',()=>{customTiles=customTiles.filter(t=>t.id!==tile.id);saveCustomTiles();renderCustomTiles();});
     right.appendChild(delBtn);
     header.append(label,right); panel.appendChild(header);
-
     if(tile.type==='note'){
       const ta=document.createElement('textarea');
       ta.className='custom-tile-textarea'; ta.value=tile.content||''; ta.placeholder='Notizen...';
       ta.addEventListener('input',()=>{tile.content=ta.value;saveCustomTiles();});
       panel.appendChild(ta);
     } else {
-      // Checklist — items are {id, text, done}
-      // Migrate old string items
       if(tile.items && tile.items.length>0 && typeof tile.items[0]==='string'){
         tile.items=tile.items.map(s=>({id:crypto.randomUUID(),text:s,done:false}));
         saveCustomTiles();
@@ -382,7 +411,6 @@ function renderCustomTiles(){
   });
 }
 
-// Tile creation modal
 let selectedTileType='note';
 
 document.getElementById('add-tile-btn').addEventListener('click',()=>{
@@ -415,16 +443,13 @@ document.getElementById('tile-modal-save').addEventListener('click',()=>{
   renderCustomTiles();
 });
 
-
 // =========================
-// REFRESH (called on every view switch to today)
+// REFRESH
 // =========================
 
 function refreshTodayTextareas(){
-  // Re-read from localStorage so data is always current
   quicknote = DB.get('quicknote', '');
   document.getElementById('quicknote').value = quicknote;
-
   berichtsheft = DB.get('berichtsheft', { betrieb: '', schule: '' });
   document.getElementById('bericht-betrieb').value = berichtsheft.betrieb || '';
   document.getElementById('bericht-schule').value  = berichtsheft.schule  || '';

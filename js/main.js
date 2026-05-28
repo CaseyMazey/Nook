@@ -33,12 +33,51 @@ const state = {
   learnSubjId: null, learnGroupId: null,
 };
 
-let tasks            = DB.get('tasks', {});
+// =========================
+// TASKS — Migration altes → neues Format
+// Altes Format: tasks = { "2025-W23": [{...}] }
+// Neues Format: tasks = [ {id,title,done,createdAt,completedAt,...} ]
+// =========================
+
+(function migrateTasksIfNeeded() {
+  const raw = DB.get('tasks', null);
+  if (!raw) { DB.set('tasks', []); return; }
+  if (Array.isArray(raw)) return;
+
+  const migrated = [];
+  Object.entries(raw).forEach(([weekId, weekTasks]) => {
+    if (!Array.isArray(weekTasks)) return;
+    let weekStart = Date.now();
+    try {
+      const [year, wPart] = weekId.split('-W');
+      const w = parseInt(wPart, 10);
+      const jan4 = new Date(parseInt(year, 10), 0, 4);
+      const day1 = new Date(jan4);
+      day1.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7) + (w - 1) * 7);
+      weekStart = day1.getTime();
+    } catch { /* fallback to now */ }
+    weekTasks.forEach(t => {
+      migrated.push({
+        id:          t.id || crypto.randomUUID(),
+        title:       t.title || '',
+        notes:       t.notes || '',
+        priority:    t.priority || 2,
+        block:       t.block || 1,
+        done:        t.done || false,
+        createdAt:   t.createdAt || weekStart,
+        completedAt: t.completedAt || (t.done ? weekStart : null),
+      });
+    });
+  });
+  DB.set('tasks', migrated);
+  console.log(`[Migration] ${migrated.length} Tasks migriert.`);
+})();
+
+let tasks            = DB.get('tasks', []);
 let notes            = DB.get('notes', { 'exam-notes': [], 'class-questions': [], 'terms': [] });
 let events           = DB.get('events', {});
 let quicknote        = DB.get('quicknote', '');
 let berichtsheft     = DB.get('berichtsheft', { betrieb: '', schule: '' });
-let examDate         = new Date(DB.get('examDate') || '2026-06-15');
 let blocks           = DB.get('blocks', DEFAULT_BLOCKS);
 let countdownVisible = DB.get('countdownVisible', {});
 let darkMode         = DB.get('darkMode', false);
@@ -47,11 +86,8 @@ let customTiles      = DB.get('customTiles', []);
 let generalTodos     = DB.get('generalTodos', []);
 let shoppingList     = DB.get('shoppingList', []);
 let subjects         = DB.get('subjects', []);
-
 let clockEnabled     = DB.get('clockEnabled', false);
-let clockType        = DB.get('clockType', 'digital'); // 'digital' | 'analog'
-
-// collapsed groups: Set of group IDs
+let clockType        = DB.get('clockType', 'digital');
 let collapsedGroups  = new Set(DB.get('collapsedGroups', []));
 
 if (darkMode) document.documentElement.setAttribute('data-theme', 'dark');
@@ -108,6 +144,84 @@ function getCurrentBlock() {
 }
 
 // =========================
+// TASK QUERY HELPERS
+// =========================
+
+function dayStart(date) {
+  const d = new Date(date); d.setHours(0,0,0,0); return d.getTime();
+}
+function dayEnd(date) {
+  const d = new Date(date); d.setHours(23,59,59,999); return d.getTime();
+}
+
+/**
+ * Tasks für einen Kalendertag — korrekte Logik:
+ *
+ * OFFENE TASKS:
+ *   createdAt <= Ende des Tages
+ *   UND Kalender-Tag <= heute
+ *   → NICHT auf zukünftige Tage projizieren
+ *
+ * ERLEDIGTE TASKS:
+ *   createdAt <= Ende des Tages  (Task existierte schon)
+ *   UND completedAt >= Beginn des Tages  (war an diesem Tag noch offen oder wurde erledigt)
+ *   UND Kalender-Tag <= completedAt  (nicht nach dem Erledigen weiterführen)
+ */
+function getTasksForCalendarDay(date) {
+  const dStart   = dayStart(date);
+  const dEnd     = dayEnd(date);
+  const todayEnd = dayEnd(new Date()); // Ende des heutigen Tages
+
+  return tasks.filter(t => {
+    const created = t.createdAt || 0;
+
+    // Task muss vor oder an diesem Tag erstellt worden sein
+    if (created > dEnd) return false;
+
+    if (!t.done) {
+      // OFFENER TASK:
+      // Nur anzeigen wenn der Kalender-Tag nicht in der Zukunft liegt.
+      // dStart > todayEnd bedeutet: dieser Kalendertag ist noch nicht angebrochen.
+      return dStart <= todayEnd;
+    } else {
+      // ERLEDIGTER TASK:
+      // Sichtbar wenn der Task an diesem Tag noch offen war
+      // (d.h. er wurde an/nach diesem Tag erledigt).
+      // Und nicht über den Erledigungstag hinaus fortführen.
+      const completed = t.completedAt || 0;
+      return completed >= dStart;
+    }
+  });
+}
+
+/**
+ * Tasks für die Aufgaben-Kachel (Heute-Ansicht, aktuelle Woche).
+ * Erledigte Tasks verschwinden nach 7 Tagen.
+ */
+function getTasksForTile() {
+  const now = Date.now();
+  const sevenDaysAgo  = now - 7 * 24 * 60 * 60 * 1000;
+  const weekMon       = getWeekStart(state.currentDate).getTime();
+  const weekMonNext   = weekMon + 7 * 24 * 60 * 60 * 1000;
+
+  return tasks.filter(t => {
+    const created = t.createdAt || 0;
+    if (created >= weekMonNext) return false;
+    if (!t.done) return true;
+    const completed = t.completedAt || 0;
+    return completed >= sevenDaysAgo;
+  });
+}
+
+/**
+ * Tasks für die Block-Ansicht — gleiche Logik wie Kalendertag,
+ * angewendet auf state.currentDate.
+ */
+function getTasksForBlockView() {
+  return getTasksForCalendarDay(state.currentDate);
+}
+
+// =========================
 // VIEW SWITCHING
 // =========================
 
@@ -134,5 +248,5 @@ function renderView(name) {
   if(name==='budget')    { renderBudget(); }
   if(name==='games')     { initGames(); }
   if(name==='settings')  { renderSettings(); }
+  if(name==='projects')  { renderProjects(); }
 }
-

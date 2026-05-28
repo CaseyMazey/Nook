@@ -416,22 +416,45 @@ ul { list-style: none; }
 .budget-stat.positive .budget-stat-value { color: var(--budget-income); }
 .budget-stat.negative .budget-stat-value { color: var(--budget-expense); }
 
-.budget-row { display: flex; align-items: flex-start; justify-content: space-between; padding: 10px 18px; border-bottom: 1px solid var(--border); gap: 12px; transition: background var(--transition); }
+/* Budget row */
+.budget-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 18px; border-bottom: 1px solid var(--border); gap: 12px; transition: background var(--transition); }
 .budget-row:last-child { border-bottom: none; }
 .budget-row:hover { background: var(--bg); }
 .budget-row:hover .task-delete { opacity: 1; }
-.budget-row-left { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.budget-row-paid { opacity: 0.45; }
+.budget-row-paid .budget-row-name { text-decoration: line-through; }
+.budget-row-left { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.budget-row-name-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .budget-row-name { font-size: 13.5px; }
 .budget-row-sub { font-size: 11px; color: var(--text-3); font-family: var(--mono); }
-.budget-row-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.budget-row-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 .budget-row-amount { font-size: 13.5px; font-family: var(--mono); font-weight: 500; }
 
-.budget-timeline-row { display: flex; align-items: center; gap: 12px; padding: 9px 18px; border-bottom: 1px solid var(--border); }
+/* Priority badges */
+.budget-badge { display: inline-block; font-size: 10px; font-weight: 600; letter-spacing: 0.05em; padding: 1px 6px; border-radius: 4px; text-transform: uppercase; vertical-align: middle; flex-shrink: 0; }
+.budget-badge-must { background: var(--prio-1-bg); color: var(--prio-1); }
+.budget-badge-need { background: var(--prio-2-bg); color: var(--prio-2); }
+.budget-badge-want { background: var(--prio-3-bg); color: var(--prio-3); }
+
+/* Paid toggle button */
+.budget-paid-btn { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--border-strong); font-size: 11px; color: var(--text-3); display: flex; align-items: center; justify-content: center; transition: all var(--transition); flex-shrink: 0; cursor: pointer; }
+.budget-paid-btn:hover { border-color: var(--budget-income); color: var(--budget-income); }
+.budget-paid-btn.paid { background: var(--budget-income); border-color: var(--budget-income); color: #fff; font-size: 10px; }
+
+/* Edit button */
+.budget-edit-btn { font-size: 13px; color: var(--text-3); padding: 2px 4px; border-radius: var(--radius-sm); opacity: 0; transition: opacity var(--transition), color var(--transition); flex-shrink: 0; cursor: pointer; line-height: 1; }
+.budget-row:hover .budget-edit-btn { opacity: 1; }
+.budget-edit-btn:hover { color: var(--text); }
+
+/* Timeline */
+.budget-timeline-row { display: flex; align-items: center; gap: 8px; padding: 9px 18px; border-bottom: 1px solid var(--border); }
 .budget-timeline-row:last-child { border-bottom: none; }
+.budget-timeline-row.budget-row-paid { opacity: 0.4; }
 .budget-timeline-date { font-family: var(--mono); font-size: 11px; color: var(--text-3); width: 52px; flex-shrink: 0; }
 .budget-timeline-name { flex: 1; font-size: 13px; }
 .budget-timeline-amount { font-family: var(--mono); font-size: 13px; font-weight: 500; flex-shrink: 0; }
 
+/* Goals */
 .budget-goal-card { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; transition: background var(--transition); }
 .budget-goal-card:last-child { border-bottom: none; }
 .budget-goal-card:hover { background: var(--bg); }
@@ -439,6 +462,14 @@ ul { list-style: none; }
 .budget-goal-bar { height: 6px; background: var(--border); border-radius: 99px; overflow: hidden; }
 .budget-goal-fill { height: 100%; background: var(--event-color); border-radius: 99px; transition: width 400ms ease; }
 .budget-goal-info-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+
+/* Priority picker in modals */
+.budget-prio-picker { display: flex; gap: 6px; }
+.budget-prio-btn { flex: 1; padding: 7px 10px; border-radius: var(--radius-sm); border: 1.5px solid var(--border-strong); font-size: 12px; font-weight: 600; color: var(--text-2); background: var(--surface); cursor: pointer; transition: all 0.15s; text-transform: uppercase; letter-spacing: 0.05em; }
+.budget-prio-btn:hover { background: var(--accent-soft); color: var(--text); }
+.budget-prio-btn.active[data-prio="must"] { background: var(--prio-1-bg); color: var(--prio-1); border-color: var(--prio-1); }
+.budget-prio-btn.active[data-prio="need"] { background: var(--prio-2-bg); color: var(--prio-2); border-color: var(--prio-2); }
+.budget-prio-btn.active[data-prio="want"] { background: var(--prio-3-bg); color: var(--prio-3); border-color: var(--prio-3); }
 
 /* =========================
    LIQUIDITY FORECAST
@@ -468,10 +499,55 @@ ul { list-style: none; }
 .liquidity-row-total .liquidity-row-value { font-size: 16px; }
 .liquidity-divider { height: 1px; background: var(--border); margin: 4px 0; }
 .liquidity-expense-list { background: var(--bg); border-radius: var(--radius-sm); padding: 8px 10px; display: flex; flex-direction: column; gap: 4px; }
-.liquidity-expense-item { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-2); }
-.liquidity-expense-item .expense { color: var(--budget-expense); font-family: var(--mono); }
+.liquidity-expense-item { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-2); gap: 8px; }
+.liquidity-expense-item .expense { color: var(--budget-expense); font-family: var(--mono); flex-shrink: 0; }
 .liquidity-hint { font-size: 12px; color: var(--budget-expense); margin-top: 4px; line-height: 1.5; }
 .liquidity-hint strong { font-weight: 600; }
+
+/* =========================
+   FINANCIAL STATUS BAR
+========================= */
+#budget-status-bar { margin-bottom: 16px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); padding: 12px 18px; display: flex; align-items: flex-start; gap: 20px; flex-wrap: wrap; }
+.budget-status-green { border-color: rgba(22,163,74,0.4); background: rgba(22,163,74,0.04); }
+.budget-status-yellow { border-color: rgba(202,138,4,0.4); background: rgba(202,138,4,0.04); }
+.budget-status-red { border-color: rgba(220,38,38,0.4); background: rgba(220,38,38,0.04); }
+[data-theme="dark"] .budget-status-green  { background: rgba(22,163,74,0.07); }
+[data-theme="dark"] .budget-status-yellow { background: rgba(202,138,4,0.07); }
+[data-theme="dark"] .budget-status-red    { background: rgba(220,38,38,0.07); }
+
+.budget-status-left { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.budget-status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.budget-status-dot-green  { background: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,0.2); }
+.budget-status-dot-yellow { background: #ca8a04; box-shadow: 0 0 0 3px rgba(202,138,4,0.2); }
+.budget-status-dot-red    { background: #dc2626; box-shadow: 0 0 0 3px rgba(220,38,38,0.2); }
+.budget-status-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; }
+.budget-status-green  .budget-status-label { color: #15803d; }
+.budget-status-yellow .budget-status-label { color: #92400e; }
+.budget-status-red    .budget-status-label { color: #b91c1c; }
+[data-theme="dark"] .budget-status-green  .budget-status-label { color: #4ade80; }
+[data-theme="dark"] .budget-status-yellow .budget-status-label { color: #fbbf24; }
+[data-theme="dark"] .budget-status-red    .budget-status-label { color: #f87171; }
+
+.budget-status-checks { display: flex; gap: 14px; flex-shrink: 0; }
+.budget-status-check { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text-2); }
+.status-check-icon { font-size: 11px; font-weight: 700; width: 14px; text-align: center; }
+.status-check-ok   .status-check-icon { color: #16a34a; }
+.status-check-warn .status-check-icon { color: #ca8a04; }
+.status-check-bad  .status-check-icon { color: #dc2626; }
+.status-check-neutral .status-check-icon { color: var(--text-3); }
+[data-theme="dark"] .status-check-ok   .status-check-icon { color: #4ade80; }
+[data-theme="dark"] .status-check-warn .status-check-icon { color: #fbbf24; }
+[data-theme="dark"] .status-check-bad  .status-check-icon { color: #f87171; }
+
+.budget-status-hints { display: flex; flex-wrap: wrap; gap: 6px 14px; flex: 1; align-items: center; }
+.budget-status-hint { font-size: 12px; color: var(--text-2); line-height: 1.4; }
+.budget-hint-good { color: #15803d; }
+.budget-hint-warn { color: #92400e; }
+.budget-hint-bad  { color: #b91c1c; }
+.budget-hint-info { color: var(--text-2); }
+[data-theme="dark"] .budget-hint-good { color: #4ade80; }
+[data-theme="dark"] .budget-hint-warn { color: #fbbf24; }
+[data-theme="dark"] .budget-hint-bad  { color: #f87171; }
 
 /* =========================
    MODAL
