@@ -83,8 +83,8 @@ ul { list-style: none; }
 /* =========================
    BUTTONS
 ========================= */
-.btn-primary { background: var(--text); color: #fff; padding: 8px 16px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; transition: opacity var(--transition); }
-.btn-primary:hover { opacity: 0.8; }
+.btn-primary { background: #2c2c26; color: #fff; padding: 8px 16px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; transition: background var(--transition), opacity var(--transition); }
+.btn-primary:hover { background: #3d3d35; opacity: 1; }
 .btn-ghost { background: none; color: var(--text-2); padding: 8px 14px; border-radius: var(--radius-sm); font-size: 13px; border: 1px solid var(--border-strong); }
 .btn-ghost:hover { background: var(--accent-soft); color: var(--text); }
 .icon-btn { width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--border-strong); color: var(--text-2); font-size: 15px; display: flex; align-items: center; justify-content: center; transition: background var(--transition); }
@@ -430,8 +430,8 @@ ul { list-style: none; }
 .prio-btn.active[data-prio="2"] { background: var(--prio-2-bg); color: var(--prio-2); border-color: var(--prio-2); }
 .prio-btn.active[data-prio="3"] { background: var(--prio-3-bg); color: var(--prio-3); border-color: var(--prio-3); }
 .toggle-select-btn { flex: 1; padding: 9px 16px; border-radius: var(--radius-sm); border: 1.5px solid var(--border-strong); font-size: 13px; font-weight: 500; color: var(--text-2); background: var(--surface); cursor: pointer; transition: all 0.15s; }
-.toggle-select-btn:hover { border-color: var(--text); color: var(--text); background: var(--accent-soft); }
-.toggle-select-btn.active { background: var(--text); color: #fff; border-color: var(--text); }
+.toggle-select-btn:hover { border-color: #2c2c26; color: #2c2c26; background: var(--accent-soft); }
+.toggle-select-btn.active { background: #2c2c26; color: #fff; border-color: #2c2c26; }
 #tile-type-picker { display: flex; gap: 6px; }
 .tile-type-btn { flex: 1; padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-strong); font-size: 13px; color: var(--text-2); display: flex; align-items: center; justify-content: center; gap: 6px; transition: all var(--transition); }
 .tile-type-btn:hover { background: var(--accent-soft); color: var(--text); }

@@ -717,6 +717,25 @@
           <!-- Nächste Buchungen (timeline) — hidden card, still rendered for JS -->
           <div id="budget-timeline" style="display:none;"></div>
 
+          <!-- TIPP BANNER -->
+          <div id="budget-tip-banner">
+            <div class="b-tip-left">
+              <svg class="b-tip-icon" width="48" height="48" viewBox="0 0 48 48" fill="none">
+                <path d="M24 44 C24 44 8 36 8 20 C8 11 15 4 24 4 C33 4 40 11 40 20 C40 36 24 44 24 44Z" stroke="#6b7c5a" stroke-width="1.5" fill="none"/>
+                <path d="M24 44 L24 4" stroke="#6b7c5a" stroke-width="1" opacity=".5"/>
+                <path d="M24 20 C18 14 10 14 8 18" stroke="#6b7c5a" stroke-width="1" opacity=".5"/>
+                <path d="M24 28 C30 22 38 22 40 26" stroke="#6b7c5a" stroke-width="1" opacity=".5"/>
+              </svg>
+              <div class="b-tip-content">
+                <div class="b-tip-eyebrow">Tipp des Monats</div>
+                <div class="b-tip-text">Überprüfe regelmäßig deine wiederkehrenden Posten – oft finden sich Sparpotenziale im Kleinen.</div>
+              </div>
+            </div>
+            <div class="b-tip-right">
+              <div class="b-tip-right-text">☕</div>
+            </div>
+          </div>
+
         </div>
       </section>
 
@@ -1064,8 +1083,8 @@
           <input type="number" class="modal-input" id="recurring-date-month" placeholder="Monat" min="1" max="12" style="width:90px;"/>
         </div>
       </div>
-      <div class="modal-row hidden" id="recurring-prio-row">
-        <label>Priorität</label>
+      <div class="modal-row" id="recurring-prio-row">
+        <label>Priorität <span id="recurring-prio-hint" style="font-size:11px;color:#8a8478;font-weight:400;">(nur für Ausgaben)</span></label>
         <div class="budget-prio-picker">
           <button class="budget-prio-btn" data-prio="must" id="recurring-prio-must">Muss</button>
           <button class="budget-prio-btn active" data-prio="need" id="recurring-prio-need">Brauche</button>

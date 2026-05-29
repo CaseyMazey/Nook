@@ -175,29 +175,65 @@ function calcFinancialStatus() {
   const proj = calcMonthProjection();
   if (!proj) return null;
 
-  const { mustCovered, needCovered, wantCovered, afterMust, afterNeed, afterWant, openMust, gap } = proj;
+  const { mustCovered, needCovered, wantCovered, afterMust, afterNeed, gap, openMust } = proj;
 
-  const status = !mustCovered ? 'red' : !needCovered ? 'yellow' : 'green';
+  // Status is derived purely from coverage flags — all three matter.
+  // red:    must not covered
+  // yellow: must+need covered, but want not fully covered
+  // green:  everything covered
+  const status = !mustCovered ? 'red' : !needCovered ? 'red' : !wantCovered ? 'yellow' : 'green';
+  // Note: needCovered=false also means mustCovered might barely pass but total is still critical.
+  // We treat must+need both as hard requirements → red if either fails.
+  // Only want is treated as soft → yellow.
 
-  const hints = [];
+  // Per-tier check items: each has a label, icon, iconClass, and a summary line.
+  // These are built entirely from the data — no hardcoded positive texts for uncovered tiers.
+  const checks = [];
+
+  // ── MUSS ──
+  if (mustCovered) {
+    checks.push({ icon: '✓', iconClass: 'ok', label: 'Muss-Ausgaben sind gedeckt.' });
+  } else {
+    checks.push({ icon: '✗', iconClass: 'bad', label: `Muss-Ausgaben nicht gedeckt. Fehlbetrag: ${Math.abs(afterMust).toFixed(2)} €` });
+  }
+
+  // ── BRAUCHE ──
+  if (!mustCovered) {
+    // Can't even evaluate need if must already fails
+    checks.push({ icon: '–', iconClass: 'neutral', label: 'Brauche-Ausgaben (nicht auswertbar)' });
+  } else if (needCovered) {
+    checks.push({ icon: '✓', iconClass: 'ok', label: 'Brauche-Ausgaben sind gedeckt.' });
+  } else {
+    checks.push({ icon: '✗', iconClass: 'bad', label: `Brauche-Ausgaben nicht vollständig gedeckt. Fehlbetrag: ${Math.abs(afterNeed).toFixed(2)} €` });
+  }
+
+  // ── MÖCHTE ──
+  if (!mustCovered || !needCovered) {
+    checks.push({ icon: '–', iconClass: 'neutral', label: 'Möchte-Ausgaben (nicht auswertbar)' });
+  } else if (wantCovered) {
+    checks.push({ icon: '✓', iconClass: 'ok', label: 'Möchte-Ausgaben sind gedeckt.' });
+  } else {
+    checks.push({ icon: '⚠', iconClass: 'warn', label: 'Für optionale Ausgaben reicht es nicht ganz.' });
+  }
+
+  // ── Summary hint — one sentence that matches the status exactly ──
+  let hint = null;
   if (status === 'green') {
-    hints.push({ icon: '✓', text: 'Alle Ausgaben sind gedeckt.', type: 'good' });
-    // gap = endOfMonth - totalBeforeSalary, which is the same number shown as "Puffer" in the forecast
-    if (gap > 0) hints.push({ icon: '✓', text: `Nach allen Ausgaben bleiben dir noch ${gap.toFixed(2)} €.`, type: 'good' });
-  }
-  if (status === 'yellow') {
-    hints.push({ icon: '✓', text: 'Muss-Ausgaben sind gedeckt.', type: 'good' });
-    hints.push({ icon: '✓', text: 'Brauche-Ausgaben sind gedeckt.', type: 'good' });
-    hints.push({ icon: '⚠', text: 'Für alle Möchte-Ausgaben reicht es nicht ganz.', type: 'warn' });
-    hints.push({ icon: '→', text: `Nach Muss & Brauche bleiben noch ${afterNeed.toFixed(2)} € für Extras.`, type: 'info' });
-  }
-  if (status === 'red') {
-    hints.push({ icon: '!', text: 'Nicht alle Muss-Ausgaben sind gedeckt.', type: 'bad' });
-    if (afterMust < 0) hints.push({ icon: '→', text: `Dir fehlen ${Math.abs(afterMust).toFixed(2)} € für deine Muss-Ausgaben.`, type: 'bad' });
-    if (openMust > 0)  hints.push({ icon: '→', text: `Noch ${openMust.toFixed(2)} € offene Muss-Ausgaben diesen Monat.`, type: 'bad' });
+    hint = gap > 0
+      ? { text: `Nach allen Ausgaben bleiben dir noch ${gap.toFixed(2)} € übrig.`, type: 'good' }
+      : { text: 'Alle Ausgaben sind gedeckt.', type: 'good' };
+  } else if (status === 'yellow') {
+    hint = { text: `Für optionale Ausgaben fehlen noch ${Math.abs(gap).toFixed(2)} €. Pflichtausgaben sind gesichert.`, type: 'warn' };
+  } else {
+    // red
+    if (!mustCovered) {
+      hint = { text: `Muss-Ausgaben nicht gedeckt — es fehlen ${Math.abs(afterMust).toFixed(2)} €.`, type: 'bad' };
+    } else {
+      hint = { text: `Brauche-Ausgaben nicht vollständig gedeckt — es fehlen ${Math.abs(afterNeed).toFixed(2)} €.`, type: 'bad' };
+    }
   }
 
-  return { status, mustCovered, needCovered, wantCovered, hints };
+  return { status, mustCovered, needCovered, wantCovered, checks, hint };
 }
 
 function renderFinancialStatus(fs) {
@@ -213,7 +249,6 @@ function renderFinancialStatus(fs) {
     }
   }
 
-  // Render status into the right panel of the kontostand card
   const statusInner = document.getElementById('b-status-inner');
   if (!statusInner) return;
 
@@ -225,29 +260,24 @@ function renderFinancialStatus(fs) {
   const labels   = { green: 'Stabil', yellow: 'Aufpassen', red: 'Kritisch' };
   const dotColor = { green: 'green', yellow: 'yellow', red: 'red' };
 
-  const checks = [
-    { label: 'Muss-Ausgaben sind abgedeckt',    covered: fs.mustCovered },
-    { label: 'Brauche-Ausgaben sind abgedeckt', covered: fs.needCovered },
-    { label: 'Möchte-Ausgaben sind abgedeckt',  covered: fs.wantCovered },
-  ];
+  // Render checks — each item already contains its own icon, class and label from calcFinancialStatus
+  const checkHtml = fs.checks.map(c => `
+    <div class="b-check-item">
+      <span class="b-check-icon ${c.iconClass}">${c.icon}</span>
+      <span>${c.label}</span>
+    </div>`).join('');
 
-  // Build hint text from first non-"all ok" hint, or positive summary
-  const hintHtml = fs.hints.length > 1
-    ? `<div class="b-status-hint ${fs.status !== 'green' ? (fs.status === 'red' ? 'bad' : 'warn') : ''}">${fs.hints[1].text}</div>`
-    : (fs.hints[0] ? `<div class="b-status-hint">${fs.hints[0].text}</div>` : '');
+  // Hint — single consistent sentence derived from the same data
+  const hintHtml = fs.hint
+    ? `<div class="b-status-hint ${fs.hint.type === 'bad' ? 'bad' : fs.hint.type === 'warn' ? 'warn' : ''}">${fs.hint.text}</div>`
+    : '';
 
   statusInner.innerHTML = `
     <div class="b-status-header">
       <span class="b-status-dot ${dotColor[fs.status]}"></span>
       <span class="b-status-text">Status: <span class="status-word ${dotColor[fs.status]}">${labels[fs.status]}</span></span>
     </div>
-    <div class="b-checklist">
-      ${checks.map(c => `
-        <div class="b-check-item">
-          <span class="b-check-icon ${c.covered ? 'ok' : (fs.status === 'red' ? 'bad' : 'warn')}">${c.covered ? '✓' : '✗'}</span>
-          <span>${c.label}</span>
-        </div>`).join('')}
-    </div>
+    <div class="b-checklist">${checkHtml}</div>
     ${hintHtml}`;
 }
 
@@ -256,53 +286,86 @@ function renderFinancialStatus(fs) {
 // =========================
 
 function renderBudget(){
-  const now       = new Date();
-  const monthRec  = getRecurringForMonth(now);
-  const curMkNow  = budgetMonthKey(now);
+  const now      = new Date();
+  const curMkNow = budgetMonthKey(now);
+  const viewMk   = budgetMonthKey(budgetMonth);
 
-  const recIncome  = monthRec.filter(r=>r.type==='income') .reduce((s,r)=>s+r.amount,0);
-  const recExpense = monthRec.filter(r=>r.type==='expense').reduce((s,r)=>s+r.amount,0);
-  const otIncome   = budgetOnetime.filter(e=>e.monthKey===curMkNow&&e.type==='income') .reduce((s,e)=>s+e.amount,0);
-  const otExpense  = budgetOnetime.filter(e=>e.monthKey===curMkNow&&e.type==='expense').reduce((s,e)=>s+e.amount,0);
-  const totalIn = recIncome+otIncome, totalOut = recExpense+otExpense, balance = totalIn-totalOut;
+  // ── All recurring entries that fire this month ──────────────────────────
+  const monthRec         = getRecurringForMonth(now);
+  const recIncome        = monthRec.filter(r => r.type === 'income');
+  const recExpMonthly    = monthRec.filter(r => r.type === 'expense' && r.freq === 'monthly');
+  const recExpYearly     = monthRec.filter(r => r.type === 'expense' && r.freq === 'yearly');
 
+  const totalRecIncome   = recIncome.reduce((s,r)  => s + r.amount, 0);
+  const totalFixkosten   = recExpMonthly.reduce((s,r) => s + r.amount, 0);
+  const totalSonderkosten= recExpYearly.reduce((s,r)  => s + r.amount, 0);
+
+  // One-time entries
+  const otIncome   = budgetOnetime.filter(e => e.monthKey===curMkNow && e.type==='income').reduce((s,e)=>s+e.amount,0);
+  const otExpense  = budgetOnetime.filter(e => e.monthKey===curMkNow && e.type==='expense').reduce((s,e)=>s+e.amount,0);
+
+  const totalIn    = totalRecIncome + otIncome;
+  const totalOut   = totalFixkosten + totalSonderkosten + otExpense;
+  const balance    = totalIn - totalOut;
+
+  const yearlyCount     = recExpYearly.length;
+  const yearlyCountText = yearlyCount === 1 ? '1 jährliche Abbuchung' : `${yearlyCount} jährliche Abbuchungen`;
+  const otExpText       = otExpense > 0
+    ? `-${otExpense.toLocaleString('de-DE',{minimumFractionDigits:2})} €`
+    : 'Keine';
+
+  // ── KPI GRID ─────────────────────────────────────────────────────────────
   document.getElementById('budget-summary-bar').innerHTML = `
-    <div class="budget-kpi-grid">
+    <div class="budget-kpi-grid budget-kpi-grid-4">
       <div class="budget-kpi-card">
         <div class="budget-kpi-left">
           <div class="budget-kpi-label">Einnahmen</div>
-          <div class="budget-kpi-value income">+${totalIn.toLocaleString('de-DE', {minimumFractionDigits:2})} &euro;</div>
+          <div class="budget-kpi-value income">+${totalIn.toLocaleString('de-DE',{minimumFractionDigits:2})} &euro;</div>
           <div class="budget-kpi-sub">Im ${now.toLocaleDateString('de-DE',{month:'long'})}</div>
         </div>
         <div class="budget-kpi-icon green">
-          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-            <path d="M14 24 C14 24 5 19 5 11 C5 7 9 4 14 4 C19 4 23 7 23 11 C23 19 14 24 14 24Z" stroke="currentColor" stroke-width="1.5" fill="none"/>
-            <path d="M14 24 L14 4" stroke="currentColor" stroke-width="1" opacity=".5"/>
-            <path d="M14 13 C11 10 7 10 5.5 12" stroke="currentColor" stroke-width="1" opacity=".5"/>
-            <path d="M14 17 C17 14 21 14 22.5 16" stroke="currentColor" stroke-width="1" opacity=".5"/>
+          <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
+            <path d="M14 24C14 24 5 19 5 11C5 7 9 4 14 4C19 4 23 7 23 11C23 19 14 24 14 24Z" stroke="currentColor" stroke-width="1.5" fill="none"/>
+            <path d="M14 24L14 4M14 13C11 10 7 10 5.5 12M14 17C17 14 21 14 22.5 16" stroke="currentColor" stroke-width="1" opacity=".5"/>
           </svg>
         </div>
       </div>
       <div class="budget-kpi-card">
         <div class="budget-kpi-left">
-          <div class="budget-kpi-label">Ausgaben</div>
-          <div class="budget-kpi-value expense">-${totalOut.toLocaleString('de-DE', {minimumFractionDigits:2})} &euro;</div>
-          <div class="budget-kpi-sub">Im ${now.toLocaleDateString('de-DE',{month:'long'})}</div>
+          <div class="budget-kpi-label">Fixkosten</div>
+          <div class="budget-kpi-value expense">-${totalFixkosten.toLocaleString('de-DE',{minimumFractionDigits:2})} &euro;</div>
+          <div class="budget-kpi-sub">Monatliche Fixkosten</div>
         </div>
         <div class="budget-kpi-icon red">
-          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-            <path d="M14 6 L14 22M8 16 L14 22 L20 16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
+            <rect x="5" y="5" width="18" height="18" rx="3" stroke="currentColor" stroke-width="1.5" fill="none"/>
+            <path d="M9 14h10M9 10h6M9 18h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="budget-kpi-card budget-kpi-card-yearly ${totalSonderkosten === 0 ? 'budget-kpi-card-muted' : ''}">
+        <div class="budget-kpi-left">
+          <div class="budget-kpi-label">Sonderkosten</div>
+          <div class="budget-kpi-value ${totalSonderkosten > 0 ? 'expense' : 'muted'}">
+            ${totalSonderkosten > 0 ? '-' + totalSonderkosten.toLocaleString('de-DE',{minimumFractionDigits:2}) + ' &euro;' : '—'}
+          </div>
+          <div class="budget-kpi-sub">${totalSonderkosten > 0 ? yearlyCountText : 'Keine diesen Monat'}</div>
+        </div>
+        <div class="budget-kpi-icon olive">
+          <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
+            <circle cx="14" cy="14" r="9" stroke="currentColor" stroke-width="1.5" fill="none"/>
+            <path d="M14 9v5l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
           </svg>
         </div>
       </div>
       <div class="budget-kpi-card">
         <div class="budget-kpi-left">
           <div class="budget-kpi-label">Verfügbar</div>
-          <div class="budget-kpi-value ${balance>=0?'positive':'negative'}">${balance>=0?'+':''}${Math.abs(balance).toLocaleString('de-DE', {minimumFractionDigits:2})} &euro;</div>
+          <div class="budget-kpi-value ${balance>=0?'positive':'negative'}">${balance>=0?'+':''}${Math.abs(balance).toLocaleString('de-DE',{minimumFractionDigits:2})} &euro;</div>
           <div class="budget-kpi-sub">Aktuell verfügbar</div>
         </div>
         <div class="budget-kpi-icon olive">
-          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+          <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
             <rect x="4" y="8" width="20" height="14" rx="3" stroke="currentColor" stroke-width="1.5" fill="none"/>
             <path d="M4 12h20" stroke="currentColor" stroke-width="1.5"/>
             <circle cx="19" cy="17" r="2" fill="currentColor" opacity=".6"/>
@@ -315,11 +378,10 @@ function renderBudget(){
 
   document.getElementById('budget-month-label').textContent = budgetMonthLabel(budgetMonth);
 
-  // One-time list — grouped: income first, then expenses
-  const viewMk      = budgetMonthKey(budgetMonth);
+  // ── ONE-TIME LIST ─────────────────────────────────────────────────────────
   const onetimeList = document.getElementById('budget-onetime-list');
   onetimeList.innerHTML = '';
-  const otEntries   = budgetOnetime.filter(e => e.monthKey === viewMk);
+  const otEntries = budgetOnetime.filter(e => e.monthKey === viewMk);
 
   if (otEntries.length === 0) {
     onetimeList.innerHTML = '<div class="empty-state">Keine einmaligen Buchungen in diesem Monat.</div>';
@@ -333,7 +395,6 @@ function renderBudget(){
       header.className = 'b-section-label';
       header.innerHTML = `<span class="b-section-dot ${type}"></span>${type === 'income' ? 'Einnahmen' : 'Ausgaben'}`;
       onetimeList.appendChild(header);
-
       entries.forEach(e => {
         onetimeList.appendChild(makeBudgetRow({
           name: e.name, amount: e.amount, type: e.type,
@@ -351,27 +412,26 @@ function renderBudget(){
         }));
       });
     }
-
-    renderOtGroup(otIncomes,  'income');
+    renderOtGroup(otIncomes, 'income');
     renderOtGroup(otExpenses, 'expense');
   }
 
-  // Recurring list — grouped: income first, then expenses
-  // Within each group: sorted by priority (must→need→want), then by day
+  // ── RECURRING LIST ────────────────────────────────────────────────────────
+  // Income group (all frequencies), then Expense split into: monthly fixkosten / yearly sonderkosten
   const prioOrder = { must: 0, need: 1, want: 2, none: 1 };
-  function sortRecEntries(arr) {
+  function sortByPrioDay(arr) {
     return arr.slice().sort((a, b) => {
-      const pa = prioOrder[a.priority] ?? 1;
-      const pb = prioOrder[b.priority] ?? 1;
+      const pa = prioOrder[a.priority] ?? 1, pb = prioOrder[b.priority] ?? 1;
       if (pa !== pb) return pa - pb;
-      const da = a.freq === 'monthly' ? (a.day || 1) : (a.dateDay || 1);
-      const db = b.freq === 'monthly' ? (b.day || 1) : (b.dateDay || 1);
+      const da = a.freq === 'monthly' ? (a.day||1) : (a.dateDay||1);
+      const db = b.freq === 'monthly' ? (b.day||1) : (b.dateDay||1);
       return da - db;
     });
   }
 
-  const recIncomes  = sortRecEntries(budgetRecurring.filter(r => r.type === 'income'));
-  const recExpenses = sortRecEntries(budgetRecurring.filter(r => r.type === 'expense'));
+  const allRecIncomes       = sortByPrioDay(budgetRecurring.filter(r => r.type === 'income'));
+  const allRecExpMonthly    = sortByPrioDay(budgetRecurring.filter(r => r.type === 'expense' && r.freq === 'monthly'));
+  const allRecExpYearly     = sortByPrioDay(budgetRecurring.filter(r => r.type === 'expense' && r.freq === 'yearly'));
 
   const recList = document.getElementById('budget-recurring-list');
   recList.innerHTML = '';
@@ -379,22 +439,28 @@ function renderBudget(){
   if (budgetRecurring.length === 0) {
     recList.innerHTML = '<div class="empty-state">Noch keine wiederkehrenden Posten.</div>';
   } else {
-    function renderRecGroup(entries, type) {
+
+    // Helper: render a subgroup with its own header and sum
+    function renderRecSubgroup(entries, type, headerLabel, sumLabel, freqOverride) {
       if (!entries.length) return;
-      // Group header
+
       const header = document.createElement('div');
       header.className = 'b-section-label';
-      header.innerHTML = `<span class="b-section-dot ${type}"></span>${type === 'income' ? 'Einnahmen' : 'Ausgaben'}`;
+      const dotCls = type === 'income' ? 'income' : (freqOverride === 'yearly' ? 'expense-yearly' : 'expense');
+      header.innerHTML = `<span class="b-section-dot ${dotCls}"></span>${headerLabel}`;
       recList.appendChild(header);
 
       entries.forEach(r => {
-        const sub = r.freq === 'monthly'
-          ? `Monatlich · ${r.day}.`
-          : `${r.dateDay}.${String(r.dateMonth).padStart(2,'0')}. · Jährlich`;
         const recPaid = isRecurringPaid(r.id, viewMk);
+        // Frequency chip replaces plain subtitle text
+        const freqChip = r.freq === 'monthly'
+          ? `<span class="b-freq-chip monthly">Monatlich</span>`
+          : `<span class="b-freq-chip yearly">Jährlich · ${r.dateDay}.${String(r.dateMonth).padStart(2,'0')}.</span>`;
+
         recList.appendChild(makeBudgetRow({
           name: r.name, amount: r.amount, type: r.type,
-          priority: r.priority || 'need', paid: recPaid, subtitle: sub,
+          priority: r.priority || 'need', paid: recPaid,
+          subtitleHtml: freqChip,
           onEdit:       () => openRecurringModal(r),
           onDel:        () => { budgetRecurring = budgetRecurring.filter(x => x.id !== r.id); saveBudgetRecurring(); renderBudget(); },
           onPaidToggle: () => {
@@ -408,18 +474,21 @@ function renderBudget(){
         }));
       });
 
-      // Sum row
-      const total = entries.reduce((s, r) => s + r.amount, 0);
+      const total  = entries.reduce((s, r) => s + r.amount, 0);
       const sumRow = document.createElement('div');
-      sumRow.className = 'b-sum-row';
+      sumRow.className = 'b-sum-row' + (freqOverride === 'yearly' ? ' b-sum-row-yearly' : '');
       sumRow.innerHTML = `
-        <span class="b-sum-label">Summe ${type === 'income' ? 'Einnahmen' : 'Ausgaben'}</span>
-        <span class="b-sum-value ${type}">${type === 'income' ? '+' : '-'}${total.toLocaleString('de-DE',{minimumFractionDigits:2})} €</span>`;
+        <span class="b-sum-label">${sumLabel}</span>
+        <span class="b-sum-value ${type === 'income' ? 'income' : 'expense'}">${type === 'income' ? '+' : '-'}${total.toLocaleString('de-DE',{minimumFractionDigits:2})} €</span>`;
       recList.appendChild(sumRow);
     }
 
-    renderRecGroup(recIncomes,  'income');
-    renderRecGroup(recExpenses, 'expense');
+    // Income (all)
+    renderRecSubgroup(allRecIncomes, 'income', 'Einnahmen', 'Summe Einnahmen', null);
+    // Monthly expenses = Fixkosten
+    renderRecSubgroup(allRecExpMonthly, 'expense', 'Monatliche Fixkosten', 'Monatliche Gesamtkosten', 'monthly');
+    // Yearly expenses = Sonderkosten
+    renderRecSubgroup(allRecExpYearly, 'expense', 'Jährliche Sonderkosten', 'Jährliche Sonderkosten', 'yearly');
   }
 
   renderBudgetTimeline();
@@ -541,7 +610,7 @@ document.getElementById('kontostand-save').addEventListener('click', () => {
 // BUDGET ROW
 // =========================
 
-function makeBudgetRow({ name, amount, type, priority, paid, subtitle, onEdit, onDel, onPaidToggle }) {
+function makeBudgetRow({ name, amount, type, priority, paid, subtitle, subtitleHtml, onEdit, onDel, onPaidToggle }) {
   const row = document.createElement('div');
   row.className = 'budget-row' + (paid ? ' budget-row-paid' : '');
 
@@ -563,7 +632,12 @@ function makeBudgetRow({ name, amount, type, priority, paid, subtitle, onEdit, o
   }
   left.appendChild(nameRow);
 
-  if (subtitle) {
+  if (subtitleHtml) {
+    const sub = document.createElement('div');
+    sub.className = 'budget-row-sub-html';
+    sub.innerHTML = subtitleHtml;
+    left.appendChild(sub);
+  } else if (subtitle) {
     const sub = document.createElement('span');
     sub.className = 'budget-row-sub';
     sub.textContent = subtitle;
@@ -698,12 +772,31 @@ function renderBudgetGoals(){
 }
 
 // Month navigation
-document.getElementById('budget-month-prev').addEventListener('click', () => {
-  budgetMonth = new Date(budgetMonth.getFullYear(), budgetMonth.getMonth()-1, 1); renderBudget();
-});
-document.getElementById('budget-month-next').addEventListener('click', () => {
-  budgetMonth = new Date(budgetMonth.getFullYear(), budgetMonth.getMonth()+1, 1); renderBudget();
-});
+// Month navigation — bind to both old IDs (in case they exist in index.html)
+// and new nav IDs (from redesigned budget_section.html)
+function bindMonthNav() {
+  ['budget-month-prev', 'budget-month-nav-prev'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && !el._monthNavBound) {
+      el._monthNavBound = true;
+      el.addEventListener('click', () => {
+        budgetMonth = new Date(budgetMonth.getFullYear(), budgetMonth.getMonth()-1, 1);
+        renderBudget();
+      });
+    }
+  });
+  ['budget-month-next', 'budget-month-nav-next'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && !el._monthNavBound) {
+      el._monthNavBound = true;
+      el.addEventListener('click', () => {
+        budgetMonth = new Date(budgetMonth.getFullYear(), budgetMonth.getMonth()+1, 1);
+        renderBudget();
+      });
+    }
+  });
+}
+bindMonthNav();
 
 // =========================
 // RECURRING MODAL (create + edit)
@@ -750,7 +843,9 @@ function openRecurringModal(entry = null) {
 
   document.getElementById('recurring-day-row').classList.toggle('hidden',  recurringFreq !== 'monthly');
   document.getElementById('recurring-date-row').classList.toggle('hidden', recurringFreq !== 'yearly');
-  document.getElementById('recurring-prio-row').classList.toggle('hidden', recurringType !== 'expense');
+  // Priority row: always visible, but dimmed for income entries
+  document.getElementById('recurring-prio-row').classList.remove('hidden');
+  document.getElementById('recurring-prio-row').classList.toggle('budget-prio-row-dimmed', recurringType !== 'expense');
 
   document.getElementById('recurring-modal-overlay').classList.remove('hidden');
   setTimeout(() => document.getElementById('recurring-name').focus(), 50);
@@ -763,7 +858,7 @@ document.getElementById('add-recurring-btn').addEventListener('click', () => ope
     recurringType = t;
     ['income','expense'].forEach(x =>
       document.getElementById(`recurring-type-${x}`).classList.toggle('active', x === t));
-    document.getElementById('recurring-prio-row').classList.toggle('hidden', t !== 'expense');
+    document.getElementById('recurring-prio-row').classList.toggle('budget-prio-row-dimmed', t !== 'expense');
   });
 });
 ['monthly','yearly'].forEach(f => {
@@ -940,17 +1035,23 @@ document.getElementById('goal-tx-save').addEventListener('click', () => {
   goalTxTarget = null;
 });
 
-// Wire secondary add-buttons in redesigned layout
-document.addEventListener('DOMContentLoaded', () => {
-  const r2 = document.getElementById('add-recurring-btn-2');
-  if (r2) r2.addEventListener('click', () => document.getElementById('add-recurring-btn').click());
-  const o2 = document.getElementById('add-onetime-btn-2');
-  if (o2) o2.addEventListener('click', () => document.getElementById('add-onetime-btn').click());
-  const g2 = document.getElementById('add-goal-btn-2');
-  if (g2) g2.addEventListener('click', () => document.getElementById('add-goal-btn').click());
-  // Month nav buttons in header picker
-  const mprev = document.getElementById('budget-month-nav-prev');
-  if (mprev) mprev.addEventListener('click', () => document.getElementById('budget-month-prev').click());
-  const mnext = document.getElementById('budget-month-nav-next');
-  if (mnext) mnext.addEventListener('click', () => document.getElementById('budget-month-next').click());
-});
+// Wire secondary add-buttons — bind directly, no DOMContentLoaded proxy needed
+// (DOMContentLoaded may have already fired by the time budget.js runs in a SPA)
+function bindSecondaryButtons() {
+  const pairs = [
+    ['add-recurring-btn-2', 'add-recurring-btn'],
+    ['add-onetime-btn-2',   'add-onetime-btn'],
+    ['add-goal-btn-2',      'add-goal-btn'],
+  ];
+  pairs.forEach(([srcId, targetId]) => {
+    const srcEl    = document.getElementById(srcId);
+    const targetEl = document.getElementById(targetId);
+    if (srcEl && targetEl && !srcEl._secondaryBound) {
+      srcEl._secondaryBound = true;
+      srcEl.addEventListener('click', () => targetEl.click());
+    }
+  });
+  // Re-run month nav binding in case the nav buttons appeared after initial load
+  bindMonthNav();
+}
+bindSecondaryButtons();

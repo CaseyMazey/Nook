@@ -16,6 +16,7 @@
   --b-olive-soft: #edf0e8;
   --b-red-soft:   #fdf0ee;
   --b-red:        #c0392b;
+  --b-dark:       #2c2c26;
   --b-shadow:     0 2px 12px rgba(60,50,30,0.07), 0 1px 3px rgba(60,50,30,0.05);
   --b-shadow-lg:  0 4px 24px rgba(60,50,30,0.10), 0 2px 6px rgba(60,50,30,0.06);
   --b-radius:     18px;
@@ -59,7 +60,7 @@
   font-size: 38px;
   font-weight: 400;
   letter-spacing: -1.5px;
-  color: #1a1a14;
+  color: var(--b-dark);
   line-height: 1;
   margin-bottom: 5px;
 }
@@ -91,7 +92,7 @@
   box-shadow: var(--b-shadow);
   font-size: 14px;
   font-weight: 500;
-  color: #1a1a14;
+  color: var(--b-dark);
   cursor: default;
   min-width: 160px;
 }
@@ -126,7 +127,7 @@
 .budget-action-btn.outlined {
   background: #fff;
   border: 1.5px solid rgba(0,0,0,0.11);
-  color: #2a2a1e;
+  color: var(--b-dark);
   box-shadow: var(--b-shadow);
 }
 .budget-action-btn.outlined:hover {
@@ -137,8 +138,8 @@
   transform: translateY(-1px);
 }
 .budget-action-btn.filled {
-  background: #1a1a14;
-  border: 1.5px solid #1a1a14;
+  background: var(--b-dark);
+  border: 1.5px solid var(--b-dark);
   color: #fff;
   box-shadow: 0 3px 10px rgba(26,26,20,0.25);
 }
@@ -157,6 +158,11 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 16px;
+}
+/* 4-column variant for budget tab */
+.budget-kpi-grid-4 {
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
 }
 .budget-kpi-card {
   background: #fff;
@@ -271,7 +277,7 @@
   background: transparent;
   font-size: 12.5px;
   font-weight: 500;
-  color: #2a2a1e;
+  color: var(--b-dark);
   cursor: pointer;
   transition: all 0.15s;
   align-self: flex-start;
@@ -302,7 +308,7 @@
 .b-status-text {
   font-size: 14px;
   font-weight: 600;
-  color: #1a1a14;
+  color: var(--b-dark);
 }
 .b-status-text .status-word { }
 .b-status-text .status-word.green  { color: #2d6e46; }
@@ -320,7 +326,7 @@
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  color: #3a3a2e;
+  color: var(--b-dark);
 }
 .b-check-icon {
   width: 16px; height: 16px;
@@ -452,7 +458,7 @@
 .b-liq-total-label {
   font-size: 14px;
   font-weight: 600;
-  color: #1a1a14;
+  color: var(--b-dark);
 }
 .b-liq-total-value {
   font-family: 'Georgia', serif;
@@ -531,7 +537,7 @@
   border: 1.5px solid rgba(0,0,0,0.10);
   background: #fff;
   font-size: 12px; font-weight: 500;
-  color: #2a2a1e;
+  color: var(--b-dark);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -544,7 +550,7 @@
   padding: 10px 20px 6px;
   font-size: 12px;
   font-weight: 600;
-  color: #3a3a2e;
+  color: var(--b-dark);
 }
 .b-section-dot {
   width: 7px; height: 7px;
@@ -573,7 +579,7 @@
 .budget-row-paid .budget-row-name { text-decoration: line-through; }
 .budget-row-left { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .budget-row-name-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.budget-row-name { font-size: 12.5px; color: #2a2a1e; }
+.budget-row-name { font-size: 12.5px; color: var(--b-dark); }
 .budget-row-sub { font-size: 11px; color: var(--b-warm-gray); }
 .budget-row-right { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
 .budget-row-amount { font-size: 13px; font-weight: 600; font-family: 'Georgia', serif; }
@@ -673,7 +679,7 @@
   line-height: 1;
 }
 .budget-row:hover .budget-edit-btn { opacity: 1; }
-.budget-edit-btn:hover { color: #1a1a14; }
+.budget-edit-btn:hover { color: var(--b-dark); }
 
 /* task-delete override in budget context */
 #view-budget .task-delete {
@@ -702,7 +708,7 @@
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
 }
-.budget-timeline-name { flex: 1; font-size: 13px; color: #2a2a1e; }
+.budget-timeline-name { flex: 1; font-size: 13px; color: var(--b-dark); }
 .budget-timeline-amount { font-size: 13px; font-family: 'Georgia', serif; font-weight: 400; flex-shrink: 0; }
 
 /* ── Goals ── */
@@ -798,7 +804,7 @@
 }
 .b-tip-text {
   font-size: 14px;
-  color: #2a2a1e;
+  color: var(--b-dark);
   line-height: 1.6;
   max-width: 480px;
 }
@@ -839,4 +845,66 @@
   font-size: 13px;
   color: var(--b-warm-gray);
   text-align: center;
+}
+
+/* =========================
+   KPI CARD — YEARLY / MUTED VARIANTS
+========================= */
+.budget-kpi-card-yearly { opacity: 0.88; }
+.budget-kpi-card-muted  { opacity: 0.6; }
+.budget-kpi-value.muted { color: var(--b-warm-gray); font-size: 22px; }
+
+/* =========================
+   FREQUENCY CHIPS
+========================= */
+.b-freq-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 4px;
+  line-height: 1.4;
+  vertical-align: middle;
+}
+.b-freq-chip.monthly {
+  background: rgba(45,90,61,0.09);
+  color: var(--b-green-mid);
+}
+.b-freq-chip.yearly {
+  background: rgba(107,124,90,0.12);
+  color: var(--b-olive);
+}
+
+/* Sub-html wrapper for freq chips */
+.budget-row-sub-html {
+  margin-top: 2px;
+}
+
+/* =========================
+   RECURRING SUBGROUP VARIANTS
+========================= */
+/* Yearly section dot — softer olive */
+.b-section-dot.expense-yearly {
+  background: var(--b-olive);
+}
+
+/* Yearly sum row — visually softer */
+.b-sum-row-yearly {
+  opacity: 0.75;
+}
+.b-sum-row-yearly .b-sum-label {
+  font-style: italic;
+}
+
+/* =========================
+   PRIORITY ROW — DIMMED STATE (income entries)
+========================= */
+.budget-prio-row-dimmed {
+  opacity: 0.38;
+  pointer-events: none;
+  user-select: none;
 }
