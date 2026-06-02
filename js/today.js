@@ -595,6 +595,9 @@ document.querySelectorAll('.add-note-btn').forEach(btn => {
 // CUSTOM TILES
 // =========================
 
+// Tile-Farbpalette (3 Töne, zufällig bei Erstellung zugewiesen)
+const TILE_COLORS = ['#A3B18A', '#EBE4D4', '#C0AC99'];
+
 function saveCustomTiles() { DB.set('customTiles', customTiles); }
 
 function renderCustomTiles() {
@@ -602,6 +605,10 @@ function renderCustomTiles() {
   container.innerHTML = '';
   customTiles.forEach(tile => {
     const panel  = document.createElement('div'); panel.className = 'panel today-tile';
+    if (tile.color) {
+      panel.style.setProperty('--tile-bg', tile.color + '22');
+      panel.style.background = tile.color + '22';
+    }
     const header = document.createElement('div'); header.className = 'panel-header';
     const label  = document.createElement('span'); label.className = 'panel-label'; label.textContent = tile.title;
     const right  = document.createElement('div'); right.style.cssText = 'display:flex;gap:6px;align-items:center;';
@@ -675,7 +682,8 @@ document.getElementById('tile-modal-cancel').addEventListener('click', () => doc
 document.getElementById('tile-modal-overlay').addEventListener('click', e => { if (e.target === document.getElementById('tile-modal-overlay')) document.getElementById('tile-modal-overlay').classList.add('hidden'); });
 document.getElementById('tile-modal-save').addEventListener('click', () => {
   const title = document.getElementById('tile-modal-title').value.trim(); if (!title) return;
-  const tile = { id: crypto.randomUUID(), title, type: selectedTileType, content: '', items: [] };
+  const tileColor = TILE_COLORS[Math.floor(Math.random() * TILE_COLORS.length)];
+  const tile = { id: crypto.randomUUID(), title, type: selectedTileType, content: '', items: [], color: tileColor };
   customTiles.push(tile); saveCustomTiles();
   document.getElementById('tile-modal-overlay').classList.add('hidden');
   renderCustomTiles();
