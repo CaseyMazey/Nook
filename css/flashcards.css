@@ -1,0 +1,166 @@
+/* =============================================================
+   FLASHCARDS.CSS — Tab: Karteikarten
+   Abhängigkeiten: CSS-Variablen aus main.css (:root)
+============================================================= */
+
+/* ── Two-column layout ────────────────────────────────────── */
+#flashcard-layout { display: grid; grid-template-columns: 248px 1fr; gap: 18px; }
+#subject-list-panel { min-height: 200px; }
+#subject-list { padding: 8px 0; }
+#subject-empty { padding: 22px 20px; font-size: 13px; color: var(--text-3); }
+
+/* ── Subject list ─────────────────────────────────────────── */
+.subject-item {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 20px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  transition: background var(--transition);
+  cursor: pointer;
+}
+.subject-item:last-child { border-bottom: none; }
+.subject-item:hover { background: var(--bg); }
+.subject-item.active { background: var(--text); }
+.subject-item.active .subject-name,
+.subject-item.active .subject-teacher,
+.subject-item.active .subject-count { color: var(--surface); }
+
+.subject-name  { font-size: 14px; font-weight: 500; color: var(--text); }
+.subject-teacher { font-size: 12px; color: var(--text-3); }
+.subject-count { font-size: 11px; font-family: var(--mono); color: var(--text-3); }
+
+/* ── Detail view ──────────────────────────────────────────── */
+#flashcard-placeholder { text-align: center; padding: 60px 20px; }
+#flashcard-subject-view.hidden { display: none; }
+#subject-detail-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+/* ── Group cards ──────────────────────────────────────────── */
+.group-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: 14px;
+  box-shadow: var(--shadow-xs);
+}
+.group-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.group-toggle-icon { font-size: 10px; color: var(--text-3); flex-shrink: 0; width: 12px; }
+.group-title { font-size: 15px; font-weight: 500; flex: 1; }
+.group-count { font-size: 12px; font-family: var(--mono); color: var(--text-3); }
+.group-actions { display: flex; gap: 6px; align-items: center; }
+
+/* ── Cards list ───────────────────────────────────────────── */
+.cards-list { padding: 6px 0; }
+.fc-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 20px;
+  border-bottom: 1px solid var(--border);
+  transition: background var(--transition);
+}
+.fc-row:last-child { border-bottom: none; }
+.fc-row:hover { background: var(--bg); }
+.fc-front { font-size: 13px; color: var(--text); }
+.fc-back  { font-size: 13px; color: var(--text-2); }
+.fc-box {
+  font-size: 11px;
+  font-family: var(--mono);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 1px 6px;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.fc-row .task-delete { opacity: 0; }
+.fc-row:hover .task-delete { opacity: 1; }
+
+/* ── Learn session ────────────────────────────────────────── */
+#learn-progress-bar-wrap {
+  background: var(--bg-2);
+  border-radius: 99px;
+  height: 5px;
+  position: relative;
+  overflow: hidden;
+}
+#learn-progress-bar {
+  height: 100%;
+  background: var(--text);
+  border-radius: 99px;
+  transition: width 350ms ease;
+  width: 0%;
+}
+#learn-progress-label {
+  position: absolute;
+  right: 0;
+  top: -18px;
+  font-size: 11px;
+  font-family: var(--mono);
+  color: var(--text-3);
+}
+
+#learn-card-wrap { perspective: 800px; margin: 10px 0; }
+#learn-card {
+  width: 100%;
+  min-height: 180px;
+  cursor: pointer;
+  position: relative;
+  transform-style: preserve-3d;
+}
+#learn-card-inner {
+  width: 100%;
+  min-height: 180px;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 400ms ease;
+  border-radius: var(--radius-lg);
+}
+#learn-card-inner.flipped { transform: rotateY(180deg); }
+
+#learn-card-front,
+#learn-card-back {
+  position: absolute;
+  width: 100%;
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
+  text-align: center;
+  font-size: 16px;
+  line-height: 1.6;
+  backface-visibility: hidden;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-strong);
+}
+#learn-card-front { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); }
+#learn-card-back  { background: var(--text); color: var(--surface); transform: rotateY(180deg); }
+
+#learn-card-hint {
+  position: absolute;
+  bottom: 12px;
+  width: 100%;
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-3);
+  pointer-events: none;
+}
+#learn-actions { display: flex; gap: 10px; margin-top: 6px; }
+#learn-actions.hidden { display: none; }
+#learn-done.hidden { display: none; }

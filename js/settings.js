@@ -3,6 +3,7 @@
 // =========================
 
 function renderSettings(){
+  document.getElementById('setting-username').value = userName || '';
   document.getElementById('setting-darkmode').checked=darkMode;
   document.getElementById('setting-clock').checked=clockEnabled;
   document.getElementById('clock-type-row').style.display=clockEnabled?'flex':'none';
@@ -13,6 +14,13 @@ function renderSettings(){
   document.getElementById('color-prio3').value=colors.prio3;
   renderBlockSettings();
 }
+
+// NEU: Benutzername
+document.getElementById('setting-username').addEventListener('input', e => {
+  userName = e.target.value.trim();
+  DB.set('userName', userName);
+  if (typeof renderTodayHeader === 'function') renderTodayHeader();
+});
 
 document.getElementById('setting-darkmode').addEventListener('change',e=>{
   darkMode=e.target.checked; DB.set('darkMode',darkMode);
@@ -75,7 +83,8 @@ const BACKUP_KEYS = [
   'tasks','notes','events','quicknote','berichtsheft','examDate','blocks',
   'countdownVisible','darkMode','colors','customTiles','subjects',
   'budgetRecurring','budgetOnetime','budgetGoals','kontostand',
-  'clockEnabled','clockType','collapsedGroups','currentDate','gameHighscores'
+  'clockEnabled','clockType','collapsedGroups','currentDate','gameHighscores',
+  'userName'
 ];
 
 document.getElementById('backup-export-btn').addEventListener('click',()=>{

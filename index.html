@@ -7,11 +7,18 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/main.css" />
   <link rel="stylesheet" href="games/tictactoe/style.css">
   <link rel="stylesheet" href="games/snake/style.css">
   <link rel="stylesheet" href="games/memory/style.css">
   <link rel="stylesheet" href="css/budget.css" />
+  <link rel="stylesheet" href="css/calendar.css" />
+  <link rel="stylesheet" href="css/flashcards.css" />
+  <link rel="stylesheet" href="css/games.css" />
+  <link rel="stylesheet" href="css/guides.css" />
+  <link rel="stylesheet" href="css/projects.css" />
+  <link rel="stylesheet" href="css/today.css" />
+  <link rel="stylesheet" href="css/settings.css" />
   <style>
     /* =========================
        TASKS — erledigte sichtbar
@@ -432,81 +439,129 @@
 
       <!-- TODAY -->
       <section id="view-today" class="view active">
-        <div class="view-header">
-          <h1 class="view-title" id="today-title">—</h1>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <div id="clock-widget"></div>
-            <button class="btn-ghost" id="add-tile-btn">+ Kachel</button>
-            <button class="btn-primary" id="add-task-btn">+ Aufgabe</button>
+
+        <!-- Greeting Header -->
+        <div id="today-header">
+          <div id="today-greeting-block">
+            <h1 id="today-greeting" class="today-greeting">—</h1>
+            <div id="today-subtitle" class="today-subtitle">—</div>
+          </div>
+          <div id="today-weather" class="today-weather">
+            <div class="weather-icon">⛅</div>
+            <div class="weather-info">
+              <div class="weather-temp" id="weather-temp">—</div>
+              <div class="weather-desc" id="weather-desc">—</div>
+            </div>
           </div>
         </div>
 
-        <div id="blocks-row"></div>
+        <!-- hidden clock-widget: bleibt für JS-Kompatibilität (startClock/stopClock) -->
+        <div id="clock-widget" style="display:none;"></div>
 
+        <!-- Haupt-Grid + rechte Sidebar -->
         <div id="today-layout">
-          <div id="today-left">
+
+          <!-- HAUPTBEREICH -->
+          <div id="today-main">
+
+            <!-- Unterrichtsblöcke -->
+            <div id="today-blocks-section">
+              <div class="today-section-label">UNTERRICHTSBLÖCKE</div>
+              <div id="blocks-row"></div>
+              <div id="blocks-progress-wrap">
+                <div id="blocks-progress-bar"></div>
+                <span id="blocks-progress-label"></span>
+              </div>
+            </div>
+
+            <!-- Aufgaben — full width -->
             <div class="panel" id="panel-tasks">
               <div class="panel-header">
-                <span class="panel-label">Aufgaben</span>
-                <span class="task-count" id="task-count"></span>
+                <span class="panel-label">Aufgaben diese Woche</span>
+                <div style="display:flex;gap:8px;align-items:center;">
+                  <span class="task-count" id="task-count"></span>
+                  <button class="btn-primary" id="add-task-btn">+ Aufgabe</button>
+                </div>
               </div>
               <ul id="task-list"></ul>
               <div id="task-empty" class="empty-state">Noch keine Aufgaben diese Woche.</div>
             </div>
-            <div class="panel">
-              <div class="panel-header">
-                <span class="panel-label">Wichtiges</span>
-                <button class="icon-btn add-note-btn" data-key="exam-notes">+</button>
-              </div>
-              <ul class="note-list" id="note-list-exam"></ul>
-            </div>
-            <div class="panel">
-              <div class="panel-header">
-                <span class="panel-label">Fragen für den Unterricht</span>
-                <button class="icon-btn add-note-btn" data-key="class-questions">+</button>
-              </div>
-              <ul class="note-list" id="note-list-questions"></ul>
-            </div>
-            <div class="panel">
-              <div class="panel-header">
-                <span class="panel-label">Begriffe &amp; Definitionen</span>
-                <button class="icon-btn add-note-btn" data-key="terms">+</button>
-              </div>
-              <ul class="note-list" id="note-list-terms"></ul>
-            </div>
-            <div class="panel" id="panel-shopping">
-              <div class="panel-header">
-                <span class="panel-label">Einkaufsliste</span>
-                <button class="icon-btn" id="add-shopping-btn">+</button>
-              </div>
-              <ul class="checklist" id="shopping-list"></ul>
-            </div>
-          </div>
 
-          <div id="today-middle">
-            <div class="panel" id="panel-todo">
-              <div class="panel-header">
-                <span class="panel-label">To Do</span>
-                <button class="icon-btn" id="add-todo-btn">+</button>
-              </div>
-              <ul class="checklist" id="todo-list"></ul>
-            </div>
-            <div class="panel" id="panel-berichtsheft">
-              <div class="panel-header">
-                <span class="panel-label">Berichtsheft</span>
-                <span class="save-hint" id="bericht-saved">gespeichert</span>
-              </div>
-              <div id="berichtsheft-grid">
-                <div class="bericht-col">
-                  <div class="bericht-col-label">Betrieb</div>
-                  <textarea id="bericht-betrieb" placeholder="Was habe ich heute im Betrieb gemacht?"></textarea>
+            <!-- Untere Kacheln -->
+            <div id="today-tiles-grid">
+
+              <div class="panel today-tile">
+                <div class="panel-header">
+                  <span class="panel-label">Wichtiges</span>
+                  <button class="icon-btn add-note-btn" data-key="exam-notes">+</button>
                 </div>
-                <div class="bericht-col">
-                  <div class="bericht-col-label">Schule</div>
-                  <textarea id="bericht-schule" placeholder="Was haben wir heute in der Schule behandelt?"></textarea>
+                <ul class="note-list" id="note-list-exam"></ul>
+              </div>
+
+              <div class="panel today-tile">
+                <div class="panel-header">
+                  <span class="panel-label">Fragen für den Unterricht</span>
+                  <button class="icon-btn add-note-btn" data-key="class-questions">+</button>
+                </div>
+                <ul class="note-list" id="note-list-questions"></ul>
+              </div>
+
+              <div class="panel today-tile" id="panel-berichtsheft">
+                <div class="panel-header">
+                  <span class="panel-label">Berichtsheft</span>
+                  <span class="save-hint" id="bericht-saved">gespeichert</span>
+                </div>
+                <div id="berichtsheft-grid">
+                  <div class="bericht-col">
+                    <div class="bericht-col-label">Betrieb</div>
+                    <textarea id="bericht-betrieb" placeholder="Was habe ich heute im Betrieb gemacht?"></textarea>
+                  </div>
+                  <div class="bericht-col">
+                    <div class="bericht-col-label">Schule</div>
+                    <textarea id="bericht-schule" placeholder="Was haben wir heute in der Schule behandelt?"></textarea>
+                  </div>
                 </div>
               </div>
+
+              <div class="panel today-tile" id="panel-todo">
+                <div class="panel-header">
+                  <span class="panel-label">To Do</span>
+                  <button class="icon-btn" id="add-todo-btn">+</button>
+                </div>
+                <ul class="checklist" id="todo-list"></ul>
+              </div>
+
+              <div class="panel today-tile" id="panel-shopping">
+                <div class="panel-header">
+                  <span class="panel-label">Einkaufsliste</span>
+                  <button class="icon-btn" id="add-shopping-btn">+</button>
+                </div>
+                <ul class="checklist" id="shopping-list"></ul>
+              </div>
+
+              <div class="panel today-tile">
+                <div class="panel-header">
+                  <span class="panel-label">Begriffe &amp; Definitionen</span>
+                  <button class="icon-btn add-note-btn" data-key="terms">+</button>
+                </div>
+                <ul class="note-list" id="note-list-terms"></ul>
+              </div>
+
+              <!-- Custom Tiles werden per JS angehängt -->
+              <div id="custom-tiles"></div>
+
+            </div><!-- /today-tiles-grid -->
+
+            <!-- + Kachel -->
+            <div id="today-add-tile-row">
+              <button class="btn-ghost" id="add-tile-btn">+ Kachel hinzufügen</button>
             </div>
+
+          </div><!-- /today-main -->
+
+          <!-- RECHTE SIDEBAR -->
+          <div id="today-right">
+            <div id="clock-sidebar-panel"></div>
             <div class="panel" id="panel-quicknote">
               <div class="panel-header">
                 <span class="panel-label">Schnellnotiz</span>
@@ -514,12 +569,11 @@
               </div>
               <textarea id="quicknote" placeholder="Gedanken, Fragen, Reminders..."></textarea>
             </div>
+            <div id="today-mini-cal"></div>
           </div>
 
-          <div id="today-right">
-            <div id="custom-tiles"></div>
-          </div>
-        </div>
+        </div><!-- /today-layout -->
+
       </section>
 
       <!-- PROJEKTE -->
@@ -580,7 +634,6 @@
             <button class="btn-primary" id="add-guide-category-btn">+ Kategorie</button>
           </div>
         </div>
-
         <div id="guide-layout">
           <div id="guide-category-list-panel" class="panel">
             <div class="panel-header"><span class="panel-label">Kategorien</span></div>
@@ -620,8 +673,6 @@
       <!-- BUDGET -->
       <section id="view-budget" class="view">
         <div id="budget-dashboard">
-
-          <!-- HEADER -->
           <div id="budget-header">
             <div id="budget-title-block">
               <h1>Budget</h1>
@@ -642,14 +693,8 @@
               <button class="budget-action-btn filled" id="add-recurring-btn">+ Wiederkehrend</button>
             </div>
           </div>
-
-          <!-- KPI SUMMARY BAR (rendered by JS into .budget-kpi-grid) -->
           <div id="budget-summary-bar"></div>
-
-          <!-- ROW 2: KONTOSTAND + LIQUIDITY -->
           <div id="budget-row2">
-
-            <!-- Kontostand & Status card (rendered by JS) -->
             <div id="budget-kontostand-card">
               <div id="budget-kontostand-left">
                 <div>
@@ -665,9 +710,7 @@
                 </button>
               </div>
               <div id="budget-kontostand-right">
-                <div id="b-status-inner">
-                  <!-- filled by renderFinancialStatus -->
-                </div>
+                <div id="b-status-inner"></div>
                 <svg class="b-leaf-deco" width="90" height="90" viewBox="0 0 90 90" fill="none">
                   <path d="M45 80 C45 80 10 65 10 35 C10 15 30 5 45 5 C60 5 80 15 80 35 C80 65 45 80 45 80Z" stroke="currentColor" stroke-width="1.5" fill="none"/>
                   <path d="M45 80 L45 5" stroke="currentColor" stroke-width="1" opacity=".5"/>
@@ -676,16 +719,9 @@
                 </svg>
               </div>
             </div>
-
-            <!-- Liquidity forecast (rendered by JS) -->
             <div id="budget-liquidity"></div>
-
           </div>
-
-          <!-- ROW 3: RECURRING / ONETIME / GOALS -->
           <div id="budget-row3">
-
-            <!-- Wiederkehrende Posten -->
             <div class="b-card" id="budget-recurring-card">
               <div class="b-card-header">
                 <span class="b-card-title">Wiederkehrende Posten</span>
@@ -693,8 +729,6 @@
               </div>
               <div id="budget-recurring-list" class="budget-list"></div>
             </div>
-
-            <!-- Einmalige Buchungen -->
             <div class="b-card" id="budget-onetime-card">
               <div class="b-card-header">
                 <span class="b-card-title">Einmalige Buchungen</span>
@@ -702,8 +736,6 @@
               </div>
               <div id="budget-onetime-list" class="budget-list"></div>
             </div>
-
-            <!-- Sparziele -->
             <div class="b-card" id="budget-goals-card">
               <div class="b-card-header">
                 <span class="b-card-title">Sparziele</span>
@@ -711,13 +743,8 @@
               </div>
               <div id="budget-goals-list" class="budget-list"></div>
             </div>
-
           </div>
-
-          <!-- Nächste Buchungen (timeline) — hidden card, still rendered for JS -->
           <div id="budget-timeline" style="display:none;"></div>
-
-          <!-- TIPP BANNER -->
           <div id="budget-tip-banner">
             <div class="b-tip-left">
               <svg class="b-tip-icon" width="48" height="48" viewBox="0 0 48 48" fill="none">
@@ -735,7 +762,6 @@
               <div class="b-tip-right-text">☕</div>
             </div>
           </div>
-
         </div>
       </section>
 
@@ -755,6 +781,22 @@
         <div id="settings-layout">
 
           <div class="settings-col">
+
+            <!-- NEU: Profil / Benutzername -->
+            <div class="panel settings-panel">
+              <div class="panel-header"><span class="panel-label">Profil</span></div>
+              <div class="settings-row">
+                <div>
+                  <div class="settings-row-title">Dein Name</div>
+                  <div class="settings-row-sub">Wird in der Begrüßung auf der Heuteseite angezeigt</div>
+                </div>
+                <input type="text" id="setting-username" class="modal-input"
+                  placeholder="z.B. Casey"
+                  style="width:140px;padding:7px 12px;font-size:13px;"
+                  autocomplete="off"/>
+              </div>
+            </div>
+
             <div class="panel settings-panel">
               <div class="panel-header"><span class="panel-label">Darstellung</span></div>
               <div class="settings-row">
@@ -978,20 +1020,16 @@
           <button class="guide-emoji-btn" data-emoji="⚙️">⚙️</button>
           <button class="guide-emoji-btn" data-emoji="🔧">🔧</button>
           <button class="guide-emoji-btn" data-emoji="💡">💡</button>
-          <button class="guide-emoji-btn" data-emoji="🧪">🧪</button>
-          <button class="guide-emoji-btn" data-emoji="🐍">🐍</button>
-          <button class="guide-emoji-btn" data-emoji="☕">☕</button>
-          <button class="guide-emoji-btn" data-emoji="🦀">🦀</button>
+          <button class="guide-emoji-btn" data-emoji="🔒">🔒</button>
+          <button class="guide-emoji-btn" data-emoji="📊">📊</button>
+          <button class="guide-emoji-btn" data-emoji="🚀">🚀</button>
+          <button class="guide-emoji-btn" data-emoji="☁️">☁️</button>
           <button class="guide-emoji-btn" data-emoji="🗄️">🗄️</button>
-          <button class="guide-emoji-btn" data-emoji="🔐">🔐</button>
-          <button class="guide-emoji-btn" data-emoji="📡">📡</button>
-          <button class="guide-emoji-btn" data-emoji="🧩">🧩</button>
-          <button class="guide-emoji-btn" data-emoji="✏️">✏️</button>
+          <button class="guide-emoji-btn" data-emoji="📱">📱</button>
+          <button class="guide-emoji-btn" data-emoji="🎨">🎨</button>
+          <button class="guide-emoji-btn" data-emoji="📝">📝</button>
+          <button class="guide-emoji-btn" data-emoji="🧪">🧪</button>
         </div>
-      </div>
-      <div class="modal-row">
-        <label>Eigenes Emoji <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-3)">(optional)</span></label>
-        <input type="text" class="modal-input" id="guide-cat-emoji-custom" placeholder="Emoji eingeben…" maxlength="4" style="width:120px;">
       </div>
       <div class="modal-actions">
         <button id="guide-cat-modal-cancel" class="btn-ghost">Abbrechen</button>
@@ -1000,53 +1038,42 @@
     </div>
   </div>
 
-  <!-- Guide Modal -->
+  <!-- Guide Entry Modal -->
   <div id="guide-modal-overlay" class="modal-backdrop hidden">
     <div class="modal-box guide-modal-box">
       <div class="modal-head">
         <span id="guide-modal-title">Neue Anleitung</span>
         <button class="modal-x" id="guide-modal-close">✕</button>
       </div>
-      <div class="modal-row">
-        <label>Titel</label>
-        <input type="text" class="modal-input" id="guide-modal-title-input" placeholder="z.B. Git Grundbefehle">
+      <div class="modal-row"><label>Titel</label><input type="text" class="modal-input" id="guide-modal-title-input" placeholder="Titel der Anleitung" autocomplete="off"/></div>
+      <div class="modal-row"><label>Beschreibung <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-3)">(optional)</span></label><input type="text" class="modal-input" id="guide-modal-desc-input" placeholder="Kurze Beschreibung..."/></div>
+      <div class="modal-row"><label>Tags <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-3)">(kommagetrennt)</span></label><input type="text" class="modal-input" id="guide-modal-tags-input" placeholder="z.B. git, terminal, basics"/></div>
+      <div class="modal-row modal-row-inline">
+        <label>Als Favorit markieren</label>
+        <label class="toggle"><input type="checkbox" id="guide-modal-fav"/><span class="toggle-slider"></span></label>
       </div>
       <div class="modal-row">
-        <label>Kurzbeschreibung</label>
-        <input type="text" class="modal-input" id="guide-modal-desc-input" placeholder="Worum geht's?">
-      </div>
-      <div class="modal-row">
-        <label>Tags <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-3)">(kommagetrennt)</span></label>
-        <input type="text" class="modal-input" id="guide-modal-tags-input" placeholder="git, terminal, basics">
-      </div>
-
-      <!-- Editor / Preview tabs -->
-      <div class="guide-modal-tabs">
-        <button class="guide-modal-tab active" id="guide-modal-tab-editor">Editor</button>
-        <button class="guide-modal-tab" id="guide-modal-tab-preview">Vorschau</button>
-        <div class="guide-modal-snippets">
-          <button class="guide-snippet-btn" data-snippet="h2" title="## Überschrift">H2</button>
-          <button class="guide-snippet-btn" data-snippet="h3" title="### Unterüberschrift">H3</button>
-          <button class="guide-snippet-btn" data-snippet="bold" title="**fett**"><strong>B</strong></button>
-          <button class="guide-snippet-btn" data-snippet="code" title="Code-Block">{ }</button>
-          <button class="guide-snippet-btn" data-snippet="list" title="Liste">☰</button>
-          <button class="guide-snippet-btn" data-snippet="hr" title="Trennlinie">—</button>
-          <button class="guide-snippet-btn" data-snippet="mark" title="Text markieren ==text==">▐</button>
+        <label>Inhalt</label>
+        <div class="guide-modal-tabs">
+          <button class="guide-modal-tab active" id="guide-tab-edit">Bearbeiten</button>
+          <button class="guide-modal-tab" id="guide-tab-preview">Vorschau</button>
+          <div class="guide-modal-snippets">
+            <button class="guide-snippet-btn" data-snippet="h2" title="## Überschrift">H2</button>
+            <button class="guide-snippet-btn" data-snippet="h3" title="### Unterüberschrift">H3</button>
+            <button class="guide-snippet-btn" data-snippet="bold" title="**fett**"><strong>B</strong></button>
+            <button class="guide-snippet-btn" data-snippet="code" title="Code-Block">{ }</button>
+            <button class="guide-snippet-btn" data-snippet="list" title="Liste">☰</button>
+            <button class="guide-snippet-btn" data-snippet="hr" title="Trennlinie">—</button>
+            <button class="guide-snippet-btn" data-snippet="mark" title="Text markieren ==text==">▐</button>
+          </div>
         </div>
       </div>
-
-      <!-- Editor pane -->
       <div id="guide-modal-editor-pane">
-        <textarea class="modal-textarea guide-modal-editor"
-          id="guide-modal-content-input"
-          placeholder="Inhalt in Markdown schreiben…"></textarea>
+        <textarea class="modal-textarea guide-modal-editor" id="guide-modal-content-input" placeholder="Inhalt in Markdown schreiben…"></textarea>
       </div>
-
-      <!-- Preview pane -->
       <div id="guide-modal-preview-pane" class="hidden">
         <div id="guide-modal-preview-content" class="guide-detail-content guide-preview-box"></div>
       </div>
-
       <div class="modal-actions">
         <button id="guide-modal-cancel" class="btn-ghost">Abbrechen</button>
         <button id="guide-modal-save" class="btn-primary">Speichern</button>
