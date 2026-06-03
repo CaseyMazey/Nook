@@ -157,7 +157,7 @@
 .block-slot.active-block {
   border-color: transparent;
   border-width: 1.5px;
-  background: #A3B18A;
+  background: #d1d1c2;
   box-shadow: var(--shadow-sm);
 }
 [data-theme="dark"] .block-slot.active-block {
@@ -288,7 +288,55 @@
 [data-theme="dark"] #today-tiles-grid > .panel.today-tile:nth-child(2) { background: #2E2C26; border-color: rgba(255,255,255,0.06); }
 [data-theme="dark"] #today-tiles-grid > .panel.today-tile:nth-child(3) { background: #3A3028; border-color: rgba(255,255,255,0.07); }
 
-/* ── + Kachel row ─────────────────────────────────────────── */
+/* ── Paper note tile aesthetic ────────────────────────────── */
+.today-tile {
+  position: relative;
+}
+
+/* Tape strip on first tile */
+#today-tiles-grid > .panel.today-tile:nth-child(1)::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-2deg);
+  width: 48px;
+  height: 16px;
+  background: rgba(163,177,138,0.55);
+  border-radius: 2px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Paper clip on third tile */
+#today-tiles-grid > .panel.today-tile:nth-child(3)::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  right: 18px;
+  width: 10px;
+  height: 22px;
+  border: 2px solid rgba(90,70,50,0.35);
+  border-radius: 6px 6px 0 0;
+  background: transparent;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Folded corner on berichtsheft tile */
+#panel-berichtsheft::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 0 14px 14px;
+  border-color: transparent transparent rgba(0,0,0,0.12) transparent;
+  pointer-events: none;
+}
+#panel-berichtsheft { position: relative; overflow: hidden; }
 #today-add-tile-row {
   display: flex;
   justify-content: flex-start;
@@ -371,17 +419,18 @@
    RIGHT SIDEBAR
 ═══════════════════════════════════════════════════════════ */
 
-/* ── Clock Panel — now in header row next to weather ──────── */
+/* ── Clock Panel — full width in today-right ──────────────── */
 #clock-sidebar-panel {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 10px 16px;
+  padding: 14px 18px;
   box-shadow: var(--shadow-sm);
   display: flex;
   align-items: center;
-  gap: 14px;
-  flex-shrink: 0;
+  gap: 16px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .clock-sidebar-right { display: flex; flex-direction: column; gap: 1px; }

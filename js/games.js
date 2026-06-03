@@ -1,335 +1,465 @@
 // =========================
-// GAME HUB — games.js
-// Lädt Spiele dynamisch aus games/games.json
-// index.html wird für Spiele nie mehr angefasst
+// GAME HUB — Cozy Mockup Version
 // =========================
 
-window.GameHub = window.GameHub || {
-  registry:         {},
-  activeGame:       null,
-  initializedGames: new Set(),
-  hubReady:         false
+window.GameHub = {
+  initialized: false
 };
 
 // =========================
-// PERSISTENZ
+// MOCK GAME DATA
 // =========================
 
-let gameHighscores = DB.get('gameHighscores', {});
+const MOCK_GAMES = [
+  {
+    id: 'flashcard-battle',
+    title: 'Flashcard Battle',
+    description: 'Kämpfe gegen den Wissens-Boss und steige im Level auf!',
+    image: 'assets/games/flashcard-battle.png',
+    accent: '',
+    statLabel: 'Level',
+    statValue: 'LVL 8',
+    secondaryStat: '850 XP',
+    badge: 'Neu',
+    button: 'Spielen'
+  },
 
-function saveHighscores() {
-  DB.set('gameHighscores', gameHighscores);
-}
+  {
+    id: 'snake',
+    title: 'Snake',
+    description: 'Der Klassiker. Wie lange schaffst du es?',
+    image: 'assets/games/snake.png',
+    accent: '',
+    statLabel: 'Best',
+    statValue: '240',
+    secondaryStat: 'Punkte',
+    button: 'Spielen'
+  },
 
-window.gameHighscores     = gameHighscores;
-window.saveHighscores     = saveHighscores;
-window.renderAllHighscores = renderAllHighscores; // legacy-kompatibel
+  {
+    id: 'memory',
+    title: 'Memory',
+    description: 'Trainiere dein Gedächtnis und schlage deine Zeit!',
+    image: 'assets/games/memory.png',
+    accent: 'blue',
+    statLabel: 'Best',
+    statValue: '01:24',
+    secondaryStat: 'Zeit',
+    button: 'Spielen'
+  },
 
-// =========================
-// REGISTER GAME
-// Spiele rufen dies am Ende ihrer game.js auf.
-// Meta-Infos (name, icon, …) kommen aus manifest.json
-// und werden hier automatisch ergänzt — game.js
-// muss sie nicht mehr selbst mitbringen.
-// =========================
+  {
+    id: 'debug-hero',
+    title: 'Debug Hero',
+    description: 'Finde den Fehler im Code und werde zum Debug Master!',
+    image: 'assets/games/debug-hero.png',
+    accent: 'orange',
+    statLabel: 'Level',
+    statValue: 'LVL 5',
+    secondaryStat: '620 XP',
+    button: 'Spielen'
+  },
 
-window.registerGame = function (gameConfig) {
-  if (!gameConfig || !gameConfig.id) {
-    console.warn('registerGame: ungültige Config, id fehlt.');
-    return;
+  {
+    id: 'ttt',
+    title: 'Tic-Tac-Toe',
+    description: 'Fordere die KI oder einen Freund heraus!',
+    image: 'assets/games/ttt.png',
+    accent: 'purple',
+    statLabel: 'Siege',
+    statValue: '18',
+    secondaryStat: 'Gewonnen',
+    button: 'Spielen'
+  },
+
+  {
+    id: 'virtual-pet',
+    title: 'Virtual Pet',
+    description: 'Kümmere dich um dein Pet und lass es wachsen!',
+    image: 'assets/games/virtual-pet.png',
+    accent: 'pink',
+    statLabel: 'Happiness',
+    statValue: '85%',
+    secondaryStat: 'Glücklich',
+    badge: 'Neu',
+    badgeClass: 'pink',
+    button: 'Öffnen'
   }
-
-  const existing = window.GameHub.registry[gameConfig.id] || {};
-
-  // Manifest-Daten haben Vorrang vor hardcoded Werten in game.js
-  window.GameHub.registry[gameConfig.id] = Object.assign({}, gameConfig, existing);
-
-  console.log(`🎮 Registriert: ${gameConfig.id}`);
-};
+];
 
 // =========================
-// DYNAMISCHES LADEN
+// INIT
 // =========================
 
-function loadScript(src) {
-  return new Promise((resolve, reject) => {
-    // Nicht doppelt laden
-    if (document.querySelector(`script[src="${src}"]`)) {
-      resolve();
-      return;
-    }
-    const s    = document.createElement('script');
-    s.src      = src;
-    s.onload   = resolve;
-    s.onerror  = () => {
-      console.warn(`GameHub: Script nicht gefunden – ${src}`);
-      resolve(); // nicht reject — fehlendes Spiel soll Hub nicht blocken
-    };
-    document.head.appendChild(s);
-  });
-}
-
-function loadStyle(href) {
-  if (document.querySelector(`link[href="${href}"]`)) return;
-  const link  = document.createElement('link');
-  link.rel    = 'stylesheet';
-  link.href   = href;
-  document.head.appendChild(link);
-}
-
-async function loadManifest(gameId) {
-  try {
-    const res = await fetch(`games/${gameId}/manifest.json`);
-    if (!res.ok) return null;
-    return await res.json();
-  } catch {
-    return null;
-  }
-}
-
-async function loadAllGames() {
-  // games.json holen
-  let gameIds = [];
-  try {
-    const res  = await fetch('games/games.json');
-    const data = await res.json();
-    // Beide Formate unterstützen: ["ttt"] oder { "games": ["ttt"] }
-    gameIds = Array.isArray(data) ? data : (data.games || []);
-  } catch (err) {
-    console.error('GameHub: games.json konnte nicht geladen werden.', err);
-    return;
-  }
-
-  // Pro Spiel: manifest → script → style
-  for (const id of gameIds) {
-    // 1. Manifest laden und vorab in Registry eintragen
-    const manifest = await loadManifest(id);
-    if (manifest) {
-      window.GameHub.registry[id] = Object.assign(
-        { id },
-        manifest,
-        window.GameHub.registry[id] || {} // bereits registrierte Logik nicht überschreiben
-      );
-    }
-
-    // 2. Style laden (non-blocking)
-    loadStyle(`games/${id}/style.css`);
-
-    // 3. Script laden — game.js ruft registerGame() auf und ergänzt die Logik
-    await loadScript(`games/${id}/game.js`);
-  }
-
-  // Alle Spiele geladen → Hub initialisieren
-  initHub();
-}
-
-// =========================
-// HUB INITIALISIERUNG
-// =========================
-
-function initHub() {
-  renderGameTabs();
-  renderGameCards();
-  wireTabClicks();
-  renderAllHighscores();
-
-  // Erstes Spiel öffnen
-  const firstId = Object.keys(window.GameHub.registry)[0];
-  if (firstId) {
-    const firstTab = document.querySelector(`.games-tab[data-game="${firstId}"]`);
-    if (firstTab) firstTab.classList.add('active');
-    openGame(firstId);
-  }
-}
-
-// Wird von main.js via renderView('games') aufgerufen.
-// Nach dem ersten Mal nur noch Highscores aktualisieren.
 function initGames() {
-  if (window.GameHub.hubReady) {
-    renderAllHighscores();
-    return;
-  }
-  window.GameHub.hubReady = true;
-  loadAllGames();
+
+  if (window.GameHub.initialized) return;
+
+  window.GameHub.initialized = true;
+
+  const view = document.getElementById('view-games');
+
+  if (!view) return;
+
+  renderGamesHub(view);
 }
 
-// =========================
-// TABS
-// =========================
-
-function renderGameTabs() {
-  const container = document.querySelector('.games-tabs');
-  if (!container) return;
-
-  container.innerHTML = '';
-
-  Object.values(window.GameHub.registry).forEach(game => {
-    const btn          = document.createElement('button');
-    btn.className      = 'games-tab';
-    btn.dataset.game   = game.id;
-    btn.innerHTML      = `
-      <span class="games-tab-icon">${game.icon || '🎮'}</span>
-      <span class="games-tab-title">${game.name || game.id}</span>
-    `;
-    container.appendChild(btn);
-  });
-}
-
-function wireTabClicks() {
-  const container = document.querySelector('.games-tabs');
-  if (!container) return;
-
-  container.addEventListener('click', (e) => {
-    const btn = e.target.closest('.games-tab');
-    if (!btn) return;
-
-    document.querySelectorAll('.games-tab').forEach(t =>
-      t.classList.toggle('active', t === btn)
-    );
-
-    openGame(btn.dataset.game);
-  });
-}
+window.initGames = initGames;
 
 // =========================
-// GAME CARDS
+// RENDER
 // =========================
 
-function renderGameCards() {
-  const area = document.querySelector('.games-area');
-  if (!area) return;
+function renderGamesHub(view) {
 
-  area.innerHTML = '';
+  view.innerHTML = `
+    <div class="games-shell">
 
-  Object.values(window.GameHub.registry).forEach(game => {
-    const card     = document.createElement('div');
-    card.id        = `game-${game.id}`;
-    card.className = 'game-card hidden';
-    area.appendChild(card);
-  });
-}
+      <div class="games-mock-wrapper">
 
-// =========================
-// SPIEL ÖFFNEN
-// =========================
+        <div class="games-layout">
 
-function openGame(gameId) {
-  const registry = window.GameHub.registry;
-  const game     = registry[gameId];
+          <!-- LEFT -->
+          <div class="games-main">
 
-  if (!game) {
-    console.warn(`openGame: "${gameId}" nicht in Registry.`);
-    return;
-  }
+            <!-- HEADER -->
+            <div class="games-header">
 
-  // Vorheriges Spiel zerstören
-  if (window.GameHub.activeGame && window.GameHub.activeGame !== gameId) {
-    const prev = registry[window.GameHub.activeGame];
-    if (prev && typeof prev.destroy === 'function') {
-      try { prev.destroy(); } catch (err) { console.error(err); }
-    }
-  }
+              <div class="games-title-row">
 
-  // Alle Cards ausblenden
-  document.querySelectorAll('.game-card').forEach(c => c.classList.add('hidden'));
+                <div class="games-title-icon">
+                  <img
+                    src="assets/games/controller.png"
+                    alt="Controller"
+                    class="games-controller-image"
+                  >
+                </div>
 
-  // Diese Card einblenden
-  const card = document.getElementById(`game-${gameId}`);
-  if (!card) {
-    console.warn(`openGame: kein Card-Element für "${gameId}"`);
-    return;
-  }
-  card.classList.remove('hidden');
+                <div>
+                  <h1 class="games-title">Spiele</h1>
+                </div>
 
-  // Init: nur einmal
-  if (!window.GameHub.initializedGames.has(gameId)) {
-    if (typeof game.init === 'function') {
-      try { game.init(card); } catch (err) { console.error(err); }
-    }
-    window.GameHub.initializedGames.add(gameId);
-  }
+              </div>
 
-  // Mount: bei jedem Öffnen
-  if (typeof game.mount === 'function') {
-    try { game.mount(card); } catch (err) { console.error(err); }
-  }
+              <p class="games-subtitle">
+                Kurze Pausen. Kleine Challenges. Große Erfolge.
+              </p>
 
-  window.GameHub.activeGame = gameId;
-  renderAllHighscores();
-}
+            </div>
 
-// =========================
-// HIGHSCORES
-// =========================
+            <!-- SEARCH -->
+            <div class="games-toolbar">
 
-function renderAllHighscores() {
-  const panel = document.querySelector('.games-hs-panel');
-  if (!panel) return;
+              <div class="games-search">
 
-  panel.innerHTML = `<div class="games-hs-title">🏆 Highscores</div>`;
+                <svg viewBox="0 0 24 24" fill="none">
+                  <circle
+                    cx="11"
+                    cy="11"
+                    r="7"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                  />
+                  <path
+                    d="M20 20L17 17"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                  />
+                </svg>
 
-  Object.values(window.GameHub.registry).forEach(game => {
-    let score = '—';
-    if (typeof game.getHighscore === 'function') {
-      try {
-        const raw = game.getHighscore();
-        if (raw !== null && raw !== undefined && raw !== '') score = raw;
-      } catch (err) { console.error(err); }
-    }
+                <input
+                  type="text"
+                  placeholder="Spiel suchen..."
+                  id="games-search-input"
+                />
 
-    const entry       = document.createElement('div');
-    entry.className   = 'games-hs-entry';
-    entry.id          = `games-hs-${game.id}`;
-    entry.innerHTML   = `
-      <div class="games-hs-icon">${game.icon || '🎮'}</div>
-      <div class="games-hs-info">
-        <div class="games-hs-game">${game.name || game.id}</div>
-        <div class="games-hs-desc">${game.highscoreLabel || 'Highscore'}</div>
+              </div>
+
+            </div>
+
+            <!-- LIBRARY -->
+            <div class="games-library-header">
+              <h2 class="games-library-title">Game Library</h2>
+            </div>
+
+            <div class="games-library-grid">
+              ${MOCK_GAMES.map(renderGameCard).join('')}
+            </div>
+
+          </div>
+
+          <!-- RIGHT -->
+          <div class="games-right">
+
+            <!-- PROFILE -->
+            <div class="games-side-card">
+
+              <div class="profile-top">
+
+                <img
+                  src="assets/games/profile.png"
+                  class="profile-avatar"
+                >
+
+                <div class="profile-info">
+                  <div class="profile-level">
+                    Level 12
+                  </div>
+
+                  <div class="profile-xp">
+                    1.240 / 1.800 XP
+                  </div>
+
+                  <div class="profile-bar">
+                    <div class="profile-bar-fill"></div>
+                  </div>
+                </div>
+
+              </div>
+
+              <div class="profile-stats">
+
+                <div class="profile-stat">
+                  <span>🔥</span>
+                  <strong>12</strong>
+                  <small>Tage Streak</small>
+                </div>
+
+                <div class="profile-stat">
+                  <span>⭐</span>
+                  <strong>1.240</strong>
+                  <small>Gesamt XP</small>
+                </div>
+
+                <div class="profile-stat">
+                  <span>🕒</span>
+                  <strong>32h</strong>
+                  <small>Spielzeit</small>
+                </div>
+
+              </div>
+
+            </div>
+
+            <!-- PET -->
+            <div class="games-side-card">
+
+              <div class="pet-header">
+                <span>Dein Pet</span>
+                <span class="pet-mood">Glücklich 😊</span>
+              </div>
+
+              <img
+                src="assets/games/pet.png"
+                class="pet-room-image"
+              >
+
+              <div class="pet-progress">
+                <div class="pet-progress-fill"></div>
+              </div>
+
+              <div class="pet-actions">
+
+                <button>🤍</button>
+                <button>🍚</button>
+                <button>🎮</button>
+                <button>💤</button>
+
+              </div>
+
+            </div>
+
+            <!-- DAILY -->
+            <div class="games-side-card">
+
+              <div class="daily-header">
+                <span>Tägliche Challenge</span>
+                <small>23:12:45 verbleibend</small>
+              </div>
+
+              <div class="daily-text">
+                Gewinne 1 Spiel in Flashcard Battle
+              </div>
+
+              <div class="daily-progress">
+                <div class="daily-progress-fill"></div>
+              </div>
+
+              <div class="daily-footer">
+                <span>Belohnung: ⭐ 75 XP</span>
+                <span>0 / 1</span>
+              </div>
+
+              <button class="daily-button">
+                Challenge anzeigen
+              </button>
+
+            </div>
+
+            <!-- ACHIEVEMENTS -->
+            <div class="games-side-card">
+
+              <div class="achievements-header">
+                <span>Neueste Achievements</span>
+                <small>Alle anzeigen</small>
+              </div>
+
+              <div class="achievement-item">
+
+                <div class="achievement-icon trophy">
+                  🏆
+                </div>
+
+                <div class="achievement-info">
+                  <strong>Erster Sieg</strong>
+                  <small>Gewinne dein erstes Spiel</small>
+                </div>
+
+                <div class="achievement-xp">
+                  +50 XP
+                </div>
+
+              </div>
+
+              <div class="achievement-item">
+
+                <div class="achievement-icon memory">
+                  🧩
+                </div>
+
+                <div class="achievement-info">
+                  <strong>Memorizer</strong>
+                  <small>Schließe Memory (8 Paare) ab</small>
+                </div>
+
+                <div class="achievement-xp">
+                  +75 XP
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
       </div>
-      <div class="games-hs-value" id="hs-val-${game.id}">${score}</div>
-    `;
-    panel.appendChild(entry);
-  });
+
+    </div>
+  `;
+
+  wireSearch();
 }
 
 // =========================
-// PUBLIC API FÜR SPIELE
+// GAME CARD
 // =========================
 
-window.GameHubAPI = {
+function renderGameCard(game) {
 
-  getHighscores() {
-    return gameHighscores;
-  },
+  return `
+    <div
+      class="game-library-card ${game.accent || ''}"
+      data-game-title="${game.title.toLowerCase()}"
+    >
 
-  saveHighscores() {
-    saveHighscores();
-  },
+      ${game.badge ? `
+        <div class="game-badge ${game.badgeClass || ''}">
+          ${game.badge}
+        </div>
+      ` : ''}
 
-  setHighscore(gameId, data) {
-    gameHighscores[gameId] = data;
-    saveHighscores();
-    renderAllHighscores();
-  },
+      <div class="game-card-main">
 
-  updateHighscore(gameId, key, value) {
-    if (!gameHighscores[gameId]) gameHighscores[gameId] = {};
-    gameHighscores[gameId][key] = value;
-    saveHighscores();
-    renderAllHighscores();
-  },
+        <img
+          class="game-card-icon"
+          src="${game.image}"
+          alt="${game.title}"
+        >
 
-  refreshHighscores() {
-    renderAllHighscores();
-  }
-};
+        <div class="game-card-text">
+
+          <div class="game-card-title">
+            ${game.title}
+          </div>
+
+          <div class="game-card-description">
+            ${game.description}
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="game-card-stats">
+
+        <div class="game-card-stat">
+          <span class="game-card-stat-label">
+            ${game.statLabel}
+          </span>
+
+          <span class="game-card-stat-value">
+            ${game.statValue}
+          </span>
+        </div>
+
+        <div class="game-card-stat">
+          <span class="game-card-stat-label">
+            Fortschritt
+          </span>
+
+          <span class="game-card-stat-value">
+            ${game.secondaryStat}
+          </span>
+        </div>
+
+      </div>
+
+      <div class="game-card-actions">
+
+        <button class="game-play-btn">
+          ${game.button}
+        </button>
+
+        <button class="game-stats-btn">
+          📊
+        </button>
+
+      </div>
+
+    </div>
+  `;
+}
 
 // =========================
-// DEBUG
+// SEARCH
 // =========================
 
-window.GameHubDebug = {
-  registry()    { console.log(window.GameHub.registry); },
-  active()      { console.log(window.GameHub.activeGame); },
-  initialized() { console.log([...window.GameHub.initializedGames]); }
-};
+function wireSearch() {
+
+  const input = document.getElementById('games-search-input');
+
+  if (!input) return;
+
+  input.addEventListener('input', () => {
+
+    const value = input.value.trim().toLowerCase();
+
+    document
+      .querySelectorAll('.game-library-card')
+      .forEach(card => {
+
+        const title = card.dataset.gameTitle || '';
+
+        const visible = title.includes(value);
+
+        card.style.display = visible ? '' : 'none';
+      });
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  initGames();
+});

@@ -218,6 +218,7 @@ function updateHeader() {
 function updateCountdown() {
   const now = new Date(); now.setHours(0,0,0,0);
   const container = document.getElementById('countdown-display');
+  if (!container) return;
   container.innerHTML = '';
   const candidates = [];
   Object.entries(events).forEach(([key, dayEvs]) => {
@@ -231,13 +232,27 @@ function updateCountdown() {
   const visible = candidates
     .filter(c => countdownVisible[c.id] === true)
     .sort((a, b) => a.daysLeft - b.daysLeft);
+
+  // Show/hide countdowns section
+  const section = document.getElementById('sidebar-countdowns');
+  if (section) section.style.display = visible.length > 0 ? 'block' : 'none';
+
   visible.forEach(item => {
     const entry = document.createElement('div'); entry.className = 'countdown-entry';
-    const days  = document.createElement('span'); days.className = 'countdown-days'; days.textContent = item.daysLeft;
+    const left  = document.createElement('div'); left.className = 'countdown-entry-left';
+    const icon  = document.createElement('span'); icon.className = 'countdown-entry-icon'; icon.textContent = '📅';
+    const info  = document.createElement('div'); info.className = 'countdown-entry-info';
     const label = document.createElement('span'); label.className = 'countdown-label'; label.textContent = item.title;
-    entry.append(days, label); container.appendChild(entry);
+    const sub   = document.createElement('span'); sub.className = 'countdown-sub';
+    sub.textContent = item.daysLeft === 0 ? 'Heute!' : item.daysLeft === 1 ? 'in 1 Tag' : `in ${item.daysLeft} Tagen`;
+    info.append(label, sub); left.append(icon, info);
+    const days  = document.createElement('span'); days.className = 'countdown-days'; days.textContent = item.daysLeft;
+    entry.append(left, days); container.appendChild(entry);
   });
 }
+
+// Open countdown modal when section is clicked
+document.getElementById('sidebar-countdowns')?.addEventListener('click', openCountdownModal);
 
 document.getElementById('prev-week').addEventListener('click', () => {
   state.currentDate.setDate(state.currentDate.getDate() - 7); updateHeader(); renderView(currentView);
@@ -294,7 +309,6 @@ function buildAnalogSVG(now, size) {
   const h = now.getHours()%12, mi = now.getMinutes(), s = now.getSeconds();
   const hAngle = (h*30 + mi*0.5)*Math.PI/180 - Math.PI/2;
   const mAngle = (mi*6 + s*0.1)*Math.PI/180 - Math.PI/2;
-  const sAngle = s*6*Math.PI/180 - Math.PI/2;
   const hand = (angle, len, stroke, sw) => {
     const x = cx + Math.cos(angle)*len, y = cy + Math.sin(angle)*len;
     return `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round"/>`;
@@ -313,7 +327,6 @@ function buildAnalogSVG(now, size) {
     ${markers}
     ${hand(hAngle, r*0.5,  'var(--text)', 2.5)}
     ${hand(mAngle, r*0.75, 'var(--text)', 1.8)}
-    ${hand(sAngle, r*0.85, 'var(--prio-1)', 1.1)}
     <circle cx="${cx}" cy="${cy}" r="2.5" fill="var(--text)"/>
   </svg>`;
 }
@@ -753,19 +766,41 @@ document.querySelectorAll('.add-note-btn').forEach(btn => {
 // Tile-Farbpalette (3 Töne, zufällig bei Erstellung zugewiesen)
 const TILE_COLORS = ['#A3B18A', '#EBE4D4', '#C0AC99'];
 
+// Ensure every existing tile has a saved color (one-time migration)
+(function ensureTileColors() {
+  let changed = false;
+  customTiles.forEach(tile => {
+    if (!tile.color) {
+      tile.color = TILE_COLORS[Math.floor(Math.random() * TILE_COLORS.length)];
+      changed = true;
+    }
+  });
+  if (changed) DB.set('customTiles', customTiles);
+})();
+
 function saveCustomTiles() { DB.set('customTiles', customTiles); }
+
+// Pick text color based on tile background
+function tileTextColor(hex) {
+  if (hex === '#A3B18A') return '#2A3020';
+  if (hex === '#C0AC99') return '#2E2217';
+  return '#3D3626'; // #EBE4D4
+}
 
 function renderCustomTiles() {
   const container = document.getElementById('custom-tiles');
   container.innerHTML = '';
   customTiles.forEach(tile => {
     const panel  = document.createElement('div'); panel.className = 'panel today-tile';
-    if (tile.color) {
-      panel.style.setProperty('--tile-bg', tile.color + '22');
-      panel.style.background = tile.color + '22';
-    }
+    const bg = tile.color || TILE_COLORS[0];
+    panel.style.background = bg;
+    panel.style.borderColor = 'rgba(0,0,0,0.10)';
+    const textCol = tileTextColor(bg);
+
     const header = document.createElement('div'); header.className = 'panel-header';
-    const label  = document.createElement('span'); label.className = 'panel-label'; label.textContent = tile.title;
+    header.style.borderBottomColor = 'rgba(0,0,0,0.09)';
+    const label  = document.createElement('span'); label.className = 'panel-label';
+    label.textContent = tile.title; label.style.color = textCol;
     const right  = document.createElement('div'); right.style.cssText = 'display:flex;gap:6px;align-items:center;';
     if (tile.type === 'list') {
       const addBtn = document.createElement('button'); addBtn.className = 'icon-btn'; addBtn.textContent = '+';
@@ -788,6 +823,7 @@ function renderCustomTiles() {
     if (tile.type === 'note') {
       const ta = document.createElement('textarea');
       ta.className = 'custom-tile-textarea'; ta.value = tile.content || ''; ta.placeholder = 'Notizen...';
+      ta.style.color = textCol;
       ta.addEventListener('input', () => { tile.content = ta.value; saveCustomTiles(); });
       panel.appendChild(ta);
     } else {
@@ -798,6 +834,7 @@ function renderCustomTiles() {
       const ul = document.createElement('ul'); ul.className = 'checklist';
       (tile.items || []).forEach((item, idx) => {
         const li = document.createElement('li'); li.className = 'checklist-item' + (item.done ? ' done' : '');
+        li.style.color = textCol;
         const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = item.done;
         cb.addEventListener('change', () => { item.done = cb.checked; saveCustomTiles(); renderCustomTiles(); });
         const span = document.createElement('span'); span.textContent = item.text || item;
@@ -922,9 +959,29 @@ document.getElementById('add-shopping-btn').addEventListener('click', () => {
 renderShoppingList();
 
 // =========================
+// THEME TOGGLE
+// =========================
+
+function updateThemeIcon() {
+  const sunIcon  = document.getElementById('theme-icon-sun');
+  const moonIcon = document.getElementById('theme-icon-moon');
+  if (!sunIcon || !moonIcon) return;
+  sunIcon.style.display  = darkMode ? 'none'  : 'block';
+  moonIcon.style.display = darkMode ? 'block' : 'none';
+}
+
+document.getElementById('theme-toggle-btn')?.addEventListener('click', () => {
+  darkMode = !darkMode;
+  DB.set('darkMode', darkMode);
+  document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
+  updateThemeIcon();
+});
+
+// =========================
 // INIT SIDEBAR + GREETING
 // =========================
 renderTodayHeader();
 renderWeather();
 startSidebarClock();
 renderMiniCal();
+updateThemeIcon();

@@ -737,12 +737,15 @@ let _guidesInitialized = false;
 
 function initGuides() {
   if (_guidesInitialized) {
-    // Already initialized — just re-render
     renderGuideCategoryList();
     renderGuideContent();
     return;
   }
   _guidesInitialized = true;
+
+  // Force repaint to fix CSS variable resolution in light mode
+  const guideView = document.getElementById('view-guides');
+  if (guideView) { void guideView.offsetHeight; }
 
   // Add category → open modal
   document.getElementById('add-guide-category-btn').addEventListener('click', openGuideCatModal);
