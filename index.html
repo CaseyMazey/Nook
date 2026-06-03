@@ -446,12 +446,15 @@
             <h1 id="today-greeting" class="today-greeting">—</h1>
             <div id="today-subtitle" class="today-subtitle">—</div>
           </div>
-          <div id="today-weather" class="today-weather">
-            <div class="weather-icon">⛅</div>
-            <div class="weather-info">
-              <div class="weather-temp" id="weather-temp">—</div>
-              <div class="weather-desc" id="weather-desc">—</div>
+          <div id="today-header-right">
+            <div id="today-weather" class="today-weather">
+              <div class="weather-icon">⛅</div>
+              <div class="weather-info">
+                <div class="weather-temp" id="weather-temp">—</div>
+                <div class="weather-desc" id="weather-desc">—</div>
+              </div>
             </div>
+            <div id="today-header-clock" style="display:none;"></div>
           </div>
         </div>
 
@@ -806,6 +809,24 @@
             </div>
 
             <div class="panel settings-panel">
+              <div class="panel-header"><span class="panel-label">Wetter Widget</span></div>
+              <div class="settings-row">
+                <div><div class="settings-row-title">Standort</div><div class="settings-row-sub">GPS oder manuelle Eingabe</div></div>
+                <div style="display:flex;gap:6px;">
+                  <button class="clock-type-btn" id="weather-mode-gps">GPS</button>
+                  <button class="clock-type-btn active" id="weather-mode-manual">Manuell</button>
+                </div>
+              </div>
+              <div class="settings-row" id="weather-city-row">
+                <div><div class="settings-row-title">Stadt</div><div class="settings-row-sub">z.B. Cologne, Frankfurt, Berlin</div></div>
+                <input type="text" id="weather-city-input" class="modal-input"
+                  placeholder="z.B. Cologne"
+                  style="width:140px;padding:7px 12px;font-size:13px;"
+                  autocomplete="off"/>
+              </div>
+            </div>
+
+            <div class="panel settings-panel">
               <div class="panel-header"><span class="panel-label">Uhr (Heuteseite)</span></div>
               <div class="settings-row">
                 <div><div class="settings-row-title">Uhr anzeigen</div><div class="settings-row-sub">Zeigt eine Uhr oben rechts auf der Heuteseite</div></div>
@@ -818,6 +839,14 @@
                   <button class="clock-type-btn" data-type="analog">Analog</button>
                 </div>
               </div>
+            </div>
+
+            <div class="panel settings-panel">
+              <div class="panel-header"><span class="panel-label">Farben</span></div>
+              <div class="settings-row"><div><div class="settings-row-title">Termine</div><div class="settings-row-sub">Farbe für Termine im Kalender</div></div><input type="color" id="color-event" class="color-swatch"/></div>
+              <div class="settings-row"><div><div class="settings-row-title">Priorität Hoch</div><div class="settings-row-sub">Aufgaben mit hoher Priorität</div></div><input type="color" id="color-prio1" class="color-swatch"/></div>
+              <div class="settings-row"><div><div class="settings-row-title">Priorität Normal</div><div class="settings-row-sub">Aufgaben mit normaler Priorität</div></div><input type="color" id="color-prio2" class="color-swatch"/></div>
+              <div class="settings-row"><div><div class="settings-row-title">Priorität Niedrig</div><div class="settings-row-sub">Aufgaben mit niedriger Priorität</div></div><input type="color" id="color-prio3" class="color-swatch"/></div>
             </div>
 
             <div class="panel settings-panel">

@@ -30,41 +30,171 @@ function renderTodayHeader() {
 }
 
 // =========================
-// WEATHER PLACEHOLDER
-// (kann später durch echte API ersetzt werden)
+// WEATHER SVG ICONS — minimal line-art style
 // =========================
 
-const WEATHER_CONDITIONS = [
-  { icon: '☀️', temp: '18°C', desc: 'Sonnig' },
-  { icon: '⛅', temp: '13°C', desc: 'Leicht bewölkt' },
-  { icon: '🌥️', temp: '11°C', desc: 'Bewölkt' },
-  { icon: '🌦️', temp: '9°C',  desc: 'Wechselhaft' },
-  { icon: '🌧️', temp: '7°C',  desc: 'Regnerisch' },
-];
+const WEATHER_SVGS = {
+  sun: `<svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="14" cy="14" r="5" stroke="var(--sage)" stroke-width="1.8"/>
+    <line x1="14" y1="2" x2="14" y2="5" stroke="var(--sage)" stroke-width="1.8" stroke-linecap="round"/>
+    <line x1="14" y1="23" x2="14" y2="26" stroke="var(--sage)" stroke-width="1.8" stroke-linecap="round"/>
+    <line x1="2" y1="14" x2="5" y2="14" stroke="var(--sage)" stroke-width="1.8" stroke-linecap="round"/>
+    <line x1="23" y1="14" x2="26" y2="14" stroke="var(--sage)" stroke-width="1.8" stroke-linecap="round"/>
+    <line x1="5.5" y1="5.5" x2="7.6" y2="7.6" stroke="var(--sage)" stroke-width="1.8" stroke-linecap="round"/>
+    <line x1="20.4" y1="20.4" x2="22.5" y2="22.5" stroke="var(--sage)" stroke-width="1.8" stroke-linecap="round"/>
+    <line x1="22.5" y1="5.5" x2="20.4" y2="7.6" stroke="var(--sage)" stroke-width="1.8" stroke-linecap="round"/>
+    <line x1="7.6" y1="20.4" x2="5.5" y2="22.5" stroke="var(--sage)" stroke-width="1.8" stroke-linecap="round"/>
+  </svg>`,
+  cloud: `<svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M8 19a4 4 0 01-.5-7.95A6 6 0 0120 13.5a3.5 3.5 0 010 7H8z" stroke="var(--text-2)" stroke-width="1.8" stroke-linejoin="round"/>
+  </svg>`,
+  partlyCloudy: `<svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="10" cy="10" r="4" stroke="var(--sage)" stroke-width="1.6"/>
+    <line x1="10" y1="3" x2="10" y2="5" stroke="var(--sage)" stroke-width="1.6" stroke-linecap="round"/>
+    <line x1="3" y1="10" x2="5" y2="10" stroke="var(--sage)" stroke-width="1.6" stroke-linecap="round"/>
+    <line x1="4.9" y1="4.9" x2="6.3" y2="6.3" stroke="var(--sage)" stroke-width="1.6" stroke-linecap="round"/>
+    <line x1="15.1" y1="4.9" x2="13.7" y2="6.3" stroke="var(--sage)" stroke-width="1.6" stroke-linecap="round"/>
+    <path d="M11 21a4 4 0 01-.5-7.95A5.5 5.5 0 0122 15.5a3 3 0 010 6H11z" stroke="var(--text-2)" stroke-width="1.8" stroke-linejoin="round"/>
+  </svg>`,
+  rain: `<svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M7 16a4 4 0 01-.5-7.95A5.5 5.5 0 0118 11a3 3 0 010 6H7z" stroke="var(--text-2)" stroke-width="1.8" stroke-linejoin="round"/>
+    <line x1="9" y1="21" x2="8" y2="24" stroke="var(--text-2)" stroke-width="1.6" stroke-linecap="round"/>
+    <line x1="13" y1="21" x2="12" y2="24" stroke="var(--text-2)" stroke-width="1.6" stroke-linecap="round"/>
+    <line x1="17" y1="21" x2="16" y2="24" stroke="var(--text-2)" stroke-width="1.6" stroke-linecap="round"/>
+  </svg>`,
+  drizzle: `<svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M7 16a4 4 0 01-.5-7.95A5.5 5.5 0 0118 11a3 3 0 010 6H7z" stroke="var(--text-2)" stroke-width="1.8" stroke-linejoin="round"/>
+    <line x1="10" y1="20" x2="9.5" y2="22.5" stroke="var(--text-3)" stroke-width="1.4" stroke-linecap="round"/>
+    <line x1="14" y1="20" x2="13.5" y2="22.5" stroke="var(--text-3)" stroke-width="1.4" stroke-linecap="round"/>
+  </svg>`,
+  storm: `<svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M7 15a4 4 0 01-.5-7.95A5.5 5.5 0 0118 10a3 3 0 010 6H7z" stroke="var(--text-2)" stroke-width="1.8" stroke-linejoin="round"/>
+    <polyline points="13,18 11,22 14,22 12,26" stroke="var(--prio-1)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`,
+  snow: `<svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M7 16a4 4 0 01-.5-7.95A5.5 5.5 0 0118 11a3 3 0 010 6H7z" stroke="var(--text-2)" stroke-width="1.8" stroke-linejoin="round"/>
+    <line x1="9" y1="21" x2="9" y2="24" stroke="var(--text-3)" stroke-width="1.6" stroke-linecap="round"/>
+    <line x1="13" y1="21" x2="13" y2="24" stroke="var(--text-3)" stroke-width="1.6" stroke-linecap="round"/>
+    <line x1="17" y1="21" x2="17" y2="24" stroke="var(--text-3)" stroke-width="1.6" stroke-linecap="round"/>
+    <line x1="7.5" y1="22.5" x2="10.5" y2="22.5" stroke="var(--text-3)" stroke-width="1.6" stroke-linecap="round"/>
+    <line x1="11.5" y1="22.5" x2="14.5" y2="22.5" stroke="var(--text-3)" stroke-width="1.6" stroke-linecap="round"/>
+  </svg>`,
+  fog: `<svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <line x1="5" y1="10" x2="23" y2="10" stroke="var(--text-3)" stroke-width="1.8" stroke-linecap="round"/>
+    <line x1="7" y1="14" x2="21" y2="14" stroke="var(--text-3)" stroke-width="1.8" stroke-linecap="round"/>
+    <line x1="5" y1="18" x2="23" y2="18" stroke="var(--text-3)" stroke-width="1.8" stroke-linecap="round"/>
+  </svg>`,
+  unknown: `<svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="14" cy="14" r="10" stroke="var(--text-3)" stroke-width="1.8"/>
+    <line x1="14" y1="8" x2="14" y2="16" stroke="var(--text-3)" stroke-width="1.8" stroke-linecap="round"/>
+    <circle cx="14" cy="19" r="1.2" fill="var(--text-3)"/>
+  </svg>`,
+};
 
-function renderWeather() {
+function weatherCodeToSvg(code) {
+  if (code === 0) return WEATHER_SVGS.sun;
+  if (code <= 2) return WEATHER_SVGS.partlyCloudy;
+  if (code <= 3) return WEATHER_SVGS.cloud;
+  if (code <= 48) return WEATHER_SVGS.fog;
+  if (code <= 57) return WEATHER_SVGS.drizzle;
+  if (code <= 67) return WEATHER_SVGS.rain;
+  if (code <= 77) return WEATHER_SVGS.snow;
+  if (code <= 82) return WEATHER_SVGS.rain;
+  if (code <= 86) return WEATHER_SVGS.snow;
+  if (code <= 99) return WEATHER_SVGS.storm;
+  return WEATHER_SVGS.unknown;
+}
+
+// =========================
+// WEATHER — OpenWeatherMap API
+// Settings: GPS oder manuelle Stadt
+// =========================
+
+let weatherSettings = DB.get('weatherSettings', { mode: 'manual', city: 'Cologne' });
+
+const OWM_ICON_MAP = {
+  '01': '☀️', '02': '⛅', '03': '🌥️', '04': '☁️',
+  '09': '🌧️', '10': '🌦️', '11': '⛈️', '13': '❄️', '50': '🌫️'
+};
+
+function owmIcon(iconCode) {
+  return OWM_ICON_MAP[iconCode?.slice(0,2)] || '🌡️';
+}
+
+async function fetchWeatherByCoords(lat, lon) {
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=precipitation_probability&timezone=auto`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Weather fetch failed');
+  const data = await res.json();
+  const wc = data.current_weather;
+  const code = wc.weathercode;
+  const svgCode = weatherCodeToSvg(code);
+  const temp = Math.round(wc.temperature) + '°C';
+  const desc = weatherCodeToDesc(code);
+  return { svgCode, temp, desc };
+}
+
+async function fetchWeatherByCity(city) {
+  const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=de&format=json`;
+  const geoRes = await fetch(geoUrl);
+  if (!geoRes.ok) throw new Error('Geocode failed');
+  const geoData = await geoRes.json();
+  if (!geoData.results?.length) throw new Error('City not found');
+  const { latitude, longitude } = geoData.results[0];
+  return fetchWeatherByCoords(latitude, longitude);
+}
+
+function weatherCodeToDesc(code) {
+  if (code === 0) return 'Klar';
+  if (code <= 2) return 'Leicht bewölkt';
+  if (code <= 3) return 'Bewölkt';
+  if (code <= 48) return 'Nebelig';
+  if (code <= 57) return 'Nieselregen';
+  if (code <= 67) return 'Regen';
+  if (code <= 77) return 'Schnee';
+  if (code <= 82) return 'Regenschauer';
+  if (code <= 86) return 'Schneeschauer';
+  if (code <= 99) return 'Gewitter';
+  return 'Unbekannt';
+}
+
+async function renderWeather() {
   const tempEl = document.getElementById('weather-temp');
   const descEl = document.getElementById('weather-desc');
   const iconEl = document.querySelector('.weather-icon');
   if (!tempEl) return;
 
-  // Gespeicherte Wetterdaten aus localStorage oder Placeholder
+  // Cache: 30 Minuten
   const saved = DB.get('weatherData', null);
   if (saved && Date.now() - saved.ts < 30*60*1000) {
-    // Gecachte Daten unter 30 Min nutzen
-    if (iconEl) iconEl.textContent = saved.icon;
+    if (iconEl) iconEl.innerHTML = saved.svgCode || '';
     tempEl.textContent = saved.temp;
     descEl.textContent = saved.desc;
     return;
   }
 
-  // Placeholder: anhand Tageszeit variieren
-  const h = new Date().getHours();
-  const idx = h < 8 ? 2 : h < 14 ? 0 : h < 18 ? 1 : 3;
-  const w = WEATHER_CONDITIONS[idx];
-  if (iconEl) iconEl.textContent = w.icon;
-  tempEl.textContent = w.temp;
-  descEl.textContent = w.desc;
+  weatherSettings = DB.get('weatherSettings', { mode: 'manual', city: 'Cologne' });
+
+  try {
+    let data;
+    if (weatherSettings.mode === 'gps') {
+      const pos = await new Promise((res, rej) =>
+        navigator.geolocation.getCurrentPosition(res, rej, { timeout: 6000 })
+      );
+      data = await fetchWeatherByCoords(pos.coords.latitude, pos.coords.longitude);
+    } else {
+      const city = weatherSettings.city || 'Cologne';
+      data = await fetchWeatherByCity(city);
+    }
+    DB.set('weatherData', { ...data, ts: Date.now() });
+    if (iconEl) iconEl.innerHTML = data.svgCode || '';
+    tempEl.textContent = data.temp;
+    descEl.textContent = data.desc;
+  } catch (e) {
+    if (iconEl) iconEl.innerHTML = WEATHER_SVGS.unknown;
+    tempEl.textContent = '—';
+    descEl.textContent = 'Keine Daten';
+  }
 }
 
 // =========================
@@ -256,7 +386,8 @@ function buildMiniCal(refDate) {
     const isT  = cellDate.getTime() === today.getTime();
     const hasE = eventDays.has(d);
     const cls  = ['mini-cal-cell', isT ? 'is-today' : '', hasE ? 'has-events' : ''].filter(Boolean).join(' ');
-    cells += `<div class="${cls}"><span>${d}</span><span class="mini-cal-dot"></span></div>`;
+    const key  = dateKey(cellDate);
+    cells += `<div class="${cls}" data-date="${key}" data-day="${d}"><span>${d}</span><span class="mini-cal-dot"></span></div>`;
   }
 
   const total = startDow + daysInMonth;
@@ -278,7 +409,7 @@ function buildMiniCal(refDate) {
   if (upcoming.length > 0) {
     upcomingHtml = `<div id="mini-cal-events">${
       upcoming.slice(0,4).map(e =>
-        `<div class="mini-cal-event-row">
+        `<div class="mini-cal-event-row" data-date="${dateKey(e.date)}" style="cursor:pointer;">
           <span class="mini-cal-event-dot ${e.type}"></span>
           <span class="mini-cal-event-title">${e.title}</span>
           <span class="mini-cal-event-date">${e.dateStr}</span>
@@ -293,6 +424,7 @@ function buildMiniCal(refDate) {
       <div class="mini-cal-nav">
         <button class="mini-cal-nav-btn" id="mini-cal-prev">&#8249;</button>
         <button class="mini-cal-nav-btn" id="mini-cal-next">&#8250;</button>
+        <button class="mini-cal-nav-btn" id="mini-cal-add" title="Termin hinzufügen">+</button>
       </div>
     </div>
     <div class="mini-cal-grid">${cells}</div>
@@ -310,6 +442,27 @@ function renderMiniCal() {
   document.getElementById('mini-cal-next')?.addEventListener('click', () => {
     miniCalDate = new Date(miniCalDate.getFullYear(), miniCalDate.getMonth()+1, 1);
     renderMiniCal();
+  });
+  // + button: create new event for today
+  document.getElementById('mini-cal-add')?.addEventListener('click', () => {
+    const today = new Date();
+    openEventModal(dateKey(today), today);
+  });
+  // Clickable day cells
+  el.querySelectorAll('.mini-cal-cell[data-date]').forEach(cell => {
+    cell.addEventListener('click', () => {
+      const key = cell.dataset.date;
+      const date = parseLocalDate(key);
+      openCalDayModal(key, date);
+    });
+  });
+  // Clickable upcoming event rows
+  el.querySelectorAll('.mini-cal-event-row[data-date]').forEach(row => {
+    row.addEventListener('click', () => {
+      const key = row.dataset.date;
+      const date = parseLocalDate(key);
+      openCalDayModal(key, date);
+    });
   });
 }
 
@@ -765,6 +918,28 @@ document.getElementById('add-shopping-btn').addEventListener('click', () => {
   setTimeout(() => document.getElementById('note-modal-input').focus(), 50);
 });
 renderShoppingList();
+
+// =========================
+// PLUGIN LOADER — optional widgets
+// =========================
+
+function loadOptionalPlugin(jsPath, cssPath) {
+  // Load CSS
+  if (cssPath) {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet'; link.href = cssPath;
+    document.head.appendChild(link);
+  }
+  // Load JS
+  const script = document.createElement('script');
+  script.src = jsPath;
+  script.onerror = () => {}; // silent fail if file doesn't exist
+  document.body.appendChild(script);
+}
+
+// Auto-detect and load national_day plugin
+// It will render itself if loaded
+loadOptionalPlugin('js/national_day.js', 'css/national_day.css');
 
 // =========================
 // INIT SIDEBAR + GREETING

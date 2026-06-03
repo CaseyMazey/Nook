@@ -12,53 +12,53 @@
   --mono: 'DM Mono', 'Courier New', monospace;
 
   /* ── Page background — warm paper ────────────────────── */
-  --bg:        #F2EFE8;
-  --bg-2:      #E9E5DC;
+  --bg:        #EFEBe3;
+  --bg-2:      #E5E0D5;
 
   /* ── Surface hierarchy — layered elevation ────────────── */
   --surface:   #FDFAF5;   /* top-level cards */
-  --surface-2: #F5F1EA;   /* secondary panels */
-  --surface-3: #EDE9E0;   /* subtle insets */
+  --surface-2: #F4F0E8;   /* secondary panels */
+  --surface-3: #EAE5DA;   /* subtle insets */
 
   /* ── Dashboard container (today main area) ────────────── */
-  --dash-bg:     #F8F5EE;
-  --dash-border: rgba(150,130,90,0.12);
-  --dash-shadow: 0 2px 16px rgba(80,60,30,0.06), 0 1px 4px rgba(80,60,30,0.04);
+  --dash-bg:     #F7F3EB;
+  --dash-border: rgba(140,118,78,0.15);
+  --dash-shadow: 0 2px 16px rgba(80,60,30,0.08), 0 1px 4px rgba(80,60,30,0.05);
 
   /* ── Borders ──────────────────────────────────────────── */
-  --border:        rgba(130,110,75,0.13);
-  --border-strong: rgba(130,110,75,0.23);
+  --border:        rgba(120,100,65,0.16);
+  --border-strong: rgba(120,100,65,0.28);
 
   /* ── Text hierarchy ───────────────────────────────────── */
-  --text:   #26231E;   /* warm charcoal — readable, not pure black */
-  --text-2: #5E5848;   /* warm medium */
-  --text-3: #9A9082;   /* warm muted */
+  --text:   #24211C;   /* warm charcoal — readable, not pure black */
+  --text-2: #56503F;   /* warm medium */
+  --text-3: #90876E;   /* warm muted — slightly richer */
 
   /* ── Accent surfaces ──────────────────────────────────── */
-  --accent-soft: #EAE6DC;
+  --accent-soft: #E5DFD0;
 
-  /* ── Sage — primary accent, slightly richer ───────────── */
-  --sage:        #7B8F68;
-  --sage-dark:   #5E6E4E;
-  --sage-light:  #A4AF90;
-  --sage-bg:     rgba(123,143,104,0.11);
-  --sage-border: rgba(123,143,104,0.28);
+  /* ── Sage — primary accent, richer ───────────────────── */
+  --sage:        #6B7F58;
+  --sage-dark:   #50623E;
+  --sage-light:  #96A47E;
+  --sage-bg:     rgba(107,127,88,0.13);
+  --sage-border: rgba(107,127,88,0.32);
 
   /* ── Event color (calendar/blocks) ───────────────────── */
-  --event-color:    #7B8F68;
-  --event-color-bg: rgba(123,143,104,0.11);
+  --event-color:    #6B7F58;
+  --event-color-bg: rgba(107,127,88,0.13);
 
   /* ── Priority — earthy, readable ─────────────────────── */
-  --prio-1:    #9A5E44;   /* muted terracotta */
-  --prio-1-bg: rgba(154,94,68,0.10);
-  --prio-2:    #7B8F68;   /* sage */
-  --prio-2-bg: rgba(123,143,104,0.10);
-  --prio-3:    #8A8070;   /* warm stone */
-  --prio-3-bg: rgba(138,128,112,0.10);
+  --prio-1:    #9A4F35;   /* muted terracotta — richer */
+  --prio-1-bg: rgba(154,79,53,0.11);
+  --prio-2:    #6B7F58;   /* sage */
+  --prio-2-bg: rgba(107,127,88,0.11);
+  --prio-3:    #8A7A68;   /* warm stone */
+  --prio-3-bg: rgba(138,122,104,0.11);
 
   /* ── Budget ───────────────────────────────────────────── */
-  --budget-income:  #4E7054;
-  --budget-expense: #9A5E44;
+  --budget-income:  #4A6E50;
+  --budget-expense: #9A4F35;
 
   /* ── Radius ───────────────────────────────────────────── */
   --radius:    12px;

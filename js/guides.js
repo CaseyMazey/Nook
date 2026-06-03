@@ -733,7 +733,17 @@ function closeGuideCatModal() {
   document.getElementById('guide-cat-modal-overlay').classList.add('hidden');
 }
 
+let _guidesInitialized = false;
+
 function initGuides() {
+  if (_guidesInitialized) {
+    // Already initialized — just re-render
+    renderGuideCategoryList();
+    renderGuideContent();
+    return;
+  }
+  _guidesInitialized = true;
+
   // Add category → open modal
   document.getElementById('add-guide-category-btn').addEventListener('click', openGuideCatModal);
 

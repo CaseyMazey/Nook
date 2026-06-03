@@ -9,6 +9,20 @@ function renderSettings(){
   document.getElementById('clock-type-row').style.display = clockEnabled ? 'flex' : 'none';
   document.querySelectorAll('.clock-type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === clockType));
   renderBlockSettings();
+  renderWeatherSettings();
+}
+
+function renderWeatherSettings() {
+  const ws = DB.get('weatherSettings', { mode: 'manual', city: 'Cologne' });
+  const gpsBtn  = document.getElementById('weather-mode-gps');
+  const manBtn  = document.getElementById('weather-mode-manual');
+  const cityRow = document.getElementById('weather-city-row');
+  const cityIn  = document.getElementById('weather-city-input');
+  if (!gpsBtn) return;
+  gpsBtn.classList.toggle('active', ws.mode === 'gps');
+  manBtn.classList.toggle('active', ws.mode !== 'gps');
+  cityRow.style.display = ws.mode === 'gps' ? 'none' : 'flex';
+  cityIn.value = ws.city || '';
 }
 
 // Benutzername
@@ -63,6 +77,34 @@ function renderBlockSettings(){
 document.getElementById('add-block-btn').addEventListener('click', () => {
   blocks.push({ id: Date.now(), label: `Block ${blocks.length+1}`, start: '08:00', end: '09:30', free: false });
   saveBlocks(); renderBlockSettings(); if(currentView==='today') renderBlocks();
+});
+
+// =========================
+// WEATHER SETTINGS
+// =========================
+
+document.getElementById('weather-mode-gps')?.addEventListener('click', () => {
+  const ws = DB.get('weatherSettings', { mode: 'manual', city: 'Cologne' });
+  ws.mode = 'gps';
+  DB.set('weatherSettings', ws);
+  DB.set('weatherData', null);
+  renderWeatherSettings();
+  if (typeof renderWeather === 'function') renderWeather();
+});
+
+document.getElementById('weather-mode-manual')?.addEventListener('click', () => {
+  const ws = DB.get('weatherSettings', { mode: 'manual', city: 'Cologne' });
+  ws.mode = 'manual';
+  DB.set('weatherSettings', ws);
+  renderWeatherSettings();
+});
+
+document.getElementById('weather-city-input')?.addEventListener('change', e => {
+  const ws = DB.get('weatherSettings', { mode: 'manual', city: 'Cologne' });
+  ws.city = e.target.value.trim() || 'Cologne';
+  DB.set('weatherSettings', ws);
+  DB.set('weatherData', null);
+  if (typeof renderWeather === 'function') renderWeather();
 });
 
 // =========================
