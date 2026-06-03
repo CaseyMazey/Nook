@@ -1,9 +1,7 @@
 /* =============================================================
-   SETTINGS.CSS — Tab: Einstellungen
-   Abhängigkeiten: CSS-Variablen aus main.css (:root)
+   SETTINGS.CSS — Muted cozy palette
 ============================================================= */
 
-/* ── Two-column grid ──────────────────────────────────────── */
 #settings-layout {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -13,19 +11,17 @@
 }
 .settings-col { display: flex; flex-direction: column; gap: 18px; }
 
-/* ── Settings rows ────────────────────────────────────────── */
 .settings-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
+  padding: 15px 18px;
   gap: 16px;
 }
 .settings-row:not(:last-child) { border-bottom: 1px solid var(--border); }
-.settings-row-title { font-size: 13.5px; }
+.settings-row-title { font-size: 13.5px; font-weight: 500; color: var(--text); }
 .settings-row-sub { font-size: 12px; color: var(--text-3); margin-top: 2px; }
 
-/* ── Color swatch ─────────────────────────────────────────── */
 .color-swatch {
   width: 36px;
   height: 28px;
@@ -36,12 +32,11 @@
   background: none;
 }
 
-/* ── Block settings rows ──────────────────────────────────── */
 .block-settings-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 20px;
+  padding: 12px 18px;
   border-bottom: 1px solid var(--border);
   flex-wrap: nowrap;
 }
@@ -59,7 +54,7 @@
   outline: none;
   transition: border-color var(--transition), background var(--transition);
 }
-.bs-label:focus { border-color: var(--text); background: var(--surface); }
+.bs-label:focus { border-color: var(--sage); background: var(--surface); }
 
 .bs-time {
   width: 100px;
@@ -74,21 +69,22 @@
   flex-shrink: 0;
   transition: border-color var(--transition), background var(--transition);
 }
-.bs-time:focus { border-color: var(--text); background: var(--surface); }
+.bs-time:focus { border-color: var(--sage); background: var(--surface); }
 
 .bs-dash { color: var(--text-3); font-size: 12px; flex-shrink: 0; }
 .bs-del  { color: var(--text-3); font-size: 13px; flex-shrink: 0; }
 .bs-del:hover { color: var(--prio-1); }
 .bs-free-toggle { margin-left: 4px; flex-shrink: 0; }
 
-/* ── Clock type toggle ────────────────────────────────────── */
 .clock-type-btn {
   padding: 7px 16px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-strong);
   font-size: 13px;
+  font-weight: 500;
   color: var(--text-2);
+  background: var(--surface-2);
   transition: all var(--transition);
 }
-.clock-type-btn:hover { background: var(--accent-soft); color: var(--text); }
-.clock-type-btn.active { background: var(--text); color: var(--surface); border-color: var(--text); }
+.clock-type-btn:hover { background: var(--sage-bg); color: var(--sage-dark); border-color: var(--sage); }
+.clock-type-btn.active { background: var(--sage-bg); color: var(--sage-dark); border-color: var(--sage); font-weight: 600; }

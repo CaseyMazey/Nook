@@ -75,7 +75,7 @@
 }
 
 #budget-title-block h1 {
-  font-family: var(--font-serif);
+  font-family: var(--font);
   font-size: 38px;
   font-weight: 400;
   letter-spacing: -1.5px;
@@ -209,7 +209,7 @@
   margin-bottom: 6px;
 }
 .budget-kpi-value {
-  font-family: var(--font-serif);
+  font-family: var(--font);
   font-size: 28px;
   font-weight: 400;
   letter-spacing: -0.5px;
@@ -274,7 +274,7 @@
   margin-bottom: 12px;
 }
 .b-ks-value {
-  font-family: var(--font-serif);
+  font-family: var(--font);
   font-size: 34px;
   font-weight: 400;
   letter-spacing: -1px;
@@ -398,7 +398,7 @@
 }
 .b-liq-row:last-child { border-bottom: none; }
 .b-liq-row-label { font-size: 13px; color: var(--text-2); flex: 1; }
-.b-liq-row-value { font-family: var(--font-serif); font-size: 15px; font-weight: 400; flex-shrink: 0; }
+.b-liq-row-value { font-family: var(--font); font-size: 15px; font-weight: 400; flex-shrink: 0; }
 .b-liq-row-value.income  { color: var(--b-green); }
 .b-liq-row-value.expense { color: var(--b-red); }
 
@@ -421,7 +421,7 @@
 }
 .b-liq-expense-item .expense {
   color: var(--b-red);
-  font-family: var(--font-serif);
+  font-family: var(--font);
   flex-shrink: 0;
 }
 
@@ -429,7 +429,7 @@
 
 .b-liq-total-row { display: flex; align-items: baseline; justify-content: space-between; padding: 8px 0 2px; }
 .b-liq-total-label { font-size: 14px; font-weight: 600; color: var(--text); }
-.b-liq-total-value { font-family: var(--font-serif); font-size: 22px; font-weight: 400; letter-spacing: -0.5px; }
+.b-liq-total-value { font-family: var(--font); font-size: 22px; font-weight: 400; letter-spacing: -0.5px; }
 .b-liq-total-value.income  { color: var(--b-green); }
 .b-liq-total-value.expense { color: var(--b-red); }
 
@@ -452,7 +452,7 @@
 .liquidity-kontostand-value {
   font-size: 17px;
   font-weight: 500;
-  font-family: var(--font-serif);
+  font-family: var(--font);
   flex: 1;
   color: var(--b-green);
 }
@@ -541,7 +541,7 @@
 .budget-row-name { font-size: 12.5px; color: var(--text); }
 .budget-row-sub  { font-size: 11px; color: var(--text-3); }
 .budget-row-right { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
-.budget-row-amount { font-size: 13px; font-weight: 600; font-family: var(--font-serif); }
+.budget-row-amount { font-size: 13px; font-weight: 600; font-family: var(--font); }
 
 .b-sum-row {
   display: flex;
@@ -560,7 +560,7 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
-.b-sum-value { font-family: var(--font-serif); font-size: 14px; font-weight: 400; }
+.b-sum-value { font-family: var(--font); font-size: 14px; font-weight: 400; }
 .b-sum-value.income  { color: var(--b-green); }
 .b-sum-value.expense { color: var(--b-red); }
 
@@ -660,7 +660,7 @@
   font-variant-numeric: tabular-nums;
 }
 .budget-timeline-name   { flex: 1; font-size: 13px; color: var(--text); }
-.budget-timeline-amount { font-size: 13px; font-family: var(--font-serif); font-weight: 400; flex-shrink: 0; }
+.budget-timeline-amount { font-size: 13px; font-family: var(--font); font-weight: 400; flex-shrink: 0; }
 
 /* ── Goals ────────────────────────────────────────────────── */
 .budget-goal-card {
@@ -754,7 +754,7 @@
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Ccircle cx='150' cy='60' r='80' fill='rgba(255,255,255,0.06)'/%3E%3Ccircle cx='40' cy='160' r='60' fill='rgba(255,255,255,0.04)'/%3E%3C/svg%3E");
 }
 .b-tip-right-text {
-  font-family: var(--font-serif);
+  font-family: var(--font);
   font-size: 28px;
   color: rgba(255,255,255,0.6);
   font-style: italic;

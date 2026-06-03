@@ -1,7 +1,9 @@
 /* ==========================================
-   TIC-TAC-TOE — Muted cozy redesign
+   TIC-TAC-TOE — games/tictactoe/style.css
+   Isolierte Styles, nur für #game-ttt gültig
 ========================================== */
 
+/* Two-column card layout */
 #game-ttt {
   display: grid;
   grid-template-columns: 320px 1fr;
@@ -22,15 +24,26 @@
   justify-content: center;
   gap: 16px;
 }
-#game-ttt .game-card-footer { grid-column: 1 / 3; }
-
-@media (max-width: 640px) {
-  #game-ttt { grid-template-columns: 1fr; }
-  #game-ttt .game-card-left { border-right: none; border-bottom: 1px solid var(--border); }
-  #game-ttt .game-card-footer { grid-column: 1; }
+#game-ttt .game-card-footer {
+  /* footer spans both columns */
+  grid-column: 1 / 3;
 }
 
-/* Status */
+/* Responsive: stack on narrow */
+@media (max-width: 640px) {
+  #game-ttt {
+    grid-template-columns: 1fr;
+  }
+  #game-ttt .game-card-left {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+  #game-ttt .game-card-footer {
+    grid-column: 1;
+  }
+}
+
+/* Status line */
 .ttt-status-new {
   font-size: 14px;
   color: var(--text-2);
@@ -39,11 +52,13 @@
   align-items: center;
   gap: 6px;
 }
-.ttt-status-new.win { color: var(--text); font-weight: 600; font-size: 15px; }
-
-/* Player colors — muted dusty tones */
-.ttt-turn-x { color: var(--prio-1); font-weight: 700; }       /* terracotta */
-.ttt-turn-o { color: var(--sage-dark); font-weight: 700; }    /* sage */
+.ttt-status-new.win {
+  color: var(--text);
+  font-weight: 600;
+  font-size: 15px;
+}
+.ttt-turn-x { color: #7c3aed; font-weight: 700; }
+.ttt-turn-o { color: #2563eb; font-weight: 700; }
 
 /* Board */
 .ttt-board-new {
@@ -57,9 +72,9 @@
 /* Cells */
 .ttt-cell {
   aspect-ratio: 1;
-  background: var(--surface-2);
+  background: var(--bg);
   border: 1.5px solid var(--border-strong);
-  border-radius: 12px;
+  border-radius: 10px;
   font-size: 30px;
   font-weight: 700;
   display: flex;
@@ -69,22 +84,23 @@
   transition: background 0.12s, border-color 0.12s;
   color: var(--text);
   user-select: none;
+  /* Explicit: override global button reset */
   padding: 0;
   line-height: 1;
 }
 .ttt-cell:not(:disabled):not(.filled):hover {
-  background: var(--sage-bg);
-  border-color: var(--sage);
+  background: var(--accent-soft);
+  border-color: var(--text);
 }
 .ttt-cell:disabled:not(.filled) { cursor: default; }
-.ttt-cell.filled.x-cell { color: var(--prio-1); }
-.ttt-cell.filled.o-cell { color: var(--sage-dark); }
+.ttt-cell.filled.x-cell { color: #7c3aed; }
+.ttt-cell.filled.o-cell { color: #2563eb; }
 .ttt-cell.winning {
-  background: var(--sage-bg);
-  border-color: var(--sage);
+  background: rgba(37,99,235,0.08);
+  border-color: #2563eb;
 }
 
-/* Scores */
+/* Score row */
 .ttt-score-new {
   display: flex;
   align-items: center;
@@ -93,14 +109,14 @@
   font-weight: 600;
   font-family: var(--mono);
 }
-.ttt-score-x   { color: var(--prio-1); }
+.ttt-score-x   { color: #7c3aed; }
 .ttt-score-sep { color: var(--text-3); font-size: 16px; font-weight: 400; }
-.ttt-score-o   { color: var(--sage-dark); }
+.ttt-score-o   { color: #2563eb; }
 
-/* Highscore icon */
+/* Highscore icon color for TTT */
 #games-hs-ttt .games-hs-icon {
-  background: var(--prio-1-bg);
-  color: var(--prio-1);
+  background: rgba(124,58,237,0.1);
+  color: #7c3aed;
   font-size: 16px;
   font-weight: 800;
 }

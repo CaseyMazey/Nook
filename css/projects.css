@@ -1,7 +1,46 @@
 /* =============================================================
-   PROJECTS.CSS — Tab: Projekte
-   Abhängigkeiten: CSS-Variablen aus main.css (:root)
-
-   Projektspezifische Styles hier hinzufügen.
-   Alle Komponenten ausschließlich mit root variables stylen.
+   PROJECTS.CSS — Muted cozy palette
+   (Project-specific styles live in index.html <style> block
+    which references CSS vars; this file handles any overrides)
 ============================================================= */
+
+/* Consistent project grid */
+#project-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 14px;
+  align-items: start;
+  margin-top: 20px;
+}
+
+/* Card shell */
+.project-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: box-shadow var(--transition), border-color var(--transition);
+  box-shadow: var(--shadow-xs);
+}
+.project-card:hover { box-shadow: var(--shadow-sm); border-color: var(--border-strong); }
+
+/* Progress bar fill — use CSS var from inline style, fallback sage */
+.project-bar-fill { background: var(--proj-color, var(--sage)); }
+.project-bar-fill.complete { background: var(--sage-dark); }
+.project-bar-fill--extra { background: var(--text-3); }
+
+/* Checkbox accent */
+.project-task-cb { accent-color: var(--sage); }
+
+/* Empty state */
+.project-empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-3);
+  font-size: 14px;
+}
+
+/* Archive rows */
+.archive-project-name { font-size: 14px; font-weight: 600; color: var(--text); }
+.archive-project-meta { font-size: 12px; color: var(--text-3); margin-top: 2px; font-family: var(--mono); }

@@ -22,8 +22,8 @@
   transition: background var(--transition), color var(--transition);
   position: relative;
 }
-.guide-category-item:hover { background: var(--accent-soft); color: var(--text); }
-.guide-category-item.active { background: var(--accent-soft); color: var(--text); font-weight: 500; }
+.guide-category-item:hover { background: var(--surface-2); color: var(--text); }
+.guide-category-item.active { background: var(--sage-bg); color: var(--sage-dark); font-weight: 600; border-left: 3px solid var(--sage); }
 .guide-category-icon { font-size: 15px; flex-shrink: 0; }
 .guide-category-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .guide-category-count {
@@ -60,7 +60,7 @@
   outline: none;
   transition: border-color var(--transition), background var(--transition);
 }
-.guide-search-input:focus { border-color: var(--text); background: var(--surface); }
+.guide-search-input:focus { border-color: var(--sage); background: var(--surface); }
 
 /* ── Category header ──────────────────────────────────────── */
 .guide-cat-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; gap: 12px; flex-wrap: wrap; }
@@ -97,8 +97,8 @@
 .guide-tag {
   font-size: 10.5px;
   font-family: var(--mono);
-  background: var(--event-color-bg);
-  color: var(--event-color);
+  background: var(--sage-bg);
+  color: var(--sage-dark);
   border-radius: 5px;
   padding: 2px 7px;
 }
@@ -137,7 +137,7 @@
 }
 .guide-detail-title-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
 .guide-detail-title {
-  font-family: var(--font-serif);
+  font-family: var(--font);
   font-size: 24px;
   font-weight: 400;
   letter-spacing: -0.2px;
@@ -150,7 +150,7 @@
 /* ── Markdown content ─────────────────────────────────────── */
 .guide-detail-content { font-size: 14px; line-height: 1.8; color: var(--text); max-width: 760px; }
 .guide-h2 {
-  font-family: var(--font-serif);
+  font-family: var(--font);
   font-size: 21px;
   font-weight: 400;
   letter-spacing: -0.2px;
@@ -166,7 +166,7 @@
 .guide-ul { list-style: disc; }
 .guide-ol { list-style: decimal; }
 .guide-hr { border: none; border-top: 1px solid var(--border); margin: 26px 0; }
-.guide-link { color: var(--event-color); text-decoration: underline; text-underline-offset: 3px; }
+.guide-link { color: var(--sage-dark); text-decoration: underline; text-underline-offset: 3px; }
 .guide-link:hover { opacity: 0.75; }
 
 .guide-inline-code {
@@ -319,7 +319,7 @@
   line-height: 1;
 }
 .guide-emoji-btn:hover { background: var(--accent-soft); border-color: var(--border-strong); transform: scale(1.1); }
-.guide-emoji-btn.active { border-color: var(--event-color); background: var(--event-color-bg); box-shadow: 0 0 0 2px var(--event-color-bg); }
+.guide-emoji-btn.active { border-color: var(--sage); background: var(--sage-bg); box-shadow: 0 0 0 2px var(--sage-bg); }
 
 /* ── Bookmark system ──────────────────────────────────────── */
 .guide-bookmark-btn {
@@ -337,8 +337,8 @@
   transition: color var(--transition), background var(--transition), border-color var(--transition);
   line-height: 1;
 }
-.guide-bookmark-btn:hover  { color: #c0834a; border-color: #c0834a; background: color-mix(in srgb, var(--surface) 70%, #c0834a 5%); }
-.guide-bookmark-btn.active { color: #c0834a; border-color: #c0834a; background: color-mix(in srgb, var(--surface) 70%, #c0834a 5%); }
+.guide-bookmark-btn:hover  { color: var(--prio-1); border-color: var(--prio-1); background: var(--prio-1-bg); }
+.guide-bookmark-btn.active { color: var(--prio-1); border-color: var(--prio-1); background: var(--prio-1-bg); }
 [data-theme="dark"] .guide-bookmark-btn:hover,
 [data-theme="dark"] .guide-bookmark-btn.active { background: rgba(192,131,74,0.15); border-color: #8b5a2b; color: #e8a96a; }
 

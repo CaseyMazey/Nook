@@ -1,11 +1,10 @@
 /* =============================================================
-   GAMES.CSS — Tab: Spiele
-   Abhängigkeiten: CSS-Variablen aus main.css (:root)
+   GAMES.CSS — Muted cozy palette
 ============================================================= */
 
 .games-view { max-width: 1200px; }
 
-/* ── Tab bar ──────────────────────────────────────────────── */
+/* Tab bar */
 .games-tabs {
   display: flex;
   background: var(--surface);
@@ -21,7 +20,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 24px;
+  padding: 10px 22px;
   border-radius: var(--radius);
   font-size: 13.5px;
   font-weight: 500;
@@ -31,13 +30,13 @@
   cursor: pointer;
   transition: background var(--transition), color var(--transition);
 }
-.games-tab .games-tab-icon { flex-shrink: 0; font-size: 15px; opacity: 0.55; transition: opacity var(--transition); }
-.games-tab:hover { color: var(--text); background: var(--bg); }
-.games-tab:hover .games-tab-icon { opacity: 0.85; }
-.games-tab.active { background: var(--text); color: var(--surface); }
+.games-tab .games-tab-icon { flex-shrink: 0; font-size: 15px; opacity: 0.5; transition: opacity var(--transition); }
+.games-tab:hover { color: var(--text); background: var(--surface-2); }
+.games-tab:hover .games-tab-icon { opacity: 0.8; }
+.games-tab.active { background: var(--sage); color: #F8F5EE; }
 .games-tab.active .games-tab-icon { opacity: 1; }
 
-/* ── Two-column layout ────────────────────────────────────── */
+/* Two-column layout */
 .games-layout {
   display: grid;
   grid-template-columns: 1fr 280px;
@@ -49,7 +48,7 @@
   .games-hs-panel { position: static !important; }
 }
 
-/* ── Game card shell ──────────────────────────────────────── */
+/* Game card */
 .game-card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -59,22 +58,28 @@
 }
 .game-card.hidden { display: none !important; }
 
-.game-card-title-block { padding: 28px 28px 0; margin-bottom: 24px; }
+.game-card-title-block { padding: 26px 26px 0; margin-bottom: 22px; }
 .game-card-title {
-  font-family: var(--font-serif);
-  font-size: 24px;
-  font-weight: 400;
-  letter-spacing: -0.2px;
+  font-family: var(--font);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
   margin-bottom: 4px;
   color: var(--text);
 }
 .game-card-sub { font-size: 13px; color: var(--text-3); }
-.game-card-footer { padding: 18px 28px; border-top: 1px solid var(--border); }
+.game-card-footer { padding: 18px 26px; border-top: 1px solid var(--border); }
 
-/* ── Shared setting groups ────────────────────────────────── */
+/* Game setting groups */
 .game-setting-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 22px; }
 .game-setting-group:last-child { margin-bottom: 0; }
-.game-setting-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.09em; color: var(--text-3); }
+.game-setting-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--text-3);
+}
 .game-toggle-group { display: flex; gap: 6px; flex-wrap: wrap; }
 .game-toggle-btn {
   display: flex;
@@ -86,14 +91,13 @@
   font-size: 13px;
   font-weight: 500;
   color: var(--text-2);
-  background: var(--surface);
+  background: var(--surface-2);
   cursor: pointer;
   transition: border-color var(--transition), color var(--transition), background var(--transition);
 }
-.game-toggle-btn:hover { border-color: var(--text); color: var(--text); }
-.game-toggle-btn.active { background: var(--text); color: var(--surface); border-color: var(--text); }
+.game-toggle-btn:hover { border-color: var(--sage); color: var(--sage-dark); background: var(--sage-bg); }
+.game-toggle-btn.active { background: var(--sage-bg); color: var(--sage-dark); border-color: var(--sage); font-weight: 600; }
 
-/* ── Shared action button ─────────────────────────────────── */
 .game-action-btn {
   width: 100%;
   display: flex;
@@ -102,35 +106,37 @@
   gap: 8px;
   padding: 14px 24px;
   border-radius: var(--radius);
-  background: var(--surface);
-  border: 1.5px solid var(--border-strong);
+  background: var(--sage);
+  border: none;
   font-size: 14px;
   font-weight: 500;
-  color: var(--text);
+  color: #F8F5EE;
   cursor: pointer;
-  transition: background var(--transition), border-color var(--transition);
+  transition: background var(--transition), box-shadow var(--transition);
+  box-shadow: 0 1px 4px rgba(50,40,20,0.14);
 }
-.game-action-btn:hover { background: var(--bg); border-color: var(--text); }
+.game-action-btn:hover { background: var(--sage-dark); box-shadow: var(--shadow-sm); }
 
-/* ── Highscore panel ──────────────────────────────────────── */
+/* Highscore panel */
 .games-hs-panel {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-sm);
-  padding: 26px;
+  padding: 24px;
   position: sticky;
   top: 20px;
 }
 .games-hs-title {
-  font-family: var(--font-serif);
-  font-size: 20px;
-  font-weight: 400;
-  margin-bottom: 20px;
+  font-family: var(--font);
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 18px;
   display: flex;
   align-items: center;
   gap: 8px;
-  letter-spacing: -0.1px;
+  letter-spacing: -0.3px;
+  color: var(--text);
 }
 .games-hs-entry {
   display: flex;
@@ -150,15 +156,15 @@
   justify-content: center;
   font-size: 18px;
   flex-shrink: 0;
-  background: var(--accent-soft);
-  color: var(--text-2);
+  background: var(--sage-bg);
+  color: var(--sage-dark);
 }
 .games-hs-info { flex: 1; min-width: 0; }
-.games-hs-game { font-size: 14px; font-weight: 500; color: var(--text); }
+.games-hs-game { font-size: 14px; font-weight: 600; color: var(--text); }
 .games-hs-desc { font-size: 12px; color: var(--text-3); margin-top: 2px; }
 .games-hs-value {
   font-size: 20px;
-  font-weight: 500;
+  font-weight: 600;
   font-family: var(--mono);
   color: var(--text);
   flex-shrink: 0;

@@ -1,12 +1,9 @@
 /* =============================================================
-   CALENDAR.CSS — Tab: Kalender
-   Abhängigkeiten: CSS-Variablen aus main.css (:root)
+   CALENDAR.CSS — Muted cozy palette
 ============================================================= */
 
-/* ── Nav ──────────────────────────────────────────────────── */
 .cal-nav { display: flex; gap: 8px; }
 
-/* ── Grid ─────────────────────────────────────────────────── */
 #calendar-grid {
   display: grid;
   grid-template-columns: 2.5rem repeat(7, 1fr);
@@ -16,15 +13,14 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: var(--shadow-xs);
+  box-shadow: var(--shadow-sm);
 }
 
-/* ── Header row ───────────────────────────────────────────── */
 .cal-day-name {
-  background: var(--surface);
+  background: var(--surface-2);
   text-align: center;
   font-size: 10.5px;
-  font-weight: 500;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--text-3);
@@ -32,7 +28,7 @@
 }
 .cal-kw-head { grid-row: 1; font-size: 10px; }
 .cal-kw-cell {
-  background: var(--bg-2);
+  background: var(--surface-3);
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -43,7 +39,6 @@
   font-family: var(--mono);
 }
 
-/* ── Day cells ────────────────────────────────────────────── */
 .cal-day {
   background: var(--surface);
   display: flex;
@@ -53,29 +48,31 @@
   transition: background var(--transition);
   min-height: 110px;
 }
-.cal-day:hover { background: var(--accent-soft); }
-.cal-day.other-month { background: var(--bg); }
+.cal-day:hover { background: var(--surface-2); }
+.cal-day.other-month { background: var(--surface-3); }
 .cal-day.other-month .cal-day-num { color: var(--text-3); }
-.cal-day.is-today { border: 2px solid var(--event-color); background: var(--surface); }
-.cal-day.is-today .cal-day-num { color: var(--event-color); font-weight: 700; }
-.cal-day.is-today:hover { background: var(--accent-soft); }
-.cal-day.weekend { background: color-mix(in srgb, var(--surface) 94%, var(--bg-2) 6%); }
-[data-theme="dark"] .cal-day.weekend { background: color-mix(in srgb, var(--surface) 90%, #000 10%); }
+.cal-day.is-today {
+  border: 2px solid var(--sage);
+  background: var(--surface);
+}
+.cal-day.is-today .cal-day-num { color: var(--sage-dark); font-weight: 700; }
+.cal-day.is-today:hover { background: var(--sage-bg); }
+.cal-day.weekend { background: color-mix(in srgb, var(--surface) 88%, var(--surface-3) 12%); }
+[data-theme="dark"] .cal-day.weekend { background: color-mix(in srgb, var(--surface) 92%, var(--bg-2) 8%); }
 
 .cal-day-num { font-size: 13px; font-weight: 500; color: var(--text-2); margin-bottom: 6px; flex-shrink: 0; }
 .cal-items { display: flex; flex-direction: column; gap: 2px; flex: 1; overflow: hidden; }
 
-/* ── Event / task pills ───────────────────────────────────── */
 .cal-event-pill {
   font-size: 10.5px;
   padding: 2px 6px;
   border-radius: 5px;
-  background: var(--event-color-bg);
-  color: var(--event-color);
+  background: var(--sage-bg);
+  color: var(--sage-dark);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  border-left: 2px solid var(--event-color);
+  border-left: 2px solid var(--sage);
 }
 .cal-event-pill.countdown-pill {
   background: var(--prio-1-bg);
@@ -97,10 +94,9 @@
 .cal-task-pill.prio-3 { background: var(--prio-3-bg); color: var(--prio-3); border-left-color: var(--prio-3); }
 .cal-more { font-size: 10px; color: var(--text-3); padding: 1px 0; }
 
-/* ── Day-detail modal content ─────────────────────────────── */
 .cal-day-section-head {
   font-size: 10.5px;
-  font-weight: 500;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--text-3);
@@ -118,6 +114,6 @@
 .cal-day-ev-row:last-child { border-bottom: none; }
 .cal-day-ev-left { display: flex; flex-direction: column; gap: 2px; flex: 1; }
 .cal-day-ev-time { font-family: var(--mono); font-size: 11px; color: var(--text-3); }
-.cal-day-ev-title { font-size: 13.5px; }
+.cal-day-ev-title { font-size: 13.5px; color: var(--text); }
 .cal-day-ev-notes { font-size: 12px; color: var(--text-3); }
 .cal-day-ev-row .task-delete { opacity: 1; font-size: 12px; }
