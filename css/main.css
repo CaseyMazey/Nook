@@ -360,8 +360,8 @@ ul { list-style: none; }
   align-items: center;
   justify-content: space-between;
   padding: 13px 18px;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface-2);
+  border-bottom: 1px solid rgba(0,0,0,0.07);
+  background: transparent;
 }
 
 .panel-label {

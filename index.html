@@ -19,6 +19,7 @@
   <link rel="stylesheet" href="css/projects.css" />
   <link rel="stylesheet" href="css/today.css" />
   <link rel="stylesheet" href="css/settings.css" />
+  <link rel="stylesheet" href="css/national_day.css" />
   <style>
     /* =========================
        TASKS — erledigte sichtbar
@@ -448,13 +449,13 @@
           </div>
           <div id="today-header-right">
             <div id="today-weather" class="today-weather">
-              <div class="weather-icon">⛅</div>
+              <div class="weather-icon"></div>
               <div class="weather-info">
                 <div class="weather-temp" id="weather-temp">—</div>
                 <div class="weather-desc" id="weather-desc">—</div>
               </div>
             </div>
-            <div id="today-header-clock" style="display:none;"></div>
+            <div id="clock-sidebar-panel"></div>
           </div>
         </div>
 
@@ -564,7 +565,6 @@
 
           <!-- RECHTE SIDEBAR -->
           <div id="today-right">
-            <div id="clock-sidebar-panel"></div>
             <div class="panel" id="panel-quicknote">
               <div class="panel-header">
                 <span class="panel-label">Schnellnotiz</span>
@@ -824,29 +824,6 @@
                   style="width:140px;padding:7px 12px;font-size:13px;"
                   autocomplete="off"/>
               </div>
-            </div>
-
-            <div class="panel settings-panel">
-              <div class="panel-header"><span class="panel-label">Uhr (Heuteseite)</span></div>
-              <div class="settings-row">
-                <div><div class="settings-row-title">Uhr anzeigen</div><div class="settings-row-sub">Zeigt eine Uhr oben rechts auf der Heuteseite</div></div>
-                <label class="toggle"><input type="checkbox" id="setting-clock"/><span class="toggle-slider"></span></label>
-              </div>
-              <div class="settings-row" id="clock-type-row" style="display:none;">
-                <div><div class="settings-row-title">Uhrentyp</div><div class="settings-row-sub">Digital oder analog</div></div>
-                <div style="display:flex;gap:6px;">
-                  <button class="clock-type-btn active" data-type="digital">Digital</button>
-                  <button class="clock-type-btn" data-type="analog">Analog</button>
-                </div>
-              </div>
-            </div>
-
-            <div class="panel settings-panel">
-              <div class="panel-header"><span class="panel-label">Farben</span></div>
-              <div class="settings-row"><div><div class="settings-row-title">Termine</div><div class="settings-row-sub">Farbe für Termine im Kalender</div></div><input type="color" id="color-event" class="color-swatch"/></div>
-              <div class="settings-row"><div><div class="settings-row-title">Priorität Hoch</div><div class="settings-row-sub">Aufgaben mit hoher Priorität</div></div><input type="color" id="color-prio1" class="color-swatch"/></div>
-              <div class="settings-row"><div><div class="settings-row-title">Priorität Normal</div><div class="settings-row-sub">Aufgaben mit normaler Priorität</div></div><input type="color" id="color-prio2" class="color-swatch"/></div>
-              <div class="settings-row"><div><div class="settings-row-title">Priorität Niedrig</div><div class="settings-row-sub">Aufgaben mit niedriger Priorität</div></div><input type="color" id="color-prio3" class="color-swatch"/></div>
             </div>
 
             <div class="panel settings-panel">
@@ -1259,5 +1236,6 @@
   <!-- Spiele werden dynamisch von games.js über games/games.json geladen -->
   <script src="js/games.js"></script>
   <script src="js/settings.js"></script>
+  <script src="js/national_day.js"></script>
 </body>
 </html>

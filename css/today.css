@@ -157,11 +157,11 @@
 .block-slot.active-block {
   border-color: transparent;
   border-width: 1.5px;
-  background: var(--sage-bg);
+  background: #A3B18A;
   box-shadow: var(--shadow-sm);
 }
 [data-theme="dark"] .block-slot.active-block {
-  background: var(--sage-bg);
+  background: rgba(235,228,212,0.12);
   box-shadow: var(--shadow-sm);
 }
 
@@ -259,21 +259,34 @@
 
 .today-tile { min-height: 150px; }
 
-/* Built-in tile tints — use surface directly */
+/* Built-in tile colors — exact hex, unified (no separate header bg) */
 #today-tiles-grid > .panel.today-tile:nth-child(1) {
-  background: var(--surface);
-  border-color: var(--sage-border);
+  background: #A3B18A;
+  border-color: rgba(0,0,0,0.10);
 }
+#today-tiles-grid > .panel.today-tile:nth-child(1) .panel-header { border-bottom-color: rgba(0,0,0,0.10); }
+#today-tiles-grid > .panel.today-tile:nth-child(1) .panel-label { color: #2A3020; }
+#today-tiles-grid > .panel.today-tile:nth-child(1) .note-item { color: #2A3020; }
+#today-tiles-grid > .panel.today-tile:nth-child(1) .note-item:hover { background: rgba(0,0,0,0.07); }
+#today-tiles-grid > .panel.today-tile:nth-child(1) .note-del { color: rgba(42,48,32,0.5); }
+
 #today-tiles-grid > .panel.today-tile:nth-child(2) {
-  background: var(--surface);
-  border-color: var(--border);
+  background: #EBE4D4;
+  border-color: rgba(0,0,0,0.08);
 }
-[data-theme="dark"] #today-tiles-grid > .panel.today-tile:nth-child(1) {
-  background: var(--surface);
+#today-tiles-grid > .panel.today-tile:nth-child(2) .panel-header { border-bottom-color: rgba(0,0,0,0.08); }
+#today-tiles-grid > .panel.today-tile:nth-child(2) .panel-label { color: #3D3626; }
+
+#today-tiles-grid > .panel.today-tile:nth-child(3) {
+  background: #C0AC99;
+  border-color: rgba(0,0,0,0.10);
 }
-[data-theme="dark"] #today-tiles-grid > .panel.today-tile:nth-child(2) {
-  background: var(--surface);
-}
+#today-tiles-grid > .panel.today-tile:nth-child(3) .panel-header { border-bottom-color: rgba(0,0,0,0.10); }
+#today-tiles-grid > .panel.today-tile:nth-child(3) .panel-label { color: #2E2217; }
+
+[data-theme="dark"] #today-tiles-grid > .panel.today-tile:nth-child(1) { background: #3A4030; border-color: rgba(255,255,255,0.07); }
+[data-theme="dark"] #today-tiles-grid > .panel.today-tile:nth-child(2) { background: #2E2C26; border-color: rgba(255,255,255,0.06); }
+[data-theme="dark"] #today-tiles-grid > .panel.today-tile:nth-child(3) { background: #3A3028; border-color: rgba(255,255,255,0.07); }
 
 /* ── + Kachel row ─────────────────────────────────────────── */
 #today-add-tile-row {
@@ -358,31 +371,32 @@
    RIGHT SIDEBAR
 ═══════════════════════════════════════════════════════════ */
 
-/* ── Clock Panel ──────────────────────────────────────────── */
+/* ── Clock Panel — now in header row next to weather ──────── */
 #clock-sidebar-panel {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
-  padding: 18px 20px;
+  border-radius: var(--radius-lg);
+  padding: 10px 16px;
   box-shadow: var(--shadow-sm);
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 14px;
+  flex-shrink: 0;
 }
 
-.clock-sidebar-right { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.clock-sidebar-right { display: flex; flex-direction: column; gap: 1px; }
 
 .clock-sidebar-time {
   font-family: var(--mono);
-  font-size: 25px;
+  font-size: 20px;
   font-weight: 400;
   letter-spacing: 2px;
   color: var(--text);
   line-height: 1.1;
 }
 
-.clock-sidebar-weekday { font-size: 13px; font-weight: 600; color: var(--text-2); margin-top: 6px; }
-.clock-sidebar-date { font-size: 11px; color: var(--text-3); font-family: var(--mono); margin-top: 1px; }
+.clock-sidebar-weekday { font-size: 11px; font-weight: 600; color: var(--text-2); margin-top: 4px; }
+.clock-sidebar-date { font-size: 10px; color: var(--text-3); font-family: var(--mono); margin-top: 1px; }
 
 /* ── Schnellnotiz — cozy post-it ─────────────────────────── */
 #panel-quicknote {

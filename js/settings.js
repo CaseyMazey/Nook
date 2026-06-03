@@ -5,9 +5,6 @@
 function renderSettings(){
   document.getElementById('setting-username').value = userName || '';
   document.getElementById('setting-darkmode').checked = darkMode;
-  document.getElementById('setting-clock').checked = clockEnabled;
-  document.getElementById('clock-type-row').style.display = clockEnabled ? 'flex' : 'none';
-  document.querySelectorAll('.clock-type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === clockType));
   renderBlockSettings();
   renderWeatherSettings();
 }
@@ -35,20 +32,6 @@ document.getElementById('setting-username').addEventListener('input', e => {
 document.getElementById('setting-darkmode').addEventListener('change', e => {
   darkMode = e.target.checked; DB.set('darkMode', darkMode);
   document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
-});
-
-document.getElementById('setting-clock').addEventListener('change', e => {
-  clockEnabled = e.target.checked; DB.set('clockEnabled', clockEnabled);
-  document.getElementById('clock-type-row').style.display = clockEnabled ? 'flex' : 'none';
-  if (clockEnabled) startClock(); else stopClock();
-});
-
-document.querySelectorAll('.clock-type-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    clockType = btn.dataset.type; DB.set('clockType', clockType);
-    document.querySelectorAll('.clock-type-btn').forEach(b => b.classList.toggle('active', b === btn));
-    if (clockEnabled) renderClock();
-  });
 });
 
 function renderBlockSettings(){
@@ -182,5 +165,4 @@ function escHtml(str) {
 
 updateHeader();
 showView('today');
-if (clockEnabled) startClock();
 initGames();

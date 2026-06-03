@@ -164,10 +164,13 @@ async function renderWeather() {
   const iconEl = document.querySelector('.weather-icon');
   if (!tempEl) return;
 
-  // Cache: 30 Minuten
+  // Show loading state
+  if (iconEl) iconEl.innerHTML = WEATHER_SVGS.unknown;
+
+  // Cache: 30 Minuten — only use if svgCode present (invalidates old emoji cache)
   const saved = DB.get('weatherData', null);
-  if (saved && Date.now() - saved.ts < 30*60*1000) {
-    if (iconEl) iconEl.innerHTML = saved.svgCode || '';
+  if (saved && saved.svgCode && Date.now() - saved.ts < 30*60*1000) {
+    if (iconEl) iconEl.innerHTML = saved.svgCode;
     tempEl.textContent = saved.temp;
     descEl.textContent = saved.desc;
     return;
@@ -187,7 +190,7 @@ async function renderWeather() {
       data = await fetchWeatherByCity(city);
     }
     DB.set('weatherData', { ...data, ts: Date.now() });
-    if (iconEl) iconEl.innerHTML = data.svgCode || '';
+    if (iconEl) iconEl.innerHTML = data.svgCode;
     tempEl.textContent = data.temp;
     descEl.textContent = data.desc;
   } catch (e) {
@@ -321,14 +324,13 @@ function renderSidebarClock() {
   const now = new Date();
   const hh  = String(now.getHours()).padStart(2,'0');
   const mm  = String(now.getMinutes()).padStart(2,'0');
-  const ss  = String(now.getSeconds()).padStart(2,'0');
   const weekday = now.toLocaleDateString('de-DE', { weekday: 'long' });
   const dateStr = now.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
   panel.innerHTML = `
-    <div class="clock-analog">${buildAnalogSVG(now, 78)}</div>
+    <div class="clock-analog">${buildAnalogSVG(now, 56)}</div>
     <div class="clock-sidebar-right">
-      <div class="clock-sidebar-time">${hh}:${mm}:${ss}</div>
+      <div class="clock-sidebar-time">${hh}:${mm}</div>
       <div class="clock-sidebar-weekday">${weekday}</div>
       <div class="clock-sidebar-date">${dateStr}</div>
     </div>`;
@@ -918,28 +920,6 @@ document.getElementById('add-shopping-btn').addEventListener('click', () => {
   setTimeout(() => document.getElementById('note-modal-input').focus(), 50);
 });
 renderShoppingList();
-
-// =========================
-// PLUGIN LOADER — optional widgets
-// =========================
-
-function loadOptionalPlugin(jsPath, cssPath) {
-  // Load CSS
-  if (cssPath) {
-    const link = document.createElement('link');
-    link.rel = 'stylesheet'; link.href = cssPath;
-    document.head.appendChild(link);
-  }
-  // Load JS
-  const script = document.createElement('script');
-  script.src = jsPath;
-  script.onerror = () => {}; // silent fail if file doesn't exist
-  document.body.appendChild(script);
-}
-
-// Auto-detect and load national_day plugin
-// It will render itself if loaded
-loadOptionalPlugin('js/national_day.js', 'css/national_day.css');
 
 // =========================
 // INIT SIDEBAR + GREETING
