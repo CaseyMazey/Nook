@@ -695,10 +695,11 @@
             <div id="budget-title-block">
               <h1>Budget</h1>
               <p>Deine Übersicht. Deine Sicherheit.</p>
-              <button id="budget-ks-header-btn" class="b-ks-header-display" title="Kontostand anpassen">
-                Kontostand: <span id="b-ks-header-value">—</span>
-              </button>
             </div>
+            <button id="budget-ks-header-btn" class="b-ks-header-pill" title="Kontostand anpassen">
+              <span class="b-ks-pill-label">Kontostand</span>
+              <span id="b-ks-header-value" class="b-ks-pill-value">—</span>
+            </button>
             <div id="budget-actions">
               <div id="budget-month-picker">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -722,7 +723,7 @@
             <div class="b-main-card b-main-card--income" id="bmc-income">
               <button class="b-main-card-summary" data-target="bmc-income-detail">
                 <div class="b-mcs-left">
-                  <span class="b-mcs-label">EINNAHMEN</span>
+                  <span class="b-mcs-label">EINNAHMEN DIESEN MONAT</span>
                   <span class="b-mcs-value income" id="b-income-summary-val">—</span>
                 </div>
                 <span class="b-mcs-arrow">▼</span>
@@ -737,7 +738,7 @@
             <div class="b-main-card b-main-card--expense" id="bmc-expense">
               <button class="b-main-card-summary" data-target="bmc-expense-detail">
                 <div class="b-mcs-left">
-                  <span class="b-mcs-label">AUSGABEN</span>
+                  <span class="b-mcs-label">AUSGABEN DIESEN MONAT</span>
                   <span class="b-mcs-value expense" id="b-expense-summary-val">—</span>
                 </div>
                 <span class="b-mcs-arrow">▼</span>
@@ -752,7 +753,7 @@
             <div class="b-main-card b-main-card--free" id="bmc-free">
               <button class="b-main-card-summary" data-target="bmc-free-detail">
                 <div class="b-mcs-left">
-                  <span class="b-mcs-label">VERFÜGBAR</span>
+                  <span class="b-mcs-label">VERFÜGBAR DIESEN MONAT</span>
                   <span class="b-mcs-value" id="b-free-summary-val">—</span>
                 </div>
                 <span class="b-mcs-arrow">▼</span>

@@ -6,7 +6,18 @@ let budgetRecurring = DB.get('budgetRecurring', []);
 let budgetOnetime   = DB.get('budgetOnetime', []);
 let budgetGoals     = DB.get('budgetGoals', []);
 let budgetMonth     = new Date();
-let kontostand      = DB.get('kontostand', null);
+
+// =========================
+// KONTOSTAND — einfaches direktes Modell
+// =========================
+// kontostand = exakt der manuell eingegebene Wert.
+// Beim Abhaken einer Buchung wird kontostand direkt angepasst und gespeichert.
+// Keine Formelberechnung aus erledigten Buchungen.
+// =========================
+
+let kontostand = DB.get('kontostand', null);
+
+function saveKontostand() { DB.set('kontostand', kontostand); }
 
 function saveBudgetRecurring(){ DB.set('budgetRecurring', budgetRecurring); }
 function saveBudgetOnetime(){   DB.set('budgetOnetime',   budgetOnetime);   }
@@ -65,52 +76,38 @@ function setRecurringPaid(id, mk, val) { DB.set(recurringPaidKey(id, mk), val); 
 
 // =========================
 // CENTRAL PROJECTION
-// Single source of truth for all financial calculations.
-//
-// MODEL:
-// kontostand is the real current balance — mutated directly when the user
-// confirms a booking (paid toggle). It already reflects all confirmed
-// transactions. calcMonthProjection only adds what is still PENDING.
-//
-// pending = unpaid AND (day >= today for recurring)
-// endOfMonth = kontostand + pendingIncome - pendingExpense
-//
-// Doppelverrechnung is impossible by design:
-// The paid-toggle mutates kontostand exactly once (on the state change),
-// then saves. On re-render the entry is already marked paid and skipped.
+// Alle Berechnungen basieren auf dem berechneten kontostand
+// und den offenen (nicht bezahlten) Buchungen.
 // =========================
 
 function calcMonthProjection() {
   if (kontostand === null) return null;
 
-  const now      = new Date();
-  const todayDay = now.getDate();
-  const curMonth = now.getMonth() + 1;
-  const curYear  = now.getFullYear();
-  const curMk    = budgetMonthKey(now);
+  const now            = new Date();
+  const todayDay       = now.getDate();
+  const curMonth       = now.getMonth() + 1;
+  const curYear        = now.getFullYear();
+  const curMk          = budgetMonthKey(now);
+  const curRecItems    = getMonthRecurringItems(curYear, curMonth);
 
-  const curRecItems = getMonthRecurringItems(curYear, curMonth);
-
-  // Pending = not yet paid AND not yet past (day >= today)
+  // Offene (nicht erledigte) Buchungen dieses Monats
   let pendingIncome  = 0;
   let pendingExpense = 0;
   curRecItems.forEach(item => {
-    if (!isRecurringPaid(item.id, curMk) && item.day >= todayDay) {
+    if (!isRecurringPaid(item.id, curMk)) {
       if (item.type === 'income') pendingIncome  += item.amount;
       else                        pendingExpense += item.amount;
     }
   });
-
-  // One-time entries: unpaid only
   budgetOnetime.filter(e => e.monthKey === curMk && !e.paid).forEach(e => {
     if (e.type === 'income') pendingIncome  += e.amount;
     else                     pendingExpense += e.amount;
   });
 
-  // kontostand already includes all confirmed transactions
+  // Monatsende-Prognose: aktueller Kontostand + alle noch offenen Buchungen
   const endOfMonth = kontostand + pendingIncome - pendingExpense;
 
-  // --- Next month: expenses before first income ---
+  // --- Nächster Monat ---
   const nextMonthDate  = new Date(curYear, now.getMonth() + 1, 1);
   const nextMonth      = nextMonthDate.getMonth() + 1;
   const nextYear       = nextMonthDate.getFullYear();
@@ -136,10 +133,8 @@ function calcMonthProjection() {
   const needCovered = afterNeed >= 0;
   const wantCovered = afterWant >= 0;
 
-  // Still-pending must-expenses this month
   const openMust = curRecItems
-    .filter(i => i.type === 'expense' && i.priority === 'must'
-                 && !isRecurringPaid(i.id, curMk) && i.day >= todayDay)
+    .filter(i => i.type === 'expense' && i.priority === 'must' && !isRecurringPaid(i.id, curMk))
     .reduce((s, i) => s + i.amount, 0)
     + budgetOnetime
       .filter(e => e.monthKey === curMk && e.type === 'expense' && e.priority === 'must' && !e.paid)
@@ -167,47 +162,44 @@ function getMonthRecurringItems(year, month) {
 }
 
 // =========================
-// FINANCIAL STATUS BAR
-// Uses calcMonthProjection() — same data as the forecast below.
+// FINANCIAL STATUS
+// Basiert auf offenem Kontostand (bereits erledigt = bereits verbucht)
 // =========================
 
 function calcFinancialStatus() {
-  const proj = calcMonthProjection();
-  if (!proj) return null;
+  if (kontostand === null) return null;
+  const curMk       = budgetMonthKey(new Date());
+  const curRecItems = getMonthRecurringItems(new Date().getFullYear(), new Date().getMonth()+1);
 
-  const { mustCovered, needCovered, wantCovered, afterMust, afterNeed, gap, openMust } = proj;
+  // Offene Ausgaben nach Priorität
+  const openByPrio = { must: 0, need: 0, want: 0 };
+  curRecItems.filter(i => i.type === 'expense' && !isRecurringPaid(i.id, curMk))
+    .forEach(i => { openByPrio[i.priority || 'need'] = (openByPrio[i.priority || 'need'] || 0) + i.amount; });
+  budgetOnetime.filter(e => e.monthKey === curMk && e.type === 'expense' && !e.paid)
+    .forEach(e => { openByPrio[e.priority || 'need'] = (openByPrio[e.priority || 'need'] || 0) + e.amount; });
 
-  // Status is derived purely from coverage flags — all three matter.
-  // red:    must not covered
-  // yellow: must+need covered, but want not fully covered
-  // green:  everything covered
-  const status = !mustCovered ? 'red' : !needCovered ? 'red' : !wantCovered ? 'yellow' : 'green';
-  // Note: needCovered=false also means mustCovered might barely pass but total is still critical.
-  // We treat must+need both as hard requirements → red if either fails.
-  // Only want is treated as soft → yellow.
+  const afterMust   = kontostand - openByPrio.must;
+  const afterNeed   = afterMust  - openByPrio.need;
+  const afterWant   = afterNeed  - openByPrio.want;
+  const mustCovered = afterMust >= 0;
+  const needCovered = afterNeed >= 0;
+  const wantCovered = afterWant >= 0;
+  const gap         = afterWant;
+  const status      = !mustCovered ? 'red' : !needCovered ? 'red' : !wantCovered ? 'yellow' : 'green';
 
-  // Per-tier check items: each has a label, icon, iconClass, and a summary line.
-  // These are built entirely from the data — no hardcoded positive texts for uncovered tiers.
   const checks = [];
-
-  // ── MUSS ──
   if (mustCovered) {
     checks.push({ icon: '✓', iconClass: 'ok', label: 'Muss-Ausgaben sind gedeckt.' });
   } else {
     checks.push({ icon: '✗', iconClass: 'bad', label: `Muss-Ausgaben nicht gedeckt. Fehlbetrag: ${Math.abs(afterMust).toFixed(2)} €` });
   }
-
-  // ── BRAUCHE ──
   if (!mustCovered) {
-    // Can't even evaluate need if must already fails
     checks.push({ icon: '–', iconClass: 'neutral', label: 'Brauche-Ausgaben (nicht auswertbar)' });
   } else if (needCovered) {
     checks.push({ icon: '✓', iconClass: 'ok', label: 'Brauche-Ausgaben sind gedeckt.' });
   } else {
     checks.push({ icon: '✗', iconClass: 'bad', label: `Brauche-Ausgaben nicht vollständig gedeckt. Fehlbetrag: ${Math.abs(afterNeed).toFixed(2)} €` });
   }
-
-  // ── MÖCHTE ──
   if (!mustCovered || !needCovered) {
     checks.push({ icon: '–', iconClass: 'neutral', label: 'Möchte-Ausgaben (nicht auswertbar)' });
   } else if (wantCovered) {
@@ -216,21 +208,17 @@ function calcFinancialStatus() {
     checks.push({ icon: '⚠', iconClass: 'warn', label: 'Für optionale Ausgaben reicht es nicht ganz.' });
   }
 
-  // ── Summary hint — one sentence that matches the status exactly ──
   let hint = null;
   if (status === 'green') {
     hint = gap > 0
-      ? { text: `Nach allen Ausgaben bleiben dir noch ${gap.toFixed(2)} € übrig.`, type: 'good' }
-      : { text: 'Alle Ausgaben sind gedeckt.', type: 'good' };
+      ? { text: `Nach allen offenen Ausgaben bleiben dir noch ${gap.toFixed(2)} € übrig.`, type: 'good' }
+      : { text: 'Alle offenen Ausgaben sind gedeckt.', type: 'good' };
   } else if (status === 'yellow') {
     hint = { text: `Für optionale Ausgaben fehlen noch ${Math.abs(gap).toFixed(2)} €. Pflichtausgaben sind gesichert.`, type: 'warn' };
   } else {
-    // red
-    if (!mustCovered) {
-      hint = { text: `Muss-Ausgaben nicht gedeckt — es fehlen ${Math.abs(afterMust).toFixed(2)} €.`, type: 'bad' };
-    } else {
-      hint = { text: `Brauche-Ausgaben nicht vollständig gedeckt — es fehlen ${Math.abs(afterNeed).toFixed(2)} €.`, type: 'bad' };
-    }
+    hint = !mustCovered
+      ? { text: `Muss-Ausgaben nicht gedeckt — es fehlen ${Math.abs(afterMust).toFixed(2)} €.`, type: 'bad' }
+      : { text: `Brauche-Ausgaben nicht vollständig gedeckt — es fehlen ${Math.abs(afterNeed).toFixed(2)} €.`, type: 'bad' };
   }
 
   return { status, mustCovered, needCovered, wantCovered, checks, hint };
@@ -288,12 +276,11 @@ function renderFinancialStatus(fs) {
 function renderBudget() {
   const now    = new Date();
   const curMk  = budgetMonthKey(budgetMonth);
-  const isCurrentMonth = budgetMonthKey(now) === curMk;
 
   document.getElementById('budget-month-label').textContent = budgetMonthLabel(budgetMonth);
 
   renderKontostandHeader();
-  renderMainCards(budgetMonth, curMk, isCurrentMonth);
+  renderMainCards(budgetMonth, curMk);
   renderFinancialStatus(calcFinancialStatus());
   renderOnetimeList(curMk);
   renderRecurringList(curMk);
@@ -309,10 +296,10 @@ function renderKontostandHeader() {
   if (!valEl) return;
   if (kontostand === null) {
     valEl.textContent = 'nicht gesetzt';
-    valEl.className = '';
+    valEl.className = 'b-ks-pill-value';
   } else {
-    valEl.textContent = (kontostand >= 0 ? '+' : '') + kontostand.toLocaleString('de-DE', { minimumFractionDigits: 2 }) + ' \u20ac';
-    valEl.className = kontostand < 0 ? 'negative' : 'positive';
+    valEl.textContent = (kontostand >= 0 ? '+' : '') + kontostand.toLocaleString('de-DE', { minimumFractionDigits: 2 }) + ' €';
+    valEl.className = 'b-ks-pill-value ' + (kontostand < 0 ? 'negative' : 'positive');
   }
   const btn = document.getElementById('budget-ks-header-btn');
   if (btn && !btn._ksBound) {
@@ -321,91 +308,156 @@ function renderKontostandHeader() {
   }
 }
 
-// =========================
-// KARTE 1 + 2 + 3: Hauptkarten
-// =========================
-
-function renderMainCards(month, mk, isCurrentMonth) {
+function renderMainCards(month, mk) {
   const recIncomes  = getMonthRecurringItems(month.getFullYear(), month.getMonth()+1).filter(i => i.type === 'income');
   const otIncomes   = budgetOnetime.filter(e => e.monthKey === mk && e.type === 'income');
   const recExpenses = getMonthRecurringItems(month.getFullYear(), month.getMonth()+1).filter(i => i.type === 'expense');
   const otExpenses  = budgetOnetime.filter(e => e.monthKey === mk && e.type === 'expense');
 
+  function makeClickableRow(day, monthNum, name, amount, sign, paid, onToggle) {
+    const el = document.createElement('div');
+    el.className = 'b-main-row b-main-row-clickable' + (paid ? ' b-main-row-paid' : '');
+    el.title = paid ? 'Als offen markieren' : 'Als erledigt markieren';
+    el.innerHTML = `
+      <span class="b-main-row-day">${String(day).padStart(2,'0')}.${String(monthNum).padStart(2,'0')}</span>
+      <span class="b-main-row-name">${name}</span>
+      <span class="b-main-row-check">${paid ? '✓' : ''}</span>
+      <span class="b-main-row-amount ${sign === '+' ? 'income' : 'expense'}">${sign}${amount.toFixed(2)} €</span>`;
+    el.addEventListener('click', onToggle);
+    return el;
+  }
+
   // ── KARTE 1: Einnahmen ───
   const incomeList  = document.getElementById('b-income-list');
   const incomeTotal = document.getElementById('b-income-total');
-  incomeList.innerHTML = ''; let totalIncome = 0;
+  incomeList.innerHTML = '';
+  let openIncome = 0;
 
   const allIncomeRows = [];
-  recIncomes.forEach(i => allIncomeRows.push({ day: i.day||1, name: i.name, amount: i.amount, paid: isRecurringPaid(i.id, mk) }));
-  otIncomes.forEach(e  => allIncomeRows.push({ day: e.day||1,  name: e.name, amount: e.amount, paid: e.paid||false }));
+  recIncomes.forEach(i => allIncomeRows.push({
+    day: i.day||1, name: i.name, amount: i.amount,
+    paid: isRecurringPaid(i.id, mk),
+    onToggle: () => {
+      const nowPaid = !isRecurringPaid(i.id, mk);
+      setRecurringPaid(i.id, mk, nowPaid);
+      kontostand = (kontostand || 0) + (nowPaid ? i.amount : -i.amount);
+      saveKontostand();
+      renderBudget();
+    }
+  }));
+  otIncomes.forEach(e => allIncomeRows.push({
+    day: e.day||1, name: e.name, amount: e.amount,
+    paid: e.paid||false,
+    onToggle: () => {
+      e.paid = !e.paid;
+      kontostand = (kontostand || 0) + (e.paid ? e.amount : -e.amount);
+      saveKontostand();
+      saveBudgetOnetime();
+      renderBudget();
+    }
+  }));
   allIncomeRows.sort((a,b) => a.day - b.day);
 
   if (!allIncomeRows.length) {
     incomeList.innerHTML = '<div class="b-main-empty">Keine Einnahmen in diesem Monat.</div>';
   } else {
     allIncomeRows.forEach(row => {
-      totalIncome += row.amount;
-      const el = document.createElement('div');
-      el.className = 'b-main-row' + (row.paid ? ' b-main-row-paid' : '');
-      el.innerHTML = `<span class="b-main-row-day">${String(row.day).padStart(2,'0')}.${String(month.getMonth()+1).padStart(2,'0')}</span><span class="b-main-row-name">${row.name}</span><span class="b-main-row-amount income">+${row.amount.toFixed(2)} \u20ac</span>`;
-      incomeList.appendChild(el);
+      if (!row.paid) openIncome += row.amount;
+      incomeList.appendChild(makeClickableRow(row.day, month.getMonth()+1, row.name, row.amount, '+', row.paid, row.onToggle));
     });
   }
-  const fmtIn = totalIncome.toLocaleString('de-DE',{minimumFractionDigits:2});
-  incomeTotal.innerHTML = `<span class="b-main-total-label">Gesamt</span><span class="b-main-total-value income">+${fmtIn} \u20ac</span>`;
+  const fmtOpenIn = openIncome.toLocaleString('de-DE',{minimumFractionDigits:2});
+  incomeTotal.innerHTML = `<span class="b-main-total-label">Offen</span><span class="b-main-total-value income">+${fmtOpenIn} €</span>`;
   const incSum = document.getElementById('b-income-summary-val');
-  if (incSum) incSum.textContent = '+' + fmtIn + ' \u20ac';
+  if (incSum) incSum.textContent = '+' + fmtOpenIn + ' €';
 
   // ── KARTE 2: Ausgaben ───
   const expenseList  = document.getElementById('b-expense-list');
   const expenseTotal = document.getElementById('b-expense-total');
-  expenseList.innerHTML = ''; let totalExpense = 0;
-  const PRIO_GROUPS = [{key:'must',icon:'\ud83d\udd34',label:'Muss'},{key:'need',icon:'\ud83d\udfe1',label:'Brauche'},{key:'want',icon:'\ud83d\udfe2',label:'M\u00f6chte'}];
+  expenseList.innerHTML = '';
+  let openExpTotal = 0;
+
+  const PRIO_GROUPS = [
+    {key:'must', icon:'🔴', label:'Muss'},
+    {key:'need', icon:'🟡', label:'Brauche'},
+    {key:'want', icon:'🟢', label:'Möchte'},
+  ];
+
   const buildExpRows = pk => {
     const rows = [];
-    recExpenses.filter(i=>(i.priority||'need')===pk).forEach(i=>rows.push({day:i.day||1,name:i.name,amount:i.amount,paid:isRecurringPaid(i.id,mk)}));
-    otExpenses.filter(e=>(e.priority||'need')===pk).forEach(e=>rows.push({day:e.day||1,name:e.name,amount:e.amount,paid:e.paid||false}));
+    recExpenses.filter(i=>(i.priority||'need')===pk).forEach(i=>rows.push({
+      day:i.day||1, name:i.name, amount:i.amount,
+      paid: isRecurringPaid(i.id, mk),
+      onToggle: () => {
+        const nowPaid = !isRecurringPaid(i.id, mk);
+        setRecurringPaid(i.id, mk, nowPaid);
+        kontostand = (kontostand || 0) + (nowPaid ? -i.amount : i.amount);
+        saveKontostand();
+        renderBudget();
+      }
+    }));
+    otExpenses.filter(e=>(e.priority||'need')===pk).forEach(e=>rows.push({
+      day:e.day||1, name:e.name, amount:e.amount,
+      paid: e.paid||false,
+      onToggle: () => {
+        e.paid = !e.paid;
+        kontostand = (kontostand || 0) + (e.paid ? -e.amount : e.amount);
+        saveKontostand();
+        saveBudgetOnetime();
+        renderBudget();
+      }
+    }));
     return rows.sort((a,b)=>a.day-b.day);
   };
+
   let hasExp = false;
   PRIO_GROUPS.forEach(({key,icon,label})=>{
     const rows = buildExpRows(key); if(!rows.length) return; hasExp = true;
     const gh = document.createElement('div'); gh.className = 'b-main-group-head';
-    gh.innerHTML = `<span>${icon}</span><span>${label}</span>`; expenseList.appendChild(gh);
+    gh.innerHTML = `<span>${icon}</span><span>${label}</span>`;
+    expenseList.appendChild(gh);
     rows.forEach(row=>{
-      totalExpense += row.amount;
-      const el = document.createElement('div'); el.className = 'b-main-row'+(row.paid?' b-main-row-paid':'');
-      el.innerHTML = `<span class="b-main-row-day">${String(row.day).padStart(2,'0')}.${String(month.getMonth()+1).padStart(2,'0')}</span><span class="b-main-row-name">${row.name}</span><span class="b-main-row-amount expense">-${row.amount.toFixed(2)} \u20ac</span>`;
-      expenseList.appendChild(el);
+      if (!row.paid) openExpTotal += row.amount;
+      expenseList.appendChild(makeClickableRow(row.day, month.getMonth()+1, row.name, row.amount, '-', row.paid, row.onToggle));
     });
   });
-  if(!hasExp) expenseList.innerHTML = '<div class="b-main-empty">Keine Ausgaben in diesem Monat.</div>';
-  const fmtOut = totalExpense.toLocaleString('de-DE',{minimumFractionDigits:2});
-  expenseTotal.innerHTML = `<span class="b-main-total-label">Gesamt</span><span class="b-main-total-value expense">-${fmtOut} \u20ac</span>`;
-  const expSum = document.getElementById('b-expense-summary-val');
-  if (expSum) expSum.textContent = '-' + fmtOut + ' \u20ac';
 
-  // ── KARTE 3: Frei ───
+  if(!hasExp) expenseList.innerHTML = '<div class="b-main-empty">Keine Ausgaben in diesem Monat.</div>';
+  const fmtOpenOut = openExpTotal.toLocaleString('de-DE',{minimumFractionDigits:2});
+  expenseTotal.innerHTML = `<span class="b-main-total-label">Offen</span><span class="b-main-total-value expense">-${fmtOpenOut} €</span>`;
+  const expSum = document.getElementById('b-expense-summary-val');
+  if (expSum) expSum.textContent = '-' + fmtOpenOut + ' €';
+
+  // ── KARTE 3: Verfügbar ───
   const freeContent = document.getElementById('b-free-content');
   const freeSummary = document.getElementById('b-free-summary-val');
   freeContent.innerHTML = '';
+
   if (kontostand === null) {
     freeContent.innerHTML = '<div class="b-main-empty" style="padding:12px 0;">Kein Kontostand gesetzt.</div>';
-    if (freeSummary) { freeSummary.textContent = '\u2014'; freeSummary.className = 'b-mcs-value'; }
+    if (freeSummary) { freeSummary.textContent = '—'; freeSummary.className = 'b-mcs-value'; }
   } else {
-    let openExp = 0;
-    recExpenses.forEach(i=>{ if(!isRecurringPaid(i.id,mk)) openExp += i.amount; });
-    otExpenses.forEach(e=>{ if(!e.paid) openExp += e.amount; });
-    const vbl = kontostand - openExp;
+    const vbl = kontostand - openExpTotal;
     const fmt = v => v.toLocaleString('de-DE',{minimumFractionDigits:2});
-    const vs = vbl < 0 ? '-' : '+';
+    const vs  = vbl < 0 ? '-' : '+';
     freeContent.innerHTML = `
-      <div class="b-free-row"><span class="b-free-label">Kontostand</span><span class="b-free-val ${kontostand<0?'expense':''}">${kontostand<0?'':'+'}${fmt(kontostand)} \u20ac</span></div>
-      <div class="b-free-row"><span class="b-free-label">Offene Ausgaben</span><span class="b-free-val expense">-${fmt(openExp)} \u20ac</span></div>
+      <div class="b-free-row">
+        <span class="b-free-label">Kontostand</span>
+        <span class="b-free-val ${kontostand<0?'expense':''}">${kontostand<0?'':'+'}${fmt(kontostand)} €</span>
+      </div>
+      <div class="b-free-row">
+        <span class="b-free-label">Offene Ausgaben</span>
+        <span class="b-free-val expense">-${fmt(openExpTotal)} €</span>
+      </div>
       <div class="b-free-divider"></div>
-      <div class="b-free-row b-free-row-total"><span class="b-free-label-big">Verbleibend</span><span class="b-free-val-big ${vbl<0?'expense':'income'}">${vs}${fmt(Math.abs(vbl))} \u20ac</span></div>`;
-    if (freeSummary) { freeSummary.textContent = vs+fmt(Math.abs(vbl))+' \u20ac'; freeSummary.className='b-mcs-value '+(vbl<0?'expense':'income'); }
+      <div class="b-free-row b-free-row-total">
+        <span class="b-free-label-big">Verbleibend</span>
+        <span class="b-free-val-big ${vbl<0?'expense':'income'}">${vs}${fmt(Math.abs(vbl))} €</span>
+      </div>`;
+    if (freeSummary) {
+      freeSummary.textContent = vs + fmt(Math.abs(vbl)) + ' €';
+      freeSummary.className = 'b-mcs-value ' + (vbl < 0 ? 'expense' : 'income');
+    }
   }
 }
 
@@ -464,10 +516,9 @@ function renderOnetimeList(mk) {
         name:e.name, amount:e.amount, type:e.type, priority:e.priority||'need', paid:e.paid||false,
         onDel: ()=>{ budgetOnetime=budgetOnetime.filter(x=>x.id!==e.id); saveBudgetOnetime(); renderBudget(); },
         onPaidToggle: ()=>{
-          const np=!e.paid; e.paid=np;
-          if(np){ kontostand += e.type==='income'?e.amount:-e.amount; }
-          else   { kontostand += e.type==='income'?-e.amount:e.amount; }
-          DB.set('kontostand',kontostand); saveBudgetOnetime(); renderBudget();
+          const nowPaid = !e.paid; e.paid = nowPaid;
+          kontostand = (kontostand || 0) + (nowPaid ? (e.type==='income' ? e.amount : -e.amount) : (e.type==='income' ? -e.amount : e.amount));
+          saveKontostand(); saveBudgetOnetime(); renderBudget();
         }
       }));
     });
@@ -514,10 +565,9 @@ function renderRecurringList(mk) {
         onEdit: ()=>openRecurringModal(r),
         onDel:  ()=>{ budgetRecurring=budgetRecurring.filter(x=>x.id!==r.id); saveBudgetRecurring(); renderBudget(); },
         onPaidToggle: ()=>{
-          const np=!recPaid; setRecurringPaid(r.id,mk,np);
-          if(np){ kontostand += r.type==='income'?r.amount:-r.amount; }
-          else   { kontostand += r.type==='income'?-r.amount:r.amount; }
-          DB.set('kontostand',kontostand); renderBudget();
+          const np = !recPaid; setRecurringPaid(r.id, mk, np);
+          kontostand = (kontostand || 0) + (np ? (r.type==='income' ? r.amount : -r.amount) : (r.type==='income' ? -r.amount : r.amount));
+          saveKontostand(); renderBudget();
         }
       }));
     });
@@ -623,7 +673,7 @@ function fmtEur(amount) {
   return (amount >= 0 ? '+' : '') + amount.toFixed(2) + ' €';
 }
 
-// Kontostand Modal
+// Kontostand Modal — bearbeitet kontostand direkt
 function openKontostandModal() {
   document.getElementById('kontostand-input').value = kontostand !== null ? kontostand.toFixed(2) : '';
   document.getElementById('kontostand-modal-overlay').classList.remove('hidden');
@@ -638,7 +688,7 @@ document.getElementById('kontostand-save').addEventListener('click', () => {
   const val = parseFloat(document.getElementById('kontostand-input').value);
   if (isNaN(val)) return;
   kontostand = val;
-  DB.set('kontostand', kontostand);
+  saveKontostand();
   document.getElementById('kontostand-modal-overlay').classList.add('hidden');
   renderBudget();
 });

@@ -68,10 +68,44 @@
 ═══════════════════════════════════════════════════════════ */
 #budget-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 24px;
 }
+
+/* Kontostand Pill — mittig im Header */
+.b-ks-header-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 10px 22px;
+  cursor: pointer;
+  transition: box-shadow var(--transition), border-color var(--transition);
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.b-ks-header-pill:hover { box-shadow: var(--shadow-md); border-color: var(--border-strong); }
+.b-ks-pill-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.b-ks-pill-value {
+  font-family: var(--mono);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.1;
+}
+.b-ks-pill-value.positive { color: var(--budget-income); }
+.b-ks-pill-value.negative { color: var(--budget-expense); }
 
 #budget-title-block h1 {
   font-family: var(--font);
@@ -843,8 +877,8 @@
   box-shadow: var(--shadow-sm);
 }
 
-.b-main-card--income  { background: #CAE8CA; }
-.b-main-card--expense { background: #F2DDC9; }
+.b-main-card--income  { background: #A3B18A; }
+.b-main-card--expense { background: #C0AC99; }
 .b-main-card--free    { background: #EBE4D4; }
 
 /* Compact summary row (always visible) */
@@ -907,15 +941,34 @@
 
 .b-main-row {
   display: grid;
-  grid-template-columns: 44px 1fr auto;
+  grid-template-columns: 44px 1fr 18px auto;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   padding: 6px 0;
   border-bottom: 1px solid rgba(0,0,0,0.06);
   font-size: 13px;
 }
 .b-main-row:last-child { border-bottom: none; }
-.b-main-row.b-main-row-paid { opacity: 0.4; text-decoration: line-through; }
+
+/* Klickbare Zeilen */
+.b-main-row-clickable {
+  cursor: pointer;
+  border-radius: 5px;
+  margin: 0 -4px;
+  padding: 6px 4px;
+  transition: background 120ms;
+}
+.b-main-row-clickable:hover { background: rgba(0,0,0,0.07); }
+.b-main-row-clickable:active { background: rgba(0,0,0,0.13); }
+
+.b-main-row.b-main-row-paid { opacity: 0.45; text-decoration: line-through; }
+
+.b-main-row-check {
+  font-size: 11px;
+  color: rgba(0,0,0,0.5);
+  text-align: center;
+  flex-shrink: 0;
+}
 
 .b-main-row-day    { font-family: var(--mono); font-size: 10px; color: rgba(0,0,0,0.4); }
 .b-main-row-name   { color: #24211C; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
