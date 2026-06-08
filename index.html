@@ -710,9 +710,6 @@
                 <span id="budget-month-label" style="flex:1;text-align:center;"></span>
                 <button id="budget-month-nav-next">&#8250;</button>
               </div>
-              <button class="budget-action-btn outlined" id="add-goal-btn">+ Sparziel</button>
-              <button class="budget-action-btn outlined" id="add-onetime-btn">+ Einmalig</button>
-              <button class="budget-action-btn filled" id="add-recurring-btn">+ Wiederkehrend</button>
             </div>
           </div>
 
@@ -721,9 +718,9 @@
 
             <!-- Karte 1: Einnahmen -->
             <div class="b-main-card b-main-card--income" id="bmc-income">
-              <button class="b-main-card-summary" data-target="bmc-income-detail">
+              <button class="b-main-card-summary" data-target="bmc-income-detail" data-group="main-cards">
                 <div class="b-mcs-left">
-                  <span class="b-mcs-label">EINNAHMEN DIESEN MONAT</span>
+                  <span class="b-mcs-label">EINNAHMEN</span>
                   <span class="b-mcs-value income" id="b-income-summary-val">—</span>
                 </div>
                 <span class="b-mcs-arrow">▼</span>
@@ -736,9 +733,9 @@
 
             <!-- Karte 2: Ausgaben -->
             <div class="b-main-card b-main-card--expense" id="bmc-expense">
-              <button class="b-main-card-summary" data-target="bmc-expense-detail">
+              <button class="b-main-card-summary" data-target="bmc-expense-detail" data-group="main-cards">
                 <div class="b-mcs-left">
-                  <span class="b-mcs-label">AUSGABEN DIESEN MONAT</span>
+                  <span class="b-mcs-label">AUSGABEN</span>
                   <span class="b-mcs-value expense" id="b-expense-summary-val">—</span>
                 </div>
                 <span class="b-mcs-arrow">▼</span>
@@ -751,9 +748,9 @@
 
             <!-- Karte 3: Verfügbar -->
             <div class="b-main-card b-main-card--free" id="bmc-free">
-              <button class="b-main-card-summary" data-target="bmc-free-detail">
+              <button class="b-main-card-summary" data-target="bmc-free-detail" data-group="main-cards">
                 <div class="b-mcs-left">
-                  <span class="b-mcs-label">VERFÜGBAR DIESEN MONAT</span>
+                  <span class="b-mcs-label">VERFÜGBAR</span>
                   <span class="b-mcs-value" id="b-free-summary-val">—</span>
                 </div>
                 <span class="b-mcs-arrow">▼</span>
@@ -766,8 +763,13 @@
 
           </div>
 
-          <!-- ── LIQUIDITÄTSVORSCHAU ─────────────────────────── -->
-          <div id="budget-liquidity"></div>
+          <!-- ── LIQUIDITÄTSVORSCHAU + FINANZGARTEN ────────────── -->
+          <div id="budget-mid-row">
+            <div id="budget-liquidity"></div>
+            <div id="budget-garden-slot">
+              <div id="budget-garden-card"></div>
+            </div>
+          </div>
 
           <!-- ── 3 KARTEN NEBENEINANDER ─────────────────────── -->
           <div id="budget-row3">
@@ -817,6 +819,9 @@
             <div class="b-ks-value" id="b-ks-display"></div>
             <div id="budget-row2"></div>
             <div id="budget-summary-bar"></div>
+            <button id="add-goal-btn"></button>
+            <button id="add-onetime-btn"></button>
+            <button id="add-recurring-btn"></button>
           </div>
 
           <!-- Legacy kontostand-edit-btn stub -->

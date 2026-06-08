@@ -287,6 +287,7 @@ function renderBudget() {
   renderBudgetTimeline();
   renderBudgetGoals();
   renderLiquidity();
+  renderFinanzgarten();
   initSummaryCardToggles();
   initCardInlineToggles();
 }
@@ -462,37 +463,69 @@ function renderMainCards(month, mk) {
 }
 
 // =========================
-// COMPACT SUMMARY CARD TOGGLES
+// COMPACT SUMMARY CARD TOGGLES — unified group
+// Alle drei Karten öffnen/schließen gleichzeitig.
+// Zustand wird in localStorage gespeichert.
 // =========================
 
+const MAIN_CARDS_OPEN_KEY = 'budgetMainCardsOpen';
+
+function setMainCardsOpen(open) {
+  const details = ['bmc-income-detail','bmc-expense-detail','bmc-free-detail'];
+  const arrows  = document.querySelectorAll('.b-main-card-summary .b-mcs-arrow');
+  details.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = open ? 'block' : 'none';
+  });
+  arrows.forEach(a => { a.textContent = open ? '▲' : '▼'; });
+  DB.set(MAIN_CARDS_OPEN_KEY, open);
+}
+
 function initSummaryCardToggles() {
+  // Apply saved state (default: closed)
+  const isOpen = DB.get(MAIN_CARDS_OPEN_KEY, false);
+  setMainCardsOpen(isOpen);
+
   document.querySelectorAll('.b-main-card-summary').forEach(btn => {
     if (btn._summaryBound) return;
     btn._summaryBound = true;
     btn.addEventListener('click', () => {
-      const detail = document.getElementById(btn.dataset.target);
-      const arrow  = btn.querySelector('.b-mcs-arrow');
-      const isOpen = detail.style.display !== 'none';
-      detail.style.display = isOpen ? 'none' : 'block';
-      if (arrow) arrow.textContent = isOpen ? '\u25bc' : '\u25b2';
+      const currentlyOpen = DB.get(MAIN_CARDS_OPEN_KEY, false);
+      setMainCardsOpen(!currentlyOpen);
     });
   });
 }
 
 // =========================
-// INLINE CARD CONTENT TOGGLES
+// INLINE CARD CONTENT TOGGLES — persistent state, default collapsed
 // =========================
+
+const CARD_OPEN_KEYS = {
+  'budget-recurring-list': 'budgetCardOpen_recurring',
+  'budget-onetime-list':   'budgetCardOpen_onetime',
+  'budget-goals-list':     'budgetCardOpen_goals',
+};
 
 function initCardInlineToggles() {
   document.querySelectorAll('.b-card-toggle-btn').forEach(btn => {
     if (btn._cardToggleBound) return;
     btn._cardToggleBound = true;
+
+    const targetId  = btn.dataset.target;
+    const storageKey = CARD_OPEN_KEYS[targetId] || null;
+
+    // Apply saved state (default: collapsed = false)
+    const isOpen = storageKey ? DB.get(storageKey, false) : false;
+    const list   = document.getElementById(targetId);
+    const arrow  = btn.querySelector('.b-card-arrow');
+    if (list)  list.style.display  = isOpen ? 'block' : 'none';
+    if (arrow) arrow.textContent   = isOpen ? '▼' : '▶';
+
     btn.addEventListener('click', () => {
-      const list  = document.getElementById(btn.dataset.target);
-      const arrow = btn.querySelector('.b-card-arrow');
-      const isOpen = list.style.display !== 'none';
-      list.style.display = isOpen ? 'none' : 'block';
-      if (arrow) arrow.textContent = isOpen ? '\u25b6' : '\u25bc';
+      const nowOpen = list.style.display === 'none';
+      list.style.display = nowOpen ? 'block' : 'none';
+      if (arrow) arrow.textContent = nowOpen ? '▼' : '▶';
+      if (storageKey) DB.set(storageKey, nowOpen);
     });
   });
 }
@@ -671,6 +704,153 @@ function renderLiquidity() {
 
 function fmtEur(amount) {
   return (amount >= 0 ? '+' : '') + amount.toFixed(2) + ' €';
+}
+
+// =========================
+// FINANZGARTEN
+// =========================
+
+const GARDEN_TREE_LEVELS = [
+  { min: 0,    label: 'Samen',          stage: 'seed'         },
+  { min: 250,  label: 'Keimling',       stage: 'sprout'       },
+  { min: 500,  label: 'Kleine Pflanze', stage: 'small_plant'  },
+  { min: 1000, label: 'Mittlere Pflanze',stage: 'medium_plant'},
+  { min: 2000, label: 'Großer Baum',    stage: 'large_plant'  },
+  { min: 3000, label: 'Blühender Baum', stage: 'flowering'    },
+];
+
+function getTreeStage(ks) {
+  if (ks === null || ks < 0) return GARDEN_TREE_LEVELS[0];
+  for (let i = GARDEN_TREE_LEVELS.length - 1; i >= 0; i--) {
+    if (ks >= GARDEN_TREE_LEVELS[i].min) return GARDEN_TREE_LEVELS[i];
+  }
+  return GARDEN_TREE_LEVELS[0];
+}
+
+function getGoalStage(pct) {
+  if (pct >= 100) return 'flowering';
+  if (pct >= 80)  return 'large_plant';
+  if (pct >= 60)  return 'medium_plant';
+  if (pct >= 40)  return 'small_plant';
+  if (pct >= 20)  return 'sprout';
+  return 'seed';
+}
+
+const PLANT_SVGS = {
+  seed: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="40" cy="58" rx="14" ry="6" fill="#C5A882" opacity=".35"/>
+    <ellipse cx="40" cy="55" rx="8" ry="6" fill="#8B6340"/>
+    <ellipse cx="40" cy="52" rx="6" ry="5" fill="#A0784E"/>
+  </svg>`,
+  sprout: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="40" cy="64" rx="14" ry="5" fill="#C5A882" opacity=".3"/>
+    <line x1="40" y1="62" x2="40" y2="38" stroke="#7A9B5A" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M40 48 Q30 42 28 34 Q36 34 40 42" fill="#8FBC5E" opacity=".9"/>
+    <path d="M40 44 Q50 38 52 30 Q44 30 40 38" fill="#6FA84A" opacity=".85"/>
+    <ellipse cx="40" cy="63" rx="8" ry="4" fill="#A07848"/>
+  </svg>`,
+  small_plant: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="40" cy="66" rx="15" ry="5" fill="#C5A882" opacity=".3"/>
+    <line x1="40" y1="64" x2="40" y2="32" stroke="#7A9B5A" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M40 52 Q26 46 24 34 Q34 32 40 46" fill="#8FBC5E"/>
+    <path d="M40 46 Q54 40 56 28 Q46 26 40 40" fill="#6FA84A"/>
+    <path d="M40 38 Q30 30 30 22 Q38 22 40 32" fill="#A0C870" opacity=".8"/>
+    <rect x="36" y="62" width="8" height="5" rx="2" fill="#A07848"/>
+  </svg>`,
+  medium_plant: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="40" cy="68" rx="16" ry="5" fill="#C5A882" opacity=".3"/>
+    <line x1="40" y1="66" x2="40" y2="28" stroke="#6B8C3E" stroke-width="3" stroke-linecap="round"/>
+    <line x1="40" y1="50" x2="28" y2="42" stroke="#7A9B5A" stroke-width="2" stroke-linecap="round"/>
+    <line x1="40" y1="44" x2="52" y2="36" stroke="#7A9B5A" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="28" cy="38" r="10" fill="#8FBC5E" opacity=".9"/>
+    <circle cx="52" cy="32" r="10" fill="#6FA84A" opacity=".85"/>
+    <circle cx="40" cy="24" r="12" fill="#7AAF50"/>
+    <rect x="36" y="63" width="8" height="6" rx="2" fill="#8B6340"/>
+  </svg>`,
+  large_plant: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="40" cy="70" rx="18" ry="5" fill="#C5A882" opacity=".3"/>
+    <line x1="40" y1="68" x2="40" y2="24" stroke="#5C7A30" stroke-width="4" stroke-linecap="round"/>
+    <line x1="40" y1="56" x2="24" y2="44" stroke="#6B8C3E" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="40" y1="48" x2="56" y2="36" stroke="#6B8C3E" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="40" y1="40" x2="26" y2="28" stroke="#7A9B5A" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="22" cy="40" r="11" fill="#8FBC5E" opacity=".88"/>
+    <circle cx="58" cy="32" r="11" fill="#6FA84A" opacity=".85"/>
+    <circle cx="24" cy="25" r="10" fill="#7AAF50" opacity=".9"/>
+    <circle cx="40" cy="18" r="13" fill="#5C9E3C"/>
+    <rect x="36" y="65" width="8" height="6" rx="2" fill="#7A5630"/>
+  </svg>`,
+  flowering: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="40" cy="70" rx="18" ry="5" fill="#C5A882" opacity=".3"/>
+    <line x1="40" y1="68" x2="40" y2="22" stroke="#5C7A30" stroke-width="4" stroke-linecap="round"/>
+    <line x1="40" y1="54" x2="23" y2="42" stroke="#6B8C3E" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="40" y1="46" x2="57" y2="34" stroke="#6B8C3E" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="21" cy="38" r="10" fill="#7AAF50" opacity=".88"/>
+    <circle cx="59" cy="30" r="10" fill="#6FA84A" opacity=".85"/>
+    <circle cx="40" cy="16" r="12" fill="#5C9E3C"/>
+    <!-- Blüten -->
+    <circle cx="14" cy="22" r="5" fill="#F8A0B0" opacity=".9"/>
+    <circle cx="66" cy="18" r="5" fill="#F8A0B0" opacity=".9"/>
+    <circle cx="40" cy="8"  r="5" fill="#FFD0A0" opacity=".9"/>
+    <circle cx="52" cy="12" r="4" fill="#F8A0B0" opacity=".8"/>
+    <circle cx="28" cy="14" r="4" fill="#FFD0A0" opacity=".8"/>
+    <rect x="36" y="65" width="8" height="6" rx="2" fill="#7A5630"/>
+  </svg>`,
+};
+
+function getPlantSvg(stage) {
+  return PLANT_SVGS[stage] || PLANT_SVGS.seed;
+}
+
+function renderFinanzgarten() {
+  const card = document.getElementById('budget-garden-card');
+  if (!card) return;
+
+  // Finanzbaum: Stufe anhand Kontostand
+  const treeStage  = getTreeStage(kontostand);
+  const treeKsStr  = kontostand !== null
+    ? kontostand.toLocaleString('de-DE', { minimumFractionDigits: 2 }) + ' €'
+    : '—';
+
+  // Aktives Sparziel: erstes mit aktuellem Betrag > 0 oder einfach erstes
+  const activeGoal = budgetGoals.length > 0 ? budgetGoals[0] : null;
+  let goalStageName = 'seed';
+  let goalPct       = 0;
+  if (activeGoal) {
+    goalPct       = activeGoal.target > 0 ? Math.min(100, Math.round((activeGoal.current / activeGoal.target) * 100)) : 0;
+    goalStageName = getGoalStage(goalPct);
+  }
+
+  card.innerHTML = `
+    <div class="b-garden-header">
+      <span class="b-garden-title">Dein Finanzgarten</span>
+      ${activeGoal && budgetGoals.length > 1 ? `<span class="b-garden-nav">Ziel 1 von ${budgetGoals.length}</span>` : ''}
+    </div>
+    <div class="b-garden-plants">
+      <div class="b-garden-plant">
+        <div class="b-garden-svg">${getPlantSvg(treeStage.stage)}</div>
+        <div class="b-garden-plant-label">Finanzbaum</div>
+        <div class="b-garden-plant-value">${treeKsStr}</div>
+        <div class="b-garden-stage-badge">${treeStage.label}</div>
+      </div>
+      <div class="b-garden-divider"></div>
+      <div class="b-garden-plant">
+        ${activeGoal ? `
+          <div class="b-garden-svg">${getPlantSvg(goalStageName)}</div>
+          <div class="b-garden-plant-label">${activeGoal.name}</div>
+          <div class="b-garden-plant-value">${activeGoal.current.toLocaleString('de-DE',{minimumFractionDigits:2})} € / ${activeGoal.target.toLocaleString('de-DE',{minimumFractionDigits:2})} €</div>
+          <div class="b-garden-progress-bar">
+            <div class="b-garden-progress-fill" style="width:${goalPct}%"></div>
+          </div>
+          <div class="b-garden-stage-badge">${goalPct}%</div>
+        ` : `
+          <div class="b-garden-svg b-garden-svg-empty">${getPlantSvg('seed')}</div>
+          <div class="b-garden-plant-label" style="color:var(--text-3);">Kein Sparziel</div>
+          <div class="b-garden-plant-value" style="color:var(--text-3);font-size:11px;">Füge ein Sparziel hinzu</div>
+        `}
+      </div>
+    </div>
+    <div class="b-garden-ground"></div>
+  `;
 }
 
 // Kontostand Modal — bearbeitet kontostand direkt

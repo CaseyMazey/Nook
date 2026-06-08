@@ -389,8 +389,112 @@
 
 .b-leaf-deco { position: absolute; bottom: 0; right: 0; opacity: 0.10; pointer-events: none; }
 
-/* ── Liquidity card ───────────────────────────────────────── */
+/* ── Mid row: Liquidity (50%) + Garden slot (50%) ─────────── */
+#budget-mid-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 16px;
+  align-items: start;
+}
 #budget-liquidity { margin-bottom: 0; }
+#budget-garden-slot { min-height: 180px; }
+
+/* ── Finanzgarten Card ────────────────────────────────────── */
+#budget-garden-card {
+  background: var(--surface);
+  border-radius: var(--b-radius);
+  box-shadow: var(--b-shadow);
+  border: 1.5px solid #C5B88A;
+  overflow: hidden;
+  height: 100%;
+}
+
+.b-garden-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px 10px;
+  border-bottom: 1px solid rgba(150,120,70,0.12);
+}
+.b-garden-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.10em;
+  color: #8B6C3A;
+}
+.b-garden-nav { font-size: 11px; color: var(--text-3); }
+
+.b-garden-plants {
+  display: flex;
+  align-items: flex-end;
+  gap: 0;
+  padding: 16px 24px 0;
+}
+.b-garden-plant {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: 14px;
+}
+.b-garden-divider {
+  width: 1px;
+  height: 120px;
+  background: rgba(150,120,70,0.15);
+  margin: 0 8px;
+  align-self: center;
+  flex-shrink: 0;
+}
+.b-garden-svg {
+  width: 72px;
+  height: 72px;
+}
+.b-garden-svg svg { width: 100%; height: 100%; }
+.b-garden-svg-empty { opacity: 0.35; }
+
+.b-garden-plant-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-2);
+  text-align: center;
+}
+.b-garden-plant-value {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  text-align: center;
+}
+.b-garden-stage-badge {
+  font-size: 10px;
+  color: #7A5A28;
+  background: rgba(180,145,80,0.14);
+  border-radius: 99px;
+  padding: 2px 8px;
+  font-weight: 600;
+}
+.b-garden-progress-bar {
+  width: 80%;
+  height: 5px;
+  background: rgba(150,120,70,0.18);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.b-garden-progress-fill {
+  height: 100%;
+  background: linear-gradient(to right, #8FBC5E, #5C9E3C);
+  border-radius: 99px;
+  transition: width 400ms ease;
+}
+.b-garden-ground {
+  height: 10px;
+  background: linear-gradient(to bottom, #C5A878, #A88A5A);
+  margin: 0;
+  border-radius: 0 0 calc(var(--b-radius) - 2px) calc(var(--b-radius) - 2px);
+}
 .b-liquidity-card {
   background: var(--surface);
   border-radius: var(--b-radius);
