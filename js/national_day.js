@@ -136,14 +136,37 @@ function renderNationalDayWidget() {
   const widget = document.createElement('div');
   widget.id = 'national-day-widget';
   widget.className = 'national-day-widget';
+
+  const allDesc = entries.map(e => `<div class="nd-desc-entry"><strong>${entries.length > 1 ? e.title + ': ' : ''}</strong>${e.desc || ''}</div>`).join('');
+
   widget.innerHTML = `
     <div class="national-day-header">
       <span class="national-day-label">Heute ist</span>
       <span class="national-day-date">${dateStr}</span>
     </div>
-    <div class="national-day-title">${entries[0].title}</div>
-    ${entries.length > 1 ? `<div class="national-day-more">+${entries.length - 1} weitere</div>` : ''}`;
-  widget.addEventListener('click', () => openNationalDayModal(entries));
+    <div class="national-day-title-row">
+      <span class="national-day-title">${entries[0].title}</span>
+      ${entries.length > 1 ? `<span class="national-day-more">+${entries.length - 1}</span>` : ''}
+      <button class="nd-toggle-btn" aria-expanded="false">
+        <span class="nd-toggle-label">Mehr</span>
+        <svg class="nd-toggle-icon" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+    <div class="nd-desc-panel" style="display:none;">${allDesc}</div>`;
+
+  // Accordion toggle
+  widget.querySelector('.nd-toggle-btn').addEventListener('click', () => {
+    const btn   = widget.querySelector('.nd-toggle-btn');
+    const panel = widget.querySelector('.nd-desc-panel');
+    const label = widget.querySelector('.nd-toggle-label');
+    const icon  = widget.querySelector('.nd-toggle-icon');
+    const open  = panel.style.display !== 'none';
+    panel.style.display  = open ? 'none' : 'block';
+    label.textContent    = open ? 'Mehr'    : 'Weniger';
+    btn.setAttribute('aria-expanded', !open);
+    icon.style.transform = open ? '' : 'rotate(180deg)';
+  });
+
   sidebar.appendChild(widget);
 }
 

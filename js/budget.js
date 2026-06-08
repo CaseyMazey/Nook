@@ -282,219 +282,256 @@ function renderFinancialStatus(fs) {
 }
 
 // =========================
-// RENDER BUDGET
+// RENDER BUDGET — HAUPTFUNKTION
 // =========================
 
-function renderBudget(){
-  const now      = new Date();
-  const curMkNow = budgetMonthKey(now);
-  const viewMk   = budgetMonthKey(budgetMonth);
-
-  // ── All recurring entries that fire this month ──────────────────────────
-  const monthRec         = getRecurringForMonth(now);
-  const recIncome        = monthRec.filter(r => r.type === 'income');
-  const recExpMonthly    = monthRec.filter(r => r.type === 'expense' && r.freq === 'monthly');
-  const recExpYearly     = monthRec.filter(r => r.type === 'expense' && r.freq === 'yearly');
-
-  const totalRecIncome   = recIncome.reduce((s,r)  => s + r.amount, 0);
-  const totalFixkosten   = recExpMonthly.reduce((s,r) => s + r.amount, 0);
-  const totalSonderkosten= recExpYearly.reduce((s,r)  => s + r.amount, 0);
-
-  // One-time entries
-  const otIncome   = budgetOnetime.filter(e => e.monthKey===curMkNow && e.type==='income').reduce((s,e)=>s+e.amount,0);
-  const otExpense  = budgetOnetime.filter(e => e.monthKey===curMkNow && e.type==='expense').reduce((s,e)=>s+e.amount,0);
-
-  const totalIn    = totalRecIncome + otIncome;
-  const totalOut   = totalFixkosten + totalSonderkosten + otExpense;
-  const balance    = totalIn - totalOut;
-
-  const yearlyCount     = recExpYearly.length;
-  const yearlyCountText = yearlyCount === 1 ? '1 jährliche Abbuchung' : `${yearlyCount} jährliche Abbuchungen`;
-  const otExpText       = otExpense > 0
-    ? `-${otExpense.toLocaleString('de-DE',{minimumFractionDigits:2})} €`
-    : 'Keine';
-
-  // ── KPI GRID ─────────────────────────────────────────────────────────────
-  document.getElementById('budget-summary-bar').innerHTML = `
-    <div class="budget-kpi-grid budget-kpi-grid-4">
-      <div class="budget-kpi-card">
-        <div class="budget-kpi-left">
-          <div class="budget-kpi-label">Einnahmen</div>
-          <div class="budget-kpi-value income">+${totalIn.toLocaleString('de-DE',{minimumFractionDigits:2})} &euro;</div>
-          <div class="budget-kpi-sub">Im ${now.toLocaleDateString('de-DE',{month:'long'})}</div>
-        </div>
-        <div class="budget-kpi-icon green">
-          <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
-            <path d="M14 24C14 24 5 19 5 11C5 7 9 4 14 4C19 4 23 7 23 11C23 19 14 24 14 24Z" stroke="currentColor" stroke-width="1.5" fill="none"/>
-            <path d="M14 24L14 4M14 13C11 10 7 10 5.5 12M14 17C17 14 21 14 22.5 16" stroke="currentColor" stroke-width="1" opacity=".5"/>
-          </svg>
-        </div>
-      </div>
-      <div class="budget-kpi-card">
-        <div class="budget-kpi-left">
-          <div class="budget-kpi-label">Fixkosten</div>
-          <div class="budget-kpi-value expense">-${totalFixkosten.toLocaleString('de-DE',{minimumFractionDigits:2})} &euro;</div>
-          <div class="budget-kpi-sub">Monatliche Fixkosten</div>
-        </div>
-        <div class="budget-kpi-icon red">
-          <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
-            <rect x="5" y="5" width="18" height="18" rx="3" stroke="currentColor" stroke-width="1.5" fill="none"/>
-            <path d="M9 14h10M9 10h6M9 18h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-          </svg>
-        </div>
-      </div>
-      <div class="budget-kpi-card budget-kpi-card-yearly ${totalSonderkosten === 0 ? 'budget-kpi-card-muted' : ''}">
-        <div class="budget-kpi-left">
-          <div class="budget-kpi-label">Sonderkosten</div>
-          <div class="budget-kpi-value ${totalSonderkosten > 0 ? 'expense' : 'muted'}">
-            ${totalSonderkosten > 0 ? '-' + totalSonderkosten.toLocaleString('de-DE',{minimumFractionDigits:2}) + ' &euro;' : '—'}
-          </div>
-          <div class="budget-kpi-sub">${totalSonderkosten > 0 ? yearlyCountText : 'Keine diesen Monat'}</div>
-        </div>
-        <div class="budget-kpi-icon olive">
-          <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
-            <circle cx="14" cy="14" r="9" stroke="currentColor" stroke-width="1.5" fill="none"/>
-            <path d="M14 9v5l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
-        </div>
-      </div>
-      <div class="budget-kpi-card">
-        <div class="budget-kpi-left">
-          <div class="budget-kpi-label">Verfügbar</div>
-          <div class="budget-kpi-value ${balance>=0?'positive':'negative'}">${balance>=0?'+':''}${Math.abs(balance).toLocaleString('de-DE',{minimumFractionDigits:2})} &euro;</div>
-          <div class="budget-kpi-sub">Aktuell verfügbar</div>
-        </div>
-        <div class="budget-kpi-icon olive">
-          <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
-            <rect x="4" y="8" width="20" height="14" rx="3" stroke="currentColor" stroke-width="1.5" fill="none"/>
-            <path d="M4 12h20" stroke="currentColor" stroke-width="1.5"/>
-            <circle cx="19" cy="17" r="2" fill="currentColor" opacity=".6"/>
-          </svg>
-        </div>
-      </div>
-    </div>`;
-
-  renderFinancialStatus(calcFinancialStatus());
+function renderBudget() {
+  const now    = new Date();
+  const curMk  = budgetMonthKey(budgetMonth);
+  const isCurrentMonth = budgetMonthKey(now) === curMk;
 
   document.getElementById('budget-month-label').textContent = budgetMonthLabel(budgetMonth);
 
-  // ── ONE-TIME LIST ─────────────────────────────────────────────────────────
-  const onetimeList = document.getElementById('budget-onetime-list');
-  onetimeList.innerHTML = '';
-  const otEntries = budgetOnetime.filter(e => e.monthKey === viewMk);
-
-  if (otEntries.length === 0) {
-    onetimeList.innerHTML = '<div class="empty-state">Keine einmaligen Buchungen in diesem Monat.</div>';
-  } else {
-    const otIncomes  = otEntries.filter(e => e.type === 'income');
-    const otExpenses = otEntries.filter(e => e.type === 'expense');
-
-    function renderOtGroup(entries, type) {
-      if (!entries.length) return;
-      const header = document.createElement('div');
-      header.className = 'b-section-label';
-      header.innerHTML = `<span class="b-section-dot ${type}"></span>${type === 'income' ? 'Einnahmen' : 'Ausgaben'}`;
-      onetimeList.appendChild(header);
-      entries.forEach(e => {
-        onetimeList.appendChild(makeBudgetRow({
-          name: e.name, amount: e.amount, type: e.type,
-          priority: e.priority || 'need', paid: e.paid || false,
-          onDel:        () => { budgetOnetime = budgetOnetime.filter(x => x.id !== e.id); saveBudgetOnetime(); renderBudget(); },
-          onPaidToggle: () => {
-            const nowPaid = !e.paid;
-            e.paid = nowPaid;
-            if (nowPaid) { kontostand += e.type === 'income' ? e.amount : -e.amount; }
-            else         { kontostand += e.type === 'income' ? -e.amount : e.amount; }
-            DB.set('kontostand', kontostand);
-            saveBudgetOnetime();
-            renderBudget();
-          }
-        }));
-      });
-    }
-    renderOtGroup(otIncomes, 'income');
-    renderOtGroup(otExpenses, 'expense');
-  }
-
-  // ── RECURRING LIST ────────────────────────────────────────────────────────
-  // Income group (all frequencies), then Expense split into: monthly fixkosten / yearly sonderkosten
-  const prioOrder = { must: 0, need: 1, want: 2, none: 1 };
-  function sortByPrioDay(arr) {
-    return arr.slice().sort((a, b) => {
-      const pa = prioOrder[a.priority] ?? 1, pb = prioOrder[b.priority] ?? 1;
-      if (pa !== pb) return pa - pb;
-      const da = a.freq === 'monthly' ? (a.day||1) : (a.dateDay||1);
-      const db = b.freq === 'monthly' ? (b.day||1) : (b.dateDay||1);
-      return da - db;
-    });
-  }
-
-  const allRecIncomes       = sortByPrioDay(budgetRecurring.filter(r => r.type === 'income'));
-  const allRecExpMonthly    = sortByPrioDay(budgetRecurring.filter(r => r.type === 'expense' && r.freq === 'monthly'));
-  const allRecExpYearly     = sortByPrioDay(budgetRecurring.filter(r => r.type === 'expense' && r.freq === 'yearly'));
-
-  const recList = document.getElementById('budget-recurring-list');
-  recList.innerHTML = '';
-
-  if (budgetRecurring.length === 0) {
-    recList.innerHTML = '<div class="empty-state">Noch keine wiederkehrenden Posten.</div>';
-  } else {
-
-    // Helper: render a subgroup with its own header and sum
-    function renderRecSubgroup(entries, type, headerLabel, sumLabel, freqOverride) {
-      if (!entries.length) return;
-
-      const header = document.createElement('div');
-      header.className = 'b-section-label';
-      const dotCls = type === 'income' ? 'income' : (freqOverride === 'yearly' ? 'expense-yearly' : 'expense');
-      header.innerHTML = `<span class="b-section-dot ${dotCls}"></span>${headerLabel}`;
-      recList.appendChild(header);
-
-      entries.forEach(r => {
-        const recPaid = isRecurringPaid(r.id, viewMk);
-        // Frequency chip replaces plain subtitle text
-        const freqChip = r.freq === 'monthly'
-          ? `<span class="b-freq-chip monthly">Monatlich</span>`
-          : `<span class="b-freq-chip yearly">Jährlich · ${r.dateDay}.${String(r.dateMonth).padStart(2,'0')}.</span>`;
-
-        recList.appendChild(makeBudgetRow({
-          name: r.name, amount: r.amount, type: r.type,
-          priority: r.priority || 'need', paid: recPaid,
-          subtitleHtml: freqChip,
-          onEdit:       () => openRecurringModal(r),
-          onDel:        () => { budgetRecurring = budgetRecurring.filter(x => x.id !== r.id); saveBudgetRecurring(); renderBudget(); },
-          onPaidToggle: () => {
-            const nowPaid = !recPaid;
-            setRecurringPaid(r.id, viewMk, nowPaid);
-            if (nowPaid) { kontostand += r.type === 'income' ? r.amount : -r.amount; }
-            else         { kontostand += r.type === 'income' ? -r.amount : r.amount; }
-            DB.set('kontostand', kontostand);
-            renderBudget();
-          }
-        }));
-      });
-
-      const total  = entries.reduce((s, r) => s + r.amount, 0);
-      const sumRow = document.createElement('div');
-      sumRow.className = 'b-sum-row' + (freqOverride === 'yearly' ? ' b-sum-row-yearly' : '');
-      sumRow.innerHTML = `
-        <span class="b-sum-label">${sumLabel}</span>
-        <span class="b-sum-value ${type === 'income' ? 'income' : 'expense'}">${type === 'income' ? '+' : '-'}${total.toLocaleString('de-DE',{minimumFractionDigits:2})} €</span>`;
-      recList.appendChild(sumRow);
-    }
-
-    // Income (all)
-    renderRecSubgroup(allRecIncomes, 'income', 'Einnahmen', 'Summe Einnahmen', null);
-    // Monthly expenses = Fixkosten
-    renderRecSubgroup(allRecExpMonthly, 'expense', 'Monatliche Fixkosten', 'Monatliche Gesamtkosten', 'monthly');
-    // Yearly expenses = Sonderkosten
-    renderRecSubgroup(allRecExpYearly, 'expense', 'Jährliche Sonderkosten', 'Jährliche Sonderkosten', 'yearly');
-  }
-
+  renderKontostandHeader();
+  renderMainCards(budgetMonth, curMk, isCurrentMonth);
+  renderFinancialStatus(calcFinancialStatus());
+  renderOnetimeList(curMk);
+  renderRecurringList(curMk);
   renderBudgetTimeline();
   renderBudgetGoals();
   renderLiquidity();
+  initSummaryCardToggles();
+  initCardInlineToggles();
 }
+
+function renderKontostandHeader() {
+  const valEl = document.getElementById('b-ks-header-value');
+  if (!valEl) return;
+  if (kontostand === null) {
+    valEl.textContent = 'nicht gesetzt';
+    valEl.className = '';
+  } else {
+    valEl.textContent = (kontostand >= 0 ? '+' : '') + kontostand.toLocaleString('de-DE', { minimumFractionDigits: 2 }) + ' \u20ac';
+    valEl.className = kontostand < 0 ? 'negative' : 'positive';
+  }
+  const btn = document.getElementById('budget-ks-header-btn');
+  if (btn && !btn._ksBound) {
+    btn._ksBound = true;
+    btn.addEventListener('click', openKontostandModal);
+  }
+}
+
+// =========================
+// KARTE 1 + 2 + 3: Hauptkarten
+// =========================
+
+function renderMainCards(month, mk, isCurrentMonth) {
+  const recIncomes  = getMonthRecurringItems(month.getFullYear(), month.getMonth()+1).filter(i => i.type === 'income');
+  const otIncomes   = budgetOnetime.filter(e => e.monthKey === mk && e.type === 'income');
+  const recExpenses = getMonthRecurringItems(month.getFullYear(), month.getMonth()+1).filter(i => i.type === 'expense');
+  const otExpenses  = budgetOnetime.filter(e => e.monthKey === mk && e.type === 'expense');
+
+  // ── KARTE 1: Einnahmen ───
+  const incomeList  = document.getElementById('b-income-list');
+  const incomeTotal = document.getElementById('b-income-total');
+  incomeList.innerHTML = ''; let totalIncome = 0;
+
+  const allIncomeRows = [];
+  recIncomes.forEach(i => allIncomeRows.push({ day: i.day||1, name: i.name, amount: i.amount, paid: isRecurringPaid(i.id, mk) }));
+  otIncomes.forEach(e  => allIncomeRows.push({ day: e.day||1,  name: e.name, amount: e.amount, paid: e.paid||false }));
+  allIncomeRows.sort((a,b) => a.day - b.day);
+
+  if (!allIncomeRows.length) {
+    incomeList.innerHTML = '<div class="b-main-empty">Keine Einnahmen in diesem Monat.</div>';
+  } else {
+    allIncomeRows.forEach(row => {
+      totalIncome += row.amount;
+      const el = document.createElement('div');
+      el.className = 'b-main-row' + (row.paid ? ' b-main-row-paid' : '');
+      el.innerHTML = `<span class="b-main-row-day">${String(row.day).padStart(2,'0')}.${String(month.getMonth()+1).padStart(2,'0')}</span><span class="b-main-row-name">${row.name}</span><span class="b-main-row-amount income">+${row.amount.toFixed(2)} \u20ac</span>`;
+      incomeList.appendChild(el);
+    });
+  }
+  const fmtIn = totalIncome.toLocaleString('de-DE',{minimumFractionDigits:2});
+  incomeTotal.innerHTML = `<span class="b-main-total-label">Gesamt</span><span class="b-main-total-value income">+${fmtIn} \u20ac</span>`;
+  const incSum = document.getElementById('b-income-summary-val');
+  if (incSum) incSum.textContent = '+' + fmtIn + ' \u20ac';
+
+  // ── KARTE 2: Ausgaben ───
+  const expenseList  = document.getElementById('b-expense-list');
+  const expenseTotal = document.getElementById('b-expense-total');
+  expenseList.innerHTML = ''; let totalExpense = 0;
+  const PRIO_GROUPS = [{key:'must',icon:'\ud83d\udd34',label:'Muss'},{key:'need',icon:'\ud83d\udfe1',label:'Brauche'},{key:'want',icon:'\ud83d\udfe2',label:'M\u00f6chte'}];
+  const buildExpRows = pk => {
+    const rows = [];
+    recExpenses.filter(i=>(i.priority||'need')===pk).forEach(i=>rows.push({day:i.day||1,name:i.name,amount:i.amount,paid:isRecurringPaid(i.id,mk)}));
+    otExpenses.filter(e=>(e.priority||'need')===pk).forEach(e=>rows.push({day:e.day||1,name:e.name,amount:e.amount,paid:e.paid||false}));
+    return rows.sort((a,b)=>a.day-b.day);
+  };
+  let hasExp = false;
+  PRIO_GROUPS.forEach(({key,icon,label})=>{
+    const rows = buildExpRows(key); if(!rows.length) return; hasExp = true;
+    const gh = document.createElement('div'); gh.className = 'b-main-group-head';
+    gh.innerHTML = `<span>${icon}</span><span>${label}</span>`; expenseList.appendChild(gh);
+    rows.forEach(row=>{
+      totalExpense += row.amount;
+      const el = document.createElement('div'); el.className = 'b-main-row'+(row.paid?' b-main-row-paid':'');
+      el.innerHTML = `<span class="b-main-row-day">${String(row.day).padStart(2,'0')}.${String(month.getMonth()+1).padStart(2,'0')}</span><span class="b-main-row-name">${row.name}</span><span class="b-main-row-amount expense">-${row.amount.toFixed(2)} \u20ac</span>`;
+      expenseList.appendChild(el);
+    });
+  });
+  if(!hasExp) expenseList.innerHTML = '<div class="b-main-empty">Keine Ausgaben in diesem Monat.</div>';
+  const fmtOut = totalExpense.toLocaleString('de-DE',{minimumFractionDigits:2});
+  expenseTotal.innerHTML = `<span class="b-main-total-label">Gesamt</span><span class="b-main-total-value expense">-${fmtOut} \u20ac</span>`;
+  const expSum = document.getElementById('b-expense-summary-val');
+  if (expSum) expSum.textContent = '-' + fmtOut + ' \u20ac';
+
+  // ── KARTE 3: Frei ───
+  const freeContent = document.getElementById('b-free-content');
+  const freeSummary = document.getElementById('b-free-summary-val');
+  freeContent.innerHTML = '';
+  if (kontostand === null) {
+    freeContent.innerHTML = '<div class="b-main-empty" style="padding:12px 0;">Kein Kontostand gesetzt.</div>';
+    if (freeSummary) { freeSummary.textContent = '\u2014'; freeSummary.className = 'b-mcs-value'; }
+  } else {
+    let openExp = 0;
+    recExpenses.forEach(i=>{ if(!isRecurringPaid(i.id,mk)) openExp += i.amount; });
+    otExpenses.forEach(e=>{ if(!e.paid) openExp += e.amount; });
+    const vbl = kontostand - openExp;
+    const fmt = v => v.toLocaleString('de-DE',{minimumFractionDigits:2});
+    const vs = vbl < 0 ? '-' : '+';
+    freeContent.innerHTML = `
+      <div class="b-free-row"><span class="b-free-label">Kontostand</span><span class="b-free-val ${kontostand<0?'expense':''}">${kontostand<0?'':'+'}${fmt(kontostand)} \u20ac</span></div>
+      <div class="b-free-row"><span class="b-free-label">Offene Ausgaben</span><span class="b-free-val expense">-${fmt(openExp)} \u20ac</span></div>
+      <div class="b-free-divider"></div>
+      <div class="b-free-row b-free-row-total"><span class="b-free-label-big">Verbleibend</span><span class="b-free-val-big ${vbl<0?'expense':'income'}">${vs}${fmt(Math.abs(vbl))} \u20ac</span></div>`;
+    if (freeSummary) { freeSummary.textContent = vs+fmt(Math.abs(vbl))+' \u20ac'; freeSummary.className='b-mcs-value '+(vbl<0?'expense':'income'); }
+  }
+}
+
+// =========================
+// COMPACT SUMMARY CARD TOGGLES
+// =========================
+
+function initSummaryCardToggles() {
+  document.querySelectorAll('.b-main-card-summary').forEach(btn => {
+    if (btn._summaryBound) return;
+    btn._summaryBound = true;
+    btn.addEventListener('click', () => {
+      const detail = document.getElementById(btn.dataset.target);
+      const arrow  = btn.querySelector('.b-mcs-arrow');
+      const isOpen = detail.style.display !== 'none';
+      detail.style.display = isOpen ? 'none' : 'block';
+      if (arrow) arrow.textContent = isOpen ? '\u25bc' : '\u25b2';
+    });
+  });
+}
+
+// =========================
+// INLINE CARD CONTENT TOGGLES
+// =========================
+
+function initCardInlineToggles() {
+  document.querySelectorAll('.b-card-toggle-btn').forEach(btn => {
+    if (btn._cardToggleBound) return;
+    btn._cardToggleBound = true;
+    btn.addEventListener('click', () => {
+      const list  = document.getElementById(btn.dataset.target);
+      const arrow = btn.querySelector('.b-card-arrow');
+      const isOpen = list.style.display !== 'none';
+      list.style.display = isOpen ? 'none' : 'block';
+      if (arrow) arrow.textContent = isOpen ? '\u25b6' : '\u25bc';
+    });
+  });
+}
+
+// =========================
+// ONE-TIME LIST
+// =========================
+
+function renderOnetimeList(mk) {
+  const onetimeList = document.getElementById('budget-onetime-list');
+  onetimeList.innerHTML = '';
+  const otEntries = budgetOnetime.filter(e => e.monthKey === mk);
+  if (!otEntries.length) { onetimeList.innerHTML = '<div class="empty-state">Keine einmaligen Buchungen in diesem Monat.</div>'; return; }
+  function renderOtGroup(entries, type) {
+    if (!entries.length) return;
+    const header = document.createElement('div'); header.className = 'b-section-label';
+    header.innerHTML = `<span class="b-section-dot ${type}"></span>${type==='income'?'Einnahmen':'Ausgaben'}`;
+    onetimeList.appendChild(header);
+    entries.forEach(e => {
+      onetimeList.appendChild(makeBudgetRow({
+        name:e.name, amount:e.amount, type:e.type, priority:e.priority||'need', paid:e.paid||false,
+        onDel: ()=>{ budgetOnetime=budgetOnetime.filter(x=>x.id!==e.id); saveBudgetOnetime(); renderBudget(); },
+        onPaidToggle: ()=>{
+          const np=!e.paid; e.paid=np;
+          if(np){ kontostand += e.type==='income'?e.amount:-e.amount; }
+          else   { kontostand += e.type==='income'?-e.amount:e.amount; }
+          DB.set('kontostand',kontostand); saveBudgetOnetime(); renderBudget();
+        }
+      }));
+    });
+  }
+  renderOtGroup(otEntries.filter(e=>e.type==='income'), 'income');
+  renderOtGroup(otEntries.filter(e=>e.type==='expense'),'expense');
+}
+
+// =========================
+// RECURRING LIST
+// =========================
+
+function renderRecurringList(mk) {
+  const prioOrder = {must:0,need:1,want:2,none:1};
+  function sortByPrioDay(arr) {
+    return arr.slice().sort((a,b)=>{
+      const pa=prioOrder[a.priority]??1, pb=prioOrder[b.priority]??1;
+      if(pa!==pb) return pa-pb;
+      const da=a.freq==='monthly'?(a.day||1):(a.dateDay||1);
+      const db=b.freq==='monthly'?(b.day||1):(b.dateDay||1);
+      return da-db;
+    });
+  }
+  const allRecIncomes    = sortByPrioDay(budgetRecurring.filter(r=>r.type==='income'));
+  const allRecExpMonthly = sortByPrioDay(budgetRecurring.filter(r=>r.type==='expense'&&r.freq==='monthly'));
+  const allRecExpYearly  = sortByPrioDay(budgetRecurring.filter(r=>r.type==='expense'&&r.freq==='yearly'));
+  const recList = document.getElementById('budget-recurring-list');
+  recList.innerHTML = '';
+  if (!budgetRecurring.length) { recList.innerHTML = '<div class="empty-state">Noch keine wiederkehrenden Posten.</div>'; return; }
+
+  function renderRecSubgroup(entries, type, headerLabel, sumLabel, freqOverride) {
+    if (!entries.length) return;
+    const header = document.createElement('div'); header.className = 'b-section-label';
+    const dotCls = type==='income'?'income':(freqOverride==='yearly'?'expense-yearly':'expense');
+    header.innerHTML = `<span class="b-section-dot ${dotCls}"></span>${headerLabel}`;
+    recList.appendChild(header);
+    entries.forEach(r => {
+      const recPaid = isRecurringPaid(r.id, mk);
+      const freqChip = r.freq==='monthly'
+        ? `<span class="b-freq-chip monthly">Monatlich</span>`
+        : `<span class="b-freq-chip yearly">J\u00e4hrlich \u00b7 ${r.dateDay}.${String(r.dateMonth).padStart(2,'0')}.</span>`;
+      recList.appendChild(makeBudgetRow({
+        name:r.name, amount:r.amount, type:r.type, priority:r.priority||'need', paid:recPaid, subtitleHtml:freqChip,
+        onEdit: ()=>openRecurringModal(r),
+        onDel:  ()=>{ budgetRecurring=budgetRecurring.filter(x=>x.id!==r.id); saveBudgetRecurring(); renderBudget(); },
+        onPaidToggle: ()=>{
+          const np=!recPaid; setRecurringPaid(r.id,mk,np);
+          if(np){ kontostand += r.type==='income'?r.amount:-r.amount; }
+          else   { kontostand += r.type==='income'?-r.amount:r.amount; }
+          DB.set('kontostand',kontostand); renderBudget();
+        }
+      }));
+    });
+    const total=entries.reduce((s,r)=>s+r.amount,0);
+    const sumRow=document.createElement('div');
+    sumRow.className='b-sum-row'+(freqOverride==='yearly'?' b-sum-row-yearly':'');
+    sumRow.innerHTML=`<span class="b-sum-label">${sumLabel}</span><span class="b-sum-value ${type==='income'?'income':'expense'}">${type==='income'?'+':'-'}${total.toLocaleString('de-DE',{minimumFractionDigits:2})} \u20ac</span>`;
+    recList.appendChild(sumRow);
+  }
+  renderRecSubgroup(allRecIncomes,   'income', 'Einnahmen','Summe Einnahmen',null);
+  renderRecSubgroup(allRecExpMonthly,'expense','Monatliche Fixkosten','Monatliche Gesamtkosten','monthly');
+  renderRecSubgroup(allRecExpYearly, 'expense','J\u00e4hrliche Sonderkosten','J\u00e4hrliche Sonderkosten','yearly');
+}
+
 
 // =========================
 // LIQUIDITY FORECAST

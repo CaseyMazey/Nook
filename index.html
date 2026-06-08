@@ -689,10 +689,15 @@
       <!-- BUDGET -->
       <section id="view-budget" class="view">
         <div id="budget-dashboard">
+
+          <!-- ── HEADER ──────────────────────────────────────── -->
           <div id="budget-header">
             <div id="budget-title-block">
               <h1>Budget</h1>
               <p>Deine Übersicht. Deine Sicherheit.</p>
+              <button id="budget-ks-header-btn" class="b-ks-header-display" title="Kontostand anpassen">
+                Kontostand: <span id="b-ks-header-value">—</span>
+              </button>
             </div>
             <div id="budget-actions">
               <div id="budget-month-picker">
@@ -709,75 +714,113 @@
               <button class="budget-action-btn filled" id="add-recurring-btn">+ Wiederkehrend</button>
             </div>
           </div>
-          <div id="budget-summary-bar"></div>
-          <div id="budget-row2">
-            <div id="budget-kontostand-card">
-              <div id="budget-kontostand-left">
-                <div>
-                  <div class="b-ks-label">Kontostand &amp; Status</div>
-                  <div class="b-ks-value" id="b-ks-display">—</div>
-                  <div class="b-ks-sublabel">Aktueller Kontostand</div>
+
+          <!-- ── 3 COMPACT SUMMARY KARTEN ──────────────────── -->
+          <div id="budget-main-cards">
+
+            <!-- Karte 1: Einnahmen -->
+            <div class="b-main-card b-main-card--income" id="bmc-income">
+              <button class="b-main-card-summary" data-target="bmc-income-detail">
+                <div class="b-mcs-left">
+                  <span class="b-mcs-label">EINNAHMEN</span>
+                  <span class="b-mcs-value income" id="b-income-summary-val">—</span>
                 </div>
-                <button class="b-ks-adjust-btn" id="kontostand-edit-btn">
-                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-                    <path d="M11 2l3 3-9 9H2v-3L11 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/>
-                  </svg>
-                  Anpassen
-                </button>
-              </div>
-              <div id="budget-kontostand-right">
-                <div id="b-status-inner"></div>
-                <svg class="b-leaf-deco" width="90" height="90" viewBox="0 0 90 90" fill="none">
-                  <path d="M45 80 C45 80 10 65 10 35 C10 15 30 5 45 5 C60 5 80 15 80 35 C80 65 45 80 45 80Z" stroke="currentColor" stroke-width="1.5" fill="none"/>
-                  <path d="M45 80 L45 5" stroke="currentColor" stroke-width="1" opacity=".5"/>
-                  <path d="M45 35 C35 25 20 25 15 30" stroke="currentColor" stroke-width="1" opacity=".4"/>
-                  <path d="M45 50 C55 40 70 40 75 45" stroke="currentColor" stroke-width="1" opacity=".4"/>
-                </svg>
+                <span class="b-mcs-arrow">▼</span>
+              </button>
+              <div class="b-main-card-detail" id="bmc-income-detail" style="display:none;">
+                <div id="b-income-list" class="b-main-card-list"></div>
+                <div class="b-main-card-total" id="b-income-total"></div>
               </div>
             </div>
-            <div id="budget-liquidity"></div>
+
+            <!-- Karte 2: Ausgaben -->
+            <div class="b-main-card b-main-card--expense" id="bmc-expense">
+              <button class="b-main-card-summary" data-target="bmc-expense-detail">
+                <div class="b-mcs-left">
+                  <span class="b-mcs-label">AUSGABEN</span>
+                  <span class="b-mcs-value expense" id="b-expense-summary-val">—</span>
+                </div>
+                <span class="b-mcs-arrow">▼</span>
+              </button>
+              <div class="b-main-card-detail" id="bmc-expense-detail" style="display:none;">
+                <div id="b-expense-list" class="b-main-card-list"></div>
+                <div class="b-main-card-total" id="b-expense-total"></div>
+              </div>
+            </div>
+
+            <!-- Karte 3: Verfügbar -->
+            <div class="b-main-card b-main-card--free" id="bmc-free">
+              <button class="b-main-card-summary" data-target="bmc-free-detail">
+                <div class="b-mcs-left">
+                  <span class="b-mcs-label">VERFÜGBAR</span>
+                  <span class="b-mcs-value" id="b-free-summary-val">—</span>
+                </div>
+                <span class="b-mcs-arrow">▼</span>
+              </button>
+              <div class="b-main-card-detail" id="bmc-free-detail" style="display:none;">
+                <div id="b-free-content"></div>
+                <div id="b-status-inner"></div>
+              </div>
+            </div>
+
           </div>
+
+          <!-- ── LIQUIDITÄTSVORSCHAU ─────────────────────────── -->
+          <div id="budget-liquidity"></div>
+
+          <!-- ── 3 KARTEN NEBENEINANDER ─────────────────────── -->
           <div id="budget-row3">
+
             <div class="b-card" id="budget-recurring-card">
               <div class="b-card-header">
-                <span class="b-card-title">Wiederkehrende Posten</span>
+                <button class="b-card-toggle-btn" data-target="budget-recurring-list">
+                  <span class="b-card-arrow">▼</span>
+                  <span class="b-card-title">Wiederkehrende Posten</span>
+                </button>
                 <button class="b-card-add-btn" id="add-recurring-btn-2">+ Hinzufügen</button>
               </div>
               <div id="budget-recurring-list" class="budget-list"></div>
             </div>
+
             <div class="b-card" id="budget-onetime-card">
               <div class="b-card-header">
-                <span class="b-card-title">Einmalige Buchungen</span>
+                <button class="b-card-toggle-btn" data-target="budget-onetime-list">
+                  <span class="b-card-arrow">▼</span>
+                  <span class="b-card-title">Einmalige Buchungen</span>
+                </button>
                 <button class="b-card-add-btn" id="add-onetime-btn-2">+ Hinzufügen</button>
               </div>
               <div id="budget-onetime-list" class="budget-list"></div>
             </div>
+
             <div class="b-card" id="budget-goals-card">
               <div class="b-card-header">
-                <span class="b-card-title">Sparziele</span>
+                <button class="b-card-toggle-btn" data-target="budget-goals-list">
+                  <span class="b-card-arrow">▼</span>
+                  <span class="b-card-title">Sparziele</span>
+                </button>
                 <button class="b-card-add-btn" id="add-goal-btn-2">+ Ziel hinzufügen</button>
               </div>
               <div id="budget-goals-list" class="budget-list"></div>
             </div>
+
           </div>
+
           <div id="budget-timeline" style="display:none;"></div>
-          <div id="budget-tip-banner">
-            <div class="b-tip-left">
-              <svg class="b-tip-icon" width="48" height="48" viewBox="0 0 48 48" fill="none">
-                <path d="M24 44 C24 44 8 36 8 20 C8 11 15 4 24 4 C33 4 40 11 40 20 C40 36 24 44 24 44Z" stroke="#6b7c5a" stroke-width="1.5" fill="none"/>
-                <path d="M24 44 L24 4" stroke="#6b7c5a" stroke-width="1" opacity=".5"/>
-                <path d="M24 20 C18 14 10 14 8 18" stroke="#6b7c5a" stroke-width="1" opacity=".5"/>
-                <path d="M24 28 C30 22 38 22 40 26" stroke="#6b7c5a" stroke-width="1" opacity=".5"/>
-              </svg>
-              <div class="b-tip-content">
-                <div class="b-tip-eyebrow">Tipp des Monats</div>
-                <div class="b-tip-text">Überprüfe regelmäßig deine wiederkehrenden Posten – oft finden sich Sparpotenziale im Kleinen.</div>
-              </div>
-            </div>
-            <div class="b-tip-right">
-              <div class="b-tip-right-text">☕</div>
-            </div>
+
+          <!-- Legacy stubs (hidden, referenced by budget.js) -->
+          <div style="display:none;">
+            <div id="budget-kontostand-card"></div>
+            <div id="budget-kontostand-left"></div>
+            <div id="budget-kontostand-right"></div>
+            <div class="b-ks-value" id="b-ks-display"></div>
+            <div id="budget-row2"></div>
+            <div id="budget-summary-bar"></div>
           </div>
+
+          <!-- Legacy kontostand-edit-btn stub -->
+          <div style="display:none;"><button id="kontostand-edit-btn"></button></div>
+
         </div>
       </section>
 

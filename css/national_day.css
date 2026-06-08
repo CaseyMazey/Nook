@@ -83,3 +83,37 @@
   font-weight: 500;
 }
 .national-day-entry-link:hover { text-decoration: underline; }
+
+/* Accordion expand */
+.national-day-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.nd-toggle-btn {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10.5px;
+  color: var(--sage);
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: background var(--transition);
+  flex-shrink: 0;
+}
+.nd-toggle-btn:hover { background: var(--sage-bg); }
+.nd-toggle-icon { transition: transform 200ms; }
+
+.nd-desc-panel { margin-top: 10px; }
+.nd-desc-entry {
+  font-size: 12.5px;
+  color: var(--text-2);
+  line-height: 1.6;
+  padding: 6px 0;
+  border-top: 1px solid var(--border);
+}
+.nd-desc-entry:first-child { border-top: none; padding-top: 0; }
