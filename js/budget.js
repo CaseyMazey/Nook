@@ -710,13 +710,17 @@ function fmtEur(amount) {
 // FINANZGARTEN
 // =========================
 
+// =========================
+// FINANZGARTEN
+// =========================
+
 const GARDEN_TREE_LEVELS = [
-  { min: 0,    label: 'Samen',          stage: 'seed'         },
-  { min: 250,  label: 'Keimling',       stage: 'sprout'       },
-  { min: 500,  label: 'Kleine Pflanze', stage: 'small_plant'  },
-  { min: 1000, label: 'Mittlere Pflanze',stage: 'medium_plant'},
-  { min: 2000, label: 'Großer Baum',    stage: 'large_plant'  },
-  { min: 3000, label: 'Blühender Baum', stage: 'flowering'    },
+  { min: 0,    label: 'Samen',           stage: 'seed'        },
+  { min: 100,  label: 'Keimling',        stage: 'sprout'      },
+  { min: 200,  label: 'Kleine Pflanze',  stage: 'small_plant' },
+  { min: 300, label: 'Mittlere Pflanze',stage: 'medium_plant'},
+  { min: 400, label: 'Großer Baum',     stage: 'large_plant' },
+  { min: 500, label: 'Blühender Baum',  stage: 'flowering'   },
 ];
 
 function getTreeStage(ks) {
@@ -726,7 +730,6 @@ function getTreeStage(ks) {
   }
   return GARDEN_TREE_LEVELS[0];
 }
-
 function getGoalStage(pct) {
   if (pct >= 100) return 'flowering';
   if (pct >= 80)  return 'large_plant';
@@ -736,121 +739,210 @@ function getGoalStage(pct) {
   return 'seed';
 }
 
-const PLANT_SVGS = {
-  seed: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <ellipse cx="40" cy="58" rx="14" ry="6" fill="#C5A882" opacity=".35"/>
-    <ellipse cx="40" cy="55" rx="8" ry="6" fill="#8B6340"/>
-    <ellipse cx="40" cy="52" rx="6" ry="5" fill="#A0784E"/>
-  </svg>`,
-  sprout: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <ellipse cx="40" cy="64" rx="14" ry="5" fill="#C5A882" opacity=".3"/>
-    <line x1="40" y1="62" x2="40" y2="38" stroke="#7A9B5A" stroke-width="2.5" stroke-linecap="round"/>
-    <path d="M40 48 Q30 42 28 34 Q36 34 40 42" fill="#8FBC5E" opacity=".9"/>
-    <path d="M40 44 Q50 38 52 30 Q44 30 40 38" fill="#6FA84A" opacity=".85"/>
-    <ellipse cx="40" cy="63" rx="8" ry="4" fill="#A07848"/>
-  </svg>`,
-  small_plant: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <ellipse cx="40" cy="66" rx="15" ry="5" fill="#C5A882" opacity=".3"/>
-    <line x1="40" y1="64" x2="40" y2="32" stroke="#7A9B5A" stroke-width="2.5" stroke-linecap="round"/>
-    <path d="M40 52 Q26 46 24 34 Q34 32 40 46" fill="#8FBC5E"/>
-    <path d="M40 46 Q54 40 56 28 Q46 26 40 40" fill="#6FA84A"/>
-    <path d="M40 38 Q30 30 30 22 Q38 22 40 32" fill="#A0C870" opacity=".8"/>
-    <rect x="36" y="62" width="8" height="5" rx="2" fill="#A07848"/>
-  </svg>`,
-  medium_plant: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <ellipse cx="40" cy="68" rx="16" ry="5" fill="#C5A882" opacity=".3"/>
-    <line x1="40" y1="66" x2="40" y2="28" stroke="#6B8C3E" stroke-width="3" stroke-linecap="round"/>
-    <line x1="40" y1="50" x2="28" y2="42" stroke="#7A9B5A" stroke-width="2" stroke-linecap="round"/>
-    <line x1="40" y1="44" x2="52" y2="36" stroke="#7A9B5A" stroke-width="2" stroke-linecap="round"/>
-    <circle cx="28" cy="38" r="10" fill="#8FBC5E" opacity=".9"/>
-    <circle cx="52" cy="32" r="10" fill="#6FA84A" opacity=".85"/>
-    <circle cx="40" cy="24" r="12" fill="#7AAF50"/>
-    <rect x="36" y="63" width="8" height="6" rx="2" fill="#8B6340"/>
-  </svg>`,
-  large_plant: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <ellipse cx="40" cy="70" rx="18" ry="5" fill="#C5A882" opacity=".3"/>
-    <line x1="40" y1="68" x2="40" y2="24" stroke="#5C7A30" stroke-width="4" stroke-linecap="round"/>
-    <line x1="40" y1="56" x2="24" y2="44" stroke="#6B8C3E" stroke-width="2.5" stroke-linecap="round"/>
-    <line x1="40" y1="48" x2="56" y2="36" stroke="#6B8C3E" stroke-width="2.5" stroke-linecap="round"/>
-    <line x1="40" y1="40" x2="26" y2="28" stroke="#7A9B5A" stroke-width="2" stroke-linecap="round"/>
-    <circle cx="22" cy="40" r="11" fill="#8FBC5E" opacity=".88"/>
-    <circle cx="58" cy="32" r="11" fill="#6FA84A" opacity=".85"/>
-    <circle cx="24" cy="25" r="10" fill="#7AAF50" opacity=".9"/>
-    <circle cx="40" cy="18" r="13" fill="#5C9E3C"/>
-    <rect x="36" y="65" width="8" height="6" rx="2" fill="#7A5630"/>
-  </svg>`,
-  flowering: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <ellipse cx="40" cy="70" rx="18" ry="5" fill="#C5A882" opacity=".3"/>
-    <line x1="40" y1="68" x2="40" y2="22" stroke="#5C7A30" stroke-width="4" stroke-linecap="round"/>
-    <line x1="40" y1="54" x2="23" y2="42" stroke="#6B8C3E" stroke-width="2.5" stroke-linecap="round"/>
-    <line x1="40" y1="46" x2="57" y2="34" stroke="#6B8C3E" stroke-width="2.5" stroke-linecap="round"/>
-    <circle cx="21" cy="38" r="10" fill="#7AAF50" opacity=".88"/>
-    <circle cx="59" cy="30" r="10" fill="#6FA84A" opacity=".85"/>
-    <circle cx="40" cy="16" r="12" fill="#5C9E3C"/>
-    <!-- Blüten -->
-    <circle cx="14" cy="22" r="5" fill="#F8A0B0" opacity=".9"/>
-    <circle cx="66" cy="18" r="5" fill="#F8A0B0" opacity=".9"/>
-    <circle cx="40" cy="8"  r="5" fill="#FFD0A0" opacity=".9"/>
-    <circle cx="52" cy="12" r="4" fill="#F8A0B0" opacity=".8"/>
-    <circle cx="28" cy="14" r="4" fill="#FFD0A0" opacity=".8"/>
-    <rect x="36" y="65" width="8" height="6" rx="2" fill="#7A5630"/>
-  </svg>`,
+// Plant-type emoji map
+const PLANT_EMOJIS = {
+  sunflower:     '🌻',
+  cactus:        '🌵',
+  bonsai:        '🌳',
+  potplant:      '🪴',
+  cherryblossom: '🌸',
+};
+const PLANT_NAMES = {
+  sunflower:     'Sonnenblume',
+  cactus:        'Kaktus',
+  bonsai:        'Bonsai',
+  potplant:      'Zimmerpflanze',
+  cherryblossom: 'Kirschblüte',
 };
 
-function getPlantSvg(stage) {
-  return PLANT_SVGS[stage] || PLANT_SVGS.seed;
+// Plant-type specific tint colors for SVG (stem/leaf color)
+const PLANT_COLORS = {
+  sunflower:     { stem: '#8B9E3A', leaf: '#A8BC48', bloom: '#F5C518', bloomAlt: '#E89B10' },
+  cactus:        { stem: '#4A9E5C', leaf: '#5CB87A', bloom: '#F87171', bloomAlt: '#DC2626' },
+  bonsai:        { stem: '#6B4226', leaf: '#5A8A3C', bloom: '#F9A8D4', bloomAlt: '#EC4899' },
+  potplant:      { stem: '#5C8A3C', leaf: '#7AAF50', bloom: '#86EFAC', bloomAlt: '#4ADE80' },
+  cherryblossom: { stem: '#7A4A2A', leaf: '#6B8C3E', bloom: '#FBCFE8', bloomAlt: '#F9A8D4' },
+};
+
+function getColors(plantType) {
+  return PLANT_COLORS[plantType] || PLANT_COLORS.sunflower;
+}
+
+// SVG stages — parameterized by plantType colors
+function buildPlantSvg(stage, plantType) {
+  const c = getColors(plantType || 'sunflower');
+  const s = c.stem, l = c.leaf, b = c.bloom, ba = c.bloomAlt;
+
+  const svgs = {
+    seed: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="40" cy="62" rx="16" ry="5" fill="#C5A882" opacity=".3"/>
+      <ellipse cx="40" cy="58" rx="10" ry="8" fill="#8B6340" opacity=".9"/>
+      <ellipse cx="40" cy="55" rx="7" ry="6" fill="#A07848"/>
+      <ellipse cx="38" cy="53" rx="2" ry="3" fill="#C09A62" opacity=".6"/>
+    </svg>`,
+    sprout: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="40" cy="66" rx="16" ry="4" fill="#C5A882" opacity=".28"/>
+      <rect x="37" y="63" width="6" height="5" rx="2" fill="#8B6340"/>
+      <line x1="40" y1="62" x2="40" y2="34" stroke="${s}" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M40 50 Q28 44 26 33 Q36 33 40 46" fill="${l}" opacity=".9"/>
+      <path d="M40 44 Q52 38 54 27 Q44 27 40 40" fill="${s}" opacity=".8"/>
+    </svg>`,
+    small_plant: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="40" cy="68" rx="17" ry="4" fill="#C5A882" opacity=".28"/>
+      <rect x="36" y="64" width="8" height="6" rx="3" fill="#8B6340"/>
+      <line x1="40" y1="63" x2="40" y2="26" stroke="${s}" stroke-width="2.8" stroke-linecap="round"/>
+      <path d="M40 52 Q24 46 22 32 Q34 30 40 46" fill="${l}"/>
+      <path d="M40 44 Q56 38 58 24 Q46 22 40 38" fill="${s}" opacity=".85"/>
+      <path d="M40 36 Q28 26 30 16 Q40 16 40 28" fill="${l}" opacity=".75"/>
+    </svg>`,
+    medium_plant: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="40" cy="70" rx="18" ry="4" fill="#C5A882" opacity=".28"/>
+      <rect x="36" y="65" width="8" height="7" rx="3" fill="#7A5630"/>
+      <line x1="40" y1="64" x2="40" y2="22" stroke="${s}" stroke-width="3.5" stroke-linecap="round"/>
+      <line x1="40" y1="52" x2="26" y2="42" stroke="${s}" stroke-width="2" stroke-linecap="round"/>
+      <line x1="40" y1="44" x2="54" y2="34" stroke="${s}" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="24" cy="38" r="11" fill="${l}" opacity=".88"/>
+      <circle cx="56" cy="30" r="11" fill="${s}" opacity=".82"/>
+      <circle cx="40" cy="18" r="13" fill="${l}"/>
+    </svg>`,
+    large_plant: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="40" cy="72" rx="19" ry="4" fill="#C5A882" opacity=".28"/>
+      <rect x="36" y="67" width="8" height="7" rx="3" fill="#7A5630"/>
+      <line x1="40" y1="66" x2="40" y2="18" stroke="${s}" stroke-width="4" stroke-linecap="round"/>
+      <line x1="40" y1="56" x2="23" y2="44" stroke="${s}" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="40" y1="48" x2="57" y2="36" stroke="${s}" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="40" y1="40" x2="25" y2="26" stroke="${s}" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="21" cy="40" r="12" fill="${l}" opacity=".88"/>
+      <circle cx="59" cy="32" r="12" fill="${s}" opacity=".84"/>
+      <circle cx="23" cy="23" r="10" fill="${l}" opacity=".9"/>
+      <circle cx="40" cy="14" r="13" fill="${s}"/>
+    </svg>`,
+    flowering: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="40" cy="72" rx="19" ry="4" fill="#C5A882" opacity=".28"/>
+      <rect x="36" y="67" width="8" height="7" rx="3" fill="#7A5630"/>
+      <line x1="40" y1="66" x2="40" y2="16" stroke="${s}" stroke-width="4" stroke-linecap="round"/>
+      <line x1="40" y1="54" x2="22" y2="42" stroke="${s}" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="40" y1="46" x2="58" y2="34" stroke="${s}" stroke-width="2.5" stroke-linecap="round"/>
+      <circle cx="20" cy="38" r="11" fill="${l}" opacity=".88"/>
+      <circle cx="60" cy="30" r="11" fill="${s}" opacity=".84"/>
+      <circle cx="40" cy="12" r="12" fill="${l}"/>
+      <!-- Blüten -->
+      <circle cx="12" cy="20" r="6" fill="${b}" opacity=".92"/>
+      <circle cx="68" cy="16" r="5" fill="${ba}" opacity=".88"/>
+      <circle cx="40" cy="4"  r="5" fill="${b}" opacity=".9"/>
+      <circle cx="54" cy="8"  r="4" fill="${ba}" opacity=".82"/>
+      <circle cx="26" cy="10" r="4" fill="${b}" opacity=".82"/>
+    </svg>`,
+  };
+  return svgs[stage] || svgs.seed;
 }
 
 function renderFinanzgarten() {
   const card = document.getElementById('budget-garden-card');
   if (!card) return;
 
-  // Finanzbaum: Stufe anhand Kontostand
-  const treeStage  = getTreeStage(kontostand);
-  const treeKsStr  = kontostand !== null
+  // Finanzbaum
+  const treeLevel = getTreeStage(kontostand);
+  const treeKsStr = kontostand !== null
     ? kontostand.toLocaleString('de-DE', { minimumFractionDigits: 2 }) + ' €'
     : '—';
 
-  // Aktives Sparziel: erstes mit aktuellem Betrag > 0 oder einfach erstes
-  const activeGoal = budgetGoals.length > 0 ? budgetGoals[0] : null;
-  let goalStageName = 'seed';
-  let goalPct       = 0;
-  if (activeGoal) {
-    goalPct       = activeGoal.target > 0 ? Math.min(100, Math.round((activeGoal.current / activeGoal.target) * 100)) : 0;
-    goalStageName = getGoalStage(goalPct);
-  }
+  // Active goal — persisted by ID
+  let activeGoalId = DB.get('gardenActiveGoalId', null);
+  let activeGoal   = budgetGoals.find(g => g.id === activeGoalId) || budgetGoals[0] || null;
+  if (activeGoal && activeGoal.id !== activeGoalId) DB.set('gardenActiveGoalId', activeGoal.id);
 
+  let goalPct = 0, goalStage = 'seed';
+  if (activeGoal) {
+    goalPct   = activeGoal.target > 0 ? Math.min(100, Math.round((activeGoal.current / activeGoal.target) * 100)) : 0;
+    goalStage = getGoalStage(goalPct);
+  }
+  const plantType  = activeGoal?.plantType || 'sunflower';
+  const plantEmoji = PLANT_EMOJIS[plantType] || '🌱';
+  const plantName  = PLANT_NAMES[plantType] || 'Pflanze';
+
+  // Render
   card.innerHTML = `
     <div class="b-garden-header">
-      <span class="b-garden-title">Dein Finanzgarten</span>
-      ${activeGoal && budgetGoals.length > 1 ? `<span class="b-garden-nav">Ziel 1 von ${budgetGoals.length}</span>` : ''}
-    </div>
-    <div class="b-garden-plants">
-      <div class="b-garden-plant">
-        <div class="b-garden-svg">${getPlantSvg(treeStage.stage)}</div>
-        <div class="b-garden-plant-label">Finanzbaum</div>
-        <div class="b-garden-plant-value">${treeKsStr}</div>
-        <div class="b-garden-stage-badge">${treeStage.label}</div>
+      <div class="b-garden-title-block">
+        <span class="b-garden-emoji">🌿</span>
+        <span class="b-garden-title">Finanzgarten</span>
       </div>
-      <div class="b-garden-divider"></div>
+      ${budgetGoals.length > 0 ? `
+        <button class="b-garden-select-btn" id="garden-select-goal-btn">
+          ${activeGoal ? `${plantEmoji} ${activeGoal.name}` : 'Ziel wählen'}
+          <span class="b-garden-select-arrow">▾</span>
+        </button>` : ''}
+    </div>
+
+    <div class="b-garden-scene">
+      <!-- Finanzbaum links -->
+      <div class="b-garden-plant">
+        <div class="b-garden-stage-label">${treeLevel.label}</div>
+        <div class="b-garden-svg">${buildPlantSvg(treeLevel.stage, 'bonsai')}</div>
+        <div class="b-garden-plant-name">Finanzbaum</div>
+        <div class="b-garden-plant-val">${treeKsStr}</div>
+        <div class="b-garden-mini-bar">
+          ${GARDEN_TREE_LEVELS.map((lv, i) => `<div class="b-garden-pip${kontostand !== null && kontostand >= lv.min ? ' filled' : ''}"></div>`).join('')}
+        </div>
+      </div>
+
+      <!-- Trennlinie -->
+      <div class="b-garden-fence">
+        ${Array(6).fill('<div class="b-garden-fence-post"></div>').join('')}
+        <div class="b-garden-fence-rail"></div>
+      </div>
+
+      <!-- Sparziel rechts -->
       <div class="b-garden-plant">
         ${activeGoal ? `
-          <div class="b-garden-svg">${getPlantSvg(goalStageName)}</div>
-          <div class="b-garden-plant-label">${activeGoal.name}</div>
-          <div class="b-garden-plant-value">${activeGoal.current.toLocaleString('de-DE',{minimumFractionDigits:2})} € / ${activeGoal.target.toLocaleString('de-DE',{minimumFractionDigits:2})} €</div>
+          <div class="b-garden-stage-label">${goalPct}%</div>
+          <div class="b-garden-svg">${buildPlantSvg(goalStage, plantType)}</div>
+          <div class="b-garden-plant-name">${activeGoal.name}</div>
+          <div class="b-garden-plant-val">${activeGoal.current.toLocaleString('de-DE',{minimumFractionDigits:2})} / ${activeGoal.target.toLocaleString('de-DE',{minimumFractionDigits:2})} €</div>
           <div class="b-garden-progress-bar">
-            <div class="b-garden-progress-fill" style="width:${goalPct}%"></div>
+            <div class="b-garden-progress-fill" style="width:${goalPct}%; background: linear-gradient(to right, ${getColors(plantType).leaf}, ${getColors(plantType).stem})"></div>
           </div>
-          <div class="b-garden-stage-badge">${goalPct}%</div>
         ` : `
-          <div class="b-garden-svg b-garden-svg-empty">${getPlantSvg('seed')}</div>
-          <div class="b-garden-plant-label" style="color:var(--text-3);">Kein Sparziel</div>
-          <div class="b-garden-plant-value" style="color:var(--text-3);font-size:11px;">Füge ein Sparziel hinzu</div>
+          <div class="b-garden-stage-label" style="opacity:.4">—</div>
+          <div class="b-garden-svg b-garden-svg-empty">${buildPlantSvg('seed','sunflower')}</div>
+          <div class="b-garden-plant-name" style="color:var(--text-3)">Kein Ziel</div>
+          <div class="b-garden-plant-val" style="color:var(--text-3);font-size:11px;">Sparziel hinzufügen</div>
         `}
       </div>
     </div>
     <div class="b-garden-ground"></div>
   `;
+
+  // Goal selector dropdown
+  const selectBtn = card.querySelector('#garden-select-goal-btn');
+  if (selectBtn && budgetGoals.length > 0) {
+    selectBtn.addEventListener('click', () => {
+      // Remove existing dropdown
+      document.getElementById('garden-dropdown')?.remove();
+      const dd = document.createElement('div');
+      dd.id = 'garden-dropdown';
+      dd.className = 'b-garden-dropdown';
+      budgetGoals.forEach(g => {
+        const item = document.createElement('button');
+        item.className = 'b-garden-dropdown-item' + (g.id === (activeGoal?.id) ? ' active' : '');
+        const emoji = PLANT_EMOJIS[g.plantType] || '🌱';
+        const pct   = g.target > 0 ? Math.min(100, Math.round((g.current/g.target)*100)) : 0;
+        item.innerHTML = `<span>${emoji} ${g.name}</span><span class="b-garden-dd-pct">${pct}%</span>`;
+        item.addEventListener('click', () => {
+          DB.set('gardenActiveGoalId', g.id);
+          dd.remove();
+          renderFinanzgarten();
+        });
+        dd.appendChild(item);
+      });
+      selectBtn.parentElement.appendChild(dd);
+      // Close on outside click
+      setTimeout(() => document.addEventListener('click', function close(e) {
+        if (!dd.contains(e.target) && e.target !== selectBtn) { dd.remove(); document.removeEventListener('click', close); }
+      }), 10);
+    });
+  }
 }
 
 // Kontostand Modal — bearbeitet kontostand direkt
@@ -1018,7 +1110,13 @@ function renderBudgetGoals(){
     const del  = document.createElement('button'); del.className = 'task-delete'; del.textContent = '✕'; del.style.opacity = '0';
     card.addEventListener('mouseenter', () => del.style.opacity = '1');
     card.addEventListener('mouseleave', () => del.style.opacity = '0');
-    del.addEventListener('click', () => { budgetGoals = budgetGoals.filter(g => g.id !== goal.id); saveBudgetGoals(); renderBudgetGoals(); });
+    del.addEventListener('click', () => {
+      budgetGoals = budgetGoals.filter(g => g.id !== goal.id);
+      // If the active garden goal was deleted, clear the stored ID
+      const activeId = DB.get('gardenActiveGoalId', null);
+      if (activeId === goal.id) DB.set('gardenActiveGoalId', null);
+      saveBudgetGoals(); renderBudgetGoals(); renderFinanzgarten();
+    });
     head.append(nm, del);
     const bar  = document.createElement('div'); bar.className = 'budget-goal-bar';
     const fill = document.createElement('div'); fill.className = 'budget-goal-fill'; fill.style.width = pct + '%';
@@ -1256,7 +1354,12 @@ document.getElementById('onetime-save').addEventListener('click', () => {
 // =========================
 
 document.getElementById('add-goal-btn').addEventListener('click', () => {
-  document.getElementById('goal-name').value = ''; document.getElementById('goal-target').value = '';
+  document.getElementById('goal-name').value = '';
+  document.getElementById('goal-target').value = '';
+  document.getElementById('goal-current').value = '';
+  // Reset plant selector to first option
+  const firstRadio = document.querySelector('input[name="goal-plant"]');
+  if (firstRadio) firstRadio.checked = true;
   document.getElementById('goal-modal-overlay').classList.remove('hidden');
   setTimeout(() => document.getElementById('goal-name').focus(), 50);
 });
@@ -1269,11 +1372,15 @@ document.getElementById('goal-modal-overlay').addEventListener('click', e => {
 document.getElementById('goal-save').addEventListener('click', () => {
   const name = document.getElementById('goal-name').value.trim();
   if (!name) return;
-  const target = parseFloat(document.getElementById('goal-target').value) || 0;
-  budgetGoals.push({ id: crypto.randomUUID(), name, target, current: 0 });
+  const target    = parseFloat(document.getElementById('goal-target').value) || 0;
+  const current   = parseFloat(document.getElementById('goal-current').value) || 0;
+  const plantRadio = document.querySelector('input[name="goal-plant"]:checked');
+  const plantType = plantRadio ? plantRadio.value : 'sunflower';
+  budgetGoals.push({ id: crypto.randomUUID(), name, target, current, plantType });
   saveBudgetGoals();
   document.getElementById('goal-modal-overlay').classList.add('hidden');
   renderBudgetGoals();
+  renderFinanzgarten();
 });
 
 let goalTxTarget = null, goalTxMode = 'deposit';
@@ -1299,6 +1406,7 @@ document.getElementById('goal-tx-save').addEventListener('click', () => {
   saveBudgetGoals();
   document.getElementById('goal-tx-modal-overlay').classList.add('hidden');
   renderBudgetGoals();
+  renderFinanzgarten();
   goalTxTarget = null;
 });
 

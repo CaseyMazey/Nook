@@ -400,14 +400,16 @@
 #budget-liquidity { margin-bottom: 0; }
 #budget-garden-slot { min-height: 180px; }
 
-/* ── Finanzgarten Card ────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════════
+   FINANZGARTEN — Hauptkarte
+══════════════════════════════════════════════════════════════ */
 #budget-garden-card {
-  background: var(--surface);
+  background: linear-gradient(160deg, #F6F0E4 0%, #EDE4D0 100%);
   border-radius: var(--b-radius);
-  box-shadow: var(--b-shadow);
-  border: 1.5px solid #C5B88A;
+  box-shadow: 0 4px 18px rgba(100,75,30,0.13), 0 1px 4px rgba(100,75,30,0.08);
+  border: 1.5px solid #C8B07A;
   overflow: hidden;
-  height: 100%;
+  position: relative;
 }
 
 .b-garden-header {
@@ -415,86 +417,159 @@
   align-items: center;
   justify-content: space-between;
   padding: 14px 18px 10px;
-  border-bottom: 1px solid rgba(150,120,70,0.12);
+  border-bottom: 1px solid rgba(150,115,60,0.14);
+  background: rgba(175,140,70,0.08);
 }
-.b-garden-title {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.10em;
-  color: #8B6C3A;
-}
-.b-garden-nav { font-size: 11px; color: var(--text-3); }
+.b-garden-title-block { display: flex; align-items: center; gap: 7px; }
+.b-garden-emoji { font-size: 16px; line-height: 1; }
+.b-garden-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.10em; color: #7A5C1E; }
 
-.b-garden-plants {
+/* Ziel-Auswahl Button */
+.b-garden-select-btn {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 12px; font-weight: 600; color: #6B4E1A;
+  background: rgba(175,140,70,0.15);
+  border: 1px solid rgba(175,140,70,0.3);
+  border-radius: 99px;
+  padding: 4px 12px;
+  cursor: pointer;
+  transition: background var(--transition);
+  white-space: nowrap;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.b-garden-select-btn:hover { background: rgba(175,140,70,0.28); }
+.b-garden-select-arrow { opacity: 0.6; font-size: 10px; }
+
+/* Dropdown */
+.b-garden-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  z-index: 100;
+  min-width: 200px;
+  overflow: hidden;
+}
+.b-garden-dropdown-item {
+  display: flex; justify-content: space-between; align-items: center;
+  width: 100%; padding: 9px 14px;
+  font-size: 13px; color: var(--text);
+  background: none; border: none; cursor: pointer;
+  text-align: left;
+  transition: background var(--transition);
+  gap: 8px;
+}
+.b-garden-dropdown-item:hover { background: var(--surface-2); }
+.b-garden-dropdown-item.active { font-weight: 700; color: var(--sage-dark); }
+.b-garden-dd-pct { font-size: 11px; color: var(--text-3); font-family: var(--mono); flex-shrink: 0; }
+
+/* Scene */
+.b-garden-scene {
   display: flex;
   align-items: flex-end;
-  gap: 0;
-  padding: 16px 24px 0;
+  padding: 16px 20px 0;
+  gap: 8px;
 }
+
 .b-garden-plant {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding-bottom: 14px;
+  gap: 5px;
+  padding-bottom: 10px;
 }
-.b-garden-divider {
-  width: 1px;
-  height: 120px;
-  background: rgba(150,120,70,0.15);
-  margin: 0 8px;
-  align-self: center;
-  flex-shrink: 0;
-}
-.b-garden-svg {
-  width: 72px;
-  height: 72px;
-}
-.b-garden-svg svg { width: 100%; height: 100%; }
-.b-garden-svg-empty { opacity: 0.35; }
-
-.b-garden-plant-label {
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--text-2);
-  text-align: center;
-}
-.b-garden-plant-value {
-  font-family: var(--mono);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
-  text-align: center;
-}
-.b-garden-stage-badge {
-  font-size: 10px;
-  color: #7A5A28;
-  background: rgba(180,145,80,0.14);
+.b-garden-stage-label {
+  font-size: 10px; font-weight: 700;
+  color: #8B6820;
+  background: rgba(175,140,70,0.18);
   border-radius: 99px;
   padding: 2px 8px;
-  font-weight: 600;
+  letter-spacing: 0.04em;
 }
-.b-garden-progress-bar {
-  width: 80%;
-  height: 5px;
-  background: rgba(150,120,70,0.18);
-  border-radius: 99px;
-  overflow: hidden;
+.b-garden-svg { width: 80px; height: 80px; }
+.b-garden-svg svg { width: 100%; height: 100%; }
+.b-garden-svg-empty { opacity: 0.28; filter: grayscale(0.4); }
+.b-garden-plant-name { font-size: 12px; font-weight: 600; color: #5A4010; text-align: center; }
+.b-garden-plant-val  { font-family: var(--mono); font-size: 12px; font-weight: 600; color: #3A2A08; text-align: center; }
+
+/* Progress */
+.b-garden-progress-bar { width: 78%; height: 5px; background: rgba(150,115,60,0.18); border-radius: 99px; overflow: hidden; }
+.b-garden-progress-fill { height: 100%; border-radius: 99px; transition: width 400ms ease; }
+
+/* Pips (Finanzbaum Stufen) */
+.b-garden-mini-bar { display: flex; gap: 3px; margin-top: 2px; }
+.b-garden-pip { width: 8px; height: 4px; border-radius: 2px; background: rgba(150,115,60,0.18); }
+.b-garden-pip.filled { background: #8B9E3A; }
+
+/* Zaun-Trennlinie */
+.b-garden-fence {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  flex-shrink: 0;
+  width: 24px;
+  align-self: stretch;
+  position: relative;
+  padding-bottom: 10px;
 }
-.b-garden-progress-fill {
-  height: 100%;
-  background: linear-gradient(to right, #8FBC5E, #5C9E3C);
-  border-radius: 99px;
-  transition: width 400ms ease;
+.b-garden-fence-post {
+  width: 5px; height: 14px;
+  background: #A07840;
+  border-radius: 2px 2px 0 0;
+  margin-bottom: 7px;
+  flex-shrink: 0;
 }
+.b-garden-fence-rail {
+  position: absolute; left: 50%; top: 6px; bottom: 10px;
+  width: 2px;
+  transform: translateX(-50%);
+  background: rgba(140,100,40,0.2);
+}
+
+/* Erde unten */
 .b-garden-ground {
-  height: 10px;
-  background: linear-gradient(to bottom, #C5A878, #A88A5A);
-  margin: 0;
-  border-radius: 0 0 calc(var(--b-radius) - 2px) calc(var(--b-radius) - 2px);
+  height: 14px;
+  background: linear-gradient(to bottom, #C4A06A, #A07840);
+  position: relative;
 }
+.b-garden-ground::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: rgba(255,255,255,0.12);
+}
+
+/* Plant selector in modal */
+.goal-plant-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+}
+.goal-plant-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border);
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition);
+  user-select: none;
+}
+.goal-plant-option:hover { background: var(--surface-2); }
+.goal-plant-option input[type="radio"] { display: none; }
+.goal-plant-option:has(input:checked) { border-color: var(--sage); background: var(--sage-bg); }
+.goal-plant-icon { font-size: 18px; }
+.goal-plant-name { font-size: 13px; font-weight: 500; color: var(--text); }
 .b-liquidity-card {
   background: var(--surface);
   border-radius: var(--b-radius);
@@ -965,152 +1040,89 @@
 
 /* =============================================================
    COMPACT SUMMARY CARDS — 3 Spalten
+   Dunkler Header + heller Body
 ============================================================= */
 
-#budget-main-cards {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-  margin-bottom: 20px;
-}
+#budget-main-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
 
 .b-main-card {
-  border: 1px solid rgba(0,0,0,0.09);
+  border: 1px solid rgba(0,0,0,0.10);
   border-radius: var(--radius-xl);
   overflow: hidden;
   box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
 }
 
 .b-main-card--income  { background: #A3B18A; }
 .b-main-card--expense { background: #C0AC99; }
 .b-main-card--free    { background: #EBE4D4; }
 
-/* Compact summary row (always visible) */
 .b-main-card-summary {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 18px 20px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  text-align: left;
-  gap: 12px;
+  width: 100%; display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 16px 11px; background: none; border: none; cursor: pointer; text-align: left; gap: 12px;
 }
-.b-main-card-summary:hover { background: rgba(0,0,0,0.04); }
+.b-main-card-summary:hover { background: rgba(0,0,0,0.05); }
 
-.b-mcs-left {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.b-mcs-label {
-  font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: rgba(0,0,0,0.45);
-}
-.b-mcs-value {
-  font-family: var(--mono);
-  font-size: 22px;
-  font-weight: 700;
-  color: #24211C;
-  line-height: 1.1;
-}
-.b-mcs-value.income  { color: #2A5C2A; }
-.b-mcs-value.expense { color: #7A3018; }
-.b-mcs-arrow {
-  font-size: 11px;
-  color: rgba(0,0,0,0.35);
-  flex-shrink: 0;
-  transition: transform 200ms;
-}
+.b-mcs-left { display: flex; flex-direction: column; gap: 3px; }
+.b-mcs-label { font-size: 9px; font-weight: 700; letter-spacing: 0.13em; text-transform: uppercase; color: rgba(0,0,0,0.42); }
+.b-mcs-value { font-family: var(--mono); font-size: 20px; font-weight: 700; color: rgba(0,0,0,0.78); line-height: 1.1; }
+.b-mcs-value.income  { color: #1E4020; }
+.b-mcs-value.expense { color: #5A2010; }
+.b-mcs-arrow { font-size: 10px; color: rgba(0,0,0,0.32); flex-shrink: 0; }
 
-/* Detail panel (expanded) */
+/* Detail panel — clearly lighter than header */
 .b-main-card-detail {
-  padding: 0 18px 16px;
+  background: rgba(255,255,255,0.62);
   border-top: 1px solid rgba(0,0,0,0.09);
-  background: rgba(255,255,255,0.35);
+  padding: 8px 14px 10px;
+  flex: 1;
 }
 
-.b-main-card-list {
-  display: flex;
-  flex-direction: column;
-  padding-top: 10px;
-}
-
-.b-main-empty { font-size: 12.5px; color: rgba(0,0,0,0.4); padding: 8px 0; font-style: italic; }
+.b-main-card-list { display: flex; flex-direction: column; }
+.b-main-empty { font-size: 12px; color: rgba(0,0,0,0.38); padding: 4px 0; font-style: italic; }
 
 .b-main-row {
-  display: grid;
-  grid-template-columns: 44px 1fr 18px auto;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 0;
-  border-bottom: 1px solid rgba(0,0,0,0.06);
-  font-size: 13px;
+  display: grid; grid-template-columns: 38px 1fr 14px auto;
+  align-items: center; gap: 5px;
+  padding: 3px 0; border-bottom: 1px solid rgba(0,0,0,0.05); font-size: 12px; line-height: 1.2;
 }
 .b-main-row:last-child { border-bottom: none; }
 
-/* Klickbare Zeilen */
-.b-main-row-clickable {
-  cursor: pointer;
-  border-radius: 5px;
-  margin: 0 -4px;
-  padding: 6px 4px;
-  transition: background 120ms;
-}
-.b-main-row-clickable:hover { background: rgba(0,0,0,0.07); }
+.b-main-row-clickable { cursor: pointer; border-radius: 4px; margin: 0 -3px; padding: 3px 3px; transition: background 100ms; }
+.b-main-row-clickable:hover  { background: rgba(0,0,0,0.07); }
 .b-main-row-clickable:active { background: rgba(0,0,0,0.13); }
+.b-main-row.b-main-row-paid  { opacity: 0.35; text-decoration: line-through; }
 
-.b-main-row.b-main-row-paid { opacity: 0.45; text-decoration: line-through; }
+.b-main-row-day    { font-family: var(--mono); font-size: 9.5px; color: rgba(0,0,0,0.38); }
+.b-main-row-name   { color: #1C1A16; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.b-main-row-check  { font-size: 10px; color: rgba(0,0,0,0.45); text-align: center; }
+.b-main-row-amount { font-family: var(--mono); font-size: 11.5px; font-weight: 600; white-space: nowrap; }
+.b-main-row-amount.income  { color: #1E4020; }
+.b-main-row-amount.expense { color: #5A2010; }
 
-.b-main-row-check {
-  font-size: 11px;
-  color: rgba(0,0,0,0.5);
-  text-align: center;
-  flex-shrink: 0;
-}
+.b-main-group-head { display: flex; align-items: center; gap: 5px; font-size: 9.5px; font-weight: 700; color: rgba(0,0,0,0.38); padding: 4px 0 2px; text-transform: uppercase; letter-spacing: 0.05em; }
 
-.b-main-row-day    { font-family: var(--mono); font-size: 10px; color: rgba(0,0,0,0.4); }
-.b-main-row-name   { color: #24211C; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.b-main-row-amount { font-family: var(--mono); font-size: 12.5px; font-weight: 600; white-space: nowrap; }
-.b-main-row-amount.income  { color: #2A5C2A; }
-.b-main-row-amount.expense { color: #7A3018; }
-
-.b-main-group-head {
-  display: flex; align-items: center; gap: 6px;
-  font-size: 11px; font-weight: 700; color: rgba(0,0,0,0.4);
-  padding: 8px 0 3px; text-transform: uppercase; letter-spacing: 0.05em;
-}
-
-.b-main-card-total {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 10px 0 0;
-  border-top: 1px solid rgba(0,0,0,0.09);
-  margin-top: 6px;
-}
-.b-main-total-label { font-size: 11px; font-weight: 600; color: rgba(0,0,0,0.4); text-transform: uppercase; letter-spacing: 0.07em; }
-.b-main-total-value { font-family: var(--mono); font-size: 15px; font-weight: 700; }
-.b-main-total-value.income  { color: #2A5C2A; }
-.b-main-total-value.expense { color: #7A3018; }
+.b-main-card-total { display: flex; justify-content: space-between; align-items: center; padding: 6px 0 0; border-top: 1px solid rgba(0,0,0,0.08); margin-top: 3px; }
+.b-main-total-label { font-size: 9.5px; font-weight: 600; color: rgba(0,0,0,0.38); text-transform: uppercase; letter-spacing: 0.07em; }
+.b-main-total-value { font-family: var(--mono); font-size: 13px; font-weight: 700; }
+.b-main-total-value.income  { color: #1E4020; }
+.b-main-total-value.expense { color: #5A2010; }
 
 /* Free budget card inner */
-#b-free-content { padding: 10px 0 4px; }
-.b-free-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; }
-.b-free-label     { font-size: 13px; color: rgba(0,0,0,0.55); }
-.b-free-label-big { font-size: 14px; font-weight: 600; color: #24211C; }
-.b-free-val { font-family: var(--mono); font-size: 14px; font-weight: 600; color: #24211C; }
-.b-free-val.income  { color: #2A5C2A; }
-.b-free-val.expense { color: #7A3018; }
-.b-free-val-big { font-family: var(--mono); font-size: 20px; font-weight: 700; }
-.b-free-val-big.income  { color: #2A5C2A; }
-.b-free-val-big.expense { color: #7A3018; }
-.b-free-divider { height: 1px; background: rgba(0,0,0,0.1); margin: 8px 0 6px; }
+#b-free-content { padding: 6px 0 2px; }
+.b-free-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; }
+.b-free-label     { font-size: 12px; color: rgba(0,0,0,0.50); }
+.b-free-label-big { font-size: 13px; font-weight: 600; color: #1C1A16; }
+.b-free-val { font-family: var(--mono); font-size: 13px; font-weight: 600; color: #1C1A16; }
+.b-free-val.income  { color: #1E4020; }
+.b-free-val.expense { color: #5A2010; }
+.b-free-val-big { font-family: var(--mono); font-size: 17px; font-weight: 700; }
+.b-free-val-big.income  { color: #1E4020; }
+.b-free-val-big.expense { color: #5A2010; }
+.b-free-divider { height: 1px; background: rgba(0,0,0,0.09); margin: 5px 0 3px; }
 .b-free-row-total { margin-top: 2px; }
-#b-status-inner { padding: 8px 0 4px; }
+#b-status-inner { padding: 5px 0 2px; }
 
 /* =============================================================
    3-SPALTEN KARTEN (Wiederkehrende / Einmalige / Sparziele)
