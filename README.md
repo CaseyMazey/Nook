@@ -177,4 +177,8 @@ Inspirationen:
 
 ```bash
 git clone https://github.com/CaseyMazey/Personal-HUB.git
+<<<<<<< HEAD
 cd Personal-HUB
+=======
+cd Personal-HUB
+>>>>>>> 364481b22217a6d37b3b8bd0e353e92f92ae846f
