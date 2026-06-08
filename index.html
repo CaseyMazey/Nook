@@ -782,15 +782,14 @@
       </section>
 
       <!-- GAMES -->
-       <section id="view-games" class="view"></section>
-      <!-- <section id="view-games" class="view games-view">
+      <section id="view-games" class="view games-view">
         <h1 class="view-title" style="margin-bottom:20px;">Spiele</h1>
         <div class="games-tabs"></div>
         <div class="games-layout">
           <div class="games-area"></div>
           <div class="games-hs-panel"></div>
         </div>
-      </section> -->
+      </section>
 
       <!-- SETTINGS -->
       <section id="view-settings" class="view">
@@ -906,8 +905,9 @@
       <div class="modal-head"><span id="event-modal-title">Neuer Termin</span><button class="modal-x" id="event-modal-close">✕</button></div>
       <input type="text" class="modal-input" id="event-modal-input" placeholder="Termin eingeben..." autocomplete="off"/>
       <div class="modal-row"><label>Details (optional)</label><textarea class="modal-textarea" id="event-modal-notes" placeholder="Ort, Hinweise, Links..."></textarea></div>
-      <div class="modal-row"><label>Datum</label><input type="date" class="modal-date" id="event-modal-date-input"/></div>
-      <div class="modal-row"><label>Uhrzeit (optional)</label><input type="time" class="modal-time" id="event-modal-time"/></div>
+      <div class="modal-row"><label>Startdatum</label><input type="date" class="modal-date" id="event-modal-date-input"/></div>
+      <div class="modal-row"><label>Enddatum <span style="font-size:11px;color:var(--text-3);font-weight:400;">(optional — für Zeiträume)</span></label><input type="date" class="modal-date" id="event-modal-enddate-input"/></div>
+      <div class="modal-row" id="event-modal-time-row"><label>Uhrzeit (optional)</label><input type="time" class="modal-time" id="event-modal-time"/></div>
       <div class="modal-row modal-row-inline">
         <div><div class="settings-row-title">Als Countdown anzeigen</div><div class="settings-row-sub">Wird in der Sidebar angezeigt</div></div>
         <label class="toggle"><input type="checkbox" id="event-modal-countdown"/><span class="toggle-slider"></span></label>

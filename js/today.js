@@ -373,13 +373,35 @@ function buildMiniCal(refDate) {
   const monthNames = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
   const dayNames   = ['Mo','Di','Mi','Do','Fr','Sa','So'];
 
-  const eventDays = new Set();
+  // Build set of days that have any event (single or range)
+  const eventDays    = new Set(); // days with single events
+  const rangeDays    = new Set(); // days inside a multi-day range
+  const rangeStart   = new Set();
+  const rangeEnd     = new Set();
+
   if (typeof events !== 'undefined') {
-    Object.keys(events).forEach(key => {
-      const d = parseLocalDate(key);
-      if (d.getFullYear() === year && d.getMonth() === month && events[key]?.length > 0) {
-        eventDays.add(d.getDate());
-      }
+    Object.entries(events).forEach(([key, dayEvs]) => {
+      (dayEvs || []).forEach(ev => {
+        if (!ev.endDate) {
+          // Single-day
+          const d = parseLocalDate(key);
+          if (d.getFullYear() === year && d.getMonth() === month) eventDays.add(d.getDate());
+          return;
+        }
+        // Multi-day: mark all days in range
+        const start = parseLocalDate(ev.startDate || key); start.setHours(0,0,0,0);
+        const end   = parseLocalDate(ev.endDate);           end.setHours(0,0,0,0);
+        const cur   = new Date(start);
+        while (cur <= end) {
+          if (cur.getFullYear() === year && cur.getMonth() === month) {
+            const d = cur.getDate();
+            rangeDays.add(d);
+            if (cur.getTime() === start.getTime()) rangeStart.add(d);
+            if (cur.getTime() === end.getTime())   rangeEnd.add(d);
+          }
+          cur.setDate(cur.getDate() + 1);
+        }
+      });
     });
   }
 
@@ -400,30 +422,53 @@ function buildMiniCal(refDate) {
     const cellDate = new Date(year, month, d); cellDate.setHours(0,0,0,0);
     const isT  = cellDate.getTime() === today.getTime();
     const hasE = eventDays.has(d);
-    const cls  = ['mini-cal-cell', isT ? 'is-today' : '', hasE ? 'has-events' : ''].filter(Boolean).join(' ');
+    const isR  = rangeDays.has(d);
+    const isRS = rangeStart.has(d);
+    const isRE = rangeEnd.has(d);
     const key  = dateKey(cellDate);
+
+    const cls = ['mini-cal-cell',
+      isT  ? 'is-today'    : '',
+      hasE ? 'has-events'  : '',
+      isR  ? 'in-range'    : '',
+      isRS ? 'range-start' : '',
+      isRE ? 'range-end'   : '',
+    ].filter(Boolean).join(' ');
+
     cells += `<div class="${cls}" data-date="${key}" data-day="${d}"><span>${d}</span><span class="mini-cal-dot"></span></div>`;
   }
 
-  const total = startDow + daysInMonth;
+  const total     = startDow + daysInMonth;
   const remainder = total % 7 === 0 ? 0 : 7 - (total % 7);
   for (let d = 1; d <= remainder; d++) {
     cells += `<div class="mini-cal-cell other-month"><span>${d}</span></div>`;
   }
 
-  // Upcoming events (nächste 10 Tage)
+  // Upcoming events list (next 14 days) — includes multi-day starts
   let upcomingHtml = '';
   const upcoming = [];
-  for (let i = 0; i <= 10; i++) {
-    const d = new Date(today); d.setDate(today.getDate() + i);
+  const seenIds  = new Set();
+  for (let i = 0; i <= 14; i++) {
+    const d   = new Date(today); d.setDate(today.getDate() + i);
     const key = dateKey(d);
+    // Single-day events on this day
     (events[key] || []).forEach(ev => {
-      upcoming.push({ title: ev.title, date: d, dateStr: d.toLocaleDateString('de-DE', { day: 'numeric', month: 'long' }), type: ev.countdown ? 'prio-1' : 'prio-ev' });
+      if (seenIds.has(ev.id)) return;
+      seenIds.add(ev.id);
+      if (!ev.endDate) {
+        upcoming.push({ title: ev.title, date: d, dateStr: d.toLocaleDateString('de-DE', { day: 'numeric', month: 'long' }), type: ev.countdown ? 'prio-1' : 'prio-ev', isRange: false });
+      } else {
+        const end = parseLocalDate(ev.endDate);
+        const startStr = parseLocalDate(ev.startDate || key).toLocaleDateString('de-DE',{day:'numeric',month:'short'});
+        const endStr   = end.toLocaleDateString('de-DE', {day:'numeric', month:'short'});
+        upcoming.push({ title: ev.title, date: d, dateStr: `${startStr} – ${endStr}`, type: ev.countdown ? 'prio-1' : 'range-ev', isRange: true });
+      }
     });
   }
+
   if (upcoming.length > 0) {
     upcomingHtml = `<div id="mini-cal-events">${
-      upcoming.slice(0,4).map(e =>
+      upcoming.slice(0,5).map(e =>
         `<div class="mini-cal-event-row" data-date="${dateKey(e.date)}" style="cursor:pointer;">
           <span class="mini-cal-event-dot ${e.type}"></span>
           <span class="mini-cal-event-title">${e.title}</span>
