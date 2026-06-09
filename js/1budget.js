@@ -166,83 +166,62 @@ function getMonthRecurringItems(year, month) {
 // Basiert auf offenem Kontostand (bereits erledigt = bereits verbucht)
 // =========================
 
-function calcFinancialStatus(mk) {
+function calcFinancialStatus() {
   if (kontostand === null) return null;
-  // mk = budgetMonthKey des aktuell angezeigten Monats
-  const useMk = mk || budgetMonthKey(new Date());
-  const useYear  = parseInt(useMk.slice(0,4));
-  const useMonth = parseInt(useMk.slice(5,7));
-  const curRecItems = getMonthRecurringItems(useYear, useMonth);
+  const curMk       = budgetMonthKey(new Date());
+  const curRecItems = getMonthRecurringItems(new Date().getFullYear(), new Date().getMonth()+1);
 
-  // Offene Ausgaben nach Priorität — NUR type === 'expense', NUR nicht bezahlt
+  // Offene Ausgaben nach Priorität
   const openByPrio = { must: 0, need: 0, want: 0 };
-  curRecItems
-    .filter(i => i.type === 'expense' && !isRecurringPaid(i.id, useMk))
-    .forEach(i => {
-      const p = i.priority || 'need';
-      if (p === 'must' || p === 'need' || p === 'want') openByPrio[p] += i.amount;
-    });
-  budgetOnetime
-    .filter(e => e.monthKey === useMk && e.type === 'expense' && !e.paid)
-    .forEach(e => {
-      const p = e.priority || 'need';
-      if (p === 'must' || p === 'need' || p === 'want') openByPrio[p] += e.amount;
-    });
+  curRecItems.filter(i => i.type === 'expense' && !isRecurringPaid(i.id, curMk))
+    .forEach(i => { openByPrio[i.priority || 'need'] = (openByPrio[i.priority || 'need'] || 0) + i.amount; });
+  budgetOnetime.filter(e => e.monthKey === curMk && e.type === 'expense' && !e.paid)
+    .forEach(e => { openByPrio[e.priority || 'need'] = (openByPrio[e.priority || 'need'] || 0) + e.amount; });
 
-  // Kumulative Deckungsprüfung: Kontostand → Muss → Rest → Brauche → Rest → Möchte
   const afterMust   = kontostand - openByPrio.must;
   const afterNeed   = afterMust  - openByPrio.need;
   const afterWant   = afterNeed  - openByPrio.want;
   const mustCovered = afterMust >= 0;
-  const needCovered = mustCovered && afterNeed >= 0;
-  const wantCovered = needCovered && afterWant >= 0;
-
-  let status;
-  if (!mustCovered)       status = 'red';
-  else if (!needCovered)  status = 'orange';
-  else if (!wantCovered)  status = 'yellow';
-  else                    status = 'green';
-
-  const fmt = v => Math.abs(v).toLocaleString('de-DE', {minimumFractionDigits:2});
+  const needCovered = afterNeed >= 0;
+  const wantCovered = afterWant >= 0;
+  const gap         = afterWant;
+  const status      = !mustCovered ? 'red' : !needCovered ? 'red' : !wantCovered ? 'yellow' : 'green';
 
   const checks = [];
   if (mustCovered) {
-    checks.push({ icon: '✓', iconClass: 'ok',      label: 'Muss gedeckt' });
+    checks.push({ icon: '✓', iconClass: 'ok', label: 'Muss-Ausgaben sind gedeckt.' });
   } else {
-    checks.push({ icon: '✗', iconClass: 'bad',     label: `Muss nicht gedeckt — fehlen ${fmt(afterMust)} €` });
+    checks.push({ icon: '✗', iconClass: 'bad', label: `Muss-Ausgaben nicht gedeckt. Fehlbetrag: ${Math.abs(afterMust).toFixed(2)} €` });
   }
   if (!mustCovered) {
-    checks.push({ icon: '–', iconClass: 'neutral', label: 'Brauche nicht auswertbar' });
+    checks.push({ icon: '–', iconClass: 'neutral', label: 'Brauche-Ausgaben (nicht auswertbar)' });
   } else if (needCovered) {
-    checks.push({ icon: '✓', iconClass: 'ok',      label: 'Brauche gedeckt' });
+    checks.push({ icon: '✓', iconClass: 'ok', label: 'Brauche-Ausgaben sind gedeckt.' });
   } else {
-    checks.push({ icon: '✗', iconClass: 'bad',     label: `Brauche nicht gedeckt — fehlen ${fmt(afterNeed)} €` });
+    checks.push({ icon: '✗', iconClass: 'bad', label: `Brauche-Ausgaben nicht vollständig gedeckt. Fehlbetrag: ${Math.abs(afterNeed).toFixed(2)} €` });
   }
   if (!mustCovered || !needCovered) {
-    checks.push({ icon: '–', iconClass: 'neutral', label: 'Möchte nicht auswertbar' });
+    checks.push({ icon: '–', iconClass: 'neutral', label: 'Möchte-Ausgaben (nicht auswertbar)' });
   } else if (wantCovered) {
-    checks.push({ icon: '✓', iconClass: 'ok',      label: 'Möchte gedeckt' });
+    checks.push({ icon: '✓', iconClass: 'ok', label: 'Möchte-Ausgaben sind gedeckt.' });
   } else {
-    checks.push({ icon: '⚠', iconClass: 'warn',   label: `Möchte nicht gedeckt — fehlen ${fmt(afterWant)} €` });
+    checks.push({ icon: '⚠', iconClass: 'warn', label: 'Für optionale Ausgaben reicht es nicht ganz.' });
   }
 
-  let hint;
-  const restAfterAll = afterWant;
+  let hint = null;
   if (status === 'green') {
-    hint = restAfterAll > 0
-      ? { text: `Alle Ausgaben gedeckt. Puffer: +${fmt(restAfterAll)} €`, type: 'good' }
-      : { text: 'Alle Ausgaben sind gedeckt.', type: 'good' };
+    hint = gap > 0
+      ? { text: `Nach allen offenen Ausgaben bleiben dir noch ${gap.toFixed(2)} € übrig.`, type: 'good' }
+      : { text: 'Alle offenen Ausgaben sind gedeckt.', type: 'good' };
   } else if (status === 'yellow') {
-    hint = { text: `Pflicht- und Brauche-Ausgaben gesichert. Für optionale Ausgaben fehlen ${fmt(afterWant)} €.`, type: 'warn' };
-  } else if (status === 'orange') {
-    hint = { text: `Brauche-Ausgaben nicht vollständig gedeckt. Fehlbetrag: ${fmt(afterNeed)} €`, type: 'bad' };
+    hint = { text: `Für optionale Ausgaben fehlen noch ${Math.abs(gap).toFixed(2)} €. Pflichtausgaben sind gesichert.`, type: 'warn' };
   } else {
-    hint = { text: `Muss-Ausgaben nicht gedeckt. Fehlbetrag: ${fmt(afterMust)} €`, type: 'bad' };
+    hint = !mustCovered
+      ? { text: `Muss-Ausgaben nicht gedeckt — es fehlen ${Math.abs(afterMust).toFixed(2)} €.`, type: 'bad' }
+      : { text: `Brauche-Ausgaben nicht vollständig gedeckt — es fehlen ${Math.abs(afterNeed).toFixed(2)} €.`, type: 'bad' };
   }
 
-  return { status, mustCovered, needCovered, wantCovered, checks, hint,
-           openMust: openByPrio.must, openNeed: openByPrio.need, openWant: openByPrio.want,
-           afterMust, afterNeed, afterWant };
+  return { status, mustCovered, needCovered, wantCovered, checks, hint };
 }
 
 function renderFinancialStatus(fs) {
@@ -266,8 +245,8 @@ function renderFinancialStatus(fs) {
     return;
   }
 
-  const labels   = { green: 'Stabil', yellow: 'Eingeschränkt', orange: 'Aufpassen', red: 'Kritisch' };
-  const dotColor = { green: '#5A9C28', yellow: '#D4A010', orange: '#D46010', red: '#C03020' };
+  const labels   = { green: 'Stabil', yellow: 'Aufpassen', red: 'Kritisch' };
+  const dotColor = { green: 'green', yellow: 'yellow', red: 'red' };
 
   // Render checks — each item already contains its own icon, class and label from calcFinancialStatus
   const checkHtml = fs.checks.map(c => `
@@ -283,8 +262,8 @@ function renderFinancialStatus(fs) {
 
   statusInner.innerHTML = `
     <div class="b-status-header">
-      <span class="b-status-dot" style="background:${dotColor[fs.status]}"></span>
-      <span class="b-status-text">Status: <strong>${labels[fs.status]}</strong></span>
+      <span class="b-status-dot ${dotColor[fs.status]}"></span>
+      <span class="b-status-text">Status: <span class="status-word ${dotColor[fs.status]}">${labels[fs.status]}</span></span>
     </div>
     <div class="b-checklist">${checkHtml}</div>
     ${hintHtml}`;
@@ -302,7 +281,7 @@ function renderBudget() {
 
   renderKontostandHeader();
   renderMainCards(budgetMonth, curMk);
-  renderFinancialStatus(calcFinancialStatus(curMk));
+  renderFinancialStatus(calcFinancialStatus());
   renderOnetimeList(curMk);
   renderRecurringList(curMk);
   renderBudgetTimeline();
@@ -450,7 +429,7 @@ function renderMainCards(month, mk) {
   const expSum = document.getElementById('b-expense-summary-val');
   if (expSum) expSum.textContent = '-' + fmtOpenOut + ' €';
 
-  // ── KARTE 3: Verfügbar — zeigt dieselbe Prioritätsberechnung wie der Status ───
+  // ── KARTE 3: Verfügbar ───
   const freeContent = document.getElementById('b-free-content');
   const freeSummary = document.getElementById('b-free-summary-val');
   freeContent.innerHTML = '';
@@ -459,60 +438,26 @@ function renderMainCards(month, mk) {
     freeContent.innerHTML = '<div class="b-main-empty" style="padding:12px 0;">Kein Kontostand gesetzt.</div>';
     if (freeSummary) { freeSummary.textContent = '—'; freeSummary.className = 'b-mcs-value'; }
   } else {
-    // Dieselbe Berechnung wie calcFinancialStatus — nach Priorität kaskadierend
-    const openMust = recExpenses.filter(i=>i.priority==='must'&&!isRecurringPaid(i.id,mk)).reduce((s,i)=>s+i.amount,0)
-                   + otExpenses.filter(e=>e.priority==='must'&&!e.paid).reduce((s,e)=>s+e.amount,0);
-    const openNeed = recExpenses.filter(i=>(i.priority||'need')==='need'&&!isRecurringPaid(i.id,mk)).reduce((s,i)=>s+i.amount,0)
-                   + otExpenses.filter(e=>(e.priority||'need')==='need'&&!e.paid).reduce((s,e)=>s+e.amount,0);
-    const openWant = recExpenses.filter(i=>i.priority==='want'&&!isRecurringPaid(i.id,mk)).reduce((s,i)=>s+i.amount,0)
-                   + otExpenses.filter(e=>e.priority==='want'&&!e.paid).reduce((s,e)=>s+e.amount,0);
-    const openAll  = openMust + openNeed + openWant;
-
-    const afterMust = kontostand - openMust;
-    const afterNeed = afterMust  - openNeed;
-    const afterWant = afterNeed  - openWant;
-    const vbl       = afterWant;
+    const vbl = kontostand - openExpTotal;
     const fmt = v => v.toLocaleString('de-DE',{minimumFractionDigits:2});
-    const fmtAbs = v => Math.abs(v).toLocaleString('de-DE',{minimumFractionDigits:2});
-
-    // Prioritätszeilen
-    const mustRow = openMust > 0
-      ? `<div class="b-free-prio-row">
-           <span class="b-free-prio-dot must"></span>
-           <span class="b-free-prio-label">Nach Pflichtausgaben</span>
-           <span class="b-free-prio-amt">-${fmt(openMust)} €</span>
-           <span class="b-free-prio-after ${afterMust>=0?'ok':'bad'}">${afterMust>=0?'+'+fmt(afterMust):'-'+fmtAbs(afterMust)} €</span>
-         </div>` : '';
-    const needRow = openNeed > 0
-      ? `<div class="b-free-prio-row">
-           <span class="b-free-prio-dot need"></span>
-           <span class="b-free-prio-label">Nach Brauche-Ausgaben</span>
-           <span class="b-free-prio-amt">-${fmt(openNeed)} €</span>
-           <span class="b-free-prio-after ${afterMust<0?'neutral':afterNeed>=0?'ok':'bad'}">${afterMust<0?'–':afterNeed>=0?'+'+fmt(afterNeed):'-'+fmtAbs(afterNeed)} €</span>
-         </div>` : '';
-    const wantRow = openWant > 0
-      ? `<div class="b-free-prio-row">
-           <span class="b-free-prio-dot want"></span>
-           <span class="b-free-prio-label">Saldo nach allen Ausgaben</span>
-           <span class="b-free-prio-amt">-${fmt(openWant)} €</span>
-           <span class="b-free-prio-after ${(afterMust<0||afterNeed<0)?'neutral':afterWant>=0?'ok':'bad'}">${(afterMust<0||afterNeed<0)?'–':afterWant>=0?'+'+fmt(afterWant):'-'+fmtAbs(afterWant)} €</span>
-         </div>` : '';
-
+    const vs  = vbl < 0 ? '-' : '+';
     freeContent.innerHTML = `
       <div class="b-free-row">
         <span class="b-free-label">Kontostand</span>
         <span class="b-free-val ${kontostand<0?'expense':''}">${kontostand<0?'':'+'}${fmt(kontostand)} €</span>
       </div>
-      ${mustRow}${needRow}${wantRow}
+      <div class="b-free-row">
+        <span class="b-free-label">Offene Ausgaben</span>
+        <span class="b-free-val expense">-${fmt(openExpTotal)} €</span>
+      </div>
       <div class="b-free-divider"></div>
       <div class="b-free-row b-free-row-total">
         <span class="b-free-label-big">Verbleibend</span>
-        <span class="b-free-val-big ${vbl<0?'expense':'income'}">${vbl<0?'-':'+'}${fmtAbs(vbl)} €</span>
+        <span class="b-free-val-big ${vbl<0?'expense':'income'}">${vs}${fmt(Math.abs(vbl))} €</span>
       </div>`;
-
     if (freeSummary) {
-      freeSummary.textContent = (vbl<0?'-':'+')+fmtAbs(vbl)+' €';
-      freeSummary.className = 'b-mcs-value '+(vbl<0?'expense':'income');
+      freeSummary.textContent = vs + fmt(Math.abs(vbl)) + ' €';
+      freeSummary.className = 'b-mcs-value ' + (vbl < 0 ? 'expense' : 'income');
     }
   }
 }
@@ -813,223 +758,357 @@ function getGardenTreeLevels() { return getTreeLevels(); }
 // =============================================================
 
 const FINANZBAUM_SVGS = {
-  seed:    `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-<defs><radialGradient id="gc" cx="35%" cy="35%" r="65%"><stop offset="0%" stop-color="#FFE870"/><stop offset="50%" stop-color="#F5C518"/><stop offset="100%" stop-color="#C07C00"/></radialGradient></defs>
-<ellipse cx="40" cy="68" rx="22" ry="6" fill="#C8A058" opacity=".3"/>
-<path d="M22 65 Q40 57 58 65 Q48 72 40 73 Q32 72 22 65Z" fill="#B8883A"/>
-<path d="M26 64 Q40 57 54 64 Q45 70 40 71 Q35 70 26 64Z" fill="#C89848"/>
-<ellipse cx="40" cy="57" rx="11" ry="3.5" fill="#9A7020" opacity=".32"/>
-<circle cx="40" cy="49" r="12" fill="url(#gc)"/>
-<circle cx="40" cy="49" r="9.5" fill="none" stroke="#C8A010" stroke-width="1.2" opacity=".5"/>
-<text x="40" y="53.5" text-anchor="middle" font-size="11" fill="#8A6008" font-weight="700" font-family="Georgia,serif">€</text>
-<ellipse cx="35" cy="44" rx="3.5" ry="2" fill="white" opacity=".4" transform="rotate(-25 35 44)"/>
-<path d="M30 59 Q40 54 50 59 L50 64 Q40 68 30 64Z" fill="#B8883A"/>
+  seed:         `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="gc" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FFE566"/>
+      <stop offset="55%" stop-color="#F5C518"/>
+      <stop offset="100%" stop-color="#C8960A"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="40" cy="64" rx="22" ry="7" fill="#C8A058" opacity=".3"/>
+  <path d="M20 61 Q40 53 60 61 Q50 68 40 70 Q30 68 20 61Z" fill="#B8883A"/>
+  <path d="M25 60 Q40 54 55 60 Q46 66 40 68 Q34 66 25 60Z" fill="#C89848"/>
+  <ellipse cx="40" cy="53" rx="12" ry="4" fill="#9A7020" opacity=".35"/>
+  <circle cx="40" cy="45" r="14" fill="url(#gc)"/>
+  <circle cx="40" cy="45" r="11" fill="none" stroke="#C8A010" stroke-width="1.2" opacity=".55"/>
+  <text x="40" y="50" text-anchor="middle" font-size="12" fill="#8A6008" font-weight="700" font-family="serif">€</text>
+  <ellipse cx="34" cy="39" rx="4" ry="2.2" fill="white" opacity=".4" transform="rotate(-25 34 39)"/>
+  <path d="M28 55 Q40 50 52 55 L52 61 Q40 65 28 61Z" fill="#B8883A"/>
 </svg>`,
-  sprout:    `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-<defs><radialGradient id="gc" cx="35%" cy="35%" r="65%"><stop offset="0%" stop-color="#FFE870"/><stop offset="50%" stop-color="#F5C518"/><stop offset="100%" stop-color="#C07C00"/></radialGradient></defs>
-<ellipse cx="40" cy="70" rx="20" ry="5" fill="#C8A058" opacity=".28"/>
-<path d="M24 67 Q40 59 56 67 Q47 73 40 74 Q33 73 24 67Z" fill="#B8883A"/>
-<path d="M28 66 Q40 59 52 66 Q44 72 40 73 Q36 72 28 66Z" fill="#C89848"/>
-<path d="M40 65 Q39 55 40 38" stroke="#5A9C28" stroke-width="3.5" stroke-linecap="round" fill="none"/>
-<path d="M39 54 Q29 50 27 41 Q36 40 39 50" fill="#6AA83A"/>
-<path d="M41 50 Q51 46 53 37 Q44 36 41 46" fill="#7AC840" opacity=".9"/>
-<circle cx="40" cy="34" r="9" fill="url(#gc)"/>
-<circle cx="40" cy="34" r="7" fill="none" stroke="#C8A010" stroke-width="1" opacity=".5"/>
-<text x="40" y="38" text-anchor="middle" font-size="7.5" fill="#8A6008" font-weight="700" font-family="Georgia,serif">€</text>
-<ellipse cx="35" cy="29" rx="2.8" ry="1.6" fill="white" opacity=".42" transform="rotate(-20 35 29)"/>
+  sprout:       `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="gc" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FFE566"/>
+      <stop offset="55%" stop-color="#F5C518"/>
+      <stop offset="100%" stop-color="#C8960A"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="40" cy="67" rx="22" ry="6" fill="#C8A058" opacity=".28"/>
+  <path d="M22 64 Q40 55 58 64 Q48 71 40 72 Q32 71 22 64Z" fill="#B8883A"/>
+  <path d="M28 63 Q40 55 52 63 Q44 69 40 71 Q36 69 28 63Z" fill="#C89848"/>
+  <path d="M40 63 Q38 50 40 32" stroke="#5A9C28" stroke-width="4" stroke-linecap="round" fill="none"/>
+  <path d="M39 52 Q27 47 24 37 Q34 36 39 48" fill="#6AA83A"/>
+  <path d="M41 47 Q53 42 56 32 Q46 31 41 43" fill="#7AC840" opacity=".9"/>
+  <circle cx="40" cy="28" r="10" fill="url(#gc)"/>
+  <circle cx="40" cy="28" r="7.5" fill="none" stroke="#C8A010" stroke-width="1" opacity=".5"/>
+  <text x="40" y="32.5" text-anchor="middle" font-size="8" fill="#8A6008" font-weight="700" font-family="serif">€</text>
+  <ellipse cx="35" cy="23" rx="3" ry="1.8" fill="white" opacity=".42" transform="rotate(-20 35 23)"/>
 </svg>`,
-  small_plant:    `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+  small_plant:  `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="gc" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FFE566"/>
+      <stop offset="55%" stop-color="#F5C518"/>
+      <stop offset="100%" stop-color="#C8960A"/>
+    </radialGradient>
+    <radialGradient id="gl" cx="40%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#8ED855"/>
+      <stop offset="100%" stop-color="#4A9020"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="40" cy="70" rx="23" ry="6" fill="#C8A058" opacity=".28"/>
+  <path d="M21 66 Q40 57 59 66 Q49 74 40 75 Q31 74 21 66Z" fill="#B8883A"/>
+  <path d="M26 65 Q40 57 54 65 Q46 72 40 73 Q34 72 26 65Z" fill="#C89848"/>
+  <path d="M40 65 Q38 53 39 38" stroke="#4A8820" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+  <path d="M38 56 Q24 50 22 38 Q33 36 38 50" fill="url(#gl)"/>
+  <path d="M41 49 Q55 43 57 31 Q46 29 41 43" fill="url(#gl)" opacity=".88"/>
+  <path d="M39 42 Q28 34 30 22 Q40 22 39 34" fill="url(#gl)" opacity=".82"/>
+  <path d="M41 38 Q52 30 54 18 Q44 18 41 30" fill="url(#gl)" opacity=".82"/>
+  <line x1="39" y1="53" x2="24" y2="46" stroke="#4A8820" stroke-width="2.2" stroke-linecap="round"/>
+  <circle cx="21" cy="43" r="10" fill="url(#gc)"/>
+  <circle cx="21" cy="43" r="7.5" fill="none" stroke="#D0A808" stroke-width="1" opacity=".55"/>
+  <text x="21" y="47.5" text-anchor="middle" font-size="8" fill="#7A5008" font-weight="700" font-family="serif">€</text>
+  <ellipse cx="15" cy="37" rx="3" ry="1.8" fill="white" opacity=".42" transform="rotate(-22 15 37)"/>
+  <line x1="41" y1="45" x2="56" y2="38" stroke="#4A8820" stroke-width="2.2" stroke-linecap="round"/>
+  <circle cx="59" cy="35" r="10" fill="url(#gc)"/>
+  <circle cx="59" cy="35" r="7.5" fill="none" stroke="#D0A808" stroke-width="1" opacity=".55"/>
+  <text x="59" y="39.5" text-anchor="middle" font-size="8" fill="#7A5008" font-weight="700" font-family="serif">€</text>
+  <ellipse cx="53" cy="29" rx="3" ry="1.8" fill="white" opacity=".42" transform="rotate(-22 53 29)"/>
+  <circle cx="40" cy="20" r="11" fill="url(#gc)"/>
+  <circle cx="40" cy="20" r="8.5" fill="none" stroke="#D0A808" stroke-width="1" opacity=".55"/>
+  <text x="40" y="25" text-anchor="middle" font-size="9" fill="#7A5008" font-weight="700" font-family="serif">€</text>
+  <ellipse cx="33" cy="14" rx="3.5" ry="2" fill="white" opacity=".44" transform="rotate(-22 33 14)"/>
+</svg>`,
+  medium_plant: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="gc" cx="35%" cy="35%" r="65%"><stop offset="0%" stop-color="#FFE566"/><stop offset="55%" stop-color="#F5C518"/><stop offset="100%" stop-color="#C8960A"/></radialGradient>
+    <radialGradient id="gk" cx="40%" cy="30%" r="70%"><stop offset="0%" stop-color="#8ED855"/><stop offset="100%" stop-color="#3A8010"/></radialGradient>
+    <radialGradient id="gt" cx="30%" cy="20%" r="80%"><stop offset="0%" stop-color="#C8924A"/><stop offset="100%" stop-color="#7A4A18"/></radialGradient>
+  </defs>
+  <ellipse cx="40" cy="72" rx="25" ry="7" fill="#C8A058" opacity=".3"/>
+  <path d="M18 68 Q40 58 62 68 Q50 76 40 78 Q30 76 18 68Z" fill="#B8883A"/>
+  <path d="M23 67 Q40 59 57 67 Q48 74 40 76 Q32 74 23 67Z" fill="#C89848"/>
+  <path d="M38 68 Q36 58 37 44 Q38 30 38 18" stroke="url(#gt)" stroke-width="8" stroke-linecap="round" fill="none"/>
+  <path d="M42 68 Q41 58 40 44 Q40 30 41 18" stroke="#C8924A" stroke-width="4" stroke-linecap="round" fill="none" opacity=".4"/>
+  <path d="M38 50 Q25 44 20 33" stroke="url(#gt)" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+  <path d="M40 43 Q53 37 58 26" stroke="url(#gt)" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+  <path d="M38 36 Q27 26 28 15" stroke="url(#gt)" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+  <path d="M40 32 Q50 22 50 11" stroke="url(#gt)" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+  <ellipse cx="18" cy="28" rx="16" ry="12" fill="url(#gk)" opacity=".88"/>
+  <ellipse cx="60" cy="22" rx="16" ry="12" fill="url(#gk)" opacity=".88"/>
+  <ellipse cx="25" cy="11" rx="14" ry="10" fill="url(#gk)" opacity=".88"/>
+  <ellipse cx="40" cy="7" rx="18" ry="11" fill="url(#gk)"/>
+  <ellipse cx="53" cy="9" rx="12" ry="8" fill="url(#gk)" opacity=".85"/>
+  <ellipse cx="26" cy="22" rx="7" ry="4" fill="#F0C820" opacity=".7" transform="rotate(-28 26 22)"/>
+  <ellipse cx="52" cy="18" rx="7" ry="4" fill="#F0C820" opacity=".7" transform="rotate(26 52 18)"/>
+  <ellipse cx="34" cy="14" rx="6" ry="3.5" fill="#F0C820" opacity=".68" transform="rotate(-18 34 14)"/>
+  <ellipse cx="48" cy="12" rx="6" ry="3.5" fill="#F0C820" opacity=".68" transform="rotate(15 48 12)"/>
+  <circle cx="15" cy="23" r="10" fill="url(#gc)"/>
+  <circle cx="15" cy="23" r="7.5" fill="none" stroke="#D0A808" stroke-width="1" opacity=".6"/>
+  <text x="15" y="27.5" text-anchor="middle" font-size="8" fill="#7A5008" font-weight="700" font-family="serif">€</text>
+  <ellipse cx="8" cy="17" rx="3.2" ry="1.8" fill="white" opacity=".44" transform="rotate(-22 8 17)"/>
+  <circle cx="63" cy="17" r="10" fill="url(#gc)"/>
+  <circle cx="63" cy="17" r="7.5" fill="none" stroke="#D0A808" stroke-width="1" opacity=".6"/>
+  <text x="63" y="21.5" text-anchor="middle" font-size="8" fill="#7A5008" font-weight="700" font-family="serif">€</text>
+  <ellipse cx="56" cy="11" rx="3.2" ry="1.8" fill="white" opacity=".44" transform="rotate(-22 56 11)"/>
+  <circle cx="22" cy="8" r="9.5" fill="url(#gc)"/>
+  <text x="22" y="12.5" text-anchor="middle" font-size="7.5" fill="#7A5008" font-weight="700" font-family="serif">€</text>
+  <ellipse cx="16" cy="3" rx="3" ry="1.7" fill="white" opacity=".42" transform="rotate(-22 16 3)"/>
+  <circle cx="55" cy="6" r="9.5" fill="url(#gc)"/>
+  <text x="55" y="10.5" text-anchor="middle" font-size="7.5" fill="#7A5008" font-weight="700" font-family="serif">€</text>
+  <circle cx="40" cy="4" r="11" fill="url(#gc)"/>
+  <circle cx="40" cy="4" r="8" fill="none" stroke="#D0A808" stroke-width="1.2" opacity=".6"/>
+  <text x="40" y="8.5" text-anchor="middle" font-size="9" fill="#7A5008" font-weight="700" font-family="serif">€</text>
+  <ellipse cx="32" cy="-2" rx="4" ry="2.2" fill="white" opacity=".46" transform="rotate(-22 32 -2)"/>
+</svg>`,
+  large_plant:  `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="gc" cx="35%" cy="35%" r="65%"><stop offset="0%" stop-color="#FFE566"/><stop offset="55%" stop-color="#F5C518"/><stop offset="100%" stop-color="#C8960A"/></radialGradient>
+    <radialGradient id="gc2" cx="35%" cy="35%" r="65%"><stop offset="0%" stop-color="#FFE980"/><stop offset="55%" stop-color="#F5C518"/><stop offset="100%" stop-color="#B8840A"/></radialGradient>
+    <radialGradient id="gk" cx="40%" cy="30%" r="70%"><stop offset="0%" stop-color="#90D860"/><stop offset="100%" stop-color="#3A8010"/></radialGradient>
+    <radialGradient id="gt" cx="30%" cy="20%" r="80%"><stop offset="0%" stop-color="#C8924A"/><stop offset="100%" stop-color="#7A4A18"/></radialGradient>
+    <filter id="ds"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#8B6010" flood-opacity=".2"/></filter>
+  </defs>
+  <ellipse cx="40" cy="74" rx="27" ry="7" fill="#C8A058" opacity=".32"/>
+  <path d="M16 70 Q40 59 64 70 Q52 79 40 80 Q28 79 16 70Z" fill="#B8883A"/>
+  <path d="M20 69 Q40 60 60 69 Q50 77 40 78 Q30 77 20 69Z" fill="#C89848"/>
+  <path d="M38 16 Q37 16 36 70" stroke="url(#gt)" stroke-width="10" stroke-linecap="round" fill="none"/>
+  <path d="M43 16 Q42 38 41 54 Q40 62 40 70" stroke="#C8924A" stroke-width="5" stroke-linecap="round" fill="none" opacity=".4"/>
+  <path d="M37 52 Q22 46 16 33" stroke="url(#gt)" stroke-width="7" stroke-linecap="round" fill="none"/>
+  <path d="M41 44 Q56 38 62 25" stroke="url(#gt)" stroke-width="7" stroke-linecap="round" fill="none"/>
+  <path d="M37 40 Q20 30 20 16" stroke="url(#gt)" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+  <path d="M41 35 Q58 26 56 12" stroke="url(#gt)" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+  <ellipse cx="40" cy="18" rx="34" ry="22" fill="url(#gk)" opacity=".55"/>
+  <ellipse cx="14" cy="28" rx="18" ry="13" fill="url(#gk)" opacity=".88"/>
+  <ellipse cx="64" cy="21" rx="17" ry="12" fill="url(#gk)" opacity=".88"/>
+  <ellipse cx="18" cy="13" rx="15" ry="11" fill="url(#gk)" opacity=".88"/>
+  <ellipse cx="56" cy="9" rx="14" ry="10" fill="url(#gk)" opacity=".88"/>
+  <ellipse cx="40" cy="6" rx="22" ry="13" fill="url(#gk)"/>
+  <ellipse cx="20" cy="24" rx="9" ry="5" fill="#F0C820" opacity=".72" transform="rotate(-30 20 24)"/>
+  <ellipse cx="58" cy="17" rx="9" ry="5" fill="#F0C820" opacity=".72" transform="rotate(28 58 17)"/>
+  <ellipse cx="22" cy="12" rx="8" ry="4.5" fill="#F8D840" opacity=".68" transform="rotate(-22 22 12)"/>
+  <ellipse cx="55" cy="8" rx="8" ry="4.5" fill="#F8D840" opacity=".68" transform="rotate(20 55 8)"/>
+  <ellipse cx="35" cy="6" rx="7" ry="4" fill="#F0C820" opacity=".65" transform="rotate(-14 35 6)"/>
+  <ellipse cx="47" cy="5" rx="7" ry="4" fill="#F0C820" opacity=".65" transform="rotate(14 47 5)"/>
+  <circle cx="12" cy="23" r="11" fill="url(#gc2)" filter="url(#ds)"/><circle cx="12" cy="23" r="8.5" fill="none" stroke="#D0A808" stroke-width="1.2" opacity=".6"/>
+  <text x="12" y="27.5" text-anchor="middle" font-size="9" fill="#7A5008" font-weight="700" font-family="serif">€</text><ellipse cx="5" cy="17" rx="3.5" ry="2" fill="white" opacity=".45" transform="rotate(-22 5 17)"/>
+  <circle cx="67" cy="16" r="11" fill="url(#gc2)" filter="url(#ds)"/><circle cx="67" cy="16" r="8.5" fill="none" stroke="#D0A808" stroke-width="1.2" opacity=".6"/>
+  <text x="67" y="20.5" text-anchor="middle" font-size="9" fill="#7A5008" font-weight="700" font-family="serif">€</text><ellipse cx="60" cy="10" rx="3.5" ry="2" fill="white" opacity=".45" transform="rotate(-22 60 10)"/>
+  <circle cx="16" cy="9" r="10.5" fill="url(#gc2)" filter="url(#ds)"/>
+  <text x="16" y="13.5" text-anchor="middle" font-size="8.5" fill="#7A5008" font-weight="700" font-family="serif">€</text><ellipse cx="9" cy="4" rx="3.2" ry="1.8" fill="white" opacity=".44" transform="rotate(-22 9 4)"/>
+  <circle cx="57" cy="5" r="10.5" fill="url(#gc2)" filter="url(#ds)"/>
+  <text x="57" y="9.5" text-anchor="middle" font-size="8.5" fill="#7A5008" font-weight="700" font-family="serif">€</text>
+  <circle cx="36" cy="4" r="11" fill="url(#gc2)" filter="url(#ds)"/>
+  <text x="36" y="8.5" text-anchor="middle" font-size="9" fill="#7A5008" font-weight="700" font-family="serif">€</text>
+  <circle cx="54" cy="4" r="11" fill="url(#gc2)" filter="url(#ds)"/>
+  <text x="54" y="8.5" text-anchor="middle" font-size="9" fill="#7A5008" font-weight="700" font-family="serif">€</text>
+  <circle cx="40" cy="0" r="13" fill="url(#gc2)" filter="url(#ds)"/>
+  <circle cx="40" cy="0" r="10" fill="none" stroke="#E0B000" stroke-width="1.5" opacity=".65"/>
+  <text x="40" y="4.5" text-anchor="middle" font-size="11" fill="#7A5008" font-weight="700" font-family="serif">€</text>
+  <ellipse cx="31" cy="-6" rx="4.5" ry="2.5" fill="white" opacity=".48" transform="rotate(-22 31 -6)"/>
+  <path d="M4 36 L5.5 30 L7 36 L5.5 42Z" fill="#FFE566" opacity=".8"/>
+  <path d="M74 30 L75.5 24 L77 30 L75.5 36Z" fill="#FFE566" opacity=".78"/>
+  <circle cx="4" cy="44" r="2.5" fill="#FFE566" opacity=".68"/>
+  <circle cx="76" cy="40" r="2.5" fill="#FFE566" opacity=".65"/>
+</svg>`,
+  flowering:    `<svg viewBox="0 0 340 340" fill="none" xmlns="http://www.w3.org/2000/svg">
 <defs>
-<radialGradient id="gc" cx="35%" cy="35%" r="65%"><stop offset="0%" stop-color="#FFE870"/><stop offset="50%" stop-color="#F5C518"/><stop offset="100%" stop-color="#C07C00"/></radialGradient>
-<radialGradient id="gl" cx="40%" cy="30%" r="70%"><stop offset="0%" stop-color="#90D855"/><stop offset="100%" stop-color="#4A9020"/></radialGradient>
+  <radialGradient id="g-coin-a" cx="38%" cy="32%" r="62%">
+    <stop offset="0%"   stop-color="#FFF3A0"/>
+    <stop offset="40%"  stop-color="#F5C518"/>
+    <stop offset="100%" stop-color="#C07C00"/>
+  </radialGradient>
+  <radialGradient id="g-coin-b" cx="38%" cy="32%" r="62%">
+    <stop offset="0%"   stop-color="#FFEEA0"/>
+    <stop offset="45%"  stop-color="#E8B010"/>
+    <stop offset="100%" stop-color="#A06400"/>
+  </radialGradient>
+  <radialGradient id="g-coin-c" cx="38%" cy="32%" r="62%">
+    <stop offset="0%"   stop-color="#FFE566"/>
+    <stop offset="50%"  stop-color="#D4980C"/>
+    <stop offset="100%" stop-color="#8A5400"/>
+  </radialGradient>
+  <radialGradient id="g-trunk" cx="28%" cy="18%" r="75%">
+    <stop offset="0%"   stop-color="#D4A055"/>
+    <stop offset="60%"  stop-color="#A06428"/>
+    <stop offset="100%" stop-color="#6A3C10"/>
+  </radialGradient>
+  <radialGradient id="g-branch" cx="28%" cy="18%" r="75%">
+    <stop offset="0%"   stop-color="#C89040"/>
+    <stop offset="100%" stop-color="#7A4A18"/>
+  </radialGradient>
+  <radialGradient id="g-leaf-dk" cx="42%" cy="28%" r="70%">
+    <stop offset="0%"   stop-color="#E8B820"/>
+    <stop offset="55%"  stop-color="#C48C08"/>
+    <stop offset="100%" stop-color="#8A5C00"/>
+  </radialGradient>
+  <radialGradient id="g-leaf-md" cx="42%" cy="28%" r="70%">
+    <stop offset="0%"   stop-color="#F5CC30"/>
+    <stop offset="55%"  stop-color="#D4A010"/>
+    <stop offset="100%" stop-color="#9A6A00"/>
+  </radialGradient>
+  <radialGradient id="g-leaf-lt" cx="42%" cy="28%" r="70%">
+    <stop offset="0%"   stop-color="#FFDE60"/>
+    <stop offset="55%"  stop-color="#E8B820"/>
+    <stop offset="100%" stop-color="#B48000"/>
+  </radialGradient>
+  <radialGradient id="g-ground" cx="50%" cy="30%" r="70%">
+    <stop offset="0%"   stop-color="#F5CC30"/>
+    <stop offset="60%"  stop-color="#C8960C"/>
+    <stop offset="100%" stop-color="#8A5C00"/>
+  </radialGradient>
+  <radialGradient id="g-mound" cx="50%" cy="20%" r="65%">
+    <stop offset="0%"   stop-color="#D4A855"/>
+    <stop offset="100%" stop-color="#8A5820"/>
+  </radialGradient>
 </defs>
-<ellipse cx="40" cy="71" rx="21" ry="5.5" fill="#C8A058" opacity=".28"/>
-<path d="M22 68 Q40 60 58 68 Q48 74 40 75 Q32 74 22 68Z" fill="#B8883A"/>
-<path d="M26 67 Q40 60 54 67 Q46 73 40 74 Q34 73 26 67Z" fill="#C89848"/>
-<path d="M40 67 Q39 57 40 44" stroke="#4A8820" stroke-width="4" stroke-linecap="round" fill="none"/>
-<path d="M39 57 Q26 52 24 42 Q35 40 39 52" fill="url(#gl)"/>
-<path d="M41 52 Q54 47 56 37 Q45 35 41 47" fill="url(#gl)" opacity=".88"/>
-<path d="M39 47 Q29 39 31 29 Q40 29 39 40" fill="url(#gl)" opacity=".8"/>
-<path d="M41 43 Q51 35 53 25 Q43 25 41 36" fill="url(#gl)" opacity=".8"/>
-<line x1="39" y1="56" x2="25" y2="49" stroke="#4A8820" stroke-width="2" stroke-linecap="round"/>
-<circle cx="22" cy="47" r="9" fill="url(#gc)"/>
-<circle cx="22" cy="47" r="7" fill="none" stroke="#D0A808" stroke-width="1" opacity=".52"/>
-<text x="22" y="51" text-anchor="middle" font-size="7.5" fill="#7A5008" font-weight="700" font-family="Georgia,serif">€</text>
-<ellipse cx="17" cy="42" rx="2.8" ry="1.6" fill="white" opacity=".4" transform="rotate(-22 17 42)"/>
-<line x1="41" y1="51" x2="55" y2="44" stroke="#4A8820" stroke-width="2" stroke-linecap="round"/>
-<circle cx="58" cy="42" r="9" fill="url(#gc)"/>
-<circle cx="58" cy="42" r="7" fill="none" stroke="#D0A808" stroke-width="1" opacity=".52"/>
-<text x="58" y="46" text-anchor="middle" font-size="7.5" fill="#7A5008" font-weight="700" font-family="Georgia,serif">€</text>
-<ellipse cx="53" cy="37" rx="2.8" ry="1.6" fill="white" opacity=".4" transform="rotate(-22 53 37)"/>
-<circle cx="40" cy="26" r="10" fill="url(#gc)"/>
-<circle cx="40" cy="26" r="7.5" fill="none" stroke="#D0A808" stroke-width="1" opacity=".52"/>
-<text x="40" y="30.5" text-anchor="middle" font-size="8" fill="#7A5008" font-weight="700" font-family="Georgia,serif">€</text>
-<ellipse cx="34" cy="21" rx="3.2" ry="1.8" fill="white" opacity=".42" transform="rotate(-22 34 21)"/>
-</svg>`,
-  medium_plant:    `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-<defs>
-<radialGradient id="gc" cx="35%" cy="35%" r="65%"><stop offset="0%" stop-color="#FFE870"/><stop offset="50%" stop-color="#F5C518"/><stop offset="100%" stop-color="#C07C00"/></radialGradient>
-<radialGradient id="gk" cx="40%" cy="30%" r="70%"><stop offset="0%" stop-color="#90D855"/><stop offset="100%" stop-color="#3A8010"/></radialGradient>
-<radialGradient id="gt" cx="30%" cy="20%" r="80%"><stop offset="0%" stop-color="#C8924A"/><stop offset="100%" stop-color="#7A4A18"/></radialGradient>
-</defs>
-<ellipse cx="40" cy="73" rx="24" ry="6" fill="#C8A058" opacity=".28"/>
-<path d="M19 69 Q40 60 61 69 Q50 77 40 78 Q30 77 19 69Z" fill="#B8883A"/>
-<path d="M23 68 Q40 61 57 68 Q47 75 40 76 Q33 75 23 68Z" fill="#C89848"/>
-<path d="M39 68 Q37 57 38 45 Q39 35 40 25" stroke="url(#gt)" stroke-width="7" stroke-linecap="round" fill="none"/>
-<path d="M41 68 Q40 57 40 45 Q40 35 41 25" stroke="#C8924A" stroke-width="3.5" stroke-linecap="round" fill="none" opacity=".38"/>
-<path d="M38 52 Q26 47 21 37" stroke="url(#gt)" stroke-width="4.5" stroke-linecap="round" fill="none"/>
-<path d="M40 46 Q53 41 57 31" stroke="url(#gt)" stroke-width="4.5" stroke-linecap="round" fill="none"/>
-<path d="M39 38 Q29 30 30 20" stroke="url(#gt)" stroke-width="3.5" stroke-linecap="round" fill="none"/>
-<path d="M41 34 Q50 26 51 16" stroke="url(#gt)" stroke-width="3.5" stroke-linecap="round" fill="none"/>
-<ellipse cx="18" cy="32" rx="14" ry="10" fill="url(#gk)" opacity=".88"/>
-<ellipse cx="60" cy="27" rx="13" ry="10" fill="url(#gk)" opacity=".88"/>
-<ellipse cx="26" cy="16" rx="13" ry="9" fill="url(#gk)" opacity=".88"/>
-<ellipse cx="40" cy="12" rx="16" ry="10" fill="url(#gk)"/>
-<ellipse cx="52" cy="14" rx="11" ry="8" fill="url(#gk)" opacity=".85"/>
-<ellipse cx="24" cy="26" rx="6" ry="3.5" fill="#F0C820" opacity=".68" transform="rotate(-28 24 26)"/>
-<ellipse cx="54" cy="21" rx="6" ry="3.5" fill="#F0C820" opacity=".68" transform="rotate(26 54 21)"/>
-<circle cx="15" cy="28" r="9" fill="url(#gc)"/>
-<circle cx="15" cy="28" r="7" fill="none" stroke="#D0A808" stroke-width="1" opacity=".55"/>
-<text x="15" y="32.5" text-anchor="middle" font-size="7.5" fill="#7A5008" font-weight="700" font-family="Georgia,serif">€</text>
-<ellipse cx="9" cy="23" rx="2.8" ry="1.6" fill="white" opacity=".42" transform="rotate(-22 9 23)"/>
-<circle cx="63" cy="23" r="9" fill="url(#gc)"/>
-<circle cx="63" cy="23" r="7" fill="none" stroke="#D0A808" stroke-width="1" opacity=".55"/>
-<text x="63" y="27.5" text-anchor="middle" font-size="7.5" fill="#7A5008" font-weight="700" font-family="Georgia,serif">€</text>
-<ellipse cx="57" cy="18" rx="2.8" ry="1.6" fill="white" opacity=".42" transform="rotate(-22 57 18)"/>
-<circle cx="25" cy="12" r="8.5" fill="url(#gc)"/>
-<text x="25" y="16" text-anchor="middle" font-size="7" fill="#7A5008" font-weight="700" font-family="Georgia,serif">€</text>
-<ellipse cx="20" cy="8" rx="2.6" ry="1.5" fill="white" opacity=".4" transform="rotate(-22 20 8)"/>
-<circle cx="55" cy="10" r="8.5" fill="url(#gc)"/>
-<text x="55" y="14" text-anchor="middle" font-size="7" fill="#7A5008" font-weight="700" font-family="Georgia,serif">€</text>
-<circle cx="40" cy="8" r="10" fill="url(#gc)"/>
-<circle cx="40" cy="8" r="7.5" fill="none" stroke="#D0A808" stroke-width="1.2" opacity=".55"/>
-<text x="40" y="12.5" text-anchor="middle" font-size="8" fill="#7A5008" font-weight="700" font-family="Georgia,serif">€</text>
-<ellipse cx="34" cy="4" rx="3.2" ry="1.8" fill="white" opacity=".44" transform="rotate(-22 34 4)"/>
-</svg>`,
-  large_plant:    `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-<defs>
-<radialGradient id="gc" cx="35%" cy="35%" r="65%"><stop offset="0%" stop-color="#FFE870"/><stop offset="50%" stop-color="#F5C518"/><stop offset="100%" stop-color="#C07C00"/></radialGradient>
-<radialGradient id="gk" cx="40%" cy="30%" r="70%"><stop offset="0%" stop-color="#94DC58"/><stop offset="100%" stop-color="#38800E"/></radialGradient>
-<radialGradient id="gt" cx="30%" cy="20%" r="80%"><stop offset="0%" stop-color="#D09A50"/><stop offset="100%" stop-color="#7A4A18"/></radialGradient>
-</defs>
-<ellipse cx="40" cy="74" rx="26" ry="6.5" fill="#C8A058" opacity=".3"/>
-<path d="M16 70 Q40 61 64 70 Q52 78 40 80 Q28 78 16 70Z" fill="#B8883A"/>
-<path d="M20 69 Q40 62 60 69 Q49 76 40 77 Q31 76 20 69Z" fill="#C89848"/>
-<path d="M38 70 Q36 58 37 44 Q38 32 39 20" stroke="url(#gt)" stroke-width="9" stroke-linecap="round" fill="none"/>
-<path d="M43 70 Q42 58 41 44 Q40 32 41 20" stroke="#C8924A" stroke-width="4.5" stroke-linecap="round" fill="none" opacity=".38"/>
-<path d="M37 55 Q22 48 16 36" stroke="url(#gt)" stroke-width="6" stroke-linecap="round" fill="none"/>
-<path d="M41 48 Q56 41 62 29" stroke="url(#gt)" stroke-width="6" stroke-linecap="round" fill="none"/>
-<path d="M38 42 Q22 33 22 20" stroke="url(#gt)" stroke-width="5" stroke-linecap="round" fill="none"/>
-<path d="M42 38 Q57 29 56 16" stroke="url(#gt)" stroke-width="5" stroke-linecap="round" fill="none"/>
-<path d="M38 30 Q29 22 31 12" stroke="url(#gt)" stroke-width="3.5" stroke-linecap="round" fill="none"/>
-<path d="M42 27 Q50 19 50 9" stroke="url(#gt)" stroke-width="3.5" stroke-linecap="round" fill="none"/>
-<ellipse cx="40" cy="22" rx="32" ry="21" fill="url(#gk)" opacity=".52"/>
-<ellipse cx="13" cy="31" rx="17" ry="12" fill="url(#gk)" opacity=".86"/>
-<ellipse cx="65" cy="25" rx="16" ry="12" fill="url(#gk)" opacity=".86"/>
-<ellipse cx="19" cy="17" rx="15" ry="11" fill="url(#gk)" opacity=".88"/>
-<ellipse cx="58" cy="13" rx="14" ry="10" fill="url(#gk)" opacity=".88"/>
-<ellipse cx="40" cy="10" rx="18" ry="11" fill="url(#gk)"/>
-<ellipse cx="18" cy="26" rx="8" ry="4.5" fill="#F0C820" opacity=".7" transform="rotate(-30 18 26)"/>
-<ellipse cx="60" cy="20" rx="8" ry="4.5" fill="#F0C820" opacity=".7" transform="rotate(28 60 20)"/>
-<ellipse cx="22" cy="15" rx="7" ry="4" fill="#F8D840" opacity=".65" transform="rotate(-22 22 15)"/>
-<ellipse cx="56" cy="11" rx="7" ry="4" fill="#F8D840" opacity=".65" transform="rotate(20 56 11)"/>
-<ellipse cx="36" cy="8" rx="6" ry="3.5" fill="#F0C820" opacity=".62" transform="rotate(-12 36 8)"/>
-<ellipse cx="46" cy="7" rx="6" ry="3.5" fill="#F0C820" opacity=".62" transform="rotate(12 46 7)"/>
-<circle cx="11" cy="26" r="10" fill="url(#gc)"/>
-<circle cx="11" cy="26" r="7.5" fill="none" stroke="#D0A808" stroke-width="1.2" opacity=".58"/>
-<text x="11" y="30.5" text-anchor="middle" font-size="8" fill="#7A5008" font-weight="700" font-family="Georgia,serif">€</text>
-<ellipse cx="5" cy="20" rx="3.2" ry="1.8" fill="white" opacity=".44" transform="rotate(-22 5 20)"/>
-<circle cx="67" cy="20" r="10" fill="url(#gc)"/>
-<circle cx="67" cy="20" r="7.5" fill="none" stroke="#D0A808" stroke-width="1.2" opacity=".58"/>
-<text x="67" y="24.5" text-anchor="middle" font-size="8" fill="#7A5008" font-weight="700" font-family="Georgia,serif">€</text>
-<ellipse cx="61" cy="14" rx="3.2" ry="1.8" fill="white" opacity=".44" transform="rotate(-22 61 14)"/>
-<circle cx="17" cy="13" r="9.5" fill="url(#gc)"/>
-<text x="17" y="17.5" text-anchor="middle" font-size="7.5" fill="#7A5008" font-weight="700" font-family="Georgia,serif">€</text>
-<ellipse cx="11" cy="8" rx="3" ry="1.7" fill="white" opacity=".42" transform="rotate(-22 11 8)"/>
-<circle cx="57" cy="8" r="9.5" fill="url(#gc)"/>
-<text x="57" y="12.5" text-anchor="middle" font-size="7.5" fill="#7A5008" font-weight="700" font-family="Georgia,serif">€</text>
-<circle cx="32" cy="6" r="9" fill="url(#gc)"/>
-<text x="32" y="10.5" text-anchor="middle" font-size="7" fill="#7A5008" font-weight="700" font-family="Georgia,serif">€</text>
-<circle cx="50" cy="5" r="9" fill="url(#gc)"/>
-<text x="50" y="9.5" text-anchor="middle" font-size="7" fill="#7A5008" font-weight="700" font-family="Georgia,serif">€</text>
-<circle cx="40" cy="5" r="11" fill="url(#gc)"/>
-<circle cx="40" cy="5" r="8" fill="none" stroke="#D0A808" stroke-width="1.2" opacity=".58"/>
-<text x="40" y="9.5" text-anchor="middle" font-size="8.5" fill="#7A5008" font-weight="700" font-family="Georgia,serif">€</text>
-<ellipse cx="33" cy="1" rx="3.5" ry="2" fill="white" opacity=".46" transform="rotate(-22 33 1)"/>
-<path d="M4 42 L5.2 38 L6.4 42 L5.2 46Z" fill="#FFE040" opacity=".8"/>
-<path d="M75 36 L76.2 32 L77.4 36 L76.2 40Z" fill="#FFE040" opacity=".78"/>
-<circle cx="4" cy="50" r="2.2" fill="#FFE566" opacity=".65"/>
-<circle cx="76" cy="44" r="2.2" fill="#FFE566" opacity=".62"/>
-</svg>`,
-  flowering:    `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-<defs>
-<radialGradient id="gc" cx="35%" cy="35%" r="65%"><stop offset="0%" stop-color="#FFF090"/><stop offset="45%" stop-color="#F5C518"/><stop offset="100%" stop-color="#B87800"/></radialGradient>
-<radialGradient id="gk" cx="40%" cy="28%" r="70%"><stop offset="0%" stop-color="#98E060"/><stop offset="100%" stop-color="#368010"/></radialGradient>
-<radialGradient id="gt" cx="28%" cy="18%" r="78%"><stop offset="0%" stop-color="#D4A050"/><stop offset="100%" stop-color="#6A3808"/></radialGradient>
-</defs>
-<ellipse cx="40" cy="76" rx="28" ry="6" fill="#C8A058" opacity=".28"/>
-<path d="M15 72 Q40 63 65 72 Q52 80 40 80 Q28 80 15 72Z" fill="#B8883A"/>
-<path d="M19 71 Q40 63 61 71 Q49 78 40 79 Q31 78 19 71Z" fill="#C89848"/>
-<ellipse cx="28" cy="75" rx="6" ry="3" fill="#F0C820" opacity=".62"/>
-<ellipse cx="52" cy="75" rx="5" ry="2.8" fill="#F0C820" opacity=".58"/>
-<ellipse cx="40" cy="77" rx="4" ry="2.2" fill="#F5CC30" opacity=".55"/>
-<path d="M38 72 Q36 60 37 47 Q38 36 39 22" stroke="url(#gt)" stroke-width="10" stroke-linecap="round" fill="none"/>
-<path d="M44 72 Q43 60 42 47 Q41 36 42 22" stroke="#C8924A" stroke-width="5" stroke-linecap="round" fill="none" opacity=".35"/>
-<path d="M37 50 Q34 45 36 40" stroke="#C08030" stroke-width="1.5" fill="none" opacity=".3" stroke-linecap="round"/>
-<path d="M43 46 Q41 41 43 36" stroke="#C08030" stroke-width="1.2" fill="none" opacity=".25" stroke-linecap="round"/>
-<path d="M37 57 Q21 50 15 37" stroke="url(#gt)" stroke-width="7" stroke-linecap="round" fill="none"/>
-<path d="M42 50 Q57 43 63 30" stroke="url(#gt)" stroke-width="7" stroke-linecap="round" fill="none"/>
-<path d="M37 44 Q20 35 21 21" stroke="url(#gt)" stroke-width="5.5" stroke-linecap="round" fill="none"/>
-<path d="M43 40 Q59 31 57 17" stroke="url(#gt)" stroke-width="5.5" stroke-linecap="round" fill="none"/>
-<path d="M38 33 Q27 23 29 11" stroke="url(#gt)" stroke-width="4" stroke-linecap="round" fill="none"/>
-<path d="M43 30 Q52 20 52 8" stroke="url(#gt)" stroke-width="4" stroke-linecap="round" fill="none"/>
-<ellipse cx="40" cy="26" rx="34" ry="24" fill="url(#gk)" opacity=".48"/>
-<ellipse cx="12" cy="32" rx="18" ry="13" fill="url(#gk)" opacity=".84"/>
-<ellipse cx="66" cy="27" rx="17" ry="13" fill="url(#gk)" opacity=".84"/>
-<ellipse cx="17" cy="18" rx="16" ry="12" fill="url(#gk)" opacity=".88"/>
-<ellipse cx="62" cy="14" rx="15" ry="11" fill="url(#gk)" opacity=".88"/>
-<ellipse cx="40" cy="12" rx="20" ry="13" fill="url(#gk)"/>
-<ellipse cx="14" cy="28" rx="9" ry="5" fill="#90C840" opacity=".6" transform="rotate(-28 14 28)"/>
-<ellipse cx="64" cy="24" rx="9" ry="5" fill="#90C840" opacity=".6" transform="rotate(24 64 24)"/>
-<ellipse cx="20" cy="15" rx="8" ry="4.5" fill="#A8D848" opacity=".55" transform="rotate(-20 20 15)"/>
-<ellipse cx="59" cy="11" rx="8" ry="4.5" fill="#A8D848" opacity=".55" transform="rotate(18 59 11)"/>
-<ellipse cx="36" cy="7" rx="7" ry="4" fill="#B8E050" opacity=".5" transform="rotate(-10 36 7)"/>
-<ellipse cx="46" cy="6" rx="7" ry="4" fill="#B8E050" opacity=".5" transform="rotate(10 46 6)"/>
-<circle cx="10" cy="28" r="10.5" fill="url(#gc)"/>
-<circle cx="10" cy="28" r="8" fill="none" stroke="#E8B800" stroke-width="1.4" opacity=".62"/>
-<text x="10" y="32.5" text-anchor="middle" font-size="8" fill="#7A4C00" font-weight="700" font-family="Georgia,serif">€</text>
-<ellipse cx="3" cy="22" rx="3.5" ry="2" fill="white" opacity=".45" transform="rotate(-22 3 22)"/>
-<circle cx="68" cy="23" r="10.5" fill="url(#gc)"/>
-<circle cx="68" cy="23" r="8" fill="none" stroke="#E8B800" stroke-width="1.4" opacity=".62"/>
-<text x="68" y="27.5" text-anchor="middle" font-size="8" fill="#7A4C00" font-weight="700" font-family="Georgia,serif">€</text>
-<ellipse cx="61" cy="17" rx="3.5" ry="2" fill="white" opacity=".45" transform="rotate(-22 61 17)"/>
-<circle cx="17" cy="14" r="9.5" fill="url(#gc)"/>
-<circle cx="17" cy="14" r="7" fill="none" stroke="#E8B800" stroke-width="1.2" opacity=".58"/>
-<text x="17" y="18.5" text-anchor="middle" font-size="7.5" fill="#7A4C00" font-weight="700" font-family="Georgia,serif">€</text>
-<ellipse cx="11" cy="9" rx="3" ry="1.7" fill="white" opacity=".42" transform="rotate(-22 11 9)"/>
-<circle cx="60" cy="10" r="9.5" fill="url(#gc)"/>
-<circle cx="60" cy="10" r="7" fill="none" stroke="#E8B800" stroke-width="1.2" opacity=".58"/>
-<text x="60" y="14.5" text-anchor="middle" font-size="7.5" fill="#7A4C00" font-weight="700" font-family="Georgia,serif">€</text>
-<ellipse cx="54" cy="5" rx="3" ry="1.7" fill="white" opacity=".42" transform="rotate(-22 54 5)"/>
-<circle cx="30" cy="8" r="9" fill="url(#gc)"/>
-<text x="30" y="12.5" text-anchor="middle" font-size="7" fill="#7A4C00" font-weight="700" font-family="Georgia,serif">€</text>
-<ellipse cx="24" cy="3" rx="2.8" ry="1.6" fill="white" opacity=".4" transform="rotate(-22 24 3)"/>
-<circle cx="52" cy="7" r="9" fill="url(#gc)"/>
-<text x="52" y="11.5" text-anchor="middle" font-size="7" fill="#7A4C00" font-weight="700" font-family="Georgia,serif">€</text>
-<circle cx="40" cy="5" r="11" fill="url(#gc)"/>
-<circle cx="40" cy="5" r="8.5" fill="none" stroke="#F0C800" stroke-width="1.8" opacity=".68"/>
-<text x="40" y="9.5" text-anchor="middle" font-size="8.5" fill="#7A4C00" font-weight="700" font-family="Georgia,serif">€</text>
-<ellipse cx="33" cy="1" rx="3.8" ry="2.2" fill="white" opacity=".48" transform="rotate(-22 33 1)"/>
-<path d="M3 44 L4.4 39.5 L5.8 44 L4.4 48.5Z" fill="#FFE040" opacity=".86"/>
-<path d="M4.4 38 L9.4 44 L4.4 50 L-0.6 44Z" fill="#FFEE80" opacity=".5" transform="rotate(45 4.4 44)"/>
-<path d="M75 38 L76.4 33.5 L77.8 38 L76.4 42.5Z" fill="#FFE040" opacity=".84"/>
-<path d="M76.4 32 L81.4 38 L76.4 44 L71.4 38Z" fill="#FFEE80" opacity=".48" transform="rotate(45 76.4 38)"/>
-<path d="M5 20 L6.1 16.4 L7.2 20 L6.1 23.6Z" fill="#FFD820" opacity=".76"/>
-<path d="M74 15 L75.1 11.4 L76.2 15 L75.1 18.6Z" fill="#FFD820" opacity=".74"/>
-<circle cx="4" cy="52" r="2.2" fill="#FFE566" opacity=".68"/>
-<circle cx="76" cy="46" r="2.2" fill="#FFE566" opacity=".65"/>
-<circle cx="5" cy="28" r="1.8" fill="#FFF0A0" opacity=".62"/>
-<circle cx="75" cy="22" r="1.8" fill="#FFF0A0" opacity=".6"/>
+<ellipse cx="170" cy="303" rx="92" ry="18" fill="#C49030" opacity=".28"/>
+<path d="M96 295 Q170 278 244 295 Q226 310 170 313 Q114 310 96 295Z" fill="url(#g-mound)"/>
+<path d="M104 293 Q170 279 236 293 Q218 306 170 309 Q122 306 104 293Z" fill="#D4A845"/>
+<ellipse cx="115" cy="301" rx="9"  ry="5"  fill="url(#g-ground)" opacity=".82"/>
+<ellipse cx="130" cy="307" rx="7"  ry="4"  fill="url(#g-ground)" opacity=".75"/>
+<ellipse cx="148" cy="310" rx="8"  ry="4.5" fill="url(#g-ground)" opacity=".72"/>
+<ellipse cx="168" cy="311" rx="6"  ry="3.5" fill="url(#g-ground)" opacity=".7"/>
+<ellipse cx="187" cy="310" rx="8"  ry="4.5" fill="url(#g-ground)" opacity=".72"/>
+<ellipse cx="206" cy="306" rx="7"  ry="4"  fill="url(#g-ground)" opacity=".75"/>
+<ellipse cx="222" cy="299" rx="9"  ry="5"  fill="url(#g-ground)" opacity=".82"/>
+<ellipse cx="140" cy="304" rx="5"  ry="3"  fill="#F5CC30" opacity=".6"/>
+<ellipse cx="200" cy="303" rx="5"  ry="3"  fill="#F5CC30" opacity=".6"/>
+<ellipse cx="160" cy="308" rx="4"  ry="2.5" fill="#FFDE60" opacity=".55"/>
+<ellipse cx="180" cy="308" rx="4"  ry="2.5" fill="#FFDE60" opacity=".55"/>
+<ellipse cx="108" cy="298" rx="4"  ry="2.5" fill="#F0C020" opacity=".55"/>
+<ellipse cx="230" cy="296" rx="4"  ry="2.5" fill="#F0C020" opacity=".55"/>
+<path d="M155 292 Q149 268 147 242 Q145 218 148 194 Q150 172 154 152 Q156 136 158 118" stroke="url(#g-trunk)" stroke-width="26" stroke-linecap="round" fill="none"/>
+<path d="M175 292 Q171 268 170 242 Q169 218 170 194 Q171 172 173 152 Q175 136 176 118" stroke="url(#g-branch)" stroke-width="16" stroke-linecap="round" fill="none" opacity=".45"/>
+<path d="M155 270 Q151 258 152 246" stroke="#C08030" stroke-width="3" stroke-linecap="round" fill="none" opacity=".35"/>
+<path d="M165 265 Q163 252 164 240" stroke="#C08030" stroke-width="2.5" stroke-linecap="round" fill="none" opacity=".3"/>
+<path d="M153 200 Q126 186 112 168" stroke="url(#g-branch)" stroke-width="14" stroke-linecap="round" fill="none"/>
+<path d="M160 185 Q136 168 124 148" stroke="url(#g-branch)" stroke-width="12" stroke-linecap="round" fill="none"/>
+<path d="M163 170 Q148 148 144 126" stroke="url(#g-branch)" stroke-width="10" stroke-linecap="round" fill="none"/>
+<path d="M168 200 Q194 186 208 168" stroke="url(#g-branch)" stroke-width="14" stroke-linecap="round" fill="none"/>
+<path d="M166 185 Q190 168 202 148" stroke="url(#g-branch)" stroke-width="12" stroke-linecap="round" fill="none"/>
+<path d="M165 170 Q182 148 186 126" stroke="url(#g-branch)" stroke-width="10" stroke-linecap="round" fill="none"/>
+<path d="M162 155 Q162 132 162 112" stroke="url(#g-branch)" stroke-width="11" stroke-linecap="round" fill="none"/>
+<path d="M153 145 Q136 124 128 102" stroke="url(#g-branch)" stroke-width="8" stroke-linecap="round" fill="none"/>
+<path d="M170 140 Q186 119 192 96" stroke="url(#g-branch)" stroke-width="8" stroke-linecap="round" fill="none"/>
+<ellipse cx="170" cy="145" rx="110" ry="86" fill="url(#g-leaf-dk)" opacity=".62"/>
+<ellipse cx="170" cy="138" rx="100" ry="80" fill="url(#g-leaf-md)" opacity=".72"/>
+<ellipse cx="108" cy="162" rx="52"  ry="38" fill="url(#g-leaf-dk)" opacity=".8"/>
+<ellipse cx="232" cy="156" rx="50"  ry="36" fill="url(#g-leaf-dk)" opacity=".8"/>
+<ellipse cx="115" cy="130" rx="48"  ry="36" fill="url(#g-leaf-md)" opacity=".82"/>
+<ellipse cx="226" cy="124" rx="46"  ry="34" fill="url(#g-leaf-md)" opacity=".82"/>
+<ellipse cx="135" cy="108" rx="44"  ry="32" fill="url(#g-leaf-lt)" opacity=".84"/>
+<ellipse cx="205" cy="103" rx="44"  ry="32" fill="url(#g-leaf-lt)" opacity=".84"/>
+<ellipse cx="170" cy="96"  rx="52"  ry="36" fill="url(#g-leaf-lt)" opacity=".88"/>
+<ellipse cx="155" cy="80"  rx="40"  ry="28" fill="url(#g-leaf-lt)" opacity=".85"/>
+<ellipse cx="185" cy="78"  rx="38"  ry="26" fill="url(#g-leaf-lt)" opacity=".85"/>
+<ellipse cx="170" cy="68"  rx="46"  ry="30" fill="url(#g-leaf-lt)"/>
+<ellipse cx="92"  cy="175" rx="20" ry="12" fill="url(#g-leaf-md)" transform="rotate(-22 92 175)"/>
+<ellipse cx="248" cy="170" rx="20" ry="12" fill="url(#g-leaf-md)" transform="rotate(20 248 170)"/>
+<ellipse cx="82"  cy="148" rx="18" ry="11" fill="url(#g-leaf-lt)" transform="rotate(-28 82 148)"/>
+<ellipse cx="260" cy="142" rx="18" ry="11" fill="url(#g-leaf-lt)" transform="rotate(25 260 142)"/>
+<ellipse cx="100" cy="118" rx="18" ry="11" fill="url(#g-leaf-dk)" transform="rotate(-20 100 118)"/>
+<ellipse cx="242" cy="113" rx="18" ry="11" fill="url(#g-leaf-dk)" transform="rotate(18 242 113)"/>
+<ellipse cx="120" cy="95"  rx="16" ry="10" fill="url(#g-leaf-md)" transform="rotate(-14 120 95)"/>
+<ellipse cx="222" cy="90"  rx="16" ry="10" fill="url(#g-leaf-md)" transform="rotate(14 222 90)"/>
+<ellipse cx="140" cy="70"  rx="16" ry="10" fill="url(#g-leaf-lt)" transform="rotate(-10 140 70)"/>
+<ellipse cx="200" cy="67"  rx="15" ry="9"  fill="url(#g-leaf-lt)" transform="rotate(10 200 67)"/>
+<ellipse cx="170" cy="55"  rx="18" ry="10" fill="url(#g-leaf-lt)"/>
+<ellipse cx="154" cy="62"  rx="14" ry="8"  fill="url(#g-leaf-md)" transform="rotate(-8 154 62)"/>
+<ellipse cx="186" cy="60"  rx="13" ry="8"  fill="url(#g-leaf-md)" transform="rotate(8 186 60)"/>
+<circle cx="94"  cy="164" r="15"  fill="url(#g-coin-b)"/>
+<circle cx="94"  cy="164" r="11.5" fill="none" stroke="#E8B000" stroke-width="1.5" opacity=".65"/>
+<circle cx="94"  cy="164" r="8.5"  fill="none" stroke="#F5D040" stroke-width="0.8" opacity=".4"/>
+<text x="94"  y="168.5" text-anchor="middle" font-size="9" fill="#7A4C00" font-weight="700" font-family="Georgia,serif">€</text>
+<ellipse cx="87" cy="157" rx="4" ry="2.3" fill="white" opacity=".42" transform="rotate(-22 87 157)"/>
+<circle cx="248" cy="158" r="15"  fill="url(#g-coin-b)"/>
+<circle cx="248" cy="158" r="11.5" fill="none" stroke="#E8B000" stroke-width="1.5" opacity=".65"/>
+<text x="248" y="162.5" text-anchor="middle" font-size="9" fill="#7A4C00" font-weight="700" font-family="Georgia,serif">€</text>
+<ellipse cx="241" cy="151" rx="4" ry="2.3" fill="white" opacity=".42" transform="rotate(-22 241 151)"/>
+<circle cx="106" cy="130" r="14"  fill="url(#g-coin-a)"/>
+<circle cx="106" cy="130" r="10.5" fill="none" stroke="#F0C000" stroke-width="1.5" opacity=".6"/>
+<text x="106" y="134" text-anchor="middle" font-size="8.5" fill="#7A4C00" font-weight="700" font-family="Georgia,serif">€</text>
+<ellipse cx="99" cy="124" rx="3.5" ry="2" fill="white" opacity=".44" transform="rotate(-22 99 124)"/>
+<circle cx="236" cy="124" r="14"  fill="url(#g-coin-a)"/>
+<circle cx="236" cy="124" r="10.5" fill="none" stroke="#F0C000" stroke-width="1.5" opacity=".6"/>
+<text x="236" y="128" text-anchor="middle" font-size="8.5" fill="#7A4C00" font-weight="700" font-family="Georgia,serif">€</text>
+<ellipse cx="229" cy="118" rx="3.5" ry="2" fill="white" opacity=".44" transform="rotate(-22 229 118)"/>
+<circle cx="130" cy="104" r="14"  fill="url(#g-coin-b)"/>
+<circle cx="130" cy="104" r="10.5" fill="none" stroke="#E8B000" stroke-width="1.5" opacity=".62"/>
+<text x="130" y="108" text-anchor="middle" font-size="8.5" fill="#7A4C00" font-weight="700" font-family="Georgia,serif">€</text>
+<ellipse cx="123" cy="98"  rx="3.5" ry="2" fill="white" opacity=".42" transform="rotate(-22 123 98)"/>
+<circle cx="211" cy="100" r="14"  fill="url(#g-coin-b)"/>
+<circle cx="211" cy="100" r="10.5" fill="none" stroke="#E8B000" stroke-width="1.5" opacity=".62"/>
+<text x="211" y="104" text-anchor="middle" font-size="8.5" fill="#7A4C00" font-weight="700" font-family="Georgia,serif">€</text>
+<ellipse cx="204" cy="94"  rx="3.5" ry="2" fill="white" opacity=".42" transform="rotate(-22 204 94)"/>
+<circle cx="148" cy="82"  r="13"  fill="url(#g-coin-a)"/>
+<circle cx="148" cy="82"  r="9.5"  fill="none" stroke="#F0C000" stroke-width="1.5" opacity=".6"/>
+<text x="148" y="86"   text-anchor="middle" font-size="8"   fill="#7A4C00" font-weight="700" font-family="Georgia,serif">€</text>
+<ellipse cx="142" cy="76" rx="3.2" ry="1.8" fill="white" opacity=".44" transform="rotate(-22 142 76)"/>
+<circle cx="194" cy="78"  r="13"  fill="url(#g-coin-a)"/>
+<circle cx="194" cy="78"  r="9.5"  fill="none" stroke="#F0C000" stroke-width="1.5" opacity=".6"/>
+<text x="194" y="82"   text-anchor="middle" font-size="8"   fill="#7A4C00" font-weight="700" font-family="Georgia,serif">€</text>
+<ellipse cx="188" cy="72" rx="3.2" ry="1.8" fill="white" opacity=".44" transform="rotate(-22 188 72)"/>
+<circle cx="148" cy="148" r="12"  fill="url(#g-coin-c)"/>
+<circle cx="148" cy="148" r="9"    fill="none" stroke="#D8A400" stroke-width="1.2" opacity=".58"/>
+<text x="148" y="152" text-anchor="middle" font-size="7.5" fill="#7A4C00" font-weight="700" font-family="Georgia,serif">€</text>
+<ellipse cx="143" cy="143" rx="3" ry="1.7" fill="white" opacity=".38" transform="rotate(-22 143 143)"/>
+<circle cx="192" cy="145" r="12"  fill="url(#g-coin-c)"/>
+<circle cx="192" cy="145" r="9"    fill="none" stroke="#D8A400" stroke-width="1.2" opacity=".58"/>
+<text x="192" y="149" text-anchor="middle" font-size="7.5" fill="#7A4C00" font-weight="700" font-family="Georgia,serif">€</text>
+<ellipse cx="187" cy="140" rx="3" ry="1.7" fill="white" opacity=".38" transform="rotate(-22 187 140)"/>
+<circle cx="122" cy="158" r="11"  fill="url(#g-coin-c)"/>
+<text x="122" y="162" text-anchor="middle" font-size="7" fill="#7A4C00" font-weight="700" font-family="Georgia,serif">€</text>
+<ellipse cx="117" cy="153" rx="2.8" ry="1.6" fill="white" opacity=".38" transform="rotate(-22 117 153)"/>
+<circle cx="220" cy="153" r="11"  fill="url(#g-coin-c)"/>
+<text x="220" y="157" text-anchor="middle" font-size="7" fill="#7A4C00" font-weight="700" font-family="Georgia,serif">€</text>
+<ellipse cx="215" cy="148" rx="2.8" ry="1.6" fill="white" opacity=".38" transform="rotate(-22 215 148)"/>
+<circle cx="170" cy="120" r="11"  fill="url(#g-coin-c)"/>
+<circle cx="170" cy="120" r="8"    fill="none" stroke="#D8A400" stroke-width="1" opacity=".55"/>
+<text x="170" y="124" text-anchor="middle" font-size="7" fill="#7A4C00" font-weight="700" font-family="Georgia,serif">€</text>
+<ellipse cx="165" cy="115" rx="2.8" ry="1.6" fill="white" opacity=".38" transform="rotate(-22 165 115)"/>
+<circle cx="170" cy="60"  r="18"  fill="url(#g-coin-a)"/>
+<circle cx="170" cy="60"  r="14"   fill="none" stroke="#F5C800" stroke-width="2"   opacity=".7"/>
+<circle cx="170" cy="60"  r="10"   fill="none" stroke="#E0A800" stroke-width="0.8" opacity=".45"/>
+<text x="170" y="65"   text-anchor="middle" font-size="11"  fill="#7A4C00" font-weight="700" font-family="Georgia,serif">€</text>
+<ellipse cx="161" cy="52" rx="5.5" ry="3.2" fill="white" opacity=".5" transform="rotate(-22 161 52)"/>
+<circle cx="115" cy="172" r="10"  fill="url(#g-coin-b)"/>
+<text x="115" y="176" text-anchor="middle" font-size="6.5" fill="#7A4C00" font-weight="700" font-family="Georgia,serif">€</text>
+<ellipse cx="110" cy="168" rx="2.5" ry="1.5" fill="white" opacity=".36" transform="rotate(-22 110 168)"/>
+<circle cx="227" cy="167" r="10"  fill="url(#g-coin-b)"/>
+<text x="227" y="171" text-anchor="middle" font-size="6.5" fill="#7A4C00" font-weight="700" font-family="Georgia,serif">€</text>
+<ellipse cx="222" cy="163" rx="2.5" ry="1.5" fill="white" opacity=".36" transform="rotate(-22 222 163)"/>
+<path d="M72 140 L73.6 134 L75.2 140 L73.6 146Z" fill="#FFE040" opacity=".88"/>
+<path d="M73.6 132 L79.6 140 L73.6 148 L67.6 140Z" fill="#FFEE80" opacity=".55" transform="rotate(45 73.6 140)"/>
+<circle cx="73.6" cy="140" r="2" fill="#FFF5B0" opacity=".7"/>
+<path d="M272 128 L273.6 122 L275.2 128 L273.6 134Z" fill="#FFE040" opacity=".85"/>
+<path d="M273.6 120 L279.6 128 L273.6 136 L267.6 128Z" fill="#FFEE80" opacity=".52" transform="rotate(45 273.6 128)"/>
+<circle cx="273.6" cy="128" r="2" fill="#FFF5B0" opacity=".68"/>
+<path d="M76 104 L77.2 99.4 L78.4 104 L77.2 108.6Z" fill="#FFD820" opacity=".8"/>
+<circle cx="77.2" cy="104" r="1.5" fill="#FFF0A0" opacity=".65"/>
+<path d="M266 98 L267.2 93.4 L268.4 98 L267.2 102.6Z" fill="#FFD820" opacity=".78"/>
+<circle cx="267.2" cy="98" r="1.5" fill="#FFF0A0" opacity=".62"/>
+<path d="M138 46 L139.5 41 L141 46 L139.5 51Z" fill="#FFE040" opacity=".82"/>
+<path d="M139.5 39 L144.5 46 L139.5 53 L134.5 46Z" fill="#FFEE80" opacity=".48" transform="rotate(45 139.5 46)"/>
+<path d="M202 43 L203.5 38 L205 43 L203.5 48Z" fill="#FFE040" opacity=".8"/>
+<path d="M203.5 36 L208.5 43 L203.5 50 L198.5 43Z" fill="#FFEE80" opacity=".46" transform="rotate(45 203.5 43)"/>
+<circle cx="90"  cy="88" r="2.5" fill="#FFE566" opacity=".7"/>
+<circle cx="253" cy="82" r="2.5" fill="#FFE566" opacity=".68"/>
+<circle cx="120" cy="56" r="2"   fill="#FFF0A0" opacity=".72"/>
+<circle cx="220" cy="52" r="2"   fill="#FFF0A0" opacity=".7"/>
+<path d="M85 170 L86.2 166 L87.4 170 L86.2 174Z"  fill="#FFD820" opacity=".72"/>
+<path d="M258 163 L259.2 159 L260.4 163 L259.2 167Z" fill="#FFD820" opacity=".7"/>
 </svg>`,
 };
 
@@ -2096,12 +2175,7 @@ document.getElementById('recurring-save').addEventListener('click', () => {
 let onetimeType = 'expense', onetimePriority = 'need';
 
 document.getElementById('add-onetime-btn').addEventListener('click', () => {
-  document.getElementById('onetime-name').value = '';
-  document.getElementById('onetime-amount').value = '';
-  // Heutiges Datum als Standard
-  const todayIso = new Date().toISOString().slice(0, 10);
-  const dateField = document.getElementById('onetime-date');
-  if (dateField) dateField.value = todayIso;
+  document.getElementById('onetime-name').value = ''; document.getElementById('onetime-amount').value = '';
   onetimeType = 'expense'; onetimePriority = 'need';
   ['income','expense'].forEach(t =>
     document.getElementById(`onetime-type-${t}`).classList.toggle('active', t === 'expense'));
@@ -2138,19 +2212,11 @@ document.getElementById('onetime-save').addEventListener('click', () => {
   const name = document.getElementById('onetime-name').value.trim();
   if (!name) return;
   const amount = parseFloat(document.getElementById('onetime-amount').value) || 0;
-  // Tag aus Datumsfeld lesen — Fallback: heutiger Tag
-  const dateField = document.getElementById('onetime-date');
-  let day = new Date().getDate();
-  if (dateField && dateField.value) {
-    const parsed = new Date(dateField.value);
-    if (!isNaN(parsed)) day = parsed.getDate();
-  }
   budgetOnetime.push({
     id: crypto.randomUUID(), name, type: onetimeType, amount,
     monthKey: budgetMonthKey(budgetMonth),
     priority: onetimeType === 'expense' ? onetimePriority : 'none',
     paid: false,
-    day,
   });
   saveBudgetOnetime();
   document.getElementById('onetime-modal-overlay').classList.add('hidden');
