@@ -127,6 +127,56 @@
   padding-top: 6px;
 }
 
+/* ── Zahnrad-Button Finanzbaum-Konfig ─────────────────────── */
+.b-tree-config-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text-3);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition), transform 200ms;
+  flex-shrink: 0;
+}
+.b-tree-config-btn:hover {
+  background: var(--surface-2);
+  color: var(--sage-dark);
+  transform: rotate(30deg);
+}
+
+/* ── Finanzbaum Konfig Modal ─────────────────────────────── */
+.finanzbaum-config-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.finanzbaum-config-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.finanzbaum-config-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  flex: 1;
+}
+.finanzbaum-config-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.finanzbaum-config-unit {
+  font-size: 13px;
+  color: var(--text-3);
+  font-family: var(--mono);
+}
+
 /* ── Month picker ─────────────────────────────────────────── */
 #budget-month-picker {
   display: flex;

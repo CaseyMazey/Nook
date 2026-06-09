@@ -714,21 +714,406 @@ function fmtEur(amount) {
 // FINANZGARTEN
 // =========================
 
-const GARDEN_TREE_LEVELS = [
-  { min: 0,    label: 'Samen',           stage: 'seed'        },
-  { min: 250,  label: 'Keimling',        stage: 'sprout'      },
-  { min: 500,  label: 'Kleine Pflanze',  stage: 'small_plant' },
-  { min: 1000, label: 'Mittlere Pflanze',stage: 'medium_plant'},
-  { min: 2000, label: 'Großer Baum',     stage: 'large_plant' },
-  { min: 3000, label: 'Blühender Baum',  stage: 'flowering'   },
+// =============================================================
+// FINANZBAUM — eigene konfigurierbare Wachstumsstufen
+// Standardwerte; überschreibbar per Modal → localStorage
+// =============================================================
+
+const FINANZBAUM_DEFAULT_LEVELS = [
+  { min: 0,    label: 'Münze im Boden', stage: 'seed'        },
+  { min: 250,  label: 'Geldspross',     stage: 'sprout'      },
+  { min: 500,  label: 'Münzpflanze',    stage: 'small_plant' },
+  { min: 1000, label: 'Kleiner Geldbaum', stage: 'medium_plant'},
+  { min: 2000, label: 'Großer Geldbaum',  stage: 'large_plant' },
+  { min: 3000, label: 'Blühender Geldbaum', stage: 'flowering' },
 ];
 
+// Lädt konfigurierte Stufen aus localStorage, oder Defaults
+function getTreeLevels() {
+  const saved = DB.get('finanzbaumLevels', null);
+  if (!saved || !Array.isArray(saved) || saved.length !== 6) return FINANZBAUM_DEFAULT_LEVELS;
+  // Merge saved mins with fixed labels/stages
+  return FINANZBAUM_DEFAULT_LEVELS.map((def, i) => ({
+    ...def,
+    min: typeof saved[i] === 'number' ? saved[i] : def.min,
+  }));
+}
+
 function getTreeStage(ks) {
-  if (ks === null || ks < 0) return GARDEN_TREE_LEVELS[0];
-  for (let i = GARDEN_TREE_LEVELS.length - 1; i >= 0; i--) {
-    if (ks >= GARDEN_TREE_LEVELS[i].min) return GARDEN_TREE_LEVELS[i];
+  const levels = getTreeLevels();
+  if (ks === null || ks < 0) return levels[0];
+  for (let i = levels.length - 1; i >= 0; i--) {
+    if (ks >= levels[i].min) return levels[i];
   }
-  return GARDEN_TREE_LEVELS[0];
+  return levels[0];
+}
+
+// Alias für Mini-Bar-Rendering (braucht alle Level)
+function getGardenTreeLevels() { return getTreeLevels(); }
+
+// =============================================================
+// FINANZBAUM SVGs — 6 eigene Stufen, Münzbaum-Thema
+// Erkennbar: Münzen als Blätter/Früchte, goldene Akzente
+// Stil: cozy, handgezeichnet, klar anders als Sparziel-Pflanzen
+// =============================================================
+
+const FINANZBAUM_SVGS = {
+  seed:         `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="gc" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FFE566"/>
+      <stop offset="55%" stop-color="#F5C518"/>
+      <stop offset="100%" stop-color="#C8960A"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="40" cy="64" rx="22" ry="7" fill="#C8A058" opacity=".3"/>
+  <path d="M20 61 Q40 53 60 61 Q50 68 40 70 Q30 68 20 61Z" fill="#B8883A"/>
+  <path d="M25 60 Q40 54 55 60 Q46 66 40 68 Q34 66 25 60Z" fill="#C89848"/>
+  <ellipse cx="40" cy="53" rx="12" ry="4" fill="#9A7020" opacity=".35"/>
+  <circle cx="40" cy="45" r="14" fill="url(#gc)"/>
+  <circle cx="40" cy="45" r="11" fill="none" stroke="#C8A010" stroke-width="1.2" opacity=".55"/>
+  <text x="40" y="50" text-anchor="middle" font-size="12" fill="#8A6008" font-weight="700" font-family="serif">€</text>
+  <ellipse cx="34" cy="39" rx="4" ry="2.2" fill="white" opacity=".4" transform="rotate(-25 34 39)"/>
+  <path d="M28 55 Q40 50 52 55 L52 61 Q40 65 28 61Z" fill="#B8883A"/>
+</svg>`,
+  sprout:       `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="gc" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FFE566"/>
+      <stop offset="55%" stop-color="#F5C518"/>
+      <stop offset="100%" stop-color="#C8960A"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="40" cy="67" rx="22" ry="6" fill="#C8A058" opacity=".28"/>
+  <path d="M22 64 Q40 55 58 64 Q48 71 40 72 Q32 71 22 64Z" fill="#B8883A"/>
+  <path d="M28 63 Q40 55 52 63 Q44 69 40 71 Q36 69 28 63Z" fill="#C89848"/>
+  <path d="M40 63 Q38 50 40 32" stroke="#5A9C28" stroke-width="4" stroke-linecap="round" fill="none"/>
+  <path d="M39 52 Q27 47 24 37 Q34 36 39 48" fill="#6AA83A"/>
+  <path d="M41 47 Q53 42 56 32 Q46 31 41 43" fill="#7AC840" opacity=".9"/>
+  <circle cx="40" cy="28" r="10" fill="url(#gc)"/>
+  <circle cx="40" cy="28" r="7.5" fill="none" stroke="#C8A010" stroke-width="1" opacity=".5"/>
+  <text x="40" y="32.5" text-anchor="middle" font-size="8" fill="#8A6008" font-weight="700" font-family="serif">€</text>
+  <ellipse cx="35" cy="23" rx="3" ry="1.8" fill="white" opacity=".42" transform="rotate(-20 35 23)"/>
+</svg>`,
+  small_plant:  `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="gc" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FFE566"/>
+      <stop offset="55%" stop-color="#F5C518"/>
+      <stop offset="100%" stop-color="#C8960A"/>
+    </radialGradient>
+    <radialGradient id="gl" cx="40%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#8ED855"/>
+      <stop offset="100%" stop-color="#4A9020"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="40" cy="70" rx="23" ry="6" fill="#C8A058" opacity=".28"/>
+  <path d="M21 66 Q40 57 59 66 Q49 74 40 75 Q31 74 21 66Z" fill="#B8883A"/>
+  <path d="M26 65 Q40 57 54 65 Q46 72 40 73 Q34 72 26 65Z" fill="#C89848"/>
+  <path d="M40 65 Q38 53 39 38" stroke="#4A8820" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+  <path d="M38 56 Q24 50 22 38 Q33 36 38 50" fill="url(#gl)"/>
+  <path d="M41 49 Q55 43 57 31 Q46 29 41 43" fill="url(#gl)" opacity=".88"/>
+  <path d="M39 42 Q28 34 30 22 Q40 22 39 34" fill="url(#gl)" opacity=".82"/>
+  <path d="M41 38 Q52 30 54 18 Q44 18 41 30" fill="url(#gl)" opacity=".82"/>
+  <line x1="39" y1="53" x2="24" y2="46" stroke="#4A8820" stroke-width="2.2" stroke-linecap="round"/>
+  <circle cx="21" cy="43" r="10" fill="url(#gc)"/>
+  <circle cx="21" cy="43" r="7.5" fill="none" stroke="#D0A808" stroke-width="1" opacity=".55"/>
+  <text x="21" y="47.5" text-anchor="middle" font-size="8" fill="#7A5008" font-weight="700" font-family="serif">€</text>
+  <ellipse cx="15" cy="37" rx="3" ry="1.8" fill="white" opacity=".42" transform="rotate(-22 15 37)"/>
+  <line x1="41" y1="45" x2="56" y2="38" stroke="#4A8820" stroke-width="2.2" stroke-linecap="round"/>
+  <circle cx="59" cy="35" r="10" fill="url(#gc)"/>
+  <circle cx="59" cy="35" r="7.5" fill="none" stroke="#D0A808" stroke-width="1" opacity=".55"/>
+  <text x="59" y="39.5" text-anchor="middle" font-size="8" fill="#7A5008" font-weight="700" font-family="serif">€</text>
+  <ellipse cx="53" cy="29" rx="3" ry="1.8" fill="white" opacity=".42" transform="rotate(-22 53 29)"/>
+  <circle cx="40" cy="20" r="11" fill="url(#gc)"/>
+  <circle cx="40" cy="20" r="8.5" fill="none" stroke="#D0A808" stroke-width="1" opacity=".55"/>
+  <text x="40" y="25" text-anchor="middle" font-size="9" fill="#7A5008" font-weight="700" font-family="serif">€</text>
+  <ellipse cx="33" cy="14" rx="3.5" ry="2" fill="white" opacity=".44" transform="rotate(-22 33 14)"/>
+</svg>`,
+  medium_plant: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="gc" cx="35%" cy="35%" r="65%"><stop offset="0%" stop-color="#FFE566"/><stop offset="55%" stop-color="#F5C518"/><stop offset="100%" stop-color="#C8960A"/></radialGradient>
+    <radialGradient id="gk" cx="40%" cy="30%" r="70%"><stop offset="0%" stop-color="#8ED855"/><stop offset="100%" stop-color="#3A8010"/></radialGradient>
+    <radialGradient id="gt" cx="30%" cy="20%" r="80%"><stop offset="0%" stop-color="#C8924A"/><stop offset="100%" stop-color="#7A4A18"/></radialGradient>
+  </defs>
+  <ellipse cx="40" cy="72" rx="25" ry="7" fill="#C8A058" opacity=".3"/>
+  <path d="M18 68 Q40 58 62 68 Q50 76 40 78 Q30 76 18 68Z" fill="#B8883A"/>
+  <path d="M23 67 Q40 59 57 67 Q48 74 40 76 Q32 74 23 67Z" fill="#C89848"/>
+  <path d="M38 68 Q36 58 37 44 Q38 30 38 18" stroke="url(#gt)" stroke-width="8" stroke-linecap="round" fill="none"/>
+  <path d="M42 68 Q41 58 40 44 Q40 30 41 18" stroke="#C8924A" stroke-width="4" stroke-linecap="round" fill="none" opacity=".4"/>
+  <path d="M38 50 Q25 44 20 33" stroke="url(#gt)" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+  <path d="M40 43 Q53 37 58 26" stroke="url(#gt)" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+  <path d="M38 36 Q27 26 28 15" stroke="url(#gt)" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+  <path d="M40 32 Q50 22 50 11" stroke="url(#gt)" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+  <ellipse cx="18" cy="28" rx="16" ry="12" fill="url(#gk)" opacity=".88"/>
+  <ellipse cx="60" cy="22" rx="16" ry="12" fill="url(#gk)" opacity=".88"/>
+  <ellipse cx="25" cy="11" rx="14" ry="10" fill="url(#gk)" opacity=".88"/>
+  <ellipse cx="40" cy="7" rx="18" ry="11" fill="url(#gk)"/>
+  <ellipse cx="53" cy="9" rx="12" ry="8" fill="url(#gk)" opacity=".85"/>
+  <ellipse cx="26" cy="22" rx="7" ry="4" fill="#F0C820" opacity=".7" transform="rotate(-28 26 22)"/>
+  <ellipse cx="52" cy="18" rx="7" ry="4" fill="#F0C820" opacity=".7" transform="rotate(26 52 18)"/>
+  <ellipse cx="34" cy="14" rx="6" ry="3.5" fill="#F0C820" opacity=".68" transform="rotate(-18 34 14)"/>
+  <ellipse cx="48" cy="12" rx="6" ry="3.5" fill="#F0C820" opacity=".68" transform="rotate(15 48 12)"/>
+  <circle cx="15" cy="23" r="10" fill="url(#gc)"/>
+  <circle cx="15" cy="23" r="7.5" fill="none" stroke="#D0A808" stroke-width="1" opacity=".6"/>
+  <text x="15" y="27.5" text-anchor="middle" font-size="8" fill="#7A5008" font-weight="700" font-family="serif">€</text>
+  <ellipse cx="8" cy="17" rx="3.2" ry="1.8" fill="white" opacity=".44" transform="rotate(-22 8 17)"/>
+  <circle cx="63" cy="17" r="10" fill="url(#gc)"/>
+  <circle cx="63" cy="17" r="7.5" fill="none" stroke="#D0A808" stroke-width="1" opacity=".6"/>
+  <text x="63" y="21.5" text-anchor="middle" font-size="8" fill="#7A5008" font-weight="700" font-family="serif">€</text>
+  <ellipse cx="56" cy="11" rx="3.2" ry="1.8" fill="white" opacity=".44" transform="rotate(-22 56 11)"/>
+  <circle cx="22" cy="8" r="9.5" fill="url(#gc)"/>
+  <text x="22" y="12.5" text-anchor="middle" font-size="7.5" fill="#7A5008" font-weight="700" font-family="serif">€</text>
+  <ellipse cx="16" cy="3" rx="3" ry="1.7" fill="white" opacity=".42" transform="rotate(-22 16 3)"/>
+  <circle cx="55" cy="6" r="9.5" fill="url(#gc)"/>
+  <text x="55" y="10.5" text-anchor="middle" font-size="7.5" fill="#7A5008" font-weight="700" font-family="serif">€</text>
+  <circle cx="40" cy="4" r="11" fill="url(#gc)"/>
+  <circle cx="40" cy="4" r="8" fill="none" stroke="#D0A808" stroke-width="1.2" opacity=".6"/>
+  <text x="40" y="8.5" text-anchor="middle" font-size="9" fill="#7A5008" font-weight="700" font-family="serif">€</text>
+  <ellipse cx="32" cy="-2" rx="4" ry="2.2" fill="white" opacity=".46" transform="rotate(-22 32 -2)"/>
+</svg>`,
+  large_plant:  `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="gc" cx="35%" cy="35%" r="65%"><stop offset="0%" stop-color="#FFE566"/><stop offset="55%" stop-color="#F5C518"/><stop offset="100%" stop-color="#C8960A"/></radialGradient>
+    <radialGradient id="gc2" cx="35%" cy="35%" r="65%"><stop offset="0%" stop-color="#FFE980"/><stop offset="55%" stop-color="#F5C518"/><stop offset="100%" stop-color="#B8840A"/></radialGradient>
+    <radialGradient id="gk" cx="40%" cy="30%" r="70%"><stop offset="0%" stop-color="#90D860"/><stop offset="100%" stop-color="#3A8010"/></radialGradient>
+    <radialGradient id="gt" cx="30%" cy="20%" r="80%"><stop offset="0%" stop-color="#C8924A"/><stop offset="100%" stop-color="#7A4A18"/></radialGradient>
+    <filter id="ds"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#8B6010" flood-opacity=".2"/></filter>
+  </defs>
+  <ellipse cx="40" cy="74" rx="27" ry="7" fill="#C8A058" opacity=".32"/>
+  <path d="M16 70 Q40 59 64 70 Q52 79 40 80 Q28 79 16 70Z" fill="#B8883A"/>
+  <path d="M20 69 Q40 60 60 69 Q50 77 40 78 Q30 77 20 69Z" fill="#C89848"/>
+  <path d="M38 16 Q37 16 36 70" stroke="url(#gt)" stroke-width="10" stroke-linecap="round" fill="none"/>
+  <path d="M43 16 Q42 38 41 54 Q40 62 40 70" stroke="#C8924A" stroke-width="5" stroke-linecap="round" fill="none" opacity=".4"/>
+  <path d="M37 52 Q22 46 16 33" stroke="url(#gt)" stroke-width="7" stroke-linecap="round" fill="none"/>
+  <path d="M41 44 Q56 38 62 25" stroke="url(#gt)" stroke-width="7" stroke-linecap="round" fill="none"/>
+  <path d="M37 40 Q20 30 20 16" stroke="url(#gt)" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+  <path d="M41 35 Q58 26 56 12" stroke="url(#gt)" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+  <ellipse cx="40" cy="18" rx="34" ry="22" fill="url(#gk)" opacity=".55"/>
+  <ellipse cx="14" cy="28" rx="18" ry="13" fill="url(#gk)" opacity=".88"/>
+  <ellipse cx="64" cy="21" rx="17" ry="12" fill="url(#gk)" opacity=".88"/>
+  <ellipse cx="18" cy="13" rx="15" ry="11" fill="url(#gk)" opacity=".88"/>
+  <ellipse cx="56" cy="9" rx="14" ry="10" fill="url(#gk)" opacity=".88"/>
+  <ellipse cx="40" cy="6" rx="22" ry="13" fill="url(#gk)"/>
+  <ellipse cx="20" cy="24" rx="9" ry="5" fill="#F0C820" opacity=".72" transform="rotate(-30 20 24)"/>
+  <ellipse cx="58" cy="17" rx="9" ry="5" fill="#F0C820" opacity=".72" transform="rotate(28 58 17)"/>
+  <ellipse cx="22" cy="12" rx="8" ry="4.5" fill="#F8D840" opacity=".68" transform="rotate(-22 22 12)"/>
+  <ellipse cx="55" cy="8" rx="8" ry="4.5" fill="#F8D840" opacity=".68" transform="rotate(20 55 8)"/>
+  <ellipse cx="35" cy="6" rx="7" ry="4" fill="#F0C820" opacity=".65" transform="rotate(-14 35 6)"/>
+  <ellipse cx="47" cy="5" rx="7" ry="4" fill="#F0C820" opacity=".65" transform="rotate(14 47 5)"/>
+  <circle cx="12" cy="23" r="11" fill="url(#gc2)" filter="url(#ds)"/><circle cx="12" cy="23" r="8.5" fill="none" stroke="#D0A808" stroke-width="1.2" opacity=".6"/>
+  <text x="12" y="27.5" text-anchor="middle" font-size="9" fill="#7A5008" font-weight="700" font-family="serif">€</text><ellipse cx="5" cy="17" rx="3.5" ry="2" fill="white" opacity=".45" transform="rotate(-22 5 17)"/>
+  <circle cx="67" cy="16" r="11" fill="url(#gc2)" filter="url(#ds)"/><circle cx="67" cy="16" r="8.5" fill="none" stroke="#D0A808" stroke-width="1.2" opacity=".6"/>
+  <text x="67" y="20.5" text-anchor="middle" font-size="9" fill="#7A5008" font-weight="700" font-family="serif">€</text><ellipse cx="60" cy="10" rx="3.5" ry="2" fill="white" opacity=".45" transform="rotate(-22 60 10)"/>
+  <circle cx="16" cy="9" r="10.5" fill="url(#gc2)" filter="url(#ds)"/>
+  <text x="16" y="13.5" text-anchor="middle" font-size="8.5" fill="#7A5008" font-weight="700" font-family="serif">€</text><ellipse cx="9" cy="4" rx="3.2" ry="1.8" fill="white" opacity=".44" transform="rotate(-22 9 4)"/>
+  <circle cx="57" cy="5" r="10.5" fill="url(#gc2)" filter="url(#ds)"/>
+  <text x="57" y="9.5" text-anchor="middle" font-size="8.5" fill="#7A5008" font-weight="700" font-family="serif">€</text>
+  <circle cx="36" cy="4" r="11" fill="url(#gc2)" filter="url(#ds)"/>
+  <text x="36" y="8.5" text-anchor="middle" font-size="9" fill="#7A5008" font-weight="700" font-family="serif">€</text>
+  <circle cx="54" cy="4" r="11" fill="url(#gc2)" filter="url(#ds)"/>
+  <text x="54" y="8.5" text-anchor="middle" font-size="9" fill="#7A5008" font-weight="700" font-family="serif">€</text>
+  <circle cx="40" cy="0" r="13" fill="url(#gc2)" filter="url(#ds)"/>
+  <circle cx="40" cy="0" r="10" fill="none" stroke="#E0B000" stroke-width="1.5" opacity=".65"/>
+  <text x="40" y="4.5" text-anchor="middle" font-size="11" fill="#7A5008" font-weight="700" font-family="serif">€</text>
+  <ellipse cx="31" cy="-6" rx="4.5" ry="2.5" fill="white" opacity=".48" transform="rotate(-22 31 -6)"/>
+  <path d="M4 36 L5.5 30 L7 36 L5.5 42Z" fill="#FFE566" opacity=".8"/>
+  <path d="M74 30 L75.5 24 L77 30 L75.5 36Z" fill="#FFE566" opacity=".78"/>
+  <circle cx="4" cy="44" r="2.5" fill="#FFE566" opacity=".68"/>
+  <circle cx="76" cy="40" r="2.5" fill="#FFE566" opacity=".65"/>
+</svg>`,
+  flowering:    `<svg viewBox="0 0 340 340" fill="none" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <radialGradient id="g-coin-a" cx="38%" cy="32%" r="62%">
+    <stop offset="0%"   stop-color="#FFF3A0"/>
+    <stop offset="40%"  stop-color="#F5C518"/>
+    <stop offset="100%" stop-color="#C07C00"/>
+  </radialGradient>
+  <radialGradient id="g-coin-b" cx="38%" cy="32%" r="62%">
+    <stop offset="0%"   stop-color="#FFEEA0"/>
+    <stop offset="45%"  stop-color="#E8B010"/>
+    <stop offset="100%" stop-color="#A06400"/>
+  </radialGradient>
+  <radialGradient id="g-coin-c" cx="38%" cy="32%" r="62%">
+    <stop offset="0%"   stop-color="#FFE566"/>
+    <stop offset="50%"  stop-color="#D4980C"/>
+    <stop offset="100%" stop-color="#8A5400"/>
+  </radialGradient>
+  <radialGradient id="g-trunk" cx="28%" cy="18%" r="75%">
+    <stop offset="0%"   stop-color="#D4A055"/>
+    <stop offset="60%"  stop-color="#A06428"/>
+    <stop offset="100%" stop-color="#6A3C10"/>
+  </radialGradient>
+  <radialGradient id="g-branch" cx="28%" cy="18%" r="75%">
+    <stop offset="0%"   stop-color="#C89040"/>
+    <stop offset="100%" stop-color="#7A4A18"/>
+  </radialGradient>
+  <radialGradient id="g-leaf-dk" cx="42%" cy="28%" r="70%">
+    <stop offset="0%"   stop-color="#E8B820"/>
+    <stop offset="55%"  stop-color="#C48C08"/>
+    <stop offset="100%" stop-color="#8A5C00"/>
+  </radialGradient>
+  <radialGradient id="g-leaf-md" cx="42%" cy="28%" r="70%">
+    <stop offset="0%"   stop-color="#F5CC30"/>
+    <stop offset="55%"  stop-color="#D4A010"/>
+    <stop offset="100%" stop-color="#9A6A00"/>
+  </radialGradient>
+  <radialGradient id="g-leaf-lt" cx="42%" cy="28%" r="70%">
+    <stop offset="0%"   stop-color="#FFDE60"/>
+    <stop offset="55%"  stop-color="#E8B820"/>
+    <stop offset="100%" stop-color="#B48000"/>
+  </radialGradient>
+  <radialGradient id="g-ground" cx="50%" cy="30%" r="70%">
+    <stop offset="0%"   stop-color="#F5CC30"/>
+    <stop offset="60%"  stop-color="#C8960C"/>
+    <stop offset="100%" stop-color="#8A5C00"/>
+  </radialGradient>
+  <radialGradient id="g-mound" cx="50%" cy="20%" r="65%">
+    <stop offset="0%"   stop-color="#D4A855"/>
+    <stop offset="100%" stop-color="#8A5820"/>
+  </radialGradient>
+</defs>
+<ellipse cx="170" cy="303" rx="92" ry="18" fill="#C49030" opacity=".28"/>
+<path d="M96 295 Q170 278 244 295 Q226 310 170 313 Q114 310 96 295Z" fill="url(#g-mound)"/>
+<path d="M104 293 Q170 279 236 293 Q218 306 170 309 Q122 306 104 293Z" fill="#D4A845"/>
+<ellipse cx="115" cy="301" rx="9"  ry="5"  fill="url(#g-ground)" opacity=".82"/>
+<ellipse cx="130" cy="307" rx="7"  ry="4"  fill="url(#g-ground)" opacity=".75"/>
+<ellipse cx="148" cy="310" rx="8"  ry="4.5" fill="url(#g-ground)" opacity=".72"/>
+<ellipse cx="168" cy="311" rx="6"  ry="3.5" fill="url(#g-ground)" opacity=".7"/>
+<ellipse cx="187" cy="310" rx="8"  ry="4.5" fill="url(#g-ground)" opacity=".72"/>
+<ellipse cx="206" cy="306" rx="7"  ry="4"  fill="url(#g-ground)" opacity=".75"/>
+<ellipse cx="222" cy="299" rx="9"  ry="5"  fill="url(#g-ground)" opacity=".82"/>
+<ellipse cx="140" cy="304" rx="5"  ry="3"  fill="#F5CC30" opacity=".6"/>
+<ellipse cx="200" cy="303" rx="5"  ry="3"  fill="#F5CC30" opacity=".6"/>
+<ellipse cx="160" cy="308" rx="4"  ry="2.5" fill="#FFDE60" opacity=".55"/>
+<ellipse cx="180" cy="308" rx="4"  ry="2.5" fill="#FFDE60" opacity=".55"/>
+<ellipse cx="108" cy="298" rx="4"  ry="2.5" fill="#F0C020" opacity=".55"/>
+<ellipse cx="230" cy="296" rx="4"  ry="2.5" fill="#F0C020" opacity=".55"/>
+<path d="M155 292 Q149 268 147 242 Q145 218 148 194 Q150 172 154 152 Q156 136 158 118" stroke="url(#g-trunk)" stroke-width="26" stroke-linecap="round" fill="none"/>
+<path d="M175 292 Q171 268 170 242 Q169 218 170 194 Q171 172 173 152 Q175 136 176 118" stroke="url(#g-branch)" stroke-width="16" stroke-linecap="round" fill="none" opacity=".45"/>
+<path d="M155 270 Q151 258 152 246" stroke="#C08030" stroke-width="3" stroke-linecap="round" fill="none" opacity=".35"/>
+<path d="M165 265 Q163 252 164 240" stroke="#C08030" stroke-width="2.5" stroke-linecap="round" fill="none" opacity=".3"/>
+<path d="M153 200 Q126 186 112 168" stroke="url(#g-branch)" stroke-width="14" stroke-linecap="round" fill="none"/>
+<path d="M160 185 Q136 168 124 148" stroke="url(#g-branch)" stroke-width="12" stroke-linecap="round" fill="none"/>
+<path d="M163 170 Q148 148 144 126" stroke="url(#g-branch)" stroke-width="10" stroke-linecap="round" fill="none"/>
+<path d="M168 200 Q194 186 208 168" stroke="url(#g-branch)" stroke-width="14" stroke-linecap="round" fill="none"/>
+<path d="M166 185 Q190 168 202 148" stroke="url(#g-branch)" stroke-width="12" stroke-linecap="round" fill="none"/>
+<path d="M165 170 Q182 148 186 126" stroke="url(#g-branch)" stroke-width="10" stroke-linecap="round" fill="none"/>
+<path d="M162 155 Q162 132 162 112" stroke="url(#g-branch)" stroke-width="11" stroke-linecap="round" fill="none"/>
+<path d="M153 145 Q136 124 128 102" stroke="url(#g-branch)" stroke-width="8" stroke-linecap="round" fill="none"/>
+<path d="M170 140 Q186 119 192 96" stroke="url(#g-branch)" stroke-width="8" stroke-linecap="round" fill="none"/>
+<ellipse cx="170" cy="145" rx="110" ry="86" fill="url(#g-leaf-dk)" opacity=".62"/>
+<ellipse cx="170" cy="138" rx="100" ry="80" fill="url(#g-leaf-md)" opacity=".72"/>
+<ellipse cx="108" cy="162" rx="52"  ry="38" fill="url(#g-leaf-dk)" opacity=".8"/>
+<ellipse cx="232" cy="156" rx="50"  ry="36" fill="url(#g-leaf-dk)" opacity=".8"/>
+<ellipse cx="115" cy="130" rx="48"  ry="36" fill="url(#g-leaf-md)" opacity=".82"/>
+<ellipse cx="226" cy="124" rx="46"  ry="34" fill="url(#g-leaf-md)" opacity=".82"/>
+<ellipse cx="135" cy="108" rx="44"  ry="32" fill="url(#g-leaf-lt)" opacity=".84"/>
+<ellipse cx="205" cy="103" rx="44"  ry="32" fill="url(#g-leaf-lt)" opacity=".84"/>
+<ellipse cx="170" cy="96"  rx="52"  ry="36" fill="url(#g-leaf-lt)" opacity=".88"/>
+<ellipse cx="155" cy="80"  rx="40"  ry="28" fill="url(#g-leaf-lt)" opacity=".85"/>
+<ellipse cx="185" cy="78"  rx="38"  ry="26" fill="url(#g-leaf-lt)" opacity=".85"/>
+<ellipse cx="170" cy="68"  rx="46"  ry="30" fill="url(#g-leaf-lt)"/>
+<ellipse cx="92"  cy="175" rx="20" ry="12" fill="url(#g-leaf-md)" transform="rotate(-22 92 175)"/>
+<ellipse cx="248" cy="170" rx="20" ry="12" fill="url(#g-leaf-md)" transform="rotate(20 248 170)"/>
+<ellipse cx="82"  cy="148" rx="18" ry="11" fill="url(#g-leaf-lt)" transform="rotate(-28 82 148)"/>
+<ellipse cx="260" cy="142" rx="18" ry="11" fill="url(#g-leaf-lt)" transform="rotate(25 260 142)"/>
+<ellipse cx="100" cy="118" rx="18" ry="11" fill="url(#g-leaf-dk)" transform="rotate(-20 100 118)"/>
+<ellipse cx="242" cy="113" rx="18" ry="11" fill="url(#g-leaf-dk)" transform="rotate(18 242 113)"/>
+<ellipse cx="120" cy="95"  rx="16" ry="10" fill="url(#g-leaf-md)" transform="rotate(-14 120 95)"/>
+<ellipse cx="222" cy="90"  rx="16" ry="10" fill="url(#g-leaf-md)" transform="rotate(14 222 90)"/>
+<ellipse cx="140" cy="70"  rx="16" ry="10" fill="url(#g-leaf-lt)" transform="rotate(-10 140 70)"/>
+<ellipse cx="200" cy="67"  rx="15" ry="9"  fill="url(#g-leaf-lt)" transform="rotate(10 200 67)"/>
+<ellipse cx="170" cy="55"  rx="18" ry="10" fill="url(#g-leaf-lt)"/>
+<ellipse cx="154" cy="62"  rx="14" ry="8"  fill="url(#g-leaf-md)" transform="rotate(-8 154 62)"/>
+<ellipse cx="186" cy="60"  rx="13" ry="8"  fill="url(#g-leaf-md)" transform="rotate(8 186 60)"/>
+<circle cx="94"  cy="164" r="15"  fill="url(#g-coin-b)"/>
+<circle cx="94"  cy="164" r="11.5" fill="none" stroke="#E8B000" stroke-width="1.5" opacity=".65"/>
+<circle cx="94"  cy="164" r="8.5"  fill="none" stroke="#F5D040" stroke-width="0.8" opacity=".4"/>
+<text x="94"  y="168.5" text-anchor="middle" font-size="9" fill="#7A4C00" font-weight="700" font-family="Georgia,serif">€</text>
+<ellipse cx="87" cy="157" rx="4" ry="2.3" fill="white" opacity=".42" transform="rotate(-22 87 157)"/>
+<circle cx="248" cy="158" r="15"  fill="url(#g-coin-b)"/>
+<circle cx="248" cy="158" r="11.5" fill="none" stroke="#E8B000" stroke-width="1.5" opacity=".65"/>
+<text x="248" y="162.5" text-anchor="middle" font-size="9" fill="#7A4C00" font-weight="700" font-family="Georgia,serif">€</text>
+<ellipse cx="241" cy="151" rx="4" ry="2.3" fill="white" opacity=".42" transform="rotate(-22 241 151)"/>
+<circle cx="106" cy="130" r="14"  fill="url(#g-coin-a)"/>
+<circle cx="106" cy="130" r="10.5" fill="none" stroke="#F0C000" stroke-width="1.5" opacity=".6"/>
+<text x="106" y="134" text-anchor="middle" font-size="8.5" fill="#7A4C00" font-weight="700" font-family="Georgia,serif">€</text>
+<ellipse cx="99" cy="124" rx="3.5" ry="2" fill="white" opacity=".44" transform="rotate(-22 99 124)"/>
+<circle cx="236" cy="124" r="14"  fill="url(#g-coin-a)"/>
+<circle cx="236" cy="124" r="10.5" fill="none" stroke="#F0C000" stroke-width="1.5" opacity=".6"/>
+<text x="236" y="128" text-anchor="middle" font-size="8.5" fill="#7A4C00" font-weight="700" font-family="Georgia,serif">€</text>
+<ellipse cx="229" cy="118" rx="3.5" ry="2" fill="white" opacity=".44" transform="rotate(-22 229 118)"/>
+<circle cx="130" cy="104" r="14"  fill="url(#g-coin-b)"/>
+<circle cx="130" cy="104" r="10.5" fill="none" stroke="#E8B000" stroke-width="1.5" opacity=".62"/>
+<text x="130" y="108" text-anchor="middle" font-size="8.5" fill="#7A4C00" font-weight="700" font-family="Georgia,serif">€</text>
+<ellipse cx="123" cy="98"  rx="3.5" ry="2" fill="white" opacity=".42" transform="rotate(-22 123 98)"/>
+<circle cx="211" cy="100" r="14"  fill="url(#g-coin-b)"/>
+<circle cx="211" cy="100" r="10.5" fill="none" stroke="#E8B000" stroke-width="1.5" opacity=".62"/>
+<text x="211" y="104" text-anchor="middle" font-size="8.5" fill="#7A4C00" font-weight="700" font-family="Georgia,serif">€</text>
+<ellipse cx="204" cy="94"  rx="3.5" ry="2" fill="white" opacity=".42" transform="rotate(-22 204 94)"/>
+<circle cx="148" cy="82"  r="13"  fill="url(#g-coin-a)"/>
+<circle cx="148" cy="82"  r="9.5"  fill="none" stroke="#F0C000" stroke-width="1.5" opacity=".6"/>
+<text x="148" y="86"   text-anchor="middle" font-size="8"   fill="#7A4C00" font-weight="700" font-family="Georgia,serif">€</text>
+<ellipse cx="142" cy="76" rx="3.2" ry="1.8" fill="white" opacity=".44" transform="rotate(-22 142 76)"/>
+<circle cx="194" cy="78"  r="13"  fill="url(#g-coin-a)"/>
+<circle cx="194" cy="78"  r="9.5"  fill="none" stroke="#F0C000" stroke-width="1.5" opacity=".6"/>
+<text x="194" y="82"   text-anchor="middle" font-size="8"   fill="#7A4C00" font-weight="700" font-family="Georgia,serif">€</text>
+<ellipse cx="188" cy="72" rx="3.2" ry="1.8" fill="white" opacity=".44" transform="rotate(-22 188 72)"/>
+<circle cx="148" cy="148" r="12"  fill="url(#g-coin-c)"/>
+<circle cx="148" cy="148" r="9"    fill="none" stroke="#D8A400" stroke-width="1.2" opacity=".58"/>
+<text x="148" y="152" text-anchor="middle" font-size="7.5" fill="#7A4C00" font-weight="700" font-family="Georgia,serif">€</text>
+<ellipse cx="143" cy="143" rx="3" ry="1.7" fill="white" opacity=".38" transform="rotate(-22 143 143)"/>
+<circle cx="192" cy="145" r="12"  fill="url(#g-coin-c)"/>
+<circle cx="192" cy="145" r="9"    fill="none" stroke="#D8A400" stroke-width="1.2" opacity=".58"/>
+<text x="192" y="149" text-anchor="middle" font-size="7.5" fill="#7A4C00" font-weight="700" font-family="Georgia,serif">€</text>
+<ellipse cx="187" cy="140" rx="3" ry="1.7" fill="white" opacity=".38" transform="rotate(-22 187 140)"/>
+<circle cx="122" cy="158" r="11"  fill="url(#g-coin-c)"/>
+<text x="122" y="162" text-anchor="middle" font-size="7" fill="#7A4C00" font-weight="700" font-family="Georgia,serif">€</text>
+<ellipse cx="117" cy="153" rx="2.8" ry="1.6" fill="white" opacity=".38" transform="rotate(-22 117 153)"/>
+<circle cx="220" cy="153" r="11"  fill="url(#g-coin-c)"/>
+<text x="220" y="157" text-anchor="middle" font-size="7" fill="#7A4C00" font-weight="700" font-family="Georgia,serif">€</text>
+<ellipse cx="215" cy="148" rx="2.8" ry="1.6" fill="white" opacity=".38" transform="rotate(-22 215 148)"/>
+<circle cx="170" cy="120" r="11"  fill="url(#g-coin-c)"/>
+<circle cx="170" cy="120" r="8"    fill="none" stroke="#D8A400" stroke-width="1" opacity=".55"/>
+<text x="170" y="124" text-anchor="middle" font-size="7" fill="#7A4C00" font-weight="700" font-family="Georgia,serif">€</text>
+<ellipse cx="165" cy="115" rx="2.8" ry="1.6" fill="white" opacity=".38" transform="rotate(-22 165 115)"/>
+<circle cx="170" cy="60"  r="18"  fill="url(#g-coin-a)"/>
+<circle cx="170" cy="60"  r="14"   fill="none" stroke="#F5C800" stroke-width="2"   opacity=".7"/>
+<circle cx="170" cy="60"  r="10"   fill="none" stroke="#E0A800" stroke-width="0.8" opacity=".45"/>
+<text x="170" y="65"   text-anchor="middle" font-size="11"  fill="#7A4C00" font-weight="700" font-family="Georgia,serif">€</text>
+<ellipse cx="161" cy="52" rx="5.5" ry="3.2" fill="white" opacity=".5" transform="rotate(-22 161 52)"/>
+<circle cx="115" cy="172" r="10"  fill="url(#g-coin-b)"/>
+<text x="115" y="176" text-anchor="middle" font-size="6.5" fill="#7A4C00" font-weight="700" font-family="Georgia,serif">€</text>
+<ellipse cx="110" cy="168" rx="2.5" ry="1.5" fill="white" opacity=".36" transform="rotate(-22 110 168)"/>
+<circle cx="227" cy="167" r="10"  fill="url(#g-coin-b)"/>
+<text x="227" y="171" text-anchor="middle" font-size="6.5" fill="#7A4C00" font-weight="700" font-family="Georgia,serif">€</text>
+<ellipse cx="222" cy="163" rx="2.5" ry="1.5" fill="white" opacity=".36" transform="rotate(-22 222 163)"/>
+<path d="M72 140 L73.6 134 L75.2 140 L73.6 146Z" fill="#FFE040" opacity=".88"/>
+<path d="M73.6 132 L79.6 140 L73.6 148 L67.6 140Z" fill="#FFEE80" opacity=".55" transform="rotate(45 73.6 140)"/>
+<circle cx="73.6" cy="140" r="2" fill="#FFF5B0" opacity=".7"/>
+<path d="M272 128 L273.6 122 L275.2 128 L273.6 134Z" fill="#FFE040" opacity=".85"/>
+<path d="M273.6 120 L279.6 128 L273.6 136 L267.6 128Z" fill="#FFEE80" opacity=".52" transform="rotate(45 273.6 128)"/>
+<circle cx="273.6" cy="128" r="2" fill="#FFF5B0" opacity=".68"/>
+<path d="M76 104 L77.2 99.4 L78.4 104 L77.2 108.6Z" fill="#FFD820" opacity=".8"/>
+<circle cx="77.2" cy="104" r="1.5" fill="#FFF0A0" opacity=".65"/>
+<path d="M266 98 L267.2 93.4 L268.4 98 L267.2 102.6Z" fill="#FFD820" opacity=".78"/>
+<circle cx="267.2" cy="98" r="1.5" fill="#FFF0A0" opacity=".62"/>
+<path d="M138 46 L139.5 41 L141 46 L139.5 51Z" fill="#FFE040" opacity=".82"/>
+<path d="M139.5 39 L144.5 46 L139.5 53 L134.5 46Z" fill="#FFEE80" opacity=".48" transform="rotate(45 139.5 46)"/>
+<path d="M202 43 L203.5 38 L205 43 L203.5 48Z" fill="#FFE040" opacity=".8"/>
+<path d="M203.5 36 L208.5 43 L203.5 50 L198.5 43Z" fill="#FFEE80" opacity=".46" transform="rotate(45 203.5 43)"/>
+<circle cx="90"  cy="88" r="2.5" fill="#FFE566" opacity=".7"/>
+<circle cx="253" cy="82" r="2.5" fill="#FFE566" opacity=".68"/>
+<circle cx="120" cy="56" r="2"   fill="#FFF0A0" opacity=".72"/>
+<circle cx="220" cy="52" r="2"   fill="#FFF0A0" opacity=".7"/>
+<path d="M85 170 L86.2 166 L87.4 170 L86.2 174Z"  fill="#FFD820" opacity=".72"/>
+<path d="M258 163 L259.2 159 L260.4 163 L259.2 167Z" fill="#FFD820" opacity=".7"/>
+</svg>`,
+};
+
+function buildFinanzbaumSvg(stage) {
+  return FINANZBAUM_SVGS[stage] || FINANZBAUM_SVGS.seed;
 }
 function getGoalStage(pct) {
   if (pct >= 100) return 'flowering';
@@ -1350,11 +1735,11 @@ function renderFinanzgarten() {
       <!-- Finanzbaum links -->
       <div class="b-garden-plant">
         <div class="b-garden-stage-label">${treeLevel.label}</div>
-        <div class="b-garden-svg">${buildPlantSvg(treeLevel.stage, 'bonsai')}</div>
+        <div class="b-garden-svg">${buildFinanzbaumSvg(treeLevel.stage)}</div>
         <div class="b-garden-plant-name">Finanzbaum</div>
         <div class="b-garden-plant-val">${treeKsStr}</div>
         <div class="b-garden-mini-bar">
-          ${GARDEN_TREE_LEVELS.map((lv, i) => `<div class="b-garden-pip${kontostand !== null && kontostand >= lv.min ? ' filled' : ''}"></div>`).join('')}
+          ${getGardenTreeLevels().map((lv) => `<div class="b-garden-pip${kontostand !== null && kontostand >= lv.min ? ' filled' : ''}"></div>`).join('')}
         </div>
       </div>
 
@@ -1901,6 +2286,59 @@ document.getElementById('goal-tx-save').addEventListener('click', () => {
 
 // Wire secondary add-buttons — bind directly, no DOMContentLoaded proxy needed
 // (DOMContentLoaded may have already fired by the time budget.js runs in a SPA)
+// =========================
+// FINANZBAUM KONFIGURATION
+// =========================
+
+function openFinanzbaumModal() {
+  const levels = getTreeLevels();
+  const rows   = document.getElementById('finanzbaum-config-rows');
+  rows.innerHTML = '';
+  levels.forEach((lv, i) => {
+    const row = document.createElement('div');
+    row.className = 'finanzbaum-config-row';
+    row.innerHTML = `
+      <label class="finanzbaum-config-label">${lv.label}</label>
+      <div class="finanzbaum-config-input-wrap">
+        <input type="number" class="modal-input finanzbaum-min-input" data-index="${i}"
+          value="${lv.min}" min="0" step="50"
+          style="width:110px;padding:6px 10px;font-size:13px;"
+          ${i === 0 ? 'disabled title="Startpunkt ist immer 0 €"' : ''}/>
+        <span class="finanzbaum-config-unit">€</span>
+      </div>`;
+    rows.appendChild(row);
+  });
+  document.getElementById('finanzbaum-modal-overlay').classList.remove('hidden');
+}
+
+document.getElementById('finanzbaum-config-btn').addEventListener('click', openFinanzbaumModal);
+document.getElementById('finanzbaum-modal-close').addEventListener('click',  () => document.getElementById('finanzbaum-modal-overlay').classList.add('hidden'));
+document.getElementById('finanzbaum-config-cancel').addEventListener('click', () => document.getElementById('finanzbaum-modal-overlay').classList.add('hidden'));
+document.getElementById('finanzbaum-modal-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('finanzbaum-modal-overlay'))
+    document.getElementById('finanzbaum-modal-overlay').classList.add('hidden');
+});
+
+document.getElementById('finanzbaum-config-save').addEventListener('click', () => {
+  const inputs = document.querySelectorAll('.finanzbaum-min-input');
+  const mins   = Array.from(inputs).map((inp, i) => {
+    if (i === 0) return 0; // Stufe 0 immer 0
+    return Math.max(0, parseFloat(inp.value) || 0);
+  });
+  // Validierung: aufsteigend
+  for (let i = 1; i < mins.length; i++) {
+    if (mins[i] <= mins[i-1]) {
+      inputs[i].setCustomValidity(`Muss größer als ${mins[i-1]} sein`);
+      inputs[i].reportValidity();
+      return;
+    }
+    inputs[i].setCustomValidity('');
+  }
+  DB.set('finanzbaumLevels', mins);
+  document.getElementById('finanzbaum-modal-overlay').classList.add('hidden');
+  renderFinanzgarten();
+});
+
 function bindSecondaryButtons() {
   const pairs = [
     ['add-recurring-btn-2', 'add-recurring-btn'],
