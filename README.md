@@ -382,4 +382,8 @@ Geplante Erweiterungen:
 - Weitere Spiele-Plugins
 - Game-Hub Funktionalität ergänzen
 - Zusätzliche Finanzgarten-Pflanzen
+<<<<<<< HEAD
 - Erweiterte Projektverwaltung
+=======
+- Erweiterte Projektverwaltung
+>>>>>>> 1bdf31cda20ee9f6ee2ae3dc1b7c0d9782ca312c
