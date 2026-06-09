@@ -716,11 +716,11 @@ function fmtEur(amount) {
 
 const GARDEN_TREE_LEVELS = [
   { min: 0,    label: 'Samen',           stage: 'seed'        },
-  { min: 100,  label: 'Keimling',        stage: 'sprout'      },
-  { min: 200,  label: 'Kleine Pflanze',  stage: 'small_plant' },
-  { min: 300, label: 'Mittlere Pflanze',stage: 'medium_plant'},
-  { min: 400, label: 'Großer Baum',     stage: 'large_plant' },
-  { min: 500, label: 'Blühender Baum',  stage: 'flowering'   },
+  { min: 250,  label: 'Keimling',        stage: 'sprout'      },
+  { min: 500,  label: 'Kleine Pflanze',  stage: 'small_plant' },
+  { min: 1000, label: 'Mittlere Pflanze',stage: 'medium_plant'},
+  { min: 2000, label: 'Großer Baum',     stage: 'large_plant' },
+  { min: 3000, label: 'Blühender Baum',  stage: 'flowering'   },
 ];
 
 function getTreeStage(ks) {
@@ -756,85 +756,556 @@ const PLANT_NAMES = {
 };
 
 // Plant-type specific tint colors for SVG (stem/leaf color)
-const PLANT_COLORS = {
-  sunflower:     { stem: '#8B9E3A', leaf: '#A8BC48', bloom: '#F5C518', bloomAlt: '#E89B10' },
-  cactus:        { stem: '#4A9E5C', leaf: '#5CB87A', bloom: '#F87171', bloomAlt: '#DC2626' },
-  bonsai:        { stem: '#6B4226', leaf: '#5A8A3C', bloom: '#F9A8D4', bloomAlt: '#EC4899' },
-  potplant:      { stem: '#5C8A3C', leaf: '#7AAF50', bloom: '#86EFAC', bloomAlt: '#4ADE80' },
-  cherryblossom: { stem: '#7A4A2A', leaf: '#6B8C3E', bloom: '#FBCFE8', bloomAlt: '#F9A8D4' },
-};
+// =============================================================
+// PLANT SVGS — 5 Pflanzen × 6 Stufen = 30 einzigartige SVGs
+// Jede Pflanze hat ihre eigene eindeutige Silhouette.
+// viewBox: 80×80 · fill="none" baseline
+// =============================================================
 
-function getColors(plantType) {
-  return PLANT_COLORS[plantType] || PLANT_COLORS.sunflower;
-}
+const PLANT_SVGS = {
 
-// SVG stages — parameterized by plantType colors
-function buildPlantSvg(stage, plantType) {
-  const c = getColors(plantType || 'sunflower');
-  const s = c.stem, l = c.leaf, b = c.bloom, ba = c.bloomAlt;
-
-  const svgs = {
+  // ─────────────────────────────────────────────────────────────
+  // 🌻 SONNENBLUME
+  // Erkennbar: langer gerader Stängel, runde Blüte mit Strahlen
+  // ─────────────────────────────────────────────────────────────
+  sunflower: {
     seed: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <ellipse cx="40" cy="62" rx="16" ry="5" fill="#C5A882" opacity=".3"/>
-      <ellipse cx="40" cy="58" rx="10" ry="8" fill="#8B6340" opacity=".9"/>
-      <ellipse cx="40" cy="55" rx="7" ry="6" fill="#A07848"/>
-      <ellipse cx="38" cy="53" rx="2" ry="3" fill="#C09A62" opacity=".6"/>
+      <ellipse cx="40" cy="64" rx="18" ry="5" fill="#C5A882" opacity=".28"/>
+      <ellipse cx="40" cy="60" rx="9" ry="7" fill="#8B6340"/>
+      <ellipse cx="40" cy="57" rx="6" ry="5" fill="#A07848"/>
+      <line x1="37" y1="55" x2="38" y2="52" stroke="#C09A62" stroke-width="1.5" stroke-linecap="round" opacity=".7"/>
+      <line x1="43" y1="54" x2="42" y2="51" stroke="#C09A62" stroke-width="1.5" stroke-linecap="round" opacity=".5"/>
     </svg>`,
     sprout: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <ellipse cx="40" cy="66" rx="16" ry="4" fill="#C5A882" opacity=".28"/>
-      <rect x="37" y="63" width="6" height="5" rx="2" fill="#8B6340"/>
-      <line x1="40" y1="62" x2="40" y2="34" stroke="${s}" stroke-width="2.5" stroke-linecap="round"/>
-      <path d="M40 50 Q28 44 26 33 Q36 33 40 46" fill="${l}" opacity=".9"/>
-      <path d="M40 44 Q52 38 54 27 Q44 27 40 40" fill="${s}" opacity=".8"/>
+      <ellipse cx="40" cy="68" rx="17" ry="4" fill="#C5A882" opacity=".28"/>
+      <line x1="40" y1="66" x2="40" y2="44" stroke="#7A9B3A" stroke-width="3" stroke-linecap="round"/>
+      <!-- Kleines Keimblatt links -->
+      <path d="M40 56 Q30 52 29 44 Q37 44 40 52" fill="#A8C848"/>
+      <!-- Kleines Keimblatt rechts -->
+      <path d="M40 52 Q50 48 51 40 Q43 40 40 48" fill="#8FB83A" opacity=".85"/>
+      <!-- Tiny knospe oben -->
+      <ellipse cx="40" cy="43" rx="3" ry="4" fill="#C8D870"/>
     </svg>`,
     small_plant: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <ellipse cx="40" cy="68" rx="17" ry="4" fill="#C5A882" opacity=".28"/>
-      <rect x="36" y="64" width="8" height="6" rx="3" fill="#8B6340"/>
-      <line x1="40" y1="63" x2="40" y2="26" stroke="${s}" stroke-width="2.8" stroke-linecap="round"/>
-      <path d="M40 52 Q24 46 22 32 Q34 30 40 46" fill="${l}"/>
-      <path d="M40 44 Q56 38 58 24 Q46 22 40 38" fill="${s}" opacity=".85"/>
-      <path d="M40 36 Q28 26 30 16 Q40 16 40 28" fill="${l}" opacity=".75"/>
+      <ellipse cx="40" cy="70" rx="17" ry="4" fill="#C5A882" opacity=".28"/>
+      <!-- Stängel — gerade, charakteristisch für Sonnenblume -->
+      <line x1="40" y1="68" x2="40" y2="22" stroke="#5A8A20" stroke-width="3" stroke-linecap="round"/>
+      <!-- Blätter am Stängel — herzförmig, rau -->
+      <path d="M40 58 Q26 54 24 42 Q36 42 40 54" fill="#7AAF38"/>
+      <path d="M40 50 Q54 46 56 34 Q44 34 40 46" fill="#8FBF40" opacity=".88"/>
+      <path d="M40 42 Q28 36 30 24 Q40 24 40 36" fill="#7AAF38" opacity=".8"/>
+      <!-- Knospe — rund geschlossen -->
+      <circle cx="40" cy="19" r="5" fill="#C8C840"/>
+      <path d="M40 19 Q37 14 40 11 Q43 14 40 19" fill="#8B9E3A"/>
     </svg>`,
     medium_plant: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <ellipse cx="40" cy="70" rx="18" ry="4" fill="#C5A882" opacity=".28"/>
-      <rect x="36" y="65" width="8" height="7" rx="3" fill="#7A5630"/>
-      <line x1="40" y1="64" x2="40" y2="22" stroke="${s}" stroke-width="3.5" stroke-linecap="round"/>
-      <line x1="40" y1="52" x2="26" y2="42" stroke="${s}" stroke-width="2" stroke-linecap="round"/>
-      <line x1="40" y1="44" x2="54" y2="34" stroke="${s}" stroke-width="2" stroke-linecap="round"/>
-      <circle cx="24" cy="38" r="11" fill="${l}" opacity=".88"/>
-      <circle cx="56" cy="30" r="11" fill="${s}" opacity=".82"/>
-      <circle cx="40" cy="18" r="13" fill="${l}"/>
+      <ellipse cx="40" cy="72" rx="17" ry="4" fill="#C5A882" opacity=".28"/>
+      <line x1="40" y1="70" x2="40" y2="18" stroke="#4A7A18" stroke-width="3.5" stroke-linecap="round"/>
+      <!-- Mehrere Blätter, herzförmig -->
+      <path d="M40 62 Q24 56 22 42 Q36 40 40 56" fill="#7AAF38"/>
+      <path d="M40 54 Q56 48 58 34 Q44 32 40 48" fill="#8FBF40" opacity=".85"/>
+      <path d="M40 46 Q26 38 28 26 Q40 24 40 38" fill="#7AAF38" opacity=".8"/>
+      <path d="M40 38 Q52 32 54 20 Q44 18 40 30" fill="#8FBF40" opacity=".75"/>
+      <!-- Knospe — deutlicher, halb offen -->
+      <circle cx="40" cy="15" r="7" fill="#D4C840"/>
+      <path d="M40 15 Q35 9 40 6 Q45 9 40 15" fill="#8B9E3A"/>
+      <path d="M40 15 Q33 11 31 6 Q37 5 40 10" fill="#A0B030" opacity=".7"/>
     </svg>`,
     large_plant: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <ellipse cx="40" cy="72" rx="19" ry="4" fill="#C5A882" opacity=".28"/>
-      <rect x="36" y="67" width="8" height="7" rx="3" fill="#7A5630"/>
-      <line x1="40" y1="66" x2="40" y2="18" stroke="${s}" stroke-width="4" stroke-linecap="round"/>
-      <line x1="40" y1="56" x2="23" y2="44" stroke="${s}" stroke-width="2.5" stroke-linecap="round"/>
-      <line x1="40" y1="48" x2="57" y2="36" stroke="${s}" stroke-width="2.5" stroke-linecap="round"/>
-      <line x1="40" y1="40" x2="25" y2="26" stroke="${s}" stroke-width="2" stroke-linecap="round"/>
-      <circle cx="21" cy="40" r="12" fill="${l}" opacity=".88"/>
-      <circle cx="59" cy="32" r="12" fill="${s}" opacity=".84"/>
-      <circle cx="23" cy="23" r="10" fill="${l}" opacity=".9"/>
-      <circle cx="40" cy="14" r="13" fill="${s}"/>
+      <ellipse cx="40" cy="74" rx="17" ry="4" fill="#C5A882" opacity=".28"/>
+      <line x1="40" y1="72" x2="40" y2="16" stroke="#3A6A10" stroke-width="4" stroke-linecap="round"/>
+      <!-- Viele Blätter -->
+      <path d="M40 64 Q22 56 20 40 Q36 38 40 56" fill="#6A9F28"/>
+      <path d="M40 56 Q58 48 60 32 Q44 30 40 48" fill="#7AAF38" opacity=".85"/>
+      <path d="M40 48 Q24 40 26 26 Q40 24 40 38" fill="#6A9F28" opacity=".8"/>
+      <path d="M40 40 Q54 34 56 20 Q44 18 40 32" fill="#7AAF38" opacity=".75"/>
+      <!-- Blüte fast offen — deutliche Knospe mit Blütenblatt-Ansätzen -->
+      <circle cx="40" cy="13" r="9" fill="#C8B030"/>
+      <!-- Blütenblätter beginnen sich zu zeigen -->
+      <ellipse cx="40" cy="5" rx="4" ry="6" fill="#E8C830" opacity=".8"/>
+      <ellipse cx="32" cy="8" rx="4" ry="6" fill="#E8C830" opacity=".7" transform="rotate(-45 32 8)"/>
+      <ellipse cx="48" cy="8" rx="4" ry="6" fill="#E8C830" opacity=".7" transform="rotate(45 48 8)"/>
     </svg>`,
     flowering: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <ellipse cx="40" cy="72" rx="19" ry="4" fill="#C5A882" opacity=".28"/>
-      <rect x="36" y="67" width="8" height="7" rx="3" fill="#7A5630"/>
-      <line x1="40" y1="66" x2="40" y2="16" stroke="${s}" stroke-width="4" stroke-linecap="round"/>
-      <line x1="40" y1="54" x2="22" y2="42" stroke="${s}" stroke-width="2.5" stroke-linecap="round"/>
-      <line x1="40" y1="46" x2="58" y2="34" stroke="${s}" stroke-width="2.5" stroke-linecap="round"/>
-      <circle cx="20" cy="38" r="11" fill="${l}" opacity=".88"/>
-      <circle cx="60" cy="30" r="11" fill="${s}" opacity=".84"/>
-      <circle cx="40" cy="12" r="12" fill="${l}"/>
-      <!-- Blüten -->
-      <circle cx="12" cy="20" r="6" fill="${b}" opacity=".92"/>
-      <circle cx="68" cy="16" r="5" fill="${ba}" opacity=".88"/>
-      <circle cx="40" cy="4"  r="5" fill="${b}" opacity=".9"/>
-      <circle cx="54" cy="8"  r="4" fill="${ba}" opacity=".82"/>
-      <circle cx="26" cy="10" r="4" fill="${b}" opacity=".82"/>
+      <ellipse cx="40" cy="74" rx="17" ry="4" fill="#C5A882" opacity=".28"/>
+      <line x1="40" y1="72" x2="40" y2="24" stroke="#3A6A10" stroke-width="4" stroke-linecap="round"/>
+      <!-- Blätter -->
+      <path d="M40 64 Q23 56 21 42 Q37 40 40 56" fill="#6A9F28"/>
+      <path d="M40 56 Q57 48 59 34 Q43 32 40 48" fill="#7AAF38" opacity=".85"/>
+      <path d="M40 48 Q25 40 27 28 Q40 26 40 40" fill="#6A9F28" opacity=".8"/>
+      <!-- Blüte — große Sonnenblume, strahlende Blütenblätter -->
+      <!-- Blütenblätter (Strahlen) -->
+      <ellipse cx="40" cy="10" rx="4.5" ry="8" fill="#F5C518"/>
+      <ellipse cx="40" cy="10" rx="4.5" ry="8" fill="#F5C518" transform="rotate(30 40 22)"/>
+      <ellipse cx="40" cy="10" rx="4.5" ry="8" fill="#F5C518" transform="rotate(60 40 22)"/>
+      <ellipse cx="40" cy="10" rx="4.5" ry="8" fill="#F5C518" transform="rotate(90 40 22)"/>
+      <ellipse cx="40" cy="10" rx="4.5" ry="8" fill="#F5C518" transform="rotate(120 40 22)"/>
+      <ellipse cx="40" cy="10" rx="4.5" ry="8" fill="#F5C518" transform="rotate(150 40 22)"/>
+      <ellipse cx="40" cy="10" rx="4.5" ry="8" fill="#E8B820" transform="rotate(180 40 22)"/>
+      <ellipse cx="40" cy="10" rx="4.5" ry="8" fill="#E8B820" transform="rotate(210 40 22)"/>
+      <ellipse cx="40" cy="10" rx="4.5" ry="8" fill="#E8B820" transform="rotate(240 40 22)"/>
+      <ellipse cx="40" cy="10" rx="4.5" ry="8" fill="#E8B820" transform="rotate(270 40 22)"/>
+      <ellipse cx="40" cy="10" rx="4.5" ry="8" fill="#E8B820" transform="rotate(300 40 22)"/>
+      <ellipse cx="40" cy="10" rx="4.5" ry="8" fill="#E8B820" transform="rotate(330 40 22)"/>
+      <!-- Blütenmitte — braune Scheibe -->
+      <circle cx="40" cy="22" r="10" fill="#6B4010"/>
+      <circle cx="40" cy="22" r="8"  fill="#7A4A18"/>
+      <!-- Muster auf Blütenmitte -->
+      <circle cx="37" cy="20" r="1.2" fill="#5A3008" opacity=".6"/>
+      <circle cx="43" cy="20" r="1.2" fill="#5A3008" opacity=".6"/>
+      <circle cx="40" cy="25" r="1.2" fill="#5A3008" opacity=".6"/>
+      <circle cx="37" cy="25" r="1"   fill="#5A3008" opacity=".4"/>
+      <circle cx="43" cy="25" r="1"   fill="#5A3008" opacity=".4"/>
     </svg>`,
+  },
+
+  // ─────────────────────────────────────────────────────────────
+  // 🌵 KAKTUS
+  // Erkennbar: säulenförmig, Stacheln, niemals Baumsylhouette
+  // ─────────────────────────────────────────────────────────────
+  cactus: {
+    seed: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="40" cy="64" rx="18" ry="5" fill="#C5A882" opacity=".28"/>
+      <!-- Sandiger Boden -->
+      <ellipse cx="40" cy="62" rx="12" ry="3" fill="#D4B882" opacity=".5"/>
+      <!-- Winziger Kaktus-Samen: oval, stachelig -->
+      <ellipse cx="40" cy="57" rx="7" ry="6" fill="#5A8A40"/>
+      <line x1="36" y1="53" x2="34" y2="50" stroke="#4A7A30" stroke-width="1.2" stroke-linecap="round"/>
+      <line x1="40" y1="52" x2="40" y2="49" stroke="#4A7A30" stroke-width="1.2" stroke-linecap="round"/>
+      <line x1="44" y1="53" x2="46" y2="50" stroke="#4A7A30" stroke-width="1.2" stroke-linecap="round"/>
+    </svg>`,
+    sprout: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="40" cy="68" rx="16" ry="4" fill="#C5A882" opacity=".28"/>
+      <!-- Boden -->
+      <ellipse cx="40" cy="66" rx="10" ry="2.5" fill="#D4B882" opacity=".45"/>
+      <!-- Kleiner runder Kaktus-Knubbel -->
+      <ellipse cx="40" cy="58" rx="8" ry="10" fill="#5A9A48"/>
+      <!-- Stacheln -->
+      <line x1="32" y1="55" x2="28" y2="52" stroke="#3A6A28" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="32" y1="60" x2="27" y2="60" stroke="#3A6A28" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="48" y1="55" x2="52" y2="52" stroke="#3A6A28" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="48" y1="60" x2="53" y2="60" stroke="#3A6A28" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="40" y1="48" x2="40" y2="44" stroke="#3A6A28" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>`,
+    small_plant: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="40" cy="70" rx="16" ry="4" fill="#C5A882" opacity=".28"/>
+      <ellipse cx="40" cy="68" rx="10" ry="2.5" fill="#D4B882" opacity=".4"/>
+      <!-- Kleiner Säulenkaktus -->
+      <rect x="34" y="40" width="12" height="28" rx="6" fill="#5A9A48"/>
+      <!-- Rippen -->
+      <line x1="40" y1="40" x2="40" y2="68" stroke="#4A8038" stroke-width="1" opacity=".5"/>
+      <!-- Stacheln gleichmäßig -->
+      <line x1="34" y1="48" x2="29" y2="46" stroke="#2A5A18" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="34" y1="54" x2="29" y2="52" stroke="#2A5A18" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="34" y1="60" x2="29" y2="58" stroke="#2A5A18" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="46" y1="48" x2="51" y2="46" stroke="#2A5A18" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="46" y1="54" x2="51" y2="52" stroke="#2A5A18" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="46" y1="60" x2="51" y2="58" stroke="#2A5A18" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="40" y1="40" x2="40" y2="36" stroke="#2A5A18" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>`,
+    medium_plant: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="40" cy="72" rx="16" ry="4" fill="#C5A882" opacity=".28"/>
+      <ellipse cx="40" cy="70" rx="10" ry="2.5" fill="#D4B882" opacity=".4"/>
+      <!-- Hauptstamm — höher -->
+      <rect x="35" y="28" width="10" height="42" rx="5" fill="#5A9A48"/>
+      <line x1="40" y1="28" x2="40" y2="70" stroke="#4A8038" stroke-width="1" opacity=".45"/>
+      <!-- Linker Arm -->
+      <path d="M35 50 Q22 50 22 38 Q22 30 28 30 Q34 30 35 38" fill="#4A9040"/>
+      <!-- Rechter Arm -->
+      <path d="M45 46 Q58 46 58 34 Q58 26 52 26 Q46 26 45 34" fill="#5A9A48"/>
+      <!-- Stacheln am Stamm -->
+      <line x1="35" y1="36" x2="30" y2="34" stroke="#2A5A18" stroke-width="1.4" stroke-linecap="round"/>
+      <line x1="45" y1="36" x2="50" y2="34" stroke="#2A5A18" stroke-width="1.4" stroke-linecap="round"/>
+      <line x1="35" y1="58" x2="30" y2="56" stroke="#2A5A18" stroke-width="1.4" stroke-linecap="round"/>
+      <line x1="45" y1="58" x2="50" y2="56" stroke="#2A5A18" stroke-width="1.4" stroke-linecap="round"/>
+      <!-- Stacheln an Armen -->
+      <line x1="24" y1="36" x2="21" y2="33" stroke="#2A5A18" stroke-width="1.4" stroke-linecap="round"/>
+      <line x1="56" y1="32" x2="59" y2="29" stroke="#2A5A18" stroke-width="1.4" stroke-linecap="round"/>
+    </svg>`,
+    large_plant: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="40" cy="74" rx="16" ry="4" fill="#C5A882" opacity=".28"/>
+      <ellipse cx="40" cy="72" rx="10" ry="2.5" fill="#D4B882" opacity=".4"/>
+      <!-- Großer Hauptstamm -->
+      <rect x="35" y="18" width="10" height="54" rx="5" fill="#4A9040"/>
+      <line x1="40" y1="18" x2="40" y2="72" stroke="#3A7830" stroke-width="1" opacity=".4"/>
+      <!-- Linker Arm — kürzer, nach oben -->
+      <path d="M35 44 Q18 44 18 28 Q18 18 26 18 Q34 18 35 28" fill="#4A9040"/>
+      <!-- Linker Arm Rippe -->
+      <line x1="26" y1="18" x2="26" y2="44" stroke="#3A7830" stroke-width="0.8" opacity=".4"/>
+      <!-- Rechter Arm — höher angesetzt -->
+      <path d="M45 38 Q62 38 62 22 Q62 12 54 12 Q46 12 45 22" fill="#5A9A48"/>
+      <line x1="54" y1="12" x2="54" y2="38" stroke="#3A7830" stroke-width="0.8" opacity=".4"/>
+      <!-- Stacheln -->
+      <line x1="35" y1="26" x2="30" y2="23" stroke="#1A4A10" stroke-width="1.4" stroke-linecap="round"/>
+      <line x1="35" y1="56" x2="30" y2="53" stroke="#1A4A10" stroke-width="1.4" stroke-linecap="round"/>
+      <line x1="45" y1="26" x2="50" y2="23" stroke="#1A4A10" stroke-width="1.4" stroke-linecap="round"/>
+      <line x1="45" y1="56" x2="50" y2="53" stroke="#1A4A10" stroke-width="1.4" stroke-linecap="round"/>
+      <line x1="18" y1="26" x2="14" y2="24" stroke="#1A4A10" stroke-width="1.4" stroke-linecap="round"/>
+      <line x1="62" y1="20" x2="66" y2="18" stroke="#1A4A10" stroke-width="1.4" stroke-linecap="round"/>
+    </svg>`,
+    flowering: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="40" cy="74" rx="16" ry="4" fill="#C5A882" opacity=".28"/>
+      <ellipse cx="40" cy="72" rx="10" ry="2.5" fill="#D4B882" opacity=".4"/>
+      <!-- Großer Hauptstamm -->
+      <rect x="35" y="18" width="10" height="54" rx="5" fill="#4A9040"/>
+      <line x1="40" y1="18" x2="40" y2="72" stroke="#3A7830" stroke-width="1" opacity=".4"/>
+      <!-- Linker Arm -->
+      <path d="M35 44 Q18 44 18 28 Q18 18 26 18 Q34 18 35 28" fill="#4A9040"/>
+      <line x1="26" y1="18" x2="26" y2="44" stroke="#3A7830" stroke-width="0.8" opacity=".4"/>
+      <!-- Rechter Arm -->
+      <path d="M45 38 Q62 38 62 22 Q62 12 54 12 Q46 12 45 22" fill="#5A9A48"/>
+      <line x1="54" y1="12" x2="54" y2="38" stroke="#3A7830" stroke-width="0.8" opacity=".4"/>
+      <!-- Stacheln -->
+      <line x1="35" y1="30" x2="30" y2="27" stroke="#1A4A10" stroke-width="1.4" stroke-linecap="round"/>
+      <line x1="35" y1="58" x2="30" y2="55" stroke="#1A4A10" stroke-width="1.4" stroke-linecap="round"/>
+      <line x1="45" y1="30" x2="50" y2="27" stroke="#1A4A10" stroke-width="1.4" stroke-linecap="round"/>
+      <line x1="45" y1="58" x2="50" y2="55" stroke="#1A4A10" stroke-width="1.4" stroke-linecap="round"/>
+      <!-- Blüten oben auf allen 3 Spitzen -->
+      <!-- Blüte auf Hauptstamm -->
+      <circle cx="40" cy="15" r="5" fill="#F8E8F0"/>
+      <circle cx="40" cy="15" r="3" fill="#F87090"/>
+      <circle cx="40" cy="9"  r="3.5" fill="#F87090" opacity=".85"/>
+      <circle cx="33" cy="11" r="3"   fill="#F87090" opacity=".75"/>
+      <circle cx="47" cy="11" r="3"   fill="#F87090" opacity=".75"/>
+      <circle cx="34" cy="18" r="3"   fill="#F87090" opacity=".7"/>
+      <circle cx="46" cy="18" r="3"   fill="#F87090" opacity=".7"/>
+      <!-- Blüte auf linkem Arm -->
+      <circle cx="26" cy="15" r="4" fill="#F8D8E8"/>
+      <circle cx="26" cy="15" r="2.5" fill="#F87090"/>
+      <!-- Blüte auf rechtem Arm -->
+      <circle cx="54" cy="9"  r="4" fill="#F8D8E8"/>
+      <circle cx="54" cy="9"  r="2.5" fill="#F87090"/>
+    </svg>`,
+  },
+
+  // ─────────────────────────────────────────────────────────────
+  // 🌳 BONSAI
+  // Erkennbar: asymmetrischer, gekrümmter Stamm, breite flache Krone
+  // Immer kompakt, nie zu groß
+  // ─────────────────────────────────────────────────────────────
+  bonsai: {
+    seed: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="40" cy="64" rx="18" ry="5" fill="#C5A882" opacity=".28"/>
+      <!-- Flache Bonsai-Schale schon sichtbar -->
+      <rect x="28" y="60" width="24" height="7" rx="3" fill="#C08A50"/>
+      <rect x="26" y="65" width="28" height="3" rx="1.5" fill="#A07040"/>
+      <!-- Samen in der Schale -->
+      <ellipse cx="40" cy="60" rx="6" ry="4.5" fill="#7A5A30"/>
+      <ellipse cx="40" cy="58.5" rx="4.5" ry="3" fill="#9A7240"/>
+    </svg>`,
+    sprout: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Bonsai-Schale -->
+      <rect x="27" y="60" width="26" height="7" rx="3" fill="#C08A50"/>
+      <rect x="25" y="65" width="30" height="3" rx="1.5" fill="#A07040"/>
+      <!-- Erster kleiner Trieb — schon leicht schräg -->
+      <path d="M40 60 Q38 50 36 40" stroke="#6B4226" stroke-width="3" stroke-linecap="round" fill="none"/>
+      <!-- Erstes Blättchen -->
+      <path d="M36 40 Q28 38 27 32 Q34 32 36 38" fill="#5A8A3C"/>
+      <path d="M36 40 Q44 36 45 28 Q38 28 36 36" fill="#6A9A48" opacity=".85"/>
+    </svg>`,
+    small_plant: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Bonsai-Schale -->
+      <rect x="26" y="62" width="28" height="8" rx="3.5" fill="#C08A50"/>
+      <rect x="24" y="68" width="32" height="3" rx="1.5" fill="#A07040"/>
+      <!-- Stamm — schräg, charakteristisch für Bonsai -->
+      <path d="M40 62 Q36 52 34 38 Q33 30 36 22" stroke="#6B4226" stroke-width="4" stroke-linecap="round" fill="none"/>
+      <!-- Kleiner Seitenzweig links unten -->
+      <path d="M36 48 Q24 46 22 38" stroke="#7A4E2A" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+      <!-- Blattmasse — klein, kompakt -->
+      <circle cx="22" cy="36" r="8" fill="#5A8A3C" opacity=".88"/>
+      <circle cx="34" cy="20" r="9" fill="#6A9A48"/>
+      <circle cx="42" cy="25" r="7" fill="#5A8A3C" opacity=".82"/>
+    </svg>`,
+    medium_plant: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Bonsai-Schale — etwas breiter -->
+      <rect x="22" y="64" width="36" height="8" rx="4" fill="#C08A50"/>
+      <rect x="20" y="70" width="40" height="3.5" rx="1.5" fill="#A07040"/>
+      <!-- Stamm — S-Kurve, typischer Bonsai -->
+      <path d="M40 64 Q37 54 35 44 Q32 34 36 24 Q38 18 42 14" stroke="#5A3818" stroke-width="5" stroke-linecap="round" fill="none"/>
+      <!-- Zweige -->
+      <path d="M36 44 Q22 42 18 32" stroke="#7A4E2A" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+      <path d="M38 32 Q52 28 56 18" stroke="#7A4E2A" stroke-width="2" stroke-linecap="round" fill="none"/>
+      <!-- Blattwolken — flach und breit -->
+      <ellipse cx="18" cy="28" rx="11" ry="8"  fill="#5A8A3C" opacity=".9"/>
+      <ellipse cx="56" cy="16" rx="9"  ry="7"  fill="#6A9A48" opacity=".85"/>
+      <ellipse cx="40" cy="12" rx="12" ry="7"  fill="#5A8A3C"/>
+      <ellipse cx="54" cy="22" rx="8"  ry="6"  fill="#6A9A48" opacity=".8"/>
+    </svg>`,
+    large_plant: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Bonsai-Schale — groß und flach -->
+      <rect x="18" y="66" width="44" height="8" rx="4" fill="#B87A40"/>
+      <rect x="16" y="72" width="48" height="4" rx="2" fill="#9A6430"/>
+      <!-- Markante S-Kurve -->
+      <path d="M40 66 Q36 56 33 46 Q30 36 34 26 Q37 18 42 12" stroke="#4A2E10" stroke-width="6" stroke-linecap="round" fill="none"/>
+      <!-- Seitenzweige — mehrere Ebenen -->
+      <path d="M34 52 Q18 50 14 38" stroke="#6B4226" stroke-width="3" stroke-linecap="round" fill="none"/>
+      <path d="M36 38 Q54 34 58 22" stroke="#6B4226" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+      <path d="M38 28 Q22 24 20 14" stroke="#6B4226" stroke-width="2" stroke-linecap="round" fill="none"/>
+      <!-- Blattwolken — flache, breite Ebenen, typisch Bonsai -->
+      <ellipse cx="14" cy="34" rx="12" ry="8"  fill="#4A7A30" opacity=".9"/>
+      <ellipse cx="58" cy="20" rx="11" ry="7"  fill="#5A8A3C" opacity=".88"/>
+      <ellipse cx="20" cy="12" rx="11" ry="7"  fill="#4A7A30" opacity=".88"/>
+      <ellipse cx="42" cy="8"  rx="14" ry="7"  fill="#5A8A3C"/>
+      <ellipse cx="58" cy="10" rx="9"  ry="6"  fill="#4A7A30" opacity=".82"/>
+    </svg>`,
+    flowering: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Bonsai-Schale -->
+      <rect x="16" y="66" width="48" height="8" rx="4" fill="#B87A40"/>
+      <rect x="14" y="72" width="52" height="4" rx="2" fill="#9A6430"/>
+      <!-- Stamm -->
+      <path d="M40 66 Q36 56 33 46 Q30 36 34 26 Q37 18 42 12" stroke="#4A2E10" stroke-width="6" stroke-linecap="round" fill="none"/>
+      <!-- Zweige -->
+      <path d="M34 52 Q18 50 14 38" stroke="#6B4226" stroke-width="3" stroke-linecap="round" fill="none"/>
+      <path d="M36 38 Q54 34 58 22" stroke="#6B4226" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+      <path d="M38 28 Q22 24 20 14" stroke="#6B4226" stroke-width="2" stroke-linecap="round" fill="none"/>
+      <!-- Blattwolken -->
+      <ellipse cx="14" cy="34" rx="13" ry="9"  fill="#4A7A30" opacity=".85"/>
+      <ellipse cx="58" cy="20" rx="12" ry="8"  fill="#5A8A3C" opacity=".82"/>
+      <ellipse cx="20" cy="12" rx="12" ry="8"  fill="#4A7A30" opacity=".85"/>
+      <ellipse cx="42" cy="8"  rx="15" ry="8"  fill="#5A8A3C"/>
+      <ellipse cx="58" cy="10" rx="10" ry="7"  fill="#4A7A30" opacity=".8"/>
+      <!-- Rosa Blüten über die Krone gestreut -->
+      <circle cx="10" cy="30" r="4"  fill="#F9A8D4" opacity=".9"/>
+      <circle cx="18" cy="25" r="3.5" fill="#FBCFE8" opacity=".85"/>
+      <circle cx="55" cy="15" r="4"  fill="#F9A8D4" opacity=".9"/>
+      <circle cx="62" cy="22" r="3"  fill="#FBCFE8" opacity=".8"/>
+      <circle cx="16" cy="7"  r="3.5" fill="#F9A8D4" opacity=".85"/>
+      <circle cx="28" cy="5"  r="3"  fill="#FBCFE8" opacity=".8"/>
+      <circle cx="42" cy="3"  r="3.5" fill="#F9A8D4" opacity=".88"/>
+      <circle cx="52" cy="5"  r="3"  fill="#FBCFE8" opacity=".78"/>
+      <circle cx="62" cy="8"  r="3.5" fill="#F9A8D4" opacity=".82"/>
+    </svg>`,
+  },
+
+  // ─────────────────────────────────────────────────────────────
+  // 🪴 ZIMMERPFLANZE
+  // Erkennbar: IMMER im Blumentopf, tropische breite Blätter
+  // ─────────────────────────────────────────────────────────────
+  potplant: {
+    seed: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Topf — immer vorhanden -->
+      <path d="M28 56 L32 72 L48 72 L52 56 Z" fill="#C07848"/>
+      <rect x="26" y="53" width="28" height="5" rx="2.5" fill="#D08858"/>
+      <!-- Erde im Topf -->
+      <ellipse cx="40" cy="56" rx="12" ry="3.5" fill="#6B4226"/>
+      <!-- Samen sichtbar in der Erde -->
+      <ellipse cx="40" cy="55" rx="4" ry="3" fill="#8B5E30"/>
+      <ellipse cx="40" cy="54" rx="3" ry="2" fill="#A07848"/>
+    </svg>`,
+    sprout: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Topf -->
+      <path d="M28 56 L32 72 L48 72 L52 56 Z" fill="#C07848"/>
+      <rect x="26" y="53" width="28" height="5" rx="2.5" fill="#D08858"/>
+      <ellipse cx="40" cy="56" rx="12" ry="3.5" fill="#6B4226"/>
+      <!-- Kleiner Stängel -->
+      <line x1="40" y1="55" x2="40" y2="38" stroke="#5A8A3C" stroke-width="2.5" stroke-linecap="round"/>
+      <!-- Erstes Blättchen — rund tropisch -->
+      <ellipse cx="33" cy="36" rx="8" ry="5" fill="#6AAF48" transform="rotate(-30 33 36)"/>
+      <ellipse cx="47" cy="34" rx="8" ry="5" fill="#5A9A38" transform="rotate(30 47 34)"/>
+    </svg>`,
+    small_plant: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Topf -->
+      <path d="M26 58 L30 74 L50 74 L54 58 Z" fill="#C07848"/>
+      <rect x="24" y="55" width="32" height="5" rx="2.5" fill="#D08858"/>
+      <ellipse cx="40" cy="58" rx="14" ry="4" fill="#6B4226"/>
+      <!-- Stängel -->
+      <line x1="40" y1="57" x2="40" y2="30" stroke="#4A7A2C" stroke-width="3" stroke-linecap="round"/>
+      <!-- Monstera-artige Blätter — herzförmig mit Kerben -->
+      <path d="M40 48 Q24 44 20 30 Q30 26 40 40" fill="#5A9A38"/>
+      <path d="M22 32 Q20 26 24 22" stroke="#5A9A38" stroke-width="1" fill="none"/>
+      <path d="M40 42 Q56 38 60 24 Q50 20 40 34" fill="#6AAF48" opacity=".88"/>
+      <path d="M58 26 Q60 20 56 16" stroke="#6AAF48" stroke-width="1" fill="none"/>
+      <!-- Kleines Blatt oben -->
+      <ellipse cx="40" cy="28" rx="7" ry="5" fill="#5A9A38" opacity=".85"/>
+    </svg>`,
+    medium_plant: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Topf -->
+      <path d="M24 60 L28 76 L52 76 L56 60 Z" fill="#C07848"/>
+      <rect x="22" y="56" width="36" height="6" rx="3" fill="#D08858"/>
+      <ellipse cx="40" cy="60" rx="16" ry="4.5" fill="#6B4226"/>
+      <!-- Stängel -->
+      <line x1="40" y1="59" x2="40" y2="22" stroke="#3A6A1C" stroke-width="3.5" stroke-linecap="round"/>
+      <!-- Große tropische Blätter — Monstera-Silhouette -->
+      <path d="M40 52 Q20 46 16 28 Q28 22 40 42" fill="#4A8A28"/>
+      <!-- Einschnitte -->
+      <path d="M18 30 Q16 24 20 18" stroke="#4A8A28" stroke-width="1.5" fill="none"/>
+      <path d="M40 44 Q60 38 64 20 Q52 14 40 34" fill="#5A9A38" opacity=".88"/>
+      <path d="M62 22 Q64 16 60 10" stroke="#5A9A38" stroke-width="1.5" fill="none"/>
+      <path d="M40 36 Q24 28 26 14 Q36 10 40 24" fill="#4A8A28" opacity=".82"/>
+      <path d="M40 30 Q56 24 58 10 Q48 6 40 20" fill="#5A9A38" opacity=".78"/>
+    </svg>`,
+    large_plant: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Topf — breiter -->
+      <path d="M20 62 L24 78 L56 78 L60 62 Z" fill="#B86A38"/>
+      <rect x="18" y="58" width="44" height="6" rx="3" fill="#C87848"/>
+      <ellipse cx="40" cy="62" rx="20" ry="5" fill="#5A3818"/>
+      <!-- Mehrere Stängel aus dem Topf -->
+      <line x1="40" y1="61" x2="40" y2="16" stroke="#3A6A1C" stroke-width="4" stroke-linecap="round"/>
+      <line x1="36" y1="61" x2="28" y2="30" stroke="#3A6A1C" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="44" y1="61" x2="52" y2="28" stroke="#3A6A1C" stroke-width="2.5" stroke-linecap="round"/>
+      <!-- Üppige Blätter, gross -->
+      <path d="M40 54 Q16 46 12 24 Q28 18 40 44" fill="#4A8A28"/>
+      <path d="M14 28 Q12 20 16 12" stroke="#4A8A28" stroke-width="1.5" fill="none"/>
+      <path d="M40 46 Q64 38 68 16 Q52 10 40 36" fill="#5A9A38" opacity=".88"/>
+      <path d="M66 20 Q68 12 64 6" stroke="#5A9A38" stroke-width="1.5" fill="none"/>
+      <path d="M28 30 Q12 24 14 10 Q24 6 28 18" fill="#4A8A28" opacity=".85"/>
+      <path d="M52 28 Q68 22 66 8 Q56 4 52 16" fill="#5A9A38" opacity=".82"/>
+      <ellipse cx="40" cy="14" rx="12" ry="8" fill="#6AAF48" opacity=".75"/>
+    </svg>`,
+    flowering: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Topf -->
+      <path d="M20 62 L24 78 L56 78 L60 62 Z" fill="#B86A38"/>
+      <rect x="18" y="58" width="44" height="6" rx="3" fill="#C87848"/>
+      <ellipse cx="40" cy="62" rx="20" ry="5" fill="#5A3818"/>
+      <!-- Stängel -->
+      <line x1="40" y1="61" x2="40" y2="14" stroke="#2A5A0C" stroke-width="4" stroke-linecap="round"/>
+      <line x1="36" y1="61" x2="26" y2="28" stroke="#2A5A0C" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="44" y1="61" x2="54" y2="26" stroke="#2A5A0C" stroke-width="2.5" stroke-linecap="round"/>
+      <!-- Blätter -->
+      <path d="M40 54 Q14 44 10 22 Q28 16 40 44" fill="#3A7818"/>
+      <path d="M12 26 Q10 18 14 10" stroke="#3A7818" stroke-width="1.5" fill="none"/>
+      <path d="M40 46 Q66 36 70 14 Q52 8 40 36" fill="#4A8828" opacity=".88"/>
+      <path d="M68 18 Q70 10 66 4" stroke="#4A8828" stroke-width="1.5" fill="none"/>
+      <path d="M26 28 Q10 22 12 8 Q22 4 26 16" fill="#3A7818" opacity=".85"/>
+      <path d="M54 26 Q70 20 68 6 Q58 2 54 14" fill="#4A8828" opacity=".82"/>
+      <!-- Kleine weiße Blüten -->
+      <circle cx="40" cy="12" r="5" fill="white" opacity=".9"/>
+      <circle cx="40" cy="12" r="3" fill="#FFE8B0"/>
+      <circle cx="16" cy="18" r="4.5" fill="white" opacity=".85"/>
+      <circle cx="16" cy="18" r="2.5" fill="#FFE8B0"/>
+      <circle cx="64" cy="10" r="4.5" fill="white" opacity=".85"/>
+      <circle cx="64" cy="10" r="2.5" fill="#FFE8B0"/>
+    </svg>`,
+  },
+
+  // ─────────────────────────────────────────────────────────────
+  // 🌸 KIRSCHBLÜTE
+  // 0–60%: normaler Baum mit grünen Blättern
+  // 80%: erste vereinzelte rosa Blüten
+  // 100%: voller Kirschblütenbaum
+  // ─────────────────────────────────────────────────────────────
+  cherryblossom: {
+    seed: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="40" cy="64" rx="18" ry="5" fill="#C5A882" opacity=".28"/>
+      <ellipse cx="40" cy="60" rx="9" ry="7" fill="#6B4226"/>
+      <ellipse cx="40" cy="57" rx="6" ry="5" fill="#8B5C30"/>
+      <!-- Kleine rötliche Keimlinge angedeutet -->
+      <line x1="38" y1="55" x2="37" y2="51" stroke="#9A7A5A" stroke-width="1.5" stroke-linecap="round" opacity=".7"/>
+      <line x1="42" y1="54" x2="43" y2="50" stroke="#9A7A5A" stroke-width="1.5" stroke-linecap="round" opacity=".5"/>
+    </svg>`,
+    sprout: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="40" cy="68" rx="17" ry="4" fill="#C5A882" opacity=".28"/>
+      <!-- Dünner Stamm -->
+      <line x1="40" y1="67" x2="40" y2="40" stroke="#8B5C30" stroke-width="2.5" stroke-linecap="round"/>
+      <!-- Erste grüne Blättchen — spitz wie Kirschblätter -->
+      <path d="M40 52 Q30 48 28 40 Q36 38 40 48" fill="#6A9A3A"/>
+      <path d="M40 48 Q50 44 52 36 Q44 34 40 44" fill="#7AAF42" opacity=".88"/>
+    </svg>`,
+    small_plant: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="40" cy="70" rx="17" ry="4" fill="#C5A882" opacity=".28"/>
+      <!-- Stamm — leicht verdreht, charakteristisch -->
+      <path d="M40 69 Q41 58 39 44 Q38 34 40 22" stroke="#7A4A20" stroke-width="4" stroke-linecap="round" fill="none"/>
+      <!-- Zweige -->
+      <path d="M39 44 Q26 40 22 28" stroke="#8B5C30" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+      <path d="M40 35 Q52 30 56 18" stroke="#8B5C30" stroke-width="2" stroke-linecap="round" fill="none"/>
+      <!-- Grüne Blattwolken — oval, charakteristisch Kirsche -->
+      <ellipse cx="22" cy="25" rx="10" ry="7" fill="#5A9A3A" opacity=".9"/>
+      <ellipse cx="56" cy="16" rx="9"  ry="7" fill="#6AAF42" opacity=".85"/>
+      <ellipse cx="40" cy="19" rx="11" ry="7" fill="#5A9A3A"/>
+    </svg>`,
+    medium_plant: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="40" cy="72" rx="17" ry="4" fill="#C5A882" opacity=".28"/>
+      <!-- Stamm — stärker, typisch Kirschbaum -->
+      <path d="M40 71 Q42 60 38 48 Q36 38 40 24 Q41 16 42 10" stroke="#6B3A18" stroke-width="5" stroke-linecap="round" fill="none"/>
+      <!-- Seitenzweige -->
+      <path d="M38 52 Q22 48 16 34" stroke="#7A4A20" stroke-width="3" stroke-linecap="round" fill="none"/>
+      <path d="M40 40 Q56 34 62 20" stroke="#7A4A20" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+      <path d="M41 28 Q26 22 24 10" stroke="#7A4A20" stroke-width="2" stroke-linecap="round" fill="none"/>
+      <!-- Grüne Krone — breit und üppig -->
+      <ellipse cx="16" cy="30" rx="12" ry="9"  fill="#4A8A28" opacity=".9"/>
+      <ellipse cx="62" cy="18" rx="11" ry="8"  fill="#5A9A32" opacity=".85"/>
+      <ellipse cx="24" cy="8"  rx="11" ry="7"  fill="#4A8A28" opacity=".88"/>
+      <ellipse cx="42" cy="7"  rx="14" ry="8"  fill="#5A9A32"/>
+      <ellipse cx="56" cy="10" rx="9"  ry="6"  fill="#4A8A28" opacity=".82"/>
+    </svg>`,
+    large_plant: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="40" cy="74" rx="17" ry="4" fill="#C5A882" opacity=".28"/>
+      <!-- Kräftiger Stamm -->
+      <path d="M40 73 Q43 62 38 50 Q35 40 40 26 Q42 16 42 8" stroke="#5A3010" stroke-width="6" stroke-linecap="round" fill="none"/>
+      <!-- Große Äste -->
+      <path d="M38 54 Q20 50 14 34" stroke="#6B3A18" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+      <path d="M40 42 Q58 36 65 20" stroke="#6B3A18" stroke-width="3" stroke-linecap="round" fill="none"/>
+      <path d="M41 30 Q24 24 22 10" stroke="#6B3A18" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+      <path d="M42 20 Q58 14 62 4" stroke="#6B3A18" stroke-width="2" stroke-linecap="round" fill="none"/>
+      <!-- Krone — hauptsächlich grün mit ERSTEN vereinzelten rosa Blüten -->
+      <ellipse cx="14" cy="30" rx="13" ry="10" fill="#4A8A28" opacity=".88"/>
+      <ellipse cx="65" cy="18" rx="12" ry="9"  fill="#5A9A32" opacity=".84"/>
+      <ellipse cx="22" cy="8"  rx="12" ry="8"  fill="#4A8A28" opacity=".88"/>
+      <ellipse cx="42" cy="5"  rx="16" ry="9"  fill="#5A9A32"/>
+      <ellipse cx="60" cy="7"  rx="10" ry="7"  fill="#4A8A28" opacity=".82"/>
+      <!-- Erste vereinzelte rosa Blüten — noch wenige -->
+      <circle cx="10" cy="24" r="3.5" fill="#FBCFE8" opacity=".9"/>
+      <circle cx="18" cy="20" r="3"   fill="#F9A8D4" opacity=".85"/>
+      <circle cx="66" cy="12" r="3.5" fill="#FBCFE8" opacity=".88"/>
+      <circle cx="28" cy="5"  r="3"   fill="#F9A8D4" opacity=".82"/>
+      <circle cx="52" cy="4"  r="3.5" fill="#FBCFE8" opacity=".85"/>
+    </svg>`,
+    flowering: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="40" cy="74" rx="17" ry="4" fill="#C5A882" opacity=".28"/>
+      <!-- Stamm — nun dunkelgrau/braun, wie echter Kirschbaum im Frühling -->
+      <path d="M40 73 Q43 62 38 50 Q35 40 40 26 Q42 16 42 8" stroke="#4A2A08" stroke-width="6" stroke-linecap="round" fill="none"/>
+      <!-- Äste -->
+      <path d="M38 54 Q20 50 14 34" stroke="#5A3010" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+      <path d="M40 42 Q58 36 65 20" stroke="#5A3010" stroke-width="3" stroke-linecap="round" fill="none"/>
+      <path d="M41 30 Q24 24 22 10" stroke="#5A3010" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+      <path d="M42 20 Q58 14 62 4" stroke="#5A3010" stroke-width="2" stroke-linecap="round" fill="none"/>
+      <!-- VOLLE rosa Krone — Haupteindruck rosa, Frühling -->
+      <ellipse cx="14" cy="30" rx="14" ry="11" fill="#FBCFE8" opacity=".88"/>
+      <ellipse cx="65" cy="18" rx="13" ry="10" fill="#F9A8D4" opacity=".85"/>
+      <ellipse cx="22" cy="8"  rx="13" ry="9"  fill="#FBCFE8" opacity=".9"/>
+      <ellipse cx="42" cy="5"  rx="18" ry="10" fill="#F9A8D4" opacity=".92"/>
+      <ellipse cx="60" cy="8"  rx="11" ry="8"  fill="#FBCFE8" opacity=".85"/>
+      <!-- Einzelne Blüten sichtbar — 5-blättrig -->
+      <!-- Blüte 1 -->
+      <circle cx="8"  cy="26" r="5" fill="#F9A8D4" opacity=".9"/>
+      <circle cx="8"  cy="26" r="2.5" fill="#F472B6"/>
+      <!-- Blüte 2 -->
+      <circle cx="20" cy="16" r="4.5" fill="#FBCFE8" opacity=".88"/>
+      <circle cx="20" cy="16" r="2"   fill="#F472B6"/>
+      <!-- Blüte 3 -->
+      <circle cx="38" cy="3"  r="5" fill="#F9A8D4" opacity=".9"/>
+      <circle cx="38" cy="3"  r="2.5" fill="#F472B6"/>
+      <!-- Blüte 4 -->
+      <circle cx="60" cy="4"  r="4.5" fill="#FBCFE8" opacity=".88"/>
+      <circle cx="60" cy="4"  r="2"   fill="#F472B6"/>
+      <!-- Blüte 5 -->
+      <circle cx="67" cy="14" r="5" fill="#F9A8D4" opacity=".88"/>
+      <circle cx="67" cy="14" r="2.5" fill="#F472B6"/>
+      <!-- Herabfallende Blütenblätter -->
+      <ellipse cx="22" cy="44" rx="2" ry="3.5" fill="#FBCFE8" opacity=".6" transform="rotate(20 22 44)"/>
+      <ellipse cx="56" cy="40" rx="2" ry="3.5" fill="#F9A8D4" opacity=".55" transform="rotate(-15 56 40)"/>
+      <ellipse cx="14" cy="48" rx="1.5" ry="3" fill="#FBCFE8" opacity=".5" transform="rotate(35 14 48)"/>
+    </svg>`,
+  },
+
+};
+
+function buildPlantSvg(stage, plantType) {
+  const type = plantType || 'sunflower';
+  const plantSet = PLANT_SVGS[type] || PLANT_SVGS.sunflower;
+  return plantSet[stage] || plantSet.seed;
+}
+
+// Kept for backward compat (used in progress bar color)
+function getColors(plantType) {
+  const MAP = {
+    sunflower:     { stem: '#8B9E3A', leaf: '#A8BC48' },
+    cactus:        { stem: '#4A9E5C', leaf: '#5CB87A' },
+    bonsai:        { stem: '#6B4226', leaf: '#5A8A3C' },
+    potplant:      { stem: '#5C8A3C', leaf: '#7AAF50' },
+    cherryblossom: { stem: '#7A4A2A', leaf: '#6B8C3E' },
   };
-  return svgs[stage] || svgs.seed;
+  return MAP[plantType] || MAP.sunflower;
 }
 
 function renderFinanzgarten() {
@@ -914,33 +1385,49 @@ function renderFinanzgarten() {
     <div class="b-garden-ground"></div>
   `;
 
-  // Goal selector dropdown
+  // Goal selector dropdown — angehängt an body, um overflow:hidden der Card zu umgehen
   const selectBtn = card.querySelector('#garden-select-goal-btn');
   if (selectBtn && budgetGoals.length > 0) {
-    selectBtn.addEventListener('click', () => {
-      // Remove existing dropdown
+    selectBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      // Bestehende Dropdowns entfernen
       document.getElementById('garden-dropdown')?.remove();
+
       const dd = document.createElement('div');
       dd.id = 'garden-dropdown';
       dd.className = 'b-garden-dropdown';
+
       budgetGoals.forEach(g => {
         const item = document.createElement('button');
-        item.className = 'b-garden-dropdown-item' + (g.id === (activeGoal?.id) ? ' active' : '');
+        item.className = 'b-garden-dropdown-item' + (g.id === activeGoal?.id ? ' active' : '');
         const emoji = PLANT_EMOJIS[g.plantType] || '🌱';
-        const pct   = g.target > 0 ? Math.min(100, Math.round((g.current/g.target)*100)) : 0;
+        const pct   = g.target > 0 ? Math.min(100, Math.round((g.current / g.target) * 100)) : 0;
         item.innerHTML = `<span>${emoji} ${g.name}</span><span class="b-garden-dd-pct">${pct}%</span>`;
-        item.addEventListener('click', () => {
+        item.addEventListener('click', (ev) => {
+          ev.stopPropagation();
           DB.set('gardenActiveGoalId', g.id);
           dd.remove();
           renderFinanzgarten();
         });
         dd.appendChild(item);
       });
-      selectBtn.parentElement.appendChild(dd);
-      // Close on outside click
-      setTimeout(() => document.addEventListener('click', function close(e) {
-        if (!dd.contains(e.target) && e.target !== selectBtn) { dd.remove(); document.removeEventListener('click', close); }
-      }), 10);
+
+      // Position: direkt unterhalb des Buttons, fixed im Viewport
+      document.body.appendChild(dd);
+      const rect = selectBtn.getBoundingClientRect();
+      dd.style.position = 'fixed';
+      dd.style.top  = (rect.bottom + 4) + 'px';
+      dd.style.right = (window.innerWidth - rect.right) + 'px';
+      dd.style.left = 'auto';
+
+      // Schließen bei Klick außerhalb
+      function closeDropdown(ev) {
+        if (!dd.contains(ev.target) && ev.target !== selectBtn) {
+          dd.remove();
+          document.removeEventListener('click', closeDropdown);
+        }
+      }
+      setTimeout(() => document.addEventListener('click', closeDropdown), 10);
     });
   }
 }
@@ -1106,7 +1593,9 @@ function renderBudgetGoals(){
     const pct  = goal.target > 0 ? Math.min(100, Math.round((goal.current/goal.target)*100)) : 0;
     const card = document.createElement('div'); card.className = 'budget-goal-card';
     const head = document.createElement('div'); head.className = 'budget-goal-head';
-    const nm   = document.createElement('span'); nm.className = 'budget-row-name'; nm.textContent = goal.name;
+    const emoji = PLANT_EMOJIS[goal.plantType] || '🌱';
+    const nm   = document.createElement('span'); nm.className = 'budget-row-name';
+    nm.innerHTML = `<span class="budget-goal-emoji">${emoji}</span> ${goal.name}`;
     const del  = document.createElement('button'); del.className = 'task-delete'; del.textContent = '✕'; del.style.opacity = '0';
     card.addEventListener('mouseenter', () => del.style.opacity = '1');
     card.addEventListener('mouseleave', () => del.style.opacity = '0');

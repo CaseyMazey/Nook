@@ -604,7 +604,9 @@
             <button class="btn-primary" id="add-project-btn">+ Neues Projekt</button>
           </div>
         </div>
-        <div id="project-grid"></div>
+        <div class="dash-content">
+          <div id="project-grid"></div>
+        </div>
       </section>
 
       <!-- FLASHCARDS -->
@@ -613,23 +615,25 @@
           <h1 class="view-title">Karteikarten</h1>
           <button class="btn-primary" id="add-subject-btn">+ Fach</button>
         </div>
-        <div id="flashcard-layout">
-          <div id="subject-list-panel" class="panel">
-            <div class="panel-header"><span class="panel-label">Fächer</span></div>
-            <div id="subject-list"></div>
-            <div id="subject-empty" class="empty-state">Noch keine Fächer angelegt.</div>
-          </div>
-          <div id="flashcard-content">
-            <div id="flashcard-placeholder" class="empty-state full">Fach auswählen um Karteikarten zu sehen.</div>
-            <div id="flashcard-subject-view" class="hidden">
-              <div id="subject-detail-header">
-                <div>
-                  <h2 id="subject-detail-title" class="view-title" style="font-size:20px;"></h2>
-                  <div id="subject-detail-meta" style="font-size:13px;color:var(--text-3);margin-top:2px;"></div>
+        <div class="dash-content">
+          <div id="flashcard-layout">
+            <div id="subject-list-panel" class="panel">
+              <div class="panel-header"><span class="panel-label">Fächer</span></div>
+              <div id="subject-list"></div>
+              <div id="subject-empty" class="empty-state">Noch keine Fächer angelegt.</div>
+            </div>
+            <div id="flashcard-content">
+              <div id="flashcard-placeholder" class="empty-state full">Fach auswählen um Karteikarten zu sehen.</div>
+              <div id="flashcard-subject-view" class="hidden">
+                <div id="subject-detail-header">
+                  <div>
+                    <h2 id="subject-detail-title" class="view-title" style="font-size:20px;"></h2>
+                    <div id="subject-detail-meta" style="font-size:13px;color:var(--text-3);margin-top:2px;"></div>
+                  </div>
+                  <button class="btn-primary" id="add-group-btn">+ Themengruppe</button>
                 </div>
-                <button class="btn-primary" id="add-group-btn">+ Themengruppe</button>
+                <div id="group-list"></div>
               </div>
-              <div id="group-list"></div>
             </div>
           </div>
         </div>
@@ -650,31 +654,33 @@
             <button class="btn-primary" id="add-guide-category-btn">+ Kategorie</button>
           </div>
         </div>
-        <div id="guide-layout">
-          <div id="guide-category-list-panel" class="panel">
-            <div class="panel-header"><span class="panel-label">Kategorien</span></div>
-            <div id="guide-category-list"></div>
-            <div id="guide-category-empty" class="empty-state">Noch keine Kategorien.</div>
-          </div>
-          <div id="guide-content">
-            <div id="guide-placeholder" class="empty-state full" style="flex-direction:column;gap:8px;">
-              <svg width="40" height="40" viewBox="0 0 40 40" fill="none" opacity=".25">
-                <rect x="6" y="4" width="28" height="32" rx="4" stroke="currentColor" stroke-width="2"/>
-                <path d="M12 13h16M12 19h16M12 25h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-              </svg>
-              <span>Kategorie auswählen oder suchen</span>
+        <div class="dash-content">
+          <div id="guide-layout">
+            <div id="guide-category-list-panel" class="panel">
+              <div class="panel-header"><span class="panel-label">Kategorien</span></div>
+              <div id="guide-category-list"></div>
+              <div id="guide-category-empty" class="empty-state">Noch keine Kategorien.</div>
             </div>
-            <div id="guide-category-view" class="hidden">
-              <div id="guide-cat-header" class="guide-cat-header"></div>
-              <div id="guide-cat-list" class="guide-cat-list"></div>
+            <div id="guide-content">
+              <div id="guide-placeholder" class="empty-state full" style="flex-direction:column;gap:8px;">
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none" opacity=".25">
+                  <rect x="6" y="4" width="28" height="32" rx="4" stroke="currentColor" stroke-width="2"/>
+                  <path d="M12 13h16M12 19h16M12 25h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                </svg>
+                <span>Kategorie auswählen oder suchen</span>
+              </div>
+              <div id="guide-category-view" class="hidden">
+                <div id="guide-cat-header" class="guide-cat-header"></div>
+                <div id="guide-cat-list" class="guide-cat-list"></div>
+              </div>
+              <div id="guide-detail-view" class="hidden guide-detail-view"></div>
             </div>
-            <div id="guide-detail-view" class="hidden guide-detail-view"></div>
           </div>
         </div>
       </section>
 
       <!-- CALENDAR -->
-      <section id="view-calendar" class="view view-fullbleed">
+      <section id="view-calendar" class="view">
         <div class="view-header">
           <h1 class="view-title" id="cal-title">—</h1>
           <div style="display:flex;gap:8px;align-items:center;">
@@ -683,12 +689,14 @@
             <button class="week-btn" id="cal-next">›</button>
           </div>
         </div>
-        <div id="calendar-grid"></div>
+        <div class="dash-content">
+          <div id="calendar-grid"></div>
+        </div>
       </section>
 
       <!-- BUDGET -->
       <section id="view-budget" class="view">
-        <div id="budget-dashboard">
+        <div id="budget-dashboard" class="dash-content">
 
           <!-- ── HEADER ──────────────────────────────────────── -->
           <div id="budget-header">
@@ -843,6 +851,7 @@
       <!-- SETTINGS -->
       <section id="view-settings" class="view">
         <div class="view-header"><h1 class="view-title">Einstellungen</h1></div>
+        <div class="dash-content">
         <div id="settings-layout">
 
           <div class="settings-col">
@@ -924,7 +933,8 @@
             </div>
           </div>
 
-        </div>
+        </div><!-- /settings-layout -->
+        </div><!-- /dash-content -->
       </section>
 
     </main>

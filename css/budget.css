@@ -47,9 +47,6 @@
 
 /* ── View override ────────────────────────────────────────── */
 #view-budget {
-  background: var(--bg);
-  padding: 0;
-  max-width: none;
   overflow: visible;
 }
 
@@ -57,7 +54,6 @@
 #budget-dashboard {
   max-width: 1440px;
   margin: 0 auto;
-  padding: 28px 40px 48px;
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -442,17 +438,18 @@
 .b-garden-select-btn:hover { background: rgba(175,140,70,0.28); }
 .b-garden-select-arrow { opacity: 0.6; font-size: 10px; }
 
-/* Dropdown */
+/* Emoji in Sparzielliste */
+.budget-goal-emoji { font-size: 15px; line-height: 1; vertical-align: middle; margin-right: 2px; }
+
+/* Dropdown — wird an body angehängt (fixed), umgeht overflow:hidden der Card */
 .b-garden-dropdown {
-  position: absolute;
-  top: 100%;
-  right: 0;
+  position: fixed;  /* wird per JS mit top/right gesetzt */
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
-  z-index: 100;
-  min-width: 200px;
+  z-index: 9999;
+  min-width: 210px;
   overflow: hidden;
 }
 .b-garden-dropdown-item {

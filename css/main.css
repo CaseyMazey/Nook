@@ -316,12 +316,23 @@ ul { list-style: none; }
 
 .view {
   display: none;
-  padding: 36px 40px;
+  padding: 28px 32px 52px;
   max-width: 1500px;
   animation: fadeIn 200ms ease;
 }
 .view.active { display: block; }
-.view-fullbleed { max-width: none; padding: 28px 32px; }
+.view-fullbleed { max-width: none; }
+
+/* ── Dashboard container — unified across all views ──────── */
+/* Applied to the inner content wrapper in each view.        */
+/* Identical to today's #today-main visual appearance.       */
+.dash-content {
+  background: var(--dash-bg);
+  border: 1px solid var(--dash-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--dash-shadow);
+  padding: 24px 22px 28px;
+}
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(4px); }
