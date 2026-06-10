@@ -202,3 +202,141 @@
 }
 .archive-project-row:last-child { border-bottom: none; }
 .archive-project-info { flex: 1; min-width: 0; }
+
+/* =========================
+   VIEW TOGGLE
+========================= */
+.proj-view-toggle {
+  display: flex;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  gap: 0;
+}
+.proj-view-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 30px;
+  background: none;
+  border: none;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: background 120ms, color 120ms;
+}
+.proj-view-btn:hover { background: var(--surface); color: var(--text-2); }
+.proj-view-btn.active { background: var(--surface); color: var(--text); }
+
+/* =========================
+   PROJEKTWALD CONTAINER
+========================= */
+#project-forest {
+  position: relative;
+  width: 100%;
+  min-height: calc(100vh - 120px);
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: #eeeae0;
+}
+[data-theme="dark"] #project-forest { background: #1e2218; }
+
+.forest-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.forest-bg svg { width: 100%; height: 100%; }
+
+.forest-empty {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--text-3);
+  font-size: 14px;
+  text-align: center;
+}
+
+/* =========================
+   BAUM WRAPPER
+========================= */
+.forest-tree-wrap {
+  position: absolute;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: transform 200ms ease;
+  z-index: 2;
+}
+.forest-tree-wrap:hover { transform: translateX(-50%) translateY(-4px); z-index: 10; }
+.forest-tree-wrap.archived { filter: saturate(0.7); }
+
+.forest-tree-svg { line-height: 0; }
+.forest-tree-svg svg { display: block; overflow: visible; }
+
+/* =========================
+   BAUM LABEL
+========================= */
+.forest-tree-label {
+  background: rgba(255,255,255,0.88);
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 8px;
+  padding: 5px 8px;
+  margin-top: -8px;
+  min-width: 90px;
+  max-width: 140px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  backdrop-filter: blur(4px);
+}
+[data-theme="dark"] .forest-tree-label {
+  background: rgba(30,34,24,0.88);
+  border-color: rgba(255,255,255,0.1);
+}
+
+.forest-tree-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  max-width: 120px;
+}
+
+.forest-tree-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.forest-tree-progress {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 3px;
+}
+.forest-tree-bar {
+  flex: 1;
+  height: 3px;
+  background: rgba(0,0,0,0.1);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.forest-tree-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 400ms ease;
+}
+.forest-tree-pct {
+  font-size: 10px;
+  color: var(--text-3);
+  font-family: var(--mono);
+  flex-shrink: 0;
+}
