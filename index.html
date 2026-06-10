@@ -37,7 +37,7 @@
       border-top: 1px solid var(--border);
       margin-top: 4px;
     }
-
+ 
     /* =========================
        BLOCK-ANSICHT — erledigte Tasks
     ========================= */
@@ -46,7 +46,7 @@
       text-decoration: line-through;
       color: var(--text-3);
     }
-
+ 
     /* =========================
        KALENDER — erledigte Task-Pills
     ========================= */
@@ -54,7 +54,7 @@
       opacity: 0.45;
       text-decoration: line-through;
     }
-
+ 
     /* Kalender Day-Modal — erledigte Zeilen */
     .cal-day-ev-row--done {
       opacity: 0.5;
@@ -66,7 +66,7 @@
     .cal-day-section-head--done {
       color: var(--text-3);
     }
-
+ 
     /* Kalender Task-Punkt (Prio-Farbe) im Day-Modal */
     .cal-task-dot {
       display: inline-block;
@@ -80,12 +80,12 @@
     .cal-task-dot[data-prio="1"] { background: var(--prio-1); }
     .cal-task-dot[data-prio="2"] { background: var(--prio-2); }
     .cal-task-dot[data-prio="3"] { background: var(--prio-3); }
-
+ 
     /* =========================
        PROJEKTE — View Layout
     ========================= */
     #view-projects .view-header { margin-bottom: 8px; }
-
+ 
     .project-stats-bar {
       font-size: 12px;
       color: var(--text-3);
@@ -96,7 +96,7 @@
     }
     .proj-stat strong { color: var(--text-2); }
     .proj-stat-sep { color: var(--border-strong); }
-
+ 
     #project-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
@@ -104,7 +104,7 @@
       align-items: start;
       margin-top: 20px;
     }
-
+ 
     .project-empty-state {
       grid-column: 1 / -1;
       text-align: center;
@@ -112,7 +112,7 @@
       color: var(--text-3);
       font-size: 14px;
     }
-
+ 
     /* =========================
        COLLAPSE / EXPAND ANIMATION
     ========================= */
@@ -126,7 +126,7 @@
       max-height: 0;
       opacity: 0;
     }
-
+ 
     /* Chevron */
     .project-chevron {
       display: flex;
@@ -137,7 +137,7 @@
       transition: color 120ms;
     }
     .project-card-header:hover .project-chevron { color: var(--text-2); }
-
+ 
     /* =========================
        ARCHIV MODAL
     ========================= */
@@ -152,7 +152,7 @@
     .archive-project-info { flex: 1; min-width: 0; }
     .archive-project-name { font-size: 14px; font-weight: 500; color: var(--text); }
     .archive-project-meta { font-size: 12px; color: var(--text-3); margin-top: 2px; font-family: var(--mono); }
-
+ 
     /* =========================
        PROJEKT KARTE
     ========================= */
@@ -167,10 +167,10 @@
       border-color: var(--border-strong);
       box-shadow: 0 2px 12px rgba(0,0,0,0.07);
     }
-
+ 
     /* farbiger linker Streifen */
     .project-card { border-left: 3px solid var(--proj-color, #2563eb); }
-
+ 
     .project-card-header {
       display: flex;
       align-items: flex-start;
@@ -205,7 +205,7 @@
       transition: opacity 120ms;
     }
     .project-card:hover .project-card-actions { opacity: 1; }
-
+ 
     /* =========================
        PROGRESS BARS
     ========================= */
@@ -233,7 +233,7 @@
       color: var(--text-3);
       font-size: 11px;
     }
-
+ 
     .project-bar-wrap {
       height: 6px;
       background: var(--bg);
@@ -257,7 +257,7 @@
     .project-bar-fill--extra {
       background: var(--text-3);
     }
-
+ 
     /* =========================
        AUFGABEN IN DER KARTE
     ========================= */
@@ -281,7 +281,7 @@
     .project-task-row.extra .project-task-label {
       font-style: italic;
     }
-
+ 
     .project-task-cb {
       width: 15px;
       height: 15px;
@@ -301,14 +301,14 @@
       flex-shrink: 0;
     }
     .project-task-row:hover .project-task-del { opacity: 1; }
-
+ 
     .project-task-empty {
       font-size: 12px;
       color: var(--text-3);
       padding: 12px 16px;
       font-style: italic;
     }
-
+ 
     .project-section-divider {
       display: flex;
       align-items: center;
@@ -322,7 +322,7 @@
       border-top: 1px dashed var(--border);
       margin-top: 4px;
     }
-
+ 
     /* =========================
        KARTEN-FOOTER
     ========================= */
@@ -351,7 +351,7 @@
       color: var(--text-3);
       border-style: dashed;
     }
-
+ 
     /* =========================
        FARB-PICKER
     ========================= */
@@ -379,9 +379,9 @@
   </style>
 </head>
 <body>
-
+ 
   <div id="app">
-
+ 
     <!-- Sidebar -->
     <nav id="sidebar">
       <div id="sidebar-header">
@@ -396,7 +396,7 @@
           </svg>
         </button>
       </div>
-
+ 
       <ul id="nav-list">
         <li><button class="nav-btn active" data-view="today">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1.5" fill="currentColor"/><rect x="9" y="2" width="5" height="5" rx="1.5" fill="currentColor" opacity=".4"/><rect x="2" y="9" width="5" height="5" rx="1.5" fill="currentColor" opacity=".4"/><rect x="9" y="9" width="5" height="5" rx="1.5" fill="currentColor" opacity=".4"/></svg>
@@ -431,14 +431,14 @@
           Einstellungen
         </button></li>
       </ul>
-
+ 
       <!-- Countdowns — below nav, above footer -->
       <div id="sidebar-countdowns">
         <div id="sidebar-countdowns-label">COUNTDOWNS</div>
         <div id="countdown-display"></div>
         <div id="exam-pill" title="Countdowns verwalten" style="display:none;"></div>
       </div>
-
+ 
       <div id="sidebar-footer">
         <div id="week-nav">
           <button id="prev-week" class="week-btn">‹</button>
@@ -447,13 +447,13 @@
         </div>
       </div>
     </nav>
-
+ 
     <!-- Main -->
     <main id="main">
-
+ 
       <!-- TODAY -->
       <section id="view-today" class="view active">
-
+ 
         <!-- Greeting Header -->
         <div id="today-header">
           <div id="today-greeting-block">
@@ -471,16 +471,16 @@
             <div id="clock-sidebar-panel"></div>
           </div>
         </div>
-
+ 
         <!-- hidden clock-widget: bleibt für JS-Kompatibilität (startClock/stopClock) -->
         <div id="clock-widget" style="display:none;"></div>
-
+ 
         <!-- Haupt-Grid + rechte Sidebar -->
         <div id="today-layout">
-
+ 
           <!-- HAUPTBEREICH -->
           <div id="today-main">
-
+ 
             <!-- Unterrichtsblöcke -->
             <div id="today-blocks-section">
               <div class="today-section-label">UNTERRICHTSBLÖCKE</div>
@@ -490,7 +490,7 @@
                 <span id="blocks-progress-label"></span>
               </div>
             </div>
-
+ 
             <!-- Aufgaben — full width -->
             <div class="panel" id="panel-tasks">
               <div class="panel-header">
@@ -503,10 +503,10 @@
               <ul id="task-list"></ul>
               <div id="task-empty" class="empty-state">Noch keine Aufgaben diese Woche.</div>
             </div>
-
+ 
             <!-- Untere Kacheln -->
             <div id="today-tiles-grid">
-
+ 
               <div class="panel today-tile">
                 <div class="panel-header">
                   <span class="panel-label">Wichtiges</span>
@@ -514,15 +514,15 @@
                 </div>
                 <ul class="note-list" id="note-list-exam"></ul>
               </div>
-
-              <div class="panel today-tile">
+ 
+              <div class="panel today-tile" id="panel-todo">
                 <div class="panel-header">
-                  <span class="panel-label">Fragen für den Unterricht</span>
-                  <button class="icon-btn add-note-btn" data-key="class-questions">+</button>
+                  <span class="panel-label">To Do</span>
+                  <button class="icon-btn" id="add-todo-btn">+</button>
                 </div>
-                <ul class="note-list" id="note-list-questions"></ul>
+                <ul class="checklist" id="todo-list"></ul>
               </div>
-
+ 
               <div class="panel today-tile" id="panel-berichtsheft">
                 <div class="panel-header">
                   <span class="panel-label">Berichtsheft</span>
@@ -539,15 +539,15 @@
                   </div>
                 </div>
               </div>
-
-              <div class="panel today-tile" id="panel-todo">
+ 
+              <div class="panel today-tile">
                 <div class="panel-header">
-                  <span class="panel-label">To Do</span>
-                  <button class="icon-btn" id="add-todo-btn">+</button>
+                  <span class="panel-label">Fragen für den Unterricht</span>
+                  <button class="icon-btn add-note-btn" data-key="class-questions">+</button>
                 </div>
-                <ul class="checklist" id="todo-list"></ul>
+                <ul class="note-list" id="note-list-questions"></ul>
               </div>
-
+ 
               <div class="panel today-tile" id="panel-shopping">
                 <div class="panel-header">
                   <span class="panel-label">Einkaufsliste</span>
@@ -555,7 +555,7 @@
                 </div>
                 <ul class="checklist" id="shopping-list"></ul>
               </div>
-
+ 
               <div class="panel today-tile">
                 <div class="panel-header">
                   <span class="panel-label">Begriffe &amp; Definitionen</span>
@@ -563,19 +563,19 @@
                 </div>
                 <ul class="note-list" id="note-list-terms"></ul>
               </div>
-
+ 
               <!-- Custom Tiles werden per JS angehängt -->
               <div id="custom-tiles"></div>
-
+ 
             </div><!-- /today-tiles-grid -->
-
+ 
             <!-- + Kachel -->
             <div id="today-add-tile-row">
               <button class="btn-ghost" id="add-tile-btn">+ Kachel hinzufügen</button>
             </div>
-
+ 
           </div><!-- /today-main -->
-
+ 
           <!-- RECHTE SIDEBAR -->
           <div id="today-right">
             <div class="panel" id="panel-quicknote">
@@ -587,11 +587,11 @@
             </div>
             <div id="today-mini-cal"></div>
           </div>
-
+ 
         </div><!-- /today-layout -->
-
+ 
       </section>
-
+ 
       <!-- PROJEKTE -->
       <section id="view-projects" class="view">
         <div class="view-header">
@@ -608,7 +608,7 @@
           <div id="project-grid"></div>
         </div>
       </section>
-
+ 
       <!-- FLASHCARDS -->
       <section id="view-flashcards" class="view">
         <div class="view-header">
@@ -638,7 +638,7 @@
           </div>
         </div>
       </section>
-
+ 
       <!-- GUIDES -->
       <section id="view-guides" class="view">
         <div class="view-header">
@@ -678,7 +678,7 @@
           </div>
         </div>
       </section>
-
+ 
       <!-- CALENDAR -->
       <section id="view-calendar" class="view">
         <div class="view-header">
@@ -693,11 +693,11 @@
           <div id="calendar-grid"></div>
         </div>
       </section>
-
+ 
       <!-- BUDGET -->
       <section id="view-budget" class="view">
         <div id="budget-dashboard" class="dash-content">
-
+ 
           <!-- ── HEADER ──────────────────────────────────────── -->
           <div id="budget-header">
             <div id="budget-title-block">
@@ -726,10 +726,10 @@
               </button>
             </div>
           </div>
-
+ 
           <!-- ── 3 COMPACT SUMMARY KARTEN ──────────────────── -->
           <div id="budget-main-cards">
-
+ 
             <!-- Karte 1: Einnahmen -->
             <div class="b-main-card b-main-card--income" id="bmc-income">
               <button class="b-main-card-summary" data-target="bmc-income-detail" data-group="main-cards">
@@ -744,7 +744,7 @@
                 <div class="b-main-card-total" id="b-income-total"></div>
               </div>
             </div>
-
+ 
             <!-- Karte 2: Ausgaben -->
             <div class="b-main-card b-main-card--expense" id="bmc-expense">
               <button class="b-main-card-summary" data-target="bmc-expense-detail" data-group="main-cards">
@@ -759,7 +759,7 @@
                 <div class="b-main-card-total" id="b-expense-total"></div>
               </div>
             </div>
-
+ 
             <!-- Karte 3: Verfügbar -->
             <div class="b-main-card b-main-card--free" id="bmc-free">
               <button class="b-main-card-summary" data-target="bmc-free-detail" data-group="main-cards">
@@ -774,9 +774,9 @@
                 <div id="b-status-inner"></div>
               </div>
             </div>
-
+ 
           </div>
-
+ 
           <!-- ── LIQUIDITÄTSVORSCHAU + FINANZGARTEN ────────────── -->
           <div id="budget-mid-row">
             <div id="budget-liquidity"></div>
@@ -784,10 +784,10 @@
               <div id="budget-garden-card"></div>
             </div>
           </div>
-
+ 
           <!-- ── 3 KARTEN NEBENEINANDER ─────────────────────── -->
           <div id="budget-row3">
-
+ 
             <div class="b-card" id="budget-recurring-card">
               <div class="b-card-header">
                 <button class="b-card-toggle-btn" data-target="budget-recurring-list">
@@ -798,7 +798,7 @@
               </div>
               <div id="budget-recurring-list" class="budget-list"></div>
             </div>
-
+ 
             <div class="b-card" id="budget-onetime-card">
               <div class="b-card-header">
                 <button class="b-card-toggle-btn" data-target="budget-onetime-list">
@@ -809,7 +809,7 @@
               </div>
               <div id="budget-onetime-list" class="budget-list"></div>
             </div>
-
+ 
             <div class="b-card" id="budget-goals-card">
               <div class="b-card-header">
                 <button class="b-card-toggle-btn" data-target="budget-goals-list">
@@ -820,11 +820,11 @@
               </div>
               <div id="budget-goals-list" class="budget-list"></div>
             </div>
-
+ 
           </div>
-
+ 
           <div id="budget-timeline" style="display:none;"></div>
-
+ 
           <!-- Legacy stubs (hidden, referenced by budget.js) -->
           <div style="display:none;">
             <div id="budget-kontostand-card"></div>
@@ -837,13 +837,13 @@
             <button id="add-onetime-btn"></button>
             <button id="add-recurring-btn"></button>
           </div>
-
+ 
           <!-- Legacy kontostand-edit-btn stub -->
           <div style="display:none;"><button id="kontostand-edit-btn"></button></div>
-
+ 
         </div>
       </section>
-
+ 
       <!-- GAMES -->
       <section id="view-games" class="view games-view">
         <h1 class="view-title" style="margin-bottom:20px;">Spiele</h1>
@@ -853,15 +853,15 @@
           <div class="games-hs-panel"></div>
         </div>
       </section>
-
+ 
       <!-- SETTINGS -->
       <section id="view-settings" class="view">
         <div class="view-header"><h1 class="view-title">Einstellungen</h1></div>
         <div class="dash-content">
         <div id="settings-layout">
-
+ 
           <div class="settings-col">
-
+ 
             <!-- NEU: Profil / Benutzername -->
             <div class="panel settings-panel">
               <div class="panel-header"><span class="panel-label">Profil</span></div>
@@ -876,7 +876,7 @@
                   autocomplete="off"/>
               </div>
             </div>
-
+ 
             <div class="panel settings-panel">
               <div class="panel-header"><span class="panel-label">Darstellung</span></div>
               <div class="settings-row">
@@ -884,7 +884,7 @@
                 <label class="toggle"><input type="checkbox" id="setting-darkmode"/><span class="toggle-slider"></span></label>
               </div>
             </div>
-
+ 
             <div class="panel settings-panel">
               <div class="panel-header"><span class="panel-label">Wetter Widget</span></div>
               <div class="settings-row">
@@ -902,7 +902,7 @@
                   autocomplete="off"/>
               </div>
             </div>
-
+ 
             <div class="panel settings-panel">
               <div class="panel-header"><span class="panel-label">Feedback</span></div>
               <div class="settings-row">
@@ -914,13 +914,13 @@
               </div>
             </div>
           </div>
-
+ 
           <div class="settings-col">
             <div class="panel settings-panel">
               <div class="panel-header"><span class="panel-label">Unterrichtsblöcke</span><button class="icon-btn" id="add-block-btn">+</button></div>
               <div id="blocks-settings-list"></div>
             </div>
-
+ 
             <div class="panel settings-panel">
               <div class="panel-header"><span class="panel-label">Daten &amp; Backup</span></div>
               <div class="settings-row">
@@ -938,14 +938,14 @@
               </div>
             </div>
           </div>
-
+ 
         </div><!-- /settings-layout -->
         </div><!-- /dash-content -->
       </section>
-
+ 
     </main>
   </div>
-
+ 
   <!-- Task Modal -->
   <div id="modal-overlay" class="modal-backdrop hidden">
     <div class="modal-box">
@@ -963,7 +963,7 @@
       <div class="modal-actions"><button id="modal-cancel" class="btn-ghost">Abbrechen</button><button id="modal-save" class="btn-primary">Speichern</button></div>
     </div>
   </div>
-
+ 
   <!-- Event Modal -->
   <div id="event-modal-overlay" class="modal-backdrop hidden">
     <div class="modal-box">
@@ -980,7 +980,7 @@
       <div class="modal-actions"><button id="event-modal-cancel" class="btn-ghost">Abbrechen</button><button id="event-modal-save" class="btn-primary">Speichern</button></div>
     </div>
   </div>
-
+ 
   <!-- Note Modal -->
   <div id="note-modal-overlay" class="modal-backdrop hidden">
     <div class="modal-box" style="width:400px;">
@@ -989,7 +989,7 @@
       <div class="modal-actions"><button id="note-modal-cancel" class="btn-ghost">Abbrechen</button><button id="note-modal-save" class="btn-primary">Speichern</button></div>
     </div>
   </div>
-
+ 
   <!-- Custom Tile Modal -->
   <div id="tile-modal-overlay" class="modal-backdrop hidden">
     <div class="modal-box" style="width:420px;">
@@ -1012,7 +1012,7 @@
       <div class="modal-actions"><button id="tile-modal-cancel" class="btn-ghost">Abbrechen</button><button id="tile-modal-save" class="btn-primary">Erstellen</button></div>
     </div>
   </div>
-
+ 
   <!-- Calendar Day Modal -->
   <div id="cal-day-modal-overlay" class="modal-backdrop hidden">
     <div class="modal-box">
@@ -1021,7 +1021,7 @@
       <div class="modal-actions"><button id="cal-day-add-event" class="btn-primary">+ Termin</button></div>
     </div>
   </div>
-
+ 
   <!-- Countdown Modal -->
   <div id="countdown-modal-overlay" class="modal-backdrop hidden">
     <div class="modal-box">
@@ -1030,7 +1030,7 @@
       <p class="modal-hint">Termine als Countdown markieren im Termin-Modal. Hier kannst du auswählen welche angezeigt werden.</p>
     </div>
   </div>
-
+ 
   <!-- Flashcard Modal -->
   <div id="fc-modal-overlay" class="modal-backdrop hidden">
     <div class="modal-box">
@@ -1040,7 +1040,7 @@
       <div class="modal-actions"><button id="fc-modal-cancel" class="btn-ghost">Abbrechen</button><button id="fc-modal-save" class="btn-primary">Speichern</button></div>
     </div>
   </div>
-
+ 
   <!-- Learn Session Modal -->
   <div id="learn-modal-overlay" class="modal-backdrop hidden">
     <div class="modal-box" style="width:520px;">
@@ -1071,7 +1071,7 @@
       </div>
     </div>
   </div>
-
+ 
   <!-- Guide Category Modal -->
   <div id="guide-cat-modal-overlay" class="modal-backdrop hidden">
     <div class="modal-box" style="width:440px;">
@@ -1114,7 +1114,7 @@
       </div>
     </div>
   </div>
-
+ 
   <!-- Guide Entry Modal -->
   <div id="guide-modal-overlay" class="modal-backdrop hidden">
     <div class="modal-box guide-modal-box">
@@ -1157,7 +1157,7 @@
       </div>
     </div>
   </div>
-
+ 
   <!-- Recurring Budget Modal -->
   <div id="recurring-modal-overlay" class="modal-backdrop hidden">
     <div class="modal-box" style="width:440px;">
@@ -1198,7 +1198,7 @@
       <div class="modal-actions"><button id="recurring-cancel" class="btn-ghost">Abbrechen</button><button id="recurring-save" class="btn-primary">Speichern</button></div>
     </div>
   </div>
-
+ 
   <!-- One-time Budget Modal -->
   <div id="onetime-modal-overlay" class="modal-backdrop hidden">
     <div class="modal-box" style="width:420px;">
@@ -1223,7 +1223,7 @@
       <div class="modal-actions"><button id="onetime-cancel" class="btn-ghost">Abbrechen</button><button id="onetime-save" class="btn-primary">Speichern</button></div>
     </div>
   </div>
-
+ 
   <!-- Goal Modal -->
   <div id="goal-modal-overlay" class="modal-backdrop hidden">
     <div class="modal-box" style="width:420px;">
@@ -1244,7 +1244,7 @@
       <div class="modal-actions"><button id="goal-cancel" class="btn-ghost">Abbrechen</button><button id="goal-save" class="btn-primary">Speichern</button></div>
     </div>
   </div>
-
+ 
   <!-- Goal Deposit/Withdraw Modal -->
   <div id="goal-tx-modal-overlay" class="modal-backdrop hidden">
     <div class="modal-box" style="width:360px;">
@@ -1253,7 +1253,7 @@
       <div class="modal-actions"><button id="goal-tx-cancel" class="btn-ghost">Abbrechen</button><button id="goal-tx-save" class="btn-primary">OK</button></div>
     </div>
   </div>
-
+ 
   <!-- Finanzbaum Konfigurations-Modal -->
   <div id="finanzbaum-modal-overlay" class="modal-backdrop hidden">
     <div class="modal-box" style="width:400px;">
@@ -1269,7 +1269,7 @@
       </div>
     </div>
   </div>
-
+ 
   <!-- Kontostand Modal -->
   <div id="kontostand-modal-overlay" class="modal-backdrop hidden">
     <div class="modal-box" style="width:360px;">
@@ -1279,7 +1279,7 @@
       <div class="modal-actions"><button id="kontostand-cancel" class="btn-ghost">Abbrechen</button><button id="kontostand-save" class="btn-primary">Speichern</button></div>
     </div>
   </div>
-
+ 
   <!-- Projekt erstellen / bearbeiten Modal -->
   <div id="project-modal-overlay" class="modal-backdrop hidden">
     <div class="modal-box" style="width:440px;">
@@ -1305,7 +1305,7 @@
       </div>
     </div>
   </div>
-
+ 
   <!-- Projekt-Aufgabe hinzufügen Modal -->
   <div id="project-task-modal-overlay" class="modal-backdrop hidden">
     <div class="modal-box" style="width:400px;">
@@ -1320,7 +1320,7 @@
       </div>
     </div>
   </div>
-
+ 
   <!-- Projekt Archiv Modal -->
   <div id="project-archive-overlay" class="modal-backdrop hidden">
     <div class="modal-box" style="width:580px;max-height:70vh;display:flex;flex-direction:column;">
@@ -1332,7 +1332,7 @@
       <div id="project-archive-list" style="overflow-y:auto;flex:1;"></div>
     </div>
   </div>
-
+ 
   <script src="js/main.js"></script>
   <script src="js/calendar.js"></script>
   <script src="js/today.js"></script>

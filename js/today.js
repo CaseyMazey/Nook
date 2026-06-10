@@ -305,29 +305,35 @@ function renderClock() {
 let sidebarClockInterval = null;
 
 function buildAnalogSVG(now, size) {
-  const cx = size/2, cy = size/2, r = size/2 - 4;
-  const h = now.getHours()%12, mi = now.getMinutes(), s = now.getSeconds();
+  const cx = size/2, cy = size/2, r = size/2 - 3;
+  const h = now.getHours()%12, mi = now.getMinutes();
   const hAngle = (h*30 + mi*0.5)*Math.PI/180 - Math.PI/2;
-  const mAngle = (mi*6 + s*0.1)*Math.PI/180 - Math.PI/2;
+  const mAngle = mi*6*Math.PI/180 - Math.PI/2;
   const hand = (angle, len, stroke, sw) => {
     const x = cx + Math.cos(angle)*len, y = cy + Math.sin(angle)*len;
-    return `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round"/>`;
+    const bx = cx - Math.cos(angle)*(len*0.15), by = cy - Math.sin(angle)*(len*0.15);
+    return `<line x1="${bx.toFixed(1)}" y1="${by.toFixed(1)}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round"/>`;
   };
   let markers = '';
-  for (let i = 0; i < 12; i++) {
-    const a = i*30*Math.PI/180 - Math.PI/2;
-    const isMain = i % 3 === 0;
-    const inner = isMain ? r - 5 : r - 3;
-    const x1 = cx+Math.cos(a)*inner, y1 = cy+Math.sin(a)*inner;
-    const x2 = cx+Math.cos(a)*r,     y2 = cy+Math.sin(a)*r;
-    markers += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="var(--text-3)" stroke-width="${isMain?2:1}"/>`;
+  for (let i = 0; i < 60; i++) {
+    const a = i*6*Math.PI/180 - Math.PI/2;
+    const isHour = i % 5 === 0;
+    const isQuarter = i % 15 === 0;
+    const innerR = isQuarter ? r - 7 : isHour ? r - 5 : r - 2.5;
+    const sw = isQuarter ? 2 : isHour ? 1.5 : 0.8;
+    const col = isHour ? 'var(--text-2)' : 'var(--border-strong)';
+    const x1 = cx+Math.cos(a)*innerR, y1 = cy+Math.sin(a)*innerR;
+    const x2 = cx+Math.cos(a)*r,      y2 = cy+Math.sin(a)*r;
+    markers += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${col}" stroke-width="${sw}"/>`;
   }
   return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="display:block;flex-shrink:0;">
-    <circle cx="${cx}" cy="${cy}" r="${r}" fill="var(--surface)" stroke="var(--border-strong)" stroke-width="1.5"/>
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="var(--surface)" stroke="var(--border)" stroke-width="1"/>
+    <circle cx="${cx}" cy="${cy}" r="${r-0.5}" fill="none" stroke="var(--border-strong)" stroke-width="0.5" opacity="0.5"/>
     ${markers}
-    ${hand(hAngle, r*0.5,  'var(--text)', 2.5)}
-    ${hand(mAngle, r*0.75, 'var(--text)', 1.8)}
-    <circle cx="${cx}" cy="${cy}" r="2.5" fill="var(--text)"/>
+    ${hand(hAngle, r*0.52, 'var(--text)', size > 70 ? 2.5 : 2)}
+    ${hand(mAngle, r*0.72, 'var(--text-2)', size > 70 ? 1.8 : 1.4)}
+    <circle cx="${cx}" cy="${cy}" r="${size > 70 ? 3 : 2}" fill="var(--sage)"/>
+    <circle cx="${cx}" cy="${cy}" r="${size > 70 ? 1.2 : 0.8}" fill="var(--surface)"/>
   </svg>`;
 }
 
@@ -341,7 +347,7 @@ function renderSidebarClock() {
   const dateStr = now.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
   panel.innerHTML = `
-    <div class="clock-analog">${buildAnalogSVG(now, 56)}</div>
+    <div class="clock-analog">${buildAnalogSVG(now, 72)}</div>
     <div class="clock-sidebar-right">
       <div class="clock-sidebar-time">${hh}:${mm}</div>
       <div class="clock-sidebar-weekday">${weekday}</div>
@@ -805,7 +811,210 @@ document.querySelectorAll('.add-note-btn').forEach(btn => {
 });
 
 // =========================
-// CUSTOM TILES
+// KACHEL-DESIGNER
+// Farbe + Dekoration per Kachel, persistiert in tileDesigns{}
+// =========================
+
+const TILE_DESIGN_COLORS = ['#A3B18A', '#EBE4D4', '#C0AC99'];
+const TILE_DESIGN_DECOS  = ['none', 'tape', 'clip', 'corner'];
+
+let tileDesigns = DB.get('tileDesigns', {});
+
+function saveTileDesigns() { DB.set('tileDesigns', tileDesigns); }
+
+function getTileDesign(id) {
+  return tileDesigns[id] || { color: null, deco: 'none' };
+}
+
+/* SVG-Dekorationen — hochwertig, farbadaptiv, ragen über Kartenrand */
+function buildTapeSVG(bg) {
+  // Großes Washi-Tape: ragt nach oben, leicht gedreht, halbtransparent, Papierstruktur
+  return `<svg class="tile-deco-svg deco-tape" width="80" height="36" viewBox="0 0 80 36" fill="none" xmlns="http://www.w3.org/2000/svg" style="transform:rotate(-3deg)">
+    <defs>
+      <filter id="tape-shadow" x="-10%" y="-10%" width="120%" height="130%">
+        <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="rgba(0,0,0,0.18)"/>
+      </filter>
+    </defs>
+    <!-- Tape-Körper: leicht unregelmäßige Kanten via Pfad -->
+    <path d="M2 8 Q0 8 0 10 L0 28 Q0 30 2 30 L78 30 Q80 30 80 28 L80 10 Q80 8 78 8 Z"
+      fill="${bg}" fill-opacity="0.52" filter="url(#tape-shadow)"/>
+    <!-- Weißer Glanzstreifen oben -->
+    <rect x="0" y="8" width="80" height="5" rx="1" fill="white" fill-opacity="0.20"/>
+    <!-- Papierstruktur-Linien -->
+    <line x1="0" y1="14" x2="80" y2="14" stroke="white" stroke-opacity="0.14" stroke-width="1"/>
+    <line x1="0" y1="20" x2="80" y2="20" stroke="white" stroke-opacity="0.10" stroke-width="0.7"/>
+    <line x1="0" y1="26" x2="80" y2="26" stroke="white" stroke-opacity="0.08" stroke-width="0.7"/>
+    <!-- Rand unten dezent dunkler -->
+    <path d="M2 28 Q0 30 2 30 L78 30 Q80 30 80 28" stroke="rgba(0,0,0,0.08)" stroke-width="0.5" fill="none"/>
+  </svg>`;
+}
+
+function buildClipSVG(bg) {
+  // Einfache Büroklammer — eine einzelne Linie mit leichtem Bogen, ragt über Kartenrand
+  const c = bg === '#A3B18A' ? 'rgba(50,70,35,0.48)'
+           : bg === '#C0AC99' ? 'rgba(75,50,30,0.43)'
+           : 'rgba(65,55,40,0.40)';
+  return `<svg class="tile-deco-svg deco-clip" width="14" height="32" viewBox="0 0 14 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M7 0 C7 0 13 4 13 10 C13 16 13 22 13 28" stroke="${c}" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  </svg>`;
+}
+
+function buildCornerOverlay(bg) {
+  // Farbadaptiver Gradient — passender dunklerer Ton zur Kachelfarbe, nur oben rechts, halb so groß
+  let color;
+  if (bg === '#A3B18A')      color = '50,70,35';   // grün
+  else if (bg === '#C0AC99') color = '75,50,30';   // braun
+  else                       color = '65,55,40';   // beige/default
+  return `<div class="tile-deco-corner-gradient" style="background: radial-gradient(circle at top right, rgba(${color},0.28) 0%, rgba(${color},0.12) 40%, rgba(${color},0.03) 70%, transparent 85%);" aria-hidden="true"></div>`;
+}
+
+function applyTileDecoration(el, design) {
+  el.querySelectorAll('.tile-deco-svg, .tile-deco-corner-gradient').forEach(d => d.remove());
+  const bg = design.color || el.style.background || '#EBE4D4';
+  switch (design.deco) {
+    case 'tape':   el.insertAdjacentHTML('beforeend', buildTapeSVG(bg));       break;
+    case 'clip':   el.insertAdjacentHTML('beforeend', buildClipSVG(bg));       break;
+    case 'corner': el.insertAdjacentHTML('beforeend', buildCornerOverlay(bg));   break;
+  }
+}
+
+// Globales Floating-Popup (einmalig erstellt, wird repositioniert)
+let _designerPopup = null;
+let _designerCloseHandler = null;
+
+function getOrCreateDesignerPopup() {
+  if (_designerPopup) return _designerPopup;
+  _designerPopup = document.createElement('div');
+  _designerPopup.className = 'tile-designer-popup';
+  document.body.appendChild(_designerPopup);
+  return _designerPopup;
+}
+
+function openTileDesigner(el, id, currentDesign) {
+  // Alle anderen schließen
+  const popup = getOrCreateDesignerPopup();
+  popup.classList.remove('open');
+
+  // Inhalt aufbauen
+  popup.innerHTML = `
+    <div class="tile-designer-section-label">Farbe</div>
+    <div class="tile-color-row">
+      ${TILE_DESIGN_COLORS.map(c =>
+        `<button class="tile-color-swatch${currentDesign.color === c ? ' active' : ''}" data-color="${c}" style="background:${c}" title="${c}"></button>`
+      ).join('')}
+    </div>
+    <div class="tile-designer-section-label">Dekoration</div>
+    <div class="tile-deco-row">
+      ${[['none','Kein Extra'],['tape','Washi-Tape'],['clip','Büroklammer'],['corner','Abgeknickte Ecke']].map(([val,label]) =>
+        `<label class="tile-deco-option${(currentDesign.deco||'none') === val ? ' selected' : ''}">
+          <input type="radio" name="deco-${id}" value="${val}"${(currentDesign.deco||'none') === val ? ' checked' : ''}> ${label}
+        </label>`
+      ).join('')}
+    </div>`;
+
+  // Farbe wählen
+  popup.querySelectorAll('.tile-color-swatch').forEach(sw => {
+    sw.addEventListener('click', e => {
+      e.stopPropagation();
+      const color = sw.dataset.color;
+      tileDesigns[id] = { ...getTileDesign(id), color };
+      saveTileDesigns();
+      applyDesignToTile(el, id);
+      popup.querySelectorAll('.tile-color-swatch').forEach(s => s.classList.toggle('active', s.dataset.color === color));
+    });
+  });
+
+  popup.querySelectorAll('input[type="radio"]').forEach(radio => {
+    radio.addEventListener('change', e => {
+      e.stopPropagation();
+      tileDesigns[id] = { ...getTileDesign(id), deco: radio.value };
+      saveTileDesigns();
+      applyDesignToTile(el, id);
+      popup.querySelectorAll('.tile-deco-option').forEach(o => o.classList.toggle('selected', o.querySelector('input').value === radio.value));
+    });
+  });
+
+  popup.addEventListener('click', e => e.stopPropagation());
+
+  // Popup öffnen und positionieren (fixed, relativ zu Pinsel-Button)
+  popup.classList.add('open');
+
+  const btn = el.querySelector('.tile-design-btn');
+  if (btn) {
+    const btnRect = btn.getBoundingClientRect();
+    const popupW  = 220;
+    const popupH  = 200; // Schätzwert
+
+    let left = btnRect.right - popupW;
+    let top  = btnRect.top - popupH - 8;
+
+    // Fallback: nach unten öffnen wenn nicht genug Platz nach oben
+    if (top < 8) top = btnRect.bottom + 8;
+    // Kein Abschneiden am rechten Rand
+    if (left < 8) left = 8;
+    // Kein Abschneiden am rechten Bildschirmrand
+    if (left + popupW > window.innerWidth - 8) left = window.innerWidth - popupW - 8;
+
+    popup.style.left = left + 'px';
+    popup.style.top  = top  + 'px';
+  }
+
+  // Schließen bei Klick außerhalb
+  if (_designerCloseHandler) document.removeEventListener('click', _designerCloseHandler);
+  _designerCloseHandler = (ev) => {
+    if (!popup.contains(ev.target)) {
+      popup.classList.remove('open');
+      document.removeEventListener('click', _designerCloseHandler);
+      _designerCloseHandler = null;
+    }
+  };
+  setTimeout(() => document.addEventListener('click', _designerCloseHandler), 10);
+}
+
+function applyDesignToTile(el, id) {
+  const design = getTileDesign(id);
+  if (design.color) {
+    el.style.background = design.color;
+    const textCol = tileTextColor(design.color);
+    el.querySelectorAll('.panel-label, .note-item, .checklist-item span, .bericht-col-label').forEach(t => t.style.color = textCol);
+  }
+  applyTileDecoration(el, design);
+}
+
+function addDesignBtnToTile(el, id) {
+  if (el.querySelector('.tile-design-btn')) return;
+  // overflow:visible damit SVGs über den Rand ragen können
+  el.style.overflow = 'visible';
+  const btn = document.createElement('button');
+  btn.className = 'tile-design-btn';
+  btn.title = 'Design anpassen';
+  btn.innerHTML = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+    <path d="M11.5 2.5l2 2L6 12H4v-2L11.5 2.5z"/>
+    <path d="M2 14h12" stroke-opacity="0.4"/>
+  </svg>`;
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    openTileDesigner(el, id, getTileDesign(id));
+  });
+  el.appendChild(btn);
+  applyDesignToTile(el, id);
+}
+
+function initBuiltinTileDesigners() {
+  const builtinIds = [
+    { el: () => document.querySelector('#today-tiles-grid > .panel.today-tile:nth-child(1)'), id: 'builtin-wichtiges' },
+    { el: () => document.querySelector('#today-tiles-grid > .panel.today-tile:nth-child(2)'), id: 'builtin-fragen' },
+    { el: () => document.getElementById('panel-berichtsheft'),                                id: 'builtin-berichtsheft' },
+    { el: () => document.getElementById('panel-todo'),                                        id: 'builtin-todo' },
+    { el: () => document.getElementById('panel-shopping'),                                    id: 'builtin-shopping' },
+    { el: () => document.querySelector('#today-tiles-grid > .panel.today-tile:nth-child(6)'), id: 'builtin-begriffe' },
+  ];
+  builtinIds.forEach(({ el, id }) => {
+    const node = el();
+    if (node) addDesignBtnToTile(node, id);
+  });
+}
+
 // =========================
 
 // Tile-Farbpalette (3 Töne, zufällig bei Erstellung zugewiesen)
@@ -876,16 +1085,18 @@ function renderCustomTiles() {
         tile.items = tile.items.map(s => ({ id: crypto.randomUUID(), text: s, done: false }));
         saveCustomTiles();
       }
+      const tileBg = tile.color || TILE_COLORS[0];
       const ul = document.createElement('ul'); ul.className = 'checklist';
       (tile.items || []).forEach((item, idx) => {
         const li = document.createElement('li'); li.className = 'checklist-item' + (item.done ? ' done' : '');
         li.style.color = textCol;
-        const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = item.done;
-        cb.addEventListener('change', () => { item.done = cb.checked; saveCustomTiles(); renderCustomTiles(); });
+        const cbWrap = makePaperCbElement(item.done, tileBg, () => {
+          item.done = !item.done; saveCustomTiles(); renderCustomTiles();
+        });
         const span = document.createElement('span'); span.textContent = item.text || item;
         const del  = document.createElement('button'); del.className = 'note-del'; del.textContent = '✕';
         del.addEventListener('click', () => { tile.items.splice(idx, 1); saveCustomTiles(); renderCustomTiles(); });
-        li.append(cb, span, del); ul.appendChild(li);
+        li.append(cbWrap, span, del); ul.appendChild(li);
       });
       if ((tile.items || []).length === 0) {
         const empty = document.createElement('div'); empty.className = 'empty-state'; empty.textContent = 'Noch keine Einträge.';
@@ -894,6 +1105,8 @@ function renderCustomTiles() {
       panel.appendChild(ul);
     }
     container.appendChild(panel);
+    // Designer-Button für Custom-Kachel
+    addDesignBtnToTile(panel, tile.id);
   });
 }
 
@@ -942,6 +1155,65 @@ function refreshTodayTextareas() {
 }
 
 // =========================
+// PAPER CHECKBOX — Bullet-Journal-Stil
+// Ersetzt native <input type="checkbox"> durch kreisförmige Papier-Marker
+// =========================
+
+// Berechnet Kreis-Akzentfarbe passend zur Kachelfarbe
+function paperCbColor(bg) {
+  if (!bg || bg === '#EBE4D4') return { ring: 'rgba(120,100,60,0.30)', check: 'rgba(80,65,35,0.70)', fill: 'rgba(120,100,60,0.12)' };
+  if (bg === '#A3B18A')        return { ring: 'rgba(50,75,35,0.32)',  check: 'rgba(45,68,28,0.75)', fill: 'rgba(50,75,35,0.14)' };
+  if (bg === '#C0AC99')        return { ring: 'rgba(90,65,40,0.30)',  check: 'rgba(75,50,30,0.72)', fill: 'rgba(90,65,40,0.12)' };
+  // Fallback für andere Farben: nimm text-3-ähnliche Töne
+  return { ring: 'rgba(100,85,65,0.30)', check: 'rgba(70,55,40,0.72)', fill: 'rgba(100,85,65,0.12)' };
+}
+
+function buildPaperCb(done, bg) {
+  const c = paperCbColor(bg);
+  if (done) {
+    // Gefüllter Kreis mit Haken
+    return `<span class="paper-cb paper-cb--done" aria-label="erledigt">
+      <svg width="17" height="17" viewBox="0 0 17 17" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="8.5" cy="8.5" r="7.5" fill="${c.fill}" stroke="${c.ring}" stroke-width="1.2"/>
+        <polyline points="4.5,8.5 7.5,11.5 12.5,6" stroke="${c.check}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </span>`;
+  } else {
+    // Leerer Kreis
+    return `<span class="paper-cb" aria-label="offen">
+      <svg width="17" height="17" viewBox="0 0 17 17" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="8.5" cy="8.5" r="7.5" fill="none" stroke="${c.ring}" stroke-width="1.2"/>
+      </svg>
+    </span>`;
+  }
+}
+
+function makePaperCbElement(done, bg, onToggle) {
+  const wrap = document.createElement('span');
+  wrap.className = 'paper-cb-wrap';
+  wrap.innerHTML = buildPaperCb(done, bg);
+  wrap.addEventListener('click', (e) => { e.stopPropagation(); onToggle(); });
+  return wrap;
+}
+
+// Hilfsfunktion: Kachelfarbe für ein DOM-Element ermitteln
+function getTileBgForEl(el) {
+  let node = el;
+  while (node && node !== document.body) {
+    const bg = node.style.background || node.style.backgroundColor;
+    if (bg && (bg.startsWith('#') || bg.startsWith('rgb'))) return bg;
+    // Kachel-Farben aus CSS-Klassen
+    const cls = node.className || '';
+    if (cls.includes('today-tile') || cls.includes('panel')) {
+      const computed = getComputedStyle(node).backgroundColor;
+      if (computed && computed !== 'rgba(0, 0, 0, 0)') return computed;
+    }
+    node = node.parentElement;
+  }
+  return '#EBE4D4';
+}
+
+// =========================
 // GENERAL TO DO TILE
 // =========================
 
@@ -949,14 +1221,19 @@ function saveTodos() { DB.set('generalTodos', generalTodos); }
 function renderTodos() {
   const ul = document.getElementById('todo-list'); if (!ul) return;
   ul.innerHTML = '';
+  const tileBg = (() => {
+    const panel = document.getElementById('panel-todo');
+    return panel ? (panel.style.background || tileDesigns['builtin-todo']?.color || '#EBE4D4') : '#EBE4D4';
+  })();
   (generalTodos || []).forEach((item, idx) => {
     const li = document.createElement('li'); li.className = 'checklist-item' + (item.done ? ' done' : '');
-    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = item.done;
-    cb.addEventListener('change', () => { item.done = cb.checked; saveTodos(); renderTodos(); });
+    const cbWrap = makePaperCbElement(item.done, tileBg, () => {
+      item.done = !item.done; saveTodos(); renderTodos();
+    });
     const span = document.createElement('span'); span.textContent = item.text;
     const del  = document.createElement('button'); del.className = 'note-del'; del.textContent = '✕';
     del.addEventListener('click', () => { generalTodos.splice(idx, 1); saveTodos(); renderTodos(); });
-    li.append(cb, span, del); ul.appendChild(li);
+    li.append(cbWrap, span, del); ul.appendChild(li);
   });
   if (!generalTodos || generalTodos.length === 0) {
     const empty = document.createElement('div'); empty.className = 'empty-state'; empty.textContent = 'Noch keine Einträge.';
@@ -980,14 +1257,19 @@ function saveShoppingList() { DB.set('shoppingList', shoppingList); }
 function renderShoppingList() {
   const ul = document.getElementById('shopping-list'); if (!ul) return;
   ul.innerHTML = '';
+  const tileBg = (() => {
+    const panel = document.getElementById('panel-shopping');
+    return panel ? (panel.style.background || tileDesigns['builtin-shopping']?.color || '#EBE4D4') : '#EBE4D4';
+  })();
   (shoppingList || []).forEach((item, idx) => {
     const li = document.createElement('li'); li.className = 'checklist-item' + (item.done ? ' done' : '');
-    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = item.done;
-    cb.addEventListener('change', () => { item.done = cb.checked; saveShoppingList(); renderShoppingList(); });
+    const cbWrap = makePaperCbElement(item.done, tileBg, () => {
+      item.done = !item.done; saveShoppingList(); renderShoppingList();
+    });
     const span = document.createElement('span'); span.textContent = item.text;
     const del  = document.createElement('button'); del.className = 'note-del'; del.textContent = '✕';
     del.addEventListener('click', () => { shoppingList.splice(idx, 1); saveShoppingList(); renderShoppingList(); });
-    li.append(cb, span, del); ul.appendChild(li);
+    li.append(cbWrap, span, del); ul.appendChild(li);
   });
   if (!shoppingList || shoppingList.length === 0) {
     const empty = document.createElement('div'); empty.className = 'empty-state'; empty.textContent = 'Noch keine Einträge.';
@@ -1030,3 +1312,4 @@ renderWeather();
 startSidebarClock();
 renderMiniCal();
 updateThemeIcon();
+initBuiltinTileDesigners();
