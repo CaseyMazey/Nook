@@ -1,10 +1,7 @@
 /* =============================================================
-   PROJECTS.CSS — Muted cozy palette
-   (Project-specific styles live in index.html <style> block
-    which references CSS vars; this file handles any overrides)
+   PROJECTS.CSS
 ============================================================= */
 
-/* Consistent project grid */
 #project-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
@@ -13,10 +10,10 @@
   margin-top: 20px;
 }
 
-/* Card shell */
 .project-card {
   background: var(--surface);
   border: 1px solid var(--border);
+  border-left: 3px solid var(--proj-color, #2563eb);
   border-radius: var(--radius-lg);
   overflow: hidden;
   transition: box-shadow var(--transition), border-color var(--transition);
@@ -24,9 +21,9 @@
 }
 .project-card:hover { box-shadow: var(--shadow-sm); border-color: var(--border-strong); }
 
-/* Progress bar fill — use CSS var from inline style, fallback sage */
+/* Progress bar fills */
 .project-bar-fill { background: var(--proj-color, var(--sage)); }
-.project-bar-fill.complete { background: var(--sage-dark); }
+.project-bar-fill.complete { background: #16a34a; }
 .project-bar-fill--extra { background: var(--text-3); }
 
 /* Checkbox accent */
@@ -44,3 +41,164 @@
 /* Archive rows */
 .archive-project-name { font-size: 14px; font-weight: 600; color: var(--text); }
 .archive-project-meta { font-size: 12px; color: var(--text-3); margin-top: 2px; font-family: var(--mono); }
+
+/* --- Startdatum --- */
+.project-start-date {
+  font-size: 11px;
+  color: var(--text-3);
+  margin-top: 3px;
+  font-family: var(--mono);
+}
+
+/* --- Offene Aufgaben Badge (nur collapsed) --- */
+.project-open-badge {
+  display: none;
+  flex-direction: column;
+  margin-top: 4px;
+}
+.project-card.collapsed .project-open-badge { display: flex; }
+.proj-open-count {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--proj-color, #2563eb);
+  font-family: var(--mono);
+}
+.proj-open-detail {
+  font-size: 10px;
+  color: var(--text-3);
+  font-family: var(--mono);
+}
+
+/* --- Aufgaben-Row-Actions --- */
+.project-task-row-actions {
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 120ms;
+  flex-shrink: 0;
+}
+.project-task-row:hover .project-task-row-actions { opacity: 1; }
+
+/* Inline-Edit Input */
+.project-task-inline-input {
+  font-size: 13px;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  padding: 2px 6px;
+  width: 100%;
+  font-family: inherit;
+  outline: none;
+}
+.project-task-inline-input:focus { border-color: var(--proj-color, #2563eb); }
+
+/* --- Footer-Buttons --- */
+.project-add-task-btn--sub {
+  color: var(--text-3);
+  border-style: dotted;
+  font-style: italic;
+}
+.project-add-task-btn--archive {
+  color: var(--text-3);
+  border-color: transparent;
+  margin-left: auto;
+  font-size: 11px;
+  opacity: 0.7;
+}
+.project-add-task-btn--archive:hover { opacity: 1; color: var(--text-2); }
+
+/* --- Unterprojekte --- */
+.subproject-wrap {
+  border-top: 1px dashed var(--border);
+  margin-top: 4px;
+}
+
+.subproject-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 16px 7px 12px;
+  transition: background 120ms;
+}
+.subproject-header:hover { background: var(--bg); }
+
+.subproject-chevron {
+  display: flex;
+  align-items: center;
+  color: var(--text-3);
+  flex-shrink: 0;
+}
+
+.subproject-title {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-2);
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.subproject-progress {
+  font-size: 11px;
+  color: var(--text-3);
+  font-family: var(--mono);
+  flex-shrink: 0;
+}
+
+.subproject-bar-wrap {
+  width: 60px;
+  height: 4px;
+  background: var(--bg);
+  border-radius: 99px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.subproject-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 400ms ease;
+  background: var(--proj-color, #2563eb);
+}
+
+.subproject-actions {
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 120ms;
+  flex-shrink: 0;
+}
+.subproject-header:hover .subproject-actions { opacity: 1; }
+
+.subproject-body {
+  overflow: hidden;
+  max-height: 1500px;
+  transition: max-height 240ms ease, opacity 180ms ease;
+  opacity: 1;
+}
+.subproject-body.collapsed { max-height: 0; opacity: 0; }
+
+/* --- Bestätigungs-Modal --- */
+.proj-confirm-danger { background: #dc2626 !important; }
+
+/* --- Verschieben Modal --- */
+#proj-move-modal-overlay .modal-hint {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 12px;
+  display: block;
+}
+
+/* Archive rows (keep) */
+.archive-project-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.archive-project-row:last-child { border-bottom: none; }
+.archive-project-info { flex: 1; min-width: 0; }

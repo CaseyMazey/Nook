@@ -1296,6 +1296,10 @@
         <input type="text" class="modal-input" id="project-modal-desc" placeholder="Worum geht es?"/>
       </div>
       <div class="modal-row">
+        <label>Startdatum <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-3)">(optional)</span></label>
+        <input type="date" class="modal-input" id="project-modal-startdate" style="max-width:170px;"/>
+      </div>
+      <div class="modal-row">
         <label>Farbe</label>
         <div id="project-color-picker"></div>
       </div>
@@ -1332,7 +1336,56 @@
       <div id="project-archive-list" style="overflow-y:auto;flex:1;"></div>
     </div>
   </div>
- 
+
+  <!-- Unterprojekt hinzufügen Modal -->
+  <div id="proj-sub-modal-overlay" class="modal-backdrop hidden">
+    <div class="modal-box" style="width:400px;">
+      <div class="modal-head">
+        <span id="proj-sub-modal-title">Unterprojekt hinzufügen</span>
+        <button class="modal-x" id="proj-sub-modal-close">✕</button>
+      </div>
+      <input type="text" class="modal-input" id="proj-sub-input" placeholder="z.B. UI Redesign, Backend, Testing..." autocomplete="off"/>
+      <div class="modal-actions">
+        <button id="proj-sub-modal-cancel" class="btn-ghost">Abbrechen</button>
+        <button id="proj-sub-modal-save" class="btn-primary">Erstellen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bestätigungs-Modal (Archivieren / Löschen) -->
+  <div id="proj-confirm-overlay" class="modal-backdrop hidden">
+    <div class="modal-box" style="width:400px;">
+      <div class="modal-head">
+        <span id="proj-confirm-title">Bestätigen</span>
+        <button class="modal-x" id="proj-confirm-x">✕</button>
+      </div>
+      <p class="modal-hint" id="proj-confirm-message" style="margin:4px 0 20px;"></p>
+      <div class="modal-actions">
+        <button id="proj-confirm-cancel" class="btn-ghost">Abbrechen</button>
+        <button id="proj-confirm-ok" class="btn-primary">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Aufgabe verschieben Modal -->
+  <div id="proj-move-modal-overlay" class="modal-backdrop hidden">
+    <div class="modal-box" style="width:380px;">
+      <div class="modal-head">
+        <span>Aufgabe verschieben</span>
+        <button class="modal-x" id="proj-move-modal-close">✕</button>
+      </div>
+      <span class="modal-hint" id="proj-move-task-name" style="display:block;margin-bottom:12px;"></span>
+      <div class="modal-row">
+        <label>Verschieben nach</label>
+        <select class="modal-input" id="proj-move-target" style="cursor:pointer;"></select>
+      </div>
+      <div class="modal-actions">
+        <button id="proj-move-modal-cancel" class="btn-ghost">Abbrechen</button>
+        <button id="proj-move-modal-save" class="btn-primary">Verschieben</button>
+      </div>
+    </div>
+  </div>
+
   <script src="js/main.js"></script>
   <script src="js/calendar.js"></script>
   <script src="js/today.js"></script>
