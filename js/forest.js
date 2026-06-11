@@ -503,7 +503,7 @@ function renderProjectDetail() {
   document.getElementById('proj-detail-name').textContent   = p.name;
   document.getElementById('proj-detail-desc').textContent   = p.description || '';
   document.getElementById('proj-detail-status').textContent = p.archived ? 'Archiviert' : 'Aktives Projekt';
-  document.getElementById('proj-detail-status').className   = 'proj-detail-status-badge' + (p.archived ? ' archived' : '');
+  document.getElementById('proj-detail-status').className   = 'pdt-status-badge' + (p.archived ? ' archived' : '');
 
   const allTasks = (p.subprojects||[]).flatMap(sp => sp.tasks||[]);
   const total    = allTasks.length;
@@ -517,9 +517,17 @@ function renderProjectDetail() {
   document.getElementById('proj-detail-startdate').textContent  = formatStartDate(p) || '—';
   document.getElementById('proj-detail-color-dot').style.background = p.color || '#4a7c59';
 
-  // Baum — STABIL: keine Größenänderung, feste Slots
+  // Neue Felder
+  const colorNameEl = document.getElementById('proj-detail-color-name');
+  if (colorNameEl) colorNameEl.textContent = p.color || '#4a7c59';
+  const statusValEl = document.getElementById('proj-detail-status-val');
+  if (statusValEl) { statusValEl.textContent = p.archived ? 'Archiviert' : 'Aktiv'; statusValEl.style.color = p.archived ? '#d97706' : '#16a34a'; }
+  const subValEl = document.getElementById('proj-detail-sub-val');
+  if (subValEl) subValEl.textContent = p.subprojects.length;
+
+  // Baum
   const treeContainer = document.getElementById('proj-detail-tree');
-  const W = 520, H = 420; // feste Größe für stabile Slots
+  const W = 520, H = 480;
   treeContainer.style.width  = W + 'px';
   treeContainer.style.height = H + 'px';
   treeContainer.innerHTML = drawDetailTree(p, W, H, detailSubLayer * 7);
@@ -784,4 +792,14 @@ document.getElementById('proj-detail-more-branches').addEventListener('click', (
 });
 document.getElementById('proj-detail-add-branch').addEventListener('click', () => {
   if (currentDetailProject) openAddSubprojectModal(currentDetailProject.id);
+});
+// Neuer sichtbarer "Ast hinzufügen" Button
+const _addBranchVisible = document.getElementById('proj-detail-add-branch-visible');
+if (_addBranchVisible) _addBranchVisible.addEventListener('click', () => {
+  if (currentDetailProject) openAddSubprojectModal(currentDetailProject.id);
+});
+// Bearbeiten Button
+const _editBtn = document.getElementById('proj-detail-edit-btn');
+if (_editBtn) _editBtn.addEventListener('click', () => {
+  if (currentDetailProject) openProjectModal(currentDetailProject);
 });

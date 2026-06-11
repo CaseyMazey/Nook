@@ -617,75 +617,132 @@
           <div id="project-forest" style="display:none;"></div>
           <!-- Detailansicht — innerhalb der normalen View, Sidebar bleibt sichtbar -->
           <div id="view-project-detail" style="display:none;">
-            <!-- Topbar -->
-            <div class="proj-detail-topbar">
-              <button class="proj-detail-back-btn" id="proj-detail-back">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+
+            <!-- TOOLBAR — schlank, nur Navigation + Edit -->
+            <div class="pdt-toolbar">
+              <button class="pdt-back-btn" id="proj-detail-back">
+                <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M9 3L4 7.5 9 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 Zurück zum Wald
               </button>
-              <div style="display:flex;gap:8px;align-items:center;">
-                <button class="btn-ghost" id="proj-detail-more-branches" style="display:none;font-size:12px;"></button>
-                <button class="btn-ghost" id="proj-detail-add-branch" style="font-size:12px;">+ Ast hinzufügen</button>
+              <div class="pdt-toolbar-right">
+                <button class="pdt-action-btn" id="proj-detail-edit-btn" title="Projekt bearbeiten">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9.5 2.5l2 2L4 12H2v-2L9.5 2.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+                  Bearbeiten
+                </button>
+                <button class="pdt-action-btn pdt-menu-btn" id="proj-detail-menu-btn" title="Mehr Optionen">
+                  <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="3" r="1.2" fill="currentColor"/><circle cx="7.5" cy="7.5" r="1.2" fill="currentColor"/><circle cx="7.5" cy="12" r="1.2" fill="currentColor"/></svg>
+                </button>
+                <!-- versteckt aber noch im DOM für JS-Kompatibilität -->
+                <button id="proj-detail-more-branches" style="display:none;"></button>
+                <button id="proj-detail-add-branch" style="display:none;">+ Ast hinzufügen</button>
               </div>
             </div>
 
-            <!-- Hero: Landschaft + Baum + Infos -->
-            <div class="proj-detail-hero">
-              <!-- Hintergrundbild -->
-              <div class="proj-detail-hero-bg">
-                <img src="img/landscape.jpg" alt="" class="proj-detail-landscape"/>
-                <div class="proj-detail-hero-overlay"></div>
+            <!-- HERO — großer immersiver Bereich -->
+            <div class="pdt-hero">
+              <!-- Hintergrundbild (optional, wenn vorhanden) -->
+              <div class="pdt-hero-bg">
+                <img src="img/landscape.jpg" alt="" class="pdt-landscape" onerror="this.style.display='none'"/>
+                <div class="pdt-hero-overlay"></div>
               </div>
 
-              <!-- Links: Projektinfos -->
-              <div class="proj-detail-hero-left">
-                <div class="proj-detail-status-badge" id="proj-detail-status">Aktives Projekt</div>
-                <h1 class="proj-detail-name" id="proj-detail-name"></h1>
-                <p class="proj-detail-desc" id="proj-detail-desc"></p>
-                <div class="proj-detail-progress-block">
-                  <div class="proj-detail-progress-row">
-                    <span>Fortschritt</span>
-                    <strong id="proj-detail-pct">0%</strong>
+              <!-- LINKS: Hauptprojektinfo -->
+              <div class="pdt-left">
+                <div class="pdt-status-badge" id="proj-detail-status">Aktives Projekt</div>
+
+                <h1 class="pdt-project-name" id="proj-detail-name"></h1>
+
+                <p class="pdt-project-desc" id="proj-detail-desc"></p>
+
+                <div class="pdt-progress-section">
+                  <div class="pdt-progress-label-row">
+                    <span class="pdt-progress-label">Fortschritt</span>
+                    <strong class="pdt-progress-pct" id="proj-detail-pct">0%</strong>
                   </div>
-                  <div class="proj-detail-bar-wrap"><div class="proj-detail-bar-fill" id="proj-detail-bar-fill"></div></div>
-                  <div class="proj-detail-counts">
+                  <div class="pdt-progress-track">
+                    <div class="pdt-progress-fill" id="proj-detail-bar-fill"></div>
+                  </div>
+                  <div class="pdt-progress-meta">
                     <span id="proj-detail-task-count"></span>
-                    <span class="proj-stat-sep">·</span>
+                    <span class="pdt-meta-sep">·</span>
                     <span id="proj-detail-sub-count"></span>
                   </div>
                 </div>
               </div>
 
-              <!-- Mitte: Baum -->
-              <div class="proj-detail-tree-wrap">
+              <!-- MITTE: Baum -->
+              <div class="pdt-tree-col">
                 <div id="proj-detail-tree"></div>
               </div>
 
-              <!-- Rechts: Info-Karte -->
-              <div class="proj-detail-info-card">
-                <div style="font-size:12px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Projektinfos</div>
-                <div class="proj-detail-info-row">
-                  <span class="proj-detail-info-dot" id="proj-detail-color-dot"></span>
-                  <span class="proj-detail-info-label">Projektfarbe</span>
+              <!-- RECHTS: Projektinfos-Karte -->
+              <div class="pdt-info-card">
+                <div class="pdt-info-card-title">Projektinfos</div>
+
+                <div class="pdt-info-item">
+                  <div class="pdt-info-icon">
+                    <span class="pdt-color-dot" id="proj-detail-color-dot"></span>
+                  </div>
+                  <div class="pdt-info-content">
+                    <div class="pdt-info-key">Projektfarbe</div>
+                    <div class="pdt-info-val" id="proj-detail-color-name">—</div>
+                  </div>
                 </div>
-                <div class="proj-detail-info-row">
-                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1" y="2" width="11" height="10" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M4 1v2M9 1v2M1 5h11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-                  <span class="proj-detail-info-label" id="proj-detail-startdate"></span>
+
+                <div class="pdt-info-item">
+                  <div class="pdt-info-icon">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="2.5" width="12" height="10.5" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M4.5 1v3M9.5 1v3M1 6.5h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+                  </div>
+                  <div class="pdt-info-content">
+                    <div class="pdt-info-key">Gestartet</div>
+                    <div class="pdt-info-val" id="proj-detail-startdate">—</div>
+                  </div>
                 </div>
-                <div class="proj-detail-info-quote">"Große Dinge entstehen aus vielen kleinen Schritten."</div>
+
+                <div class="pdt-info-item">
+                  <div class="pdt-info-icon">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.3"/><path d="M7 4v3l2 2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+                  </div>
+                  <div class="pdt-info-content">
+                    <div class="pdt-info-key">Status</div>
+                    <div class="pdt-info-val pdt-status-val" id="proj-detail-status-val">Aktiv</div>
+                  </div>
+                </div>
+
+                <div class="pdt-info-item">
+                  <div class="pdt-info-icon">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1.5L8.8 5.2l4.2.6-3 2.9.7 4.1L7 10.8l-3.7 2 .7-4.1-3-2.9 4.2-.6L7 1.5Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
+                  </div>
+                  <div class="pdt-info-content">
+                    <div class="pdt-info-key">Unterprojekte</div>
+                    <div class="pdt-info-val" id="proj-detail-sub-val">—</div>
+                  </div>
+                </div>
+
+                <div class="pdt-info-divider"></div>
+
+                <div class="pdt-info-quote">
+                  <svg width="16" height="12" viewBox="0 0 16 12" fill="none" style="flex-shrink:0;opacity:0.35;margin-top:2px;"><path d="M0 12V7.5C0 3.36 2.4 1.14 7.2 0l.8 1.5C5.2 2.3 3.6 3.6 3.2 6H6V12H0ZM10 12V7.5C10 3.36 12.4 1.14 17.2 0l.8 1.5C15.2 2.3 13.6 3.6 13.2 6H16V12H10Z" fill="currentColor"/></svg>
+                  <span>Große Dinge entstehen aus vielen kleinen Schritten.</span>
+                </div>
               </div>
             </div>
 
-            <!-- Kacheln -->
-            <div class="proj-detail-tiles-section">
-              <div class="proj-detail-tiles-header">
-                <div>
-                  <div class="proj-detail-tiles-title">Äste &amp; Aufgaben</div>
-                  <div class="proj-detail-tiles-sub">Unterprojekte und Aufgaben dieses Projekts</div>
+            <!-- AUFGABENBEREICH -->
+            <div class="pdt-tasks-section">
+              <div class="pdt-tasks-header">
+                <div class="pdt-tasks-header-left">
+                  <div class="pdt-tasks-title">Äste &amp; Aufgaben</div>
+                  <div class="pdt-tasks-sub">Unterprojekte und Aufgaben dieses Projekts</div>
                 </div>
+                <button class="pdt-add-branch-btn" id="proj-detail-add-branch-visible">
+                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v11M1 6.5h11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+                  Ast hinzufügen
+                </button>
               </div>
-              <div id="proj-detail-tiles" class="proj-detail-tiles-grid"></div>
+              <div id="proj-detail-tiles" class="pdt-tiles-grid"></div>
             </div>
+
           </div>
         </div>
       </section>

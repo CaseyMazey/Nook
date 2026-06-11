@@ -342,217 +342,297 @@
 }
 
 /* =========================
-   PROJEKT DETAILANSICHT
+   PROJEKT DETAILANSICHT — Neustruktur
 ========================= */
-#proj-detail-overlay { background: var(--bg); }
 
-.proj-detail-topbar {
+/* Kein overflow im Detailbereich */
+#view-project-detail { width: 100%; }
+
+/* ── TOOLBAR ── */
+.pdt-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 28px;
-  border-bottom: 1px solid var(--border);
-  position: sticky;
-  top: 0;
-  background: var(--bg);
-  z-index: 10;
+  padding: 10px 28px 14px;
 }
-.proj-detail-back-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  color: var(--text-3);
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: var(--radius-sm);
+.pdt-back-btn {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 13px; color: var(--text-3);
+  background: none; border: none; cursor: pointer;
+  padding: 5px 8px; border-radius: var(--radius-sm);
   transition: color 120ms, background 120ms;
 }
-.proj-detail-back-btn:hover { color: var(--text); background: var(--surface); }
+.pdt-back-btn:hover { color: var(--text); background: var(--surface); }
+.pdt-toolbar-right { display: flex; align-items: center; gap: 8px; }
+.pdt-action-btn {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12.5px; color: var(--text-2);
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 5px 12px;
+  cursor: pointer; transition: all 120ms;
+}
+.pdt-action-btn:hover { border-color: var(--border-strong); color: var(--text); }
+.pdt-menu-btn { padding: 5px 10px; }
 
-/* Hero → siehe unten (mit Landschaftshintergrund) */
-
-/* Kacheln-Bereich */
-.proj-detail-tiles-section { padding: 0 28px 40px; }
-.proj-detail-tiles-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
-.proj-detail-tiles-title { font-size: 16px; font-weight: 600; color: var(--text); }
-.proj-detail-tiles-sub { font-size: 12px; color: var(--text-3); margin-top: 2px; }
-
-.proj-detail-tiles-grid {
+/* ── HERO ── */
+.pdt-hero {
+  position: relative;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 14px;
+  grid-template-columns: 30% 40% 30%;
+  min-height: 660px;
+  align-items: start;
+  overflow: hidden;
+  background: linear-gradient(160deg, var(--surface) 0%, var(--bg) 100%);
+  border-radius: var(--radius-lg);
+  margin: 0 0 0 0;
 }
 
-/* Einzelne Kachel */
+/* Hintergrundbild */
+.pdt-hero-bg {
+  position: absolute; inset: 0;
+  pointer-events: none; z-index: 0; overflow: hidden;
+  border-radius: var(--radius-lg);
+}
+.pdt-landscape {
+  width: 100%; height: 100%;
+  object-fit: cover; object-position: center 55%;
+  opacity: 0.18; filter: saturate(0.75) blur(0.5px);
+}
+.pdt-hero-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom,
+    rgba(var(--bg-rgb,248,245,240),0.15) 0%,
+    rgba(var(--bg-rgb,248,245,240),0.5) 100%);
+}
+
+/* Alle 3 Spalten über dem Hintergrund */
+.pdt-left, .pdt-tree-col, .pdt-info-card { position: relative; z-index: 1; }
+
+/* ── LINKS: Projektinfo ── */
+.pdt-left {
+  padding: 36px 20px 36px 32px;
+  display: flex; flex-direction: column; gap: 20px;
+}
+
+.pdt-status-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.12em;
+  color: #16a34a; background: rgba(22,163,74,0.1);
+  border-radius: 99px; padding: 3px 12px; width: fit-content;
+}
+.pdt-status-badge.archived { color: #d97706; background: rgba(217,119,6,0.1); }
+.pdt-status-badge::before { content: '●'; font-size: 6px; }
+
+.pdt-project-name {
+  font-size: 52px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.08;
+  margin: 0;
+  letter-spacing: -0.02em;
+  text-shadow: 0 1px 12px rgba(255,255,255,0.55);
+}
+[data-theme="dark"] .pdt-project-name { text-shadow: none; }
+
+.pdt-project-desc {
+  font-size: 14px; color: var(--text-3);
+  line-height: 1.7; margin: 0;
+  max-width: 280px;
+}
+
+/* Fortschritt */
+.pdt-progress-section { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.pdt-progress-label-row { display: flex; justify-content: space-between; align-items: baseline; }
+.pdt-progress-label { font-size: 12px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; }
+.pdt-progress-pct { font-size: 22px; font-weight: 700; color: var(--text); }
+.pdt-progress-track {
+  height: 8px; background: rgba(0,0,0,0.08);
+  border-radius: 99px; overflow: hidden;
+}
+.pdt-progress-fill { height: 100%; border-radius: 99px; transition: width 600ms ease; }
+.pdt-progress-meta {
+  display: flex; gap: 6px;
+  font-size: 13px; color: var(--text-2); font-family: var(--mono);
+}
+.pdt-meta-sep { color: var(--text-3); }
+
+/* ── MITTE: Baum ── */
+.pdt-tree-col {
+  display: flex; align-items: flex-end; justify-content: center;
+  padding: 16px 0 0;
+  min-height: 620px;
+  overflow: visible;
+}
+#proj-detail-tree { overflow: visible; display: block; line-height: 0; }
+#proj-detail-tree svg { display: block; overflow: visible; }
+
+/* ── RECHTS: Info-Karte ── */
+.pdt-info-card {
+  margin: 28px 28px 0 12px;
+  background: rgba(255,252,248,0.88);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(180,150,100,0.2);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  display: flex; flex-direction: column; gap: 0;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+}
+[data-theme="dark"] .pdt-info-card {
+  background: rgba(26,30,20,0.88);
+  border-color: rgba(255,255,255,0.08);
+}
+
+.pdt-info-card-title {
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.12em;
+  color: var(--text-3); margin-bottom: 16px;
+}
+
+.pdt-info-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(0,0,0,0.055);
+}
+.pdt-info-item:last-of-type { border-bottom: none; }
+[data-theme="dark"] .pdt-info-item { border-bottom-color: rgba(255,255,255,0.06); }
+
+.pdt-info-icon {
+  width: 20px; display: flex; align-items: center;
+  justify-content: center; flex-shrink: 0;
+  color: var(--text-3); margin-top: 1px;
+}
+.pdt-color-dot { width: 13px; height: 13px; border-radius: 50%; display: block; }
+
+.pdt-info-content { display: flex; flex-direction: column; gap: 1px; }
+.pdt-info-key { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; }
+.pdt-info-val { font-size: 13.5px; font-weight: 500; color: var(--text); margin-top: 2px; }
+.pdt-status-val { color: #16a34a; }
+
+.pdt-info-divider { height: 1px; background: var(--border); margin: 14px 0; }
+
+.pdt-info-quote {
+  display: flex; gap: 10px; align-items: flex-start;
+  font-size: 12.5px; color: var(--text-3);
+  font-style: italic; line-height: 1.6;
+  margin-top: 4px;
+}
+
+/* ── AUFGABENBEREICH ── */
+.pdt-tasks-section {
+  padding: 28px 28px 40px;
+  /* kein border-top — weicher Übergang */
+  background: linear-gradient(to bottom, var(--bg) 0%, var(--bg) 100%);
+}
+
+.pdt-tasks-header {
+  display: flex; align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.pdt-tasks-header-left { display: flex; flex-direction: column; gap: 3px; }
+.pdt-tasks-title { font-size: 18px; font-weight: 600; color: var(--text); }
+.pdt-tasks-sub { font-size: 12px; color: var(--text-3); }
+
+.pdt-add-branch-btn {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12.5px; color: var(--text-2);
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 6px 14px;
+  cursor: pointer; transition: all 120ms; flex-shrink: 0;
+}
+.pdt-add-branch-btn:hover { border-color: var(--border-strong); color: var(--text); background: var(--bg); }
+
+/* ── AUFGABENKACHELN — luftiger ── */
+.pdt-tiles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+/* Kachel */
 .detail-tile {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  transition: box-shadow 150ms;
+  transition: box-shadow 150ms, border-color 150ms;
 }
-.detail-tile:hover { box-shadow: var(--shadow-sm); }
+.detail-tile:hover { box-shadow: var(--shadow-sm); border-color: var(--border-strong); }
 
-.detail-tile-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px 8px; }
-.detail-tile-title { font-size: 13px; font-weight: 600; color: var(--text); }
+.detail-tile-head {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px 10px;
+}
+.detail-tile-title { font-size: 14px; font-weight: 600; color: var(--text); }
 .detail-tile-meta { font-size: 11px; color: var(--text-3); font-family: var(--mono); flex-shrink: 0; }
 
-.detail-tile-bar-wrap { height: 3px; background: var(--bg); margin: 0 14px 10px; border-radius: 99px; overflow: hidden; }
+/* Breitere, sichtbarere Progressbar */
+.detail-tile-bar-wrap {
+  height: 5px; background: var(--bg);
+  margin: 0 18px 14px; border-radius: 99px; overflow: hidden;
+}
 .detail-tile-bar-fill { height: 100%; border-radius: 99px; transition: width 400ms; }
 
-.detail-tile-tasks { border-top: 1px solid var(--border); padding: 4px 0 6px; }
-.detail-tile-empty { font-size: 12px; color: var(--text-3); padding: 10px 14px; font-style: italic; }
+/* Aufgabenliste */
+.detail-tile-tasks { border-top: 1px solid var(--border); padding: 6px 0 8px; }
+.detail-tile-empty { font-size: 12.5px; color: var(--text-3); padding: 12px 18px; font-style: italic; }
 
 .detail-tile-task-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 14px;
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 18px;
   transition: background 100ms;
 }
 .detail-tile-task-row:hover { background: var(--bg); }
 .detail-tile-task-row.done .detail-tile-task-label { text-decoration: line-through; color: var(--text-3); }
-.detail-tile-task-row.done { opacity: 0.6; }
+.detail-tile-task-row.done { opacity: 0.58; }
 
 .detail-tile-task-label {
-  flex: 1;
-  font-size: 12px;
-  color: var(--text);
-  line-height: 1.4;
-  cursor: pointer;
-  transition: color 100ms;
+  flex: 1; font-size: 13px; color: var(--text);
+  line-height: 1.45; cursor: pointer; transition: color 100ms;
 }
-.detail-tile-task-label:hover { color: var(--sage-dark); }
-
+.detail-tile-task-label:hover { color: var(--sage-dark, #3d6b4a); }
 .detail-tile-extra-badge { font-size: 10px; color: var(--text-3); flex-shrink: 0; }
-.detail-task-has-detail { color: var(--text-3); margin-left: 4px; font-size: 16px; line-height: 1; vertical-align: middle; }
+.detail-task-has-detail { color: var(--text-3); margin-left: 4px; font-size: 15px; line-height: 1; vertical-align: middle; }
 
 .detail-tile-add-btn {
-  width: 100%;
-  text-align: left;
-  padding: 7px 14px;
-  font-size: 12px;
-  color: var(--text-3);
-  background: none;
-  border: none;
+  width: 100%; text-align: left;
+  padding: 9px 18px; font-size: 12.5px; color: var(--text-3);
+  background: none; border: none;
   border-top: 1px dashed var(--border);
-  cursor: pointer;
-  transition: color 120ms, background 120ms;
+  cursor: pointer; transition: color 120ms, background 120ms;
 }
 .detail-tile-add-btn:hover { color: var(--text); background: var(--bg); }
 
-/* Aufgaben-Checkliste im Detail-Modal */
+/* Checkliste im Task-Modal */
 .task-cl-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--border); }
 .task-cl-row:last-child { border-bottom: none; }
 .task-cl-label { flex: 1; font-size: 13px; color: var(--text); }
 .task-cl-row.done .task-cl-label { text-decoration: line-through; color: var(--text-3); }
 
-/* =========================
-   DETAILANSICHT HERO MIT LANDSCHAFTSHINTERGRUND
-========================= */
-.proj-detail-hero {
-  position: relative;
-  display: grid;
-  grid-template-columns: 260px 1fr 200px;
-  gap: 20px;
-  padding: 32px 28px 28px;
-  min-height: 420px;
-  align-items: start;
-  overflow: hidden;
+/* ── WALD ── */
+#project-forest {
+  position: relative; width: 100%;
+  height: calc(100vh - 138px);
+  overflow: hidden; border-radius: var(--radius-lg);
+  background: #eeeae0;
 }
+[data-theme="dark"] #project-forest { background: #1e2218; }
 
-/* Hintergrundbild-Schicht */
-.proj-detail-hero-bg {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-}
-.proj-detail-landscape {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center 60%;
-  opacity: 0.2;
-  filter: saturate(0.75) blur(0.5px);
-}
-.proj-detail-hero-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    to bottom,
-    rgba(var(--bg-rgb, 248,245,240), 0.25) 0%,
-    rgba(var(--bg-rgb, 248,245,240), 0.55) 100%
-  );
-}
+/* Waldbaum SVG skalierung */
+.forest-tree-svg svg { width: 100%; height: auto; display: block; overflow: visible; }
 
-/* Alle Hero-Kinder über dem Hintergrund */
-.proj-detail-hero-left,
-.proj-detail-tree-wrap,
-.proj-detail-info-card { position: relative; z-index: 1; }
+/* Leaf/Apple Hover */
+.detail-leaf, .detail-apple { transition: opacity 100ms, filter 100ms; }
+.detail-leaf:hover, .detail-apple:hover { opacity: 0.82; filter: brightness(1.14); }
 
-/* Info-Karte — Glasmorphism-Effekt passend zur Landschaft */
-.proj-detail-info-card {
-  background: rgba(255,255,255,0.82);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255,255,255,0.6);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
-}
-[data-theme="dark"] .proj-detail-info-card {
-  background: rgba(30,35,25,0.82);
-  border-color: rgba(255,255,255,0.1);
-}
-
-/* Projektname bekommt leichten Textschatten für Lesbarkeit über Bild */
-.proj-detail-name {
-  text-shadow: 0 1px 8px rgba(255,255,255,0.6);
-}
-[data-theme="dark"] .proj-detail-name { text-shadow: none; }
-
-/* Fortschrittsbalken — passende Breite */
-.proj-detail-bar-wrap { max-width: 220px; }
-
-/* Baum-Container: feste Größe damit Slots stabil bleiben */
-.proj-detail-tree-wrap {
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  min-height: 420px;
-}
-#proj-detail-tree { overflow: visible; }
-
-/* Toggle-Select Buttons (Kern / Extra) */
+/* Toggle Buttons */
 .toggle-select-btn {
-  font-size: 12px;
-  padding: 4px 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: none;
-  color: var(--text-3);
-  cursor: pointer;
-  transition: all 120ms;
+  font-size: 12px; padding: 4px 12px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: none; color: var(--text-3); cursor: pointer; transition: all 120ms;
 }
-.toggle-select-btn.active {
-  background: var(--sage, #5a9467);
-  color: #fff;
-  border-color: var(--sage, #5a9467);
-}
-
-/* Detail-Hero Basis-Klassen (ergänzt) */
-.proj-detail-hero-left { display: flex; flex-direction: column; gap: 14px; padding-top: 8px; }
-.proj-detail-status-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #16a34a; background: rgba(22,163,74,0.1); border-radius: 99px; padding: 3px 10px; width: fit-content; }
-.proj-detail-status-badge.archived { color: #d97706; background: rgba(217,119,6,0.1); }
-.proj-detail-status-badge::before { content: '●'; font-size: 7px; }
-.proj-detail-desc { font-size: 14px; color: var(--text-3); line-height: 1.6; margin: 0; }
-.proj-detail-progress-block { display: flex; flex-direction: column; gap: 6px; }
-.proj-detail-progress-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-2); }
-.proj-detail-bar-wrap { height: 7px; background: var(--border); border-radius: 99px; overflow: hidden; max-width: 220px; }
-.proj-detail-bar-fill { height: 100%; border-radius: 99px; transition: width 500ms ease; }
-.proj-detail-counts { font-size: 12px; color: var(--text-3); font-family: var(--mono); display: flex; gap: 6px; }
-.proj-detail-info-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-2); }
-.proj-detail-info-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
-.proj-detail-info-label { color: var(--text-2); font-size: 13px; }
-.proj-detail-info-quote { font-size: 12px; color: var(--text-3); font-style: italic; line-height: 1.5; margin-top: 8px; border-top: 1px solid var(--border); padding-top: 12px; }
+.toggle-select-btn.active { background: var(--sage,#5a9467); color:#fff; border-color: var(--sage,#5a9467); }
