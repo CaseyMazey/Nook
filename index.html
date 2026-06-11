@@ -615,6 +615,78 @@
         <div class="dash-content">
           <div id="project-grid"></div>
           <div id="project-forest" style="display:none;"></div>
+          <!-- Detailansicht — innerhalb der normalen View, Sidebar bleibt sichtbar -->
+          <div id="view-project-detail" style="display:none;">
+            <!-- Topbar -->
+            <div class="proj-detail-topbar">
+              <button class="proj-detail-back-btn" id="proj-detail-back">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Zurück zum Wald
+              </button>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <button class="btn-ghost" id="proj-detail-more-branches" style="display:none;font-size:12px;"></button>
+                <button class="btn-ghost" id="proj-detail-add-branch" style="font-size:12px;">+ Ast hinzufügen</button>
+              </div>
+            </div>
+
+            <!-- Hero: Landschaft + Baum + Infos -->
+            <div class="proj-detail-hero">
+              <!-- Hintergrundbild -->
+              <div class="proj-detail-hero-bg">
+                <img src="img/landscape.jpg" alt="" class="proj-detail-landscape"/>
+                <div class="proj-detail-hero-overlay"></div>
+              </div>
+
+              <!-- Links: Projektinfos -->
+              <div class="proj-detail-hero-left">
+                <div class="proj-detail-status-badge" id="proj-detail-status">Aktives Projekt</div>
+                <h1 class="proj-detail-name" id="proj-detail-name"></h1>
+                <p class="proj-detail-desc" id="proj-detail-desc"></p>
+                <div class="proj-detail-progress-block">
+                  <div class="proj-detail-progress-row">
+                    <span>Fortschritt</span>
+                    <strong id="proj-detail-pct">0%</strong>
+                  </div>
+                  <div class="proj-detail-bar-wrap"><div class="proj-detail-bar-fill" id="proj-detail-bar-fill"></div></div>
+                  <div class="proj-detail-counts">
+                    <span id="proj-detail-task-count"></span>
+                    <span class="proj-stat-sep">·</span>
+                    <span id="proj-detail-sub-count"></span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Mitte: Baum -->
+              <div class="proj-detail-tree-wrap">
+                <div id="proj-detail-tree"></div>
+              </div>
+
+              <!-- Rechts: Info-Karte -->
+              <div class="proj-detail-info-card">
+                <div style="font-size:12px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Projektinfos</div>
+                <div class="proj-detail-info-row">
+                  <span class="proj-detail-info-dot" id="proj-detail-color-dot"></span>
+                  <span class="proj-detail-info-label">Projektfarbe</span>
+                </div>
+                <div class="proj-detail-info-row">
+                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1" y="2" width="11" height="10" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M4 1v2M9 1v2M1 5h11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+                  <span class="proj-detail-info-label" id="proj-detail-startdate"></span>
+                </div>
+                <div class="proj-detail-info-quote">"Große Dinge entstehen aus vielen kleinen Schritten."</div>
+              </div>
+            </div>
+
+            <!-- Kacheln -->
+            <div class="proj-detail-tiles-section">
+              <div class="proj-detail-tiles-header">
+                <div>
+                  <div class="proj-detail-tiles-title">Äste &amp; Aufgaben</div>
+                  <div class="proj-detail-tiles-sub">Unterprojekte und Aufgaben dieses Projekts</div>
+                </div>
+              </div>
+              <div id="proj-detail-tiles" class="proj-detail-tiles-grid"></div>
+            </div>
+          </div>
         </div>
       </section>
  
@@ -1321,12 +1393,23 @@
  
   <!-- Projekt-Aufgabe hinzufügen Modal -->
   <div id="project-task-modal-overlay" class="modal-backdrop hidden">
-    <div class="modal-box" style="width:400px;">
+    <div class="modal-box" style="width:420px;">
       <div class="modal-head">
         <span id="project-task-modal-title">Aufgabe hinzufügen</span>
         <button class="modal-x" id="project-task-modal-close">✕</button>
       </div>
       <input type="text" class="modal-input" id="project-task-input" placeholder="Aufgabe beschreiben..." autocomplete="off"/>
+      <div class="modal-row" style="margin-top:10px;">
+        <label>Beschreibung <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-3)">(optional)</span></label>
+        <textarea class="modal-input" id="project-task-desc-input" placeholder="Details, Links, Notizen..." rows="2" style="resize:vertical;min-height:52px;"></textarea>
+      </div>
+      <div class="modal-row">
+        <label>Typ</label>
+        <div style="display:flex;gap:6px;">
+          <button class="toggle-select-btn active" id="task-type-core">Kernaufgabe</button>
+          <button class="toggle-select-btn" id="task-type-extra">✦ Extra</button>
+        </div>
+      </div>
       <div class="modal-actions">
         <button id="project-task-modal-cancel" class="btn-ghost">Abbrechen</button>
         <button id="project-task-modal-save" class="btn-primary">Hinzufügen</button>
@@ -1391,6 +1474,37 @@
       <div class="modal-actions">
         <button id="proj-move-modal-cancel" class="btn-ghost">Abbrechen</button>
         <button id="proj-move-modal-save" class="btn-primary">Verschieben</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Projekt Detailansicht (Fullscreen Overlay) -->
+  <!-- Aufgaben Detail Modal -->
+  <div id="task-detail-overlay" class="modal-backdrop hidden" style="z-index:300;">
+    <div class="modal-box" style="width:480px;max-height:80vh;overflow-y:auto;">
+      <div class="modal-head">
+        <div>
+          <div style="font-size:10px;color:var(--text-3);margin-bottom:2px;" id="task-detail-sp"></div>
+          <span id="task-detail-title" style="font-size:15px;font-weight:500;"></span>
+        </div>
+        <button class="modal-x" id="task-detail-close">✕</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+        <input type="checkbox" id="task-detail-done-cb" class="project-task-cb" style="width:17px;height:17px;"/>
+        <label for="task-detail-done-cb" style="font-size:13px;color:var(--text-2);cursor:pointer;">Erledigt</label>
+        <span class="detail-tile-extra-badge" id="task-detail-type" style="margin-left:auto;"></span>
+      </div>
+      <div class="modal-row">
+        <label>Beschreibung</label>
+        <textarea class="modal-input" id="task-detail-desc" placeholder="Beschreibung, Links, Notizen..." rows="3" style="resize:vertical;"></textarea>
+      </div>
+      <div class="modal-row">
+        <label>Checkliste</label>
+        <div id="task-detail-checklist" style="margin-bottom:8px;"></div>
+        <div style="display:flex;gap:6px;">
+          <input type="text" class="modal-input" id="task-detail-cl-input" placeholder="Neuer Punkt..." autocomplete="off" style="flex:1;"/>
+          <button class="btn-ghost" id="task-detail-add-cl" style="flex-shrink:0;">+ Hinzufügen</button>
+        </div>
       </div>
     </div>
   </div>

@@ -819,7 +819,8 @@ document.getElementById('project-task-modal-save').addEventListener('click', () 
   const proj = projects.find(p => p.id === addTaskTargetProjectId);
   if (!proj) return;
 
-  const newTask = { id: crypto.randomUUID(), text, done: false, isExtra: addTaskIsExtra, completedAt: null };
+  const descVal = (document.getElementById("project-task-desc-input") || {value:""}).value.trim();
+  const newTask = { id: crypto.randomUUID(), text, description: descVal, done: false, isExtra: addTaskIsExtra, completedAt: null, checklist: [] };
 
   if (addTaskTargetSubprojectId) {
     const sp = (proj.subprojects || []).find(s => s.id === addTaskTargetSubprojectId);
@@ -829,7 +830,8 @@ document.getElementById('project-task-modal-save').addEventListener('click', () 
     saveCollapseState();
     proj.tasks.push(newTask);
   }
-
+  saveProjects(); closeAddTaskModal(); renderProjects();
+  if (typeof currentDetailProject !== "undefined" && currentDetailProject && currentDetailProject.id === addTaskTargetProjectId) renderProjectDetail();
   saveProjects(); closeAddTaskModal(); renderProjects();
 });
 

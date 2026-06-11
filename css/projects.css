@@ -340,3 +340,219 @@
   font-family: var(--mono);
   flex-shrink: 0;
 }
+
+/* =========================
+   PROJEKT DETAILANSICHT
+========================= */
+#proj-detail-overlay { background: var(--bg); }
+
+.proj-detail-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 28px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 10;
+}
+.proj-detail-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-3);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  transition: color 120ms, background 120ms;
+}
+.proj-detail-back-btn:hover { color: var(--text); background: var(--surface); }
+
+/* Hero → siehe unten (mit Landschaftshintergrund) */
+
+/* Kacheln-Bereich */
+.proj-detail-tiles-section { padding: 0 28px 40px; }
+.proj-detail-tiles-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+.proj-detail-tiles-title { font-size: 16px; font-weight: 600; color: var(--text); }
+.proj-detail-tiles-sub { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+
+.proj-detail-tiles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+/* Einzelne Kachel */
+.detail-tile {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: box-shadow 150ms;
+}
+.detail-tile:hover { box-shadow: var(--shadow-sm); }
+
+.detail-tile-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px 8px; }
+.detail-tile-title { font-size: 13px; font-weight: 600; color: var(--text); }
+.detail-tile-meta { font-size: 11px; color: var(--text-3); font-family: var(--mono); flex-shrink: 0; }
+
+.detail-tile-bar-wrap { height: 3px; background: var(--bg); margin: 0 14px 10px; border-radius: 99px; overflow: hidden; }
+.detail-tile-bar-fill { height: 100%; border-radius: 99px; transition: width 400ms; }
+
+.detail-tile-tasks { border-top: 1px solid var(--border); padding: 4px 0 6px; }
+.detail-tile-empty { font-size: 12px; color: var(--text-3); padding: 10px 14px; font-style: italic; }
+
+.detail-tile-task-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  transition: background 100ms;
+}
+.detail-tile-task-row:hover { background: var(--bg); }
+.detail-tile-task-row.done .detail-tile-task-label { text-decoration: line-through; color: var(--text-3); }
+.detail-tile-task-row.done { opacity: 0.6; }
+
+.detail-tile-task-label {
+  flex: 1;
+  font-size: 12px;
+  color: var(--text);
+  line-height: 1.4;
+  cursor: pointer;
+  transition: color 100ms;
+}
+.detail-tile-task-label:hover { color: var(--sage-dark); }
+
+.detail-tile-extra-badge { font-size: 10px; color: var(--text-3); flex-shrink: 0; }
+.detail-task-has-detail { color: var(--text-3); margin-left: 4px; font-size: 16px; line-height: 1; vertical-align: middle; }
+
+.detail-tile-add-btn {
+  width: 100%;
+  text-align: left;
+  padding: 7px 14px;
+  font-size: 12px;
+  color: var(--text-3);
+  background: none;
+  border: none;
+  border-top: 1px dashed var(--border);
+  cursor: pointer;
+  transition: color 120ms, background 120ms;
+}
+.detail-tile-add-btn:hover { color: var(--text); background: var(--bg); }
+
+/* Aufgaben-Checkliste im Detail-Modal */
+.task-cl-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--border); }
+.task-cl-row:last-child { border-bottom: none; }
+.task-cl-label { flex: 1; font-size: 13px; color: var(--text); }
+.task-cl-row.done .task-cl-label { text-decoration: line-through; color: var(--text-3); }
+
+/* =========================
+   DETAILANSICHT HERO MIT LANDSCHAFTSHINTERGRUND
+========================= */
+.proj-detail-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: 260px 1fr 200px;
+  gap: 20px;
+  padding: 32px 28px 28px;
+  min-height: 420px;
+  align-items: start;
+  overflow: hidden;
+}
+
+/* Hintergrundbild-Schicht */
+.proj-detail-hero-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+.proj-detail-landscape {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 60%;
+  opacity: 0.2;
+  filter: saturate(0.75) blur(0.5px);
+}
+.proj-detail-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(var(--bg-rgb, 248,245,240), 0.25) 0%,
+    rgba(var(--bg-rgb, 248,245,240), 0.55) 100%
+  );
+}
+
+/* Alle Hero-Kinder über dem Hintergrund */
+.proj-detail-hero-left,
+.proj-detail-tree-wrap,
+.proj-detail-info-card { position: relative; z-index: 1; }
+
+/* Info-Karte — Glasmorphism-Effekt passend zur Landschaft */
+.proj-detail-info-card {
+  background: rgba(255,255,255,0.82);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.6);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+}
+[data-theme="dark"] .proj-detail-info-card {
+  background: rgba(30,35,25,0.82);
+  border-color: rgba(255,255,255,0.1);
+}
+
+/* Projektname bekommt leichten Textschatten für Lesbarkeit über Bild */
+.proj-detail-name {
+  text-shadow: 0 1px 8px rgba(255,255,255,0.6);
+}
+[data-theme="dark"] .proj-detail-name { text-shadow: none; }
+
+/* Fortschrittsbalken — passende Breite */
+.proj-detail-bar-wrap { max-width: 220px; }
+
+/* Baum-Container: feste Größe damit Slots stabil bleiben */
+.proj-detail-tree-wrap {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  min-height: 420px;
+}
+#proj-detail-tree { overflow: visible; }
+
+/* Toggle-Select Buttons (Kern / Extra) */
+.toggle-select-btn {
+  font-size: 12px;
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: all 120ms;
+}
+.toggle-select-btn.active {
+  background: var(--sage, #5a9467);
+  color: #fff;
+  border-color: var(--sage, #5a9467);
+}
+
+/* Detail-Hero Basis-Klassen (ergänzt) */
+.proj-detail-hero-left { display: flex; flex-direction: column; gap: 14px; padding-top: 8px; }
+.proj-detail-status-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #16a34a; background: rgba(22,163,74,0.1); border-radius: 99px; padding: 3px 10px; width: fit-content; }
+.proj-detail-status-badge.archived { color: #d97706; background: rgba(217,119,6,0.1); }
+.proj-detail-status-badge::before { content: '●'; font-size: 7px; }
+.proj-detail-desc { font-size: 14px; color: var(--text-3); line-height: 1.6; margin: 0; }
+.proj-detail-progress-block { display: flex; flex-direction: column; gap: 6px; }
+.proj-detail-progress-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-2); }
+.proj-detail-bar-wrap { height: 7px; background: var(--border); border-radius: 99px; overflow: hidden; max-width: 220px; }
+.proj-detail-bar-fill { height: 100%; border-radius: 99px; transition: width 500ms ease; }
+.proj-detail-counts { font-size: 12px; color: var(--text-3); font-family: var(--mono); display: flex; gap: 6px; }
+.proj-detail-info-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-2); }
+.proj-detail-info-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+.proj-detail-info-label { color: var(--text-2); font-size: 13px; }
+.proj-detail-info-quote { font-size: 12px; color: var(--text-3); font-style: italic; line-height: 1.5; margin-top: 8px; border-top: 1px solid var(--border); padding-top: 12px; }
