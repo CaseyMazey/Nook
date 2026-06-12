@@ -1,0 +1,133 @@
+/* =============================================================
+   PROJECT-TREE.CSS  (v2)
+   Zuständig NUR für die Baumdarstellung:
+     - Waldbaum-Wrapper, Label, Dot, Balken
+     - Detailbaum-Spalte und Container
+     - Blatt / Apfel / Knospe / Blüte Hover-Effekte
+   Nicht enthalten: Projektkarten, Modals, Tiles, Detailansicht-Layout
+============================================================= */
+
+/* =========================
+   BAUM WRAPPER (Wald-Ansicht)
+========================= */
+.forest-tree-wrap {
+  position: absolute;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: transform 200ms ease;
+  z-index: 2;
+}
+.forest-tree-wrap:hover { transform: translateX(-50%) translateY(-4px); z-index: 10; }
+.forest-tree-wrap.archived { filter: saturate(0.7); }
+
+.forest-tree-svg { line-height: 0; }
+.forest-tree-svg svg { display: block; overflow: visible; }
+
+/* Waldbaum SVG-Skalierung */
+.forest-tree-svg svg { width: 100%; height: auto; display: block; overflow: visible; }
+
+/* =========================
+   BAUM LABEL
+========================= */
+.forest-tree-label {
+  background: rgba(255,255,255,0.88);
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 8px;
+  padding: 5px 8px;
+  margin-top: -8px;
+  min-width: 90px;
+  max-width: 140px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  backdrop-filter: blur(4px);
+}
+[data-theme="dark"] .forest-tree-label {
+  background: rgba(30,34,24,0.88);
+  border-color: rgba(255,255,255,0.1);
+}
+
+.forest-tree-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  max-width: 120px;
+}
+
+.forest-tree-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.forest-tree-progress {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 3px;
+}
+.forest-tree-bar {
+  flex: 1;
+  height: 3px;
+  background: rgba(0,0,0,0.1);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.forest-tree-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 400ms ease;
+}
+.forest-tree-pct {
+  font-size: 10px;
+  color: var(--text-3);
+  font-family: var(--mono);
+  flex-shrink: 0;
+}
+
+/* =========================
+   DETAILBAUM-SPALTE
+========================= */
+.pdt-tree-col {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 10px 0 0;
+  min-height: 380px;
+  overflow: visible;
+}
+#proj-detail-tree { overflow: visible; display: block; line-height: 0; }
+#proj-detail-tree svg { display: block; overflow: visible; }
+
+/* =========================
+   BLATT / KNOSPE HOVER
+========================= */
+.detail-leaf { transition: opacity 120ms, filter 120ms; cursor: pointer; }
+.detail-leaf:hover { opacity: 0.75; filter: brightness(1.18) saturate(1.2); }
+
+/* Erledigtes Blatt: voll sichtbar */
+.detail-leaf--done ellipse { opacity: 0.93; }
+
+/* Knospe: gedämpft */
+.detail-leaf--bud circle { opacity: 0.45; }
+.detail-leaf--bud:hover circle { opacity: 0.62; filter: brightness(1.1); }
+
+/* =========================
+   APFEL / BLÜTE HOVER
+========================= */
+.detail-apple { transition: opacity 120ms, filter 120ms; cursor: pointer; }
+.detail-apple:hover { filter: brightness(1.15) saturate(1.15); }
+
+/* Erledigter Apfel */
+.detail-apple--done circle:first-child { opacity: 0.93; }
+
+/* Blüte (offene Extra-Aufgabe) */
+.detail-apple--bud circle { opacity: 0.6; }
+.detail-apple--bud:hover circle { opacity: 0.82; filter: brightness(1.12); }

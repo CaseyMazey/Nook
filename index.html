@@ -17,6 +17,7 @@
   <link rel="stylesheet" href="css/games.css" />
   <link rel="stylesheet" href="css/guides.css" />
   <link rel="stylesheet" href="css/projects.css" />
+  <link rel="stylesheet" href="css/project-tree.css" />
   <link rel="stylesheet" href="css/today.css" />
   <link rel="stylesheet" href="css/settings.css" />
   <link rel="stylesheet" href="css/national_day.css" />
@@ -657,10 +658,12 @@
                 <div class="pdt-progress-section">
                   <div class="pdt-progress-label-row">
                     <span class="pdt-progress-label">Fortschritt</span>
-                    <strong class="pdt-progress-pct" id="proj-detail-pct">0%</strong>
                   </div>
-                  <div class="pdt-progress-track">
-                    <div class="pdt-progress-fill" id="proj-detail-bar-fill"></div>
+                  <div class="pdt-progress-pct-wrap">
+                    <strong class="pdt-progress-pct" id="proj-detail-pct">0%</strong>
+                    <div class="pdt-progress-track">
+                      <div class="pdt-progress-fill" id="proj-detail-bar-fill"></div>
+                    </div>
                   </div>
                   <div class="pdt-progress-meta">
                     <span id="proj-detail-task-count"></span>
@@ -1573,6 +1576,7 @@
   <script src="js/guides.js"></script>
   <script src="js/budget.js"></script>
   <script src="js/projects.js"></script>
+  <script src="js/project-tree.js"></script>
   <script src="js/forest.js"></script>
   <!-- Spiele werden dynamisch von games.js über games/games.json geladen -->
   <script src="js/games.js"></script>

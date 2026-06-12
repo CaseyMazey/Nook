@@ -259,87 +259,10 @@
   text-align: center;
 }
 
-/* =========================
-   BAUM WRAPPER
-========================= */
-.forest-tree-wrap {
-  position: absolute;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  cursor: pointer;
-  transition: transform 200ms ease;
-  z-index: 2;
-}
-.forest-tree-wrap:hover { transform: translateX(-50%) translateY(-4px); z-index: 10; }
-.forest-tree-wrap.archived { filter: saturate(0.7); }
+/* BAUM WRAPPER -> project-tree.css */
+/* .forest-tree-wrap, .forest-tree-svg -> project-tree.css */
 
-.forest-tree-svg { line-height: 0; }
-.forest-tree-svg svg { display: block; overflow: visible; }
-
-/* =========================
-   BAUM LABEL
-========================= */
-.forest-tree-label {
-  background: rgba(255,255,255,0.88);
-  border: 1px solid rgba(0,0,0,0.08);
-  border-radius: 8px;
-  padding: 5px 8px;
-  margin-top: -8px;
-  min-width: 90px;
-  max-width: 140px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  backdrop-filter: blur(4px);
-}
-[data-theme="dark"] .forest-tree-label {
-  background: rgba(30,34,24,0.88);
-  border-color: rgba(255,255,255,0.1);
-}
-
-.forest-tree-name {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: block;
-  max-width: 120px;
-}
-
-.forest-tree-dot {
-  display: inline-block;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.forest-tree-progress {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  margin-top: 3px;
-}
-.forest-tree-bar {
-  flex: 1;
-  height: 3px;
-  background: rgba(0,0,0,0.1);
-  border-radius: 99px;
-  overflow: hidden;
-}
-.forest-tree-bar-fill {
-  height: 100%;
-  border-radius: 99px;
-  transition: width 400ms ease;
-}
-.forest-tree-pct {
-  font-size: 10px;
-  color: var(--text-3);
-  font-family: var(--mono);
-  flex-shrink: 0;
-}
+/* .forest-tree-label et al. -> project-tree.css */
 
 /* =========================
    PROJEKT DETAILANSICHT — Neustruktur
@@ -347,14 +270,10 @@
 
 /* Kein overflow im Detailbereich */
 #view-project-detail { width: 100%; }
-
-/* ── TOOLBAR ── */
-.pdt-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 28px 14px;
-}
+/* Wenn Detailansicht aktiv: dash-content kein Padding */
+.dash-content.pdt-active { padding: 0 !important; }
+/* Toolbar behält eigenes Padding */
+.pdt-toolbar { padding: 10px 20px 8px; }
 .pdt-back-btn {
   display: flex; align-items: center; gap: 6px;
   font-size: 13px; color: var(--text-3);
@@ -378,13 +297,16 @@
 .pdt-hero {
   position: relative;
   display: grid;
-  grid-template-columns: 30% 40% 30%;
-  min-height: 660px;
+  grid-template-columns: 28% 44% 28%;
+  min-height: 420px;
+  max-height: 480px;
   align-items: start;
   overflow: hidden;
   background: linear-gradient(160deg, var(--surface) 0%, var(--bg) 100%);
   border-radius: var(--radius-lg);
-  margin: 0 0 0 0;
+  /* Volle verfügbare Breite — kein margin, kein max-width */
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* Hintergrundbild */
@@ -410,8 +332,8 @@
 
 /* ── LINKS: Projektinfo ── */
 .pdt-left {
-  padding: 36px 20px 36px 32px;
-  display: flex; flex-direction: column; gap: 20px;
+  padding: 22px 16px 22px 24px;
+  display: flex; flex-direction: column; gap: 14px;
 }
 
 .pdt-status-badge {
@@ -442,41 +364,53 @@
 }
 
 /* Fortschritt */
-.pdt-progress-section { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
-.pdt-progress-label-row { display: flex; justify-content: space-between; align-items: baseline; }
-.pdt-progress-label { font-size: 12px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; }
-.pdt-progress-pct { font-size: 22px; font-weight: 700; color: var(--text); }
+.pdt-progress-section { display: flex; flex-direction: column; gap: 4px; margin-top: 2px; }
+.pdt-progress-label-row { display: flex; justify-content: flex-start; align-items: center; gap: 6px; }
+.pdt-progress-label { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; }
+/* Pct: klein, über Balken rechts */
+.pdt-progress-pct-wrap {
+  position: relative;
+  max-width: 50%;
+  margin-bottom: 14px; /* Platz für die Zahl darüber */
+}
+.pdt-progress-pct {
+  position: absolute;
+  right: 0;
+  top: calc(-16px);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-2);
+  font-family: var(--mono);
+  line-height: 1;
+}
 .pdt-progress-track {
-  height: 8px; background: rgba(0,0,0,0.08);
+  height: 7px; background: rgba(0,0,0,0.08);
   border-radius: 99px; overflow: hidden;
 }
 .pdt-progress-fill { height: 100%; border-radius: 99px; transition: width 600ms ease; }
 .pdt-progress-meta {
-  display: flex; gap: 6px;
-  font-size: 13px; color: var(--text-2); font-family: var(--mono);
+  display: flex; flex-direction: column; gap: 1px;
+  font-size: 12px; color: var(--text-2); font-family: var(--mono);
+  margin-top: 4px;
 }
-.pdt-meta-sep { color: var(--text-3); }
+.pdt-meta-sep { display: none; }
 
-/* ── MITTE: Baum ── */
-.pdt-tree-col {
-  display: flex; align-items: flex-end; justify-content: center;
-  padding: 16px 0 0;
-  min-height: 620px;
-  overflow: visible;
-}
-#proj-detail-tree { overflow: visible; display: block; line-height: 0; }
-#proj-detail-tree svg { display: block; overflow: visible; }
+/* .pdt-tree-col, #proj-detail-tree -> project-tree.css */
 
 /* ── RECHTS: Info-Karte ── */
 .pdt-info-card {
-  margin: 28px 28px 0 12px;
+  margin: 18px 16px 0 8px;
   background: rgba(255,252,248,0.88);
   backdrop-filter: blur(8px);
   border: 1px solid rgba(180,150,100,0.2);
   border-radius: var(--radius-lg);
-  padding: 20px;
+  padding: 14px;
   display: flex; flex-direction: column; gap: 0;
   box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+  /* schmal und elegant */
+  max-width: 210px;
+  margin-left: auto;
+  width: calc(100% - 32px);
 }
 [data-theme="dark"] .pdt-info-card {
   background: rgba(26,30,20,0.88);
@@ -622,12 +556,9 @@
 }
 [data-theme="dark"] #project-forest { background: #1e2218; }
 
-/* Waldbaum SVG skalierung */
-.forest-tree-svg svg { width: 100%; height: auto; display: block; overflow: visible; }
+/* .forest-tree-svg -> project-tree.css */
 
-/* Leaf/Apple Hover */
-.detail-leaf, .detail-apple { transition: opacity 100ms, filter 100ms; }
-.detail-leaf:hover, .detail-apple:hover { opacity: 0.82; filter: brightness(1.14); }
+/* .detail-leaf, .detail-apple hover -> project-tree.css */
 
 /* Toggle Buttons */
 .toggle-select-btn {

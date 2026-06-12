@@ -5,319 +5,14 @@
 let forestView    = DB.get('projectForestView', false);
 let treeLayouts   = DB.get('treeLayouts', {}); // stabile Baumstrukturen je Projekt-ID
 
-// =========================
-// SEEDED RANDOM
-// =========================
-function seededRand(seed) {
-  let s = seed;
-  return function() {
-    s = (s * 1664525 + 1013904223) & 0xffffffff;
-    return (s >>> 0) / 0xffffffff;
-  };
-}
-function idToSeed(id) {
-  let h = 0;
-  for (let i = 0; i < id.length; i++) h = (Math.imul(31, h) + id.charCodeAt(i)) | 0;
-  return Math.abs(h);
-}
-function escapeXml(s) {
-  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
+// =================================================
+// BAUMRENDERING -> ausgelagert in project-tree.js
+// Verfuegbare Funktionen:
+//   drawTree(project, size)                    -> SVG-String (Waldbaum klein)
+//   drawDetailTree(project, W, H, layerStart)  -> SVG-String (Detailbaum gross)
+//   updateDetailTreeElements(project)          -> aktualisiert Blaetter/Aepfel
+// =================================================
 
-// =========================
-// STABILES BAUMLAYOUT
-// Wird einmalig je Projekt erzeugt und gespeichert.
-// Enthält alle Slot-Positionen für Blätter und Äpfel.
-// =========================
-function getOrCreateTreeLayout(project) {
-  const id = project.id;
-  if (treeLayouts[id]) return treeLayouts[id];
-
-  const seed = idToSeed(id);
-  const rng  = seededRand(seed);
-
-  // Farbset per Seed wählen (bleibt für immer)
-  const greenSets = [
-    ['#4a7c59','#5a9467','#3d6b4a','#6aab78','#527d60'],
-    ['#3f7d5a','#4e9168','#345f47','#60a270','#477258'],
-    ['#527060','#628070','#425060','#72907e','#5a7d6c'],
-    ['#4d6e52','#5d7e62','#3d5e42','#6d8e72','#557860'],
-  ];
-  const leafColors  = greenSets[Math.floor(rng() * greenSets.length)];
-  const treeVar     = rng(); // individuelle Baumform 0..1
-  const trunkCurve  = (rng() - 0.5) * 0.08; // leichte Neigung
-
-  // Blatt-Slots: bis zu 60 vorberechnete Positionen (reicht für große Projekte)
-  // Positionen werden relativ zur Krone gespeichert (0..1 normalisiert)
-  const leafSlots = [];
-  const leafRng   = seededRand(seed + 999);
-  for (let i = 0; i < 60; i++) {
-    const angle = leafRng() * Math.PI * 2;
-    const dist  = 0.1 + leafRng() * 0.85; // relativ zu crownR
-    const rot   = leafRng() * 360;
-    const colIdx = Math.floor(leafRng() * leafColors.length);
-    leafSlots.push({ angle, dist, rot, colIdx });
-  }
-
-  // Apfel-Slots: bis zu 20
-  const appleSlots = [];
-  const appleRng   = seededRand(seed + 7777);
-  for (let i = 0; i < 20; i++) {
-    const angle = appleRng() * Math.PI * 2;
-    const dist  = 0.15 + appleRng() * 0.7;
-    appleSlots.push({ angle, dist });
-  }
-
-  // Ast-Winkel: bis zu 8 Slots (reicht für 7 Layer)
-  const branchAngles = [];
-  const branchRng    = seededRand(seed + 333);
-  for (let i = 0; i < 8; i++) {
-    const spread = 140;
-    const base   = -90 - spread/2 + (spread / 7) * i;
-    branchAngles.push(base + (branchRng() - 0.5) * 14);
-  }
-
-  // Kronenwolken: feste Positionen
-  const clouds = [];
-  const cloudRng = seededRand(seed + 4242);
-  for (let i = 0; i < 14; i++) {
-    const angle = cloudRng() * Math.PI * 2;
-    const dist  = cloudRng() * 0.8;
-    const size  = 0.25 + cloudRng() * 0.32;
-    const alpha = 0.65 + cloudRng() * 0.3;
-    const colIdx = Math.floor(cloudRng() * leafColors.length);
-    clouds.push({ angle, dist, size, alpha, colIdx });
-  }
-
-  const layout = { leafColors, treeVar, trunkCurve, leafSlots, appleSlots, branchAngles, clouds };
-  treeLayouts[id] = layout;
-  DB.set('treeLayouts', treeLayouts);
-  return layout;
-}
-
-// =========================
-// WALDBAUM (klein, für Übersicht)
-// =========================
-function drawTree(project, size) {
-  const layout  = getOrCreateTreeLayout(project);
-  const { leafColors, treeVar, leafSlots, appleSlots, branchAngles, clouds } = layout;
-
-  const subprojects = project.subprojects || [];
-  const allTasks    = subprojects.flatMap(sp => sp.tasks || []);
-  const doneTasks   = allTasks.filter(t => t.done && !t.isExtra).length;
-  const extraDone   = allTasks.filter(t => t.done && t.isExtra).length;
-
-  const isArchived = project.archived;
-  const trunkColor = isArchived ? '#92400e' : '#7c5232';
-  const colors     = isArchived
-    ? ['#d97706','#b45309','#dc2626','#c2410c','#f59e0b']
-    : leafColors;
-
-  const W = size, H = size, cx = W / 2, baseY = H * 0.88;
-  const trunkW = size * (0.07 + treeVar * 0.04);
-  const trunkH = size * (0.3  + treeVar * 0.06);
-  const crownR = size * (0.26 + treeVar * 0.08);
-  const trunkTop = baseY - trunkH;
-  const crownY   = trunkTop - crownR * 0.4;
-
-  const parts = [];
-  parts.push(`<ellipse cx="${cx}" cy="${baseY+2}" rx="${trunkW*2.2}" ry="${trunkW*0.5}" fill="rgba(0,0,0,0.08)"/>`);
-  parts.push(`<path d="M${cx-trunkW/2} ${baseY} C${cx-trunkW/2} ${baseY-trunkH*0.3} ${cx-trunkW*0.3} ${trunkTop+trunkH*0.1} ${cx} ${trunkTop} C${cx+trunkW*0.3} ${trunkTop+trunkH*0.1} ${cx+trunkW/2} ${baseY-trunkH*0.3} ${cx+trunkW/2} ${baseY} Z" fill="${trunkColor}" opacity="0.9"/>`);
-
-  const branchCount = Math.max(2, Math.min(subprojects.length, 5));
-  for (let i = 0; i < branchCount; i++) {
-    const angle = branchAngles[i % branchAngles.length];
-    const rad   = angle * Math.PI / 180;
-    const bLen  = crownR * 0.65;
-    const bx    = cx + Math.cos(rad) * bLen;
-    const by    = trunkTop + trunkH * 0.18 + Math.sin(rad) * bLen;
-    parts.push(`<line x1="${cx}" y1="${trunkTop+trunkH*0.2}" x2="${bx}" y2="${by}" stroke="${trunkColor}" stroke-width="${Math.max(1.2, trunkW*0.3)}" stroke-linecap="round" opacity="0.8"/>`);
-  }
-
-  // Kronenwolken (immer gleiche Positionen)
-  clouds.forEach(c => {
-    const lx = cx + Math.cos(c.angle) * c.dist * crownR;
-    const ly = crownY + Math.sin(c.angle) * c.dist * crownR * 0.65;
-    parts.push(`<circle cx="${lx}" cy="${ly}" r="${c.size * crownR}" fill="${colors[c.colIdx % colors.length]}" opacity="${c.alpha.toFixed(2)}"/>`);
-  });
-
-  // Aktive Blatt-Slots (erledigte Kernaufgaben)
-  const maxLeaves = Math.min(doneTasks, leafSlots.length);
-  for (let i = 0; i < maxLeaves; i++) {
-    const s  = leafSlots[i];
-    const lx = cx + Math.cos(s.angle) * s.dist * crownR;
-    const ly = crownY + Math.sin(s.angle) * s.dist * crownR * 0.7;
-    const lr = size * 0.025;
-    parts.push(`<ellipse cx="${lx}" cy="${ly}" rx="${lr}" ry="${lr*0.6}" fill="${colors[s.colIdx%colors.length]}" opacity="0.92" transform="rotate(${s.rot} ${lx} ${ly})"/>`);
-  }
-
-  // Äpfel (erledigte Extras)
-  const maxApples = Math.min(extraDone, appleSlots.length);
-  for (let i = 0; i < maxApples; i++) {
-    const s  = appleSlots[i];
-    const ax = cx + Math.cos(s.angle) * s.dist * crownR;
-    const ay = crownY + Math.sin(s.angle) * s.dist * crownR * 0.7;
-    const ar = size * 0.04;
-    parts.push(`<circle cx="${ax}" cy="${ay}" r="${ar}" fill="#dc2626" opacity="0.9"/><circle cx="${ax-ar*0.25}" cy="${ay-ar*0.3}" r="${ar*0.25}" fill="#f87171" opacity="0.55"/>`);
-  }
-
-  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="overflow:visible;">${parts.join('')}</svg>`;
-}
-
-// =========================
-// DETAILBAUM (groß, interaktiv, stabile Slots)
-// =========================
-function drawDetailTree(project, W, H, layerStart) {
-  const layout  = getOrCreateTreeLayout(project);
-  const { leafColors, treeVar, trunkCurve, leafSlots, appleSlots, branchAngles, clouds } = layout;
-
-  const subprojects = project.subprojects || [];
-  const visibleSubs = subprojects.slice(layerStart, layerStart + 7);
-
-  const isArchived = project.archived;
-  const trunkColor = isArchived ? '#92400e' : '#7c5232';
-  const colors     = isArchived ? ['#d97706','#b45309','#dc2626','#c2410c','#f59e0b'] : leafColors;
-
-  const cx     = W / 2;
-  const baseY  = H * 0.88;
-  const trunkW = W * (0.038 + treeVar * 0.018);
-  const trunkH = H * (0.36 + treeVar * 0.06);
-  const crownR = W * (0.24 + treeVar * 0.08);
-  const trunkTop = baseY - trunkH;
-  const crownY   = trunkTop - crownR * 0.35;
-
-  const parts = [];
-
-  // Schatten
-  parts.push(`<ellipse cx="${cx}" cy="${baseY+5}" rx="${trunkW*3.5}" ry="${trunkW*0.9}" fill="rgba(0,0,0,0.07)"/>`);
-
-  // Stamm (geschwungen)
-  const cp1x = cx + trunkCurve * W * 2;
-  parts.push(`<path d="M${cx-trunkW} ${baseY} C${cx-trunkW} ${baseY-trunkH*0.35} ${cp1x-trunkW*0.5} ${trunkTop+trunkH*0.12} ${cx} ${trunkTop} C${cx+trunkW*0.5} ${trunkTop+trunkH*0.12} ${cx+trunkW} ${baseY-trunkH*0.35} ${cx+trunkW} ${baseY} Z" fill="${trunkColor}" opacity="0.93"/>`);
-  // Stamm-Textur
-  parts.push(`<path d="M${cx-trunkW*0.15} ${baseY-trunkH*0.1} Q${cx+trunkW*0.1} ${baseY-trunkH*0.5} ${cx} ${trunkTop+trunkH*0.15}" stroke="${trunkColor}" stroke-width="${trunkW*0.25}" fill="none" opacity="0.15" stroke-linecap="round"/>`);
-  parts.push(`<path d="M${cx+trunkW*0.2} ${baseY-trunkH*0.05} Q${cx-trunkW*0.05} ${baseY-trunkH*0.4} ${cx+trunkW*0.1} ${trunkTop+trunkH*0.25}" stroke="${trunkColor}" stroke-width="${trunkW*0.18}" fill="none" opacity="0.1" stroke-linecap="round"/>`);
-
-  // Äste je Unterprojekt
-  const branchTips = [];
-  const branchCount = Math.max(2, visibleSubs.length);
-  for (let i = 0; i < branchCount; i++) {
-    const angle = branchAngles[i % branchAngles.length];
-    const sp    = visibleSubs[i];
-    const spPct = sp ? getSubprojectStats(sp).pct / 100 : 0.3;
-    const bLen  = crownR * (0.72 + spPct * 0.28);
-    const bw    = trunkW * (0.6 - i * 0.04);
-    const rad   = angle * Math.PI / 180;
-    const bx    = cx + Math.cos(rad) * bLen;
-    const by    = trunkTop + trunkH * 0.16 + Math.sin(rad) * bLen;
-    branchTips.push({ x: bx, y: by, sp, i, rad });
-
-    // Ast als Kurve
-    const midX = cx + Math.cos(rad) * bLen * 0.45 + (Math.random()-0.5)*8;
-    const midY = trunkTop + trunkH*0.12 + Math.sin(rad)*bLen*0.45;
-    parts.push(`<path d="M${cx} ${trunkTop+trunkH*0.18} Q${midX} ${midY} ${bx} ${by}" stroke="${trunkColor}" stroke-width="${Math.max(2.5, bw)}" fill="none" stroke-linecap="round" opacity="0.88"/>`);
-
-    // Ast-Label
-    if (sp) {
-      const lx = bx + Math.cos(rad) * 22;
-      const ly = by + Math.sin(rad) * 16;
-      parts.push(`<text x="${lx}" y="${ly}" text-anchor="${bx<cx?'end':'start'}" font-size="${W*0.026}" font-family="DM Sans,sans-serif" fill="${trunkColor}" opacity="0.7" font-weight="500">${escapeXml(sp.title)}</text>`);
-    }
-  }
-
-  // Kronenwolken (IMMER gleiche Positionen — stabil)
-  clouds.forEach(c => {
-    const lx = cx + Math.cos(c.angle) * c.dist * crownR;
-    const ly = crownY + Math.sin(c.angle) * c.dist * crownR * 0.65;
-    parts.push(`<circle cx="${lx}" cy="${ly}" r="${c.size*crownR}" fill="${colors[c.colIdx%colors.length]}" opacity="${c.alpha.toFixed(2)}"/>`);
-  });
-
-  // =============================================================
-  // STABILE BLATT- UND APFEL-SLOTS
-  // Position hängt NICHT von task.done ab — nur Sichtbarkeit ändert sich
-  // =============================================================
-
-  // Alle Aufgaben aus sichtbaren Unterprojekten sammeln
-  let coreSlotIdx = 0;
-  let appleSlotIdx = 0;
-
-  branchTips.forEach(({ x: bx, y: by, sp, i, rad }) => {
-    if (!sp) return;
-    const coreTasks  = sp.tasks.filter(t => !t.isExtra);
-    const extraTasks = sp.tasks.filter(t =>  t.isExtra);
-    // Eigener RNG je Ast — stabil, unabhängig von anderen Ästen
-    const bRng = seededRand(idToSeed(project.id) + i * 10000 + 1);
-
-    coreTasks.forEach((task, ti) => {
-      // Feste Position je Slot-Index
-      const slotAngle = bRng() * Math.PI * 2;
-      const slotDist  = crownR * (0.06 + bRng() * 0.3);
-      const lx = bx + Math.cos(slotAngle) * slotDist;
-      const ly = by + Math.sin(slotAngle) * slotDist * 0.75;
-      const lr = W * 0.021;
-      const rot = bRng() * 360;
-      const colIdx = Math.floor(bRng() * colors.length);
-
-      if (task.done) {
-        // Volles Blatt
-        parts.push(`<g class="detail-leaf detail-leaf--done" data-task-id="${task.id}" data-sp-id="${sp.id}" style="cursor:pointer;">
-          <ellipse cx="${lx}" cy="${ly}" rx="${lr}" ry="${lr*0.58}" fill="${colors[colIdx]}" opacity="0.95" transform="rotate(${rot} ${lx} ${ly})"/>
-          <title>${escapeXml(task.text)}</title>
-        </g>`);
-      } else {
-        // Knospe — selbe Position, anderes Aussehen
-        parts.push(`<g class="detail-leaf detail-leaf--bud" data-task-id="${task.id}" data-sp-id="${sp.id}" style="cursor:pointer;">
-          <circle cx="${lx}" cy="${ly}" r="${lr*0.48}" fill="${colors[0]}" opacity="0.38"/>
-          <circle cx="${lx}" cy="${ly}" r="${lr*0.24}" fill="${colors[1]}" opacity="0.55"/>
-          <title>${escapeXml(task.text)}</title>
-        </g>`);
-      }
-    });
-
-    extraTasks.forEach((task, ti) => {
-      const slotAngle = bRng() * Math.PI * 2;
-      const slotDist  = crownR * (0.08 + bRng() * 0.24);
-      const ax = bx + Math.cos(slotAngle) * slotDist;
-      const ay = by + Math.sin(slotAngle) * slotDist * 0.75;
-      const ar = W * 0.03;
-
-      if (task.done) {
-        // Apfel
-        parts.push(`<g class="detail-apple" data-task-id="${task.id}" data-sp-id="${sp.id}" style="cursor:pointer;">
-          <circle cx="${ax}" cy="${ay}" r="${ar}" fill="#dc2626" opacity="0.92"/>
-          <circle cx="${ax-ar*0.28}" cy="${ay-ar*0.32}" r="${ar*0.28}" fill="#f87171" opacity="0.55"/>
-          <line x1="${ax}" y1="${ay-ar}" x2="${ax+ar*0.35}" y2="${ay-ar*1.5}" stroke="${trunkColor}" stroke-width="${W*0.007}" stroke-linecap="round"/>
-          <title>${escapeXml(task.text)}</title>
-        </g>`);
-      } else {
-        // Kleine gelbe Knospe
-        parts.push(`<g class="detail-apple detail-apple--bud" data-task-id="${task.id}" data-sp-id="${sp.id}" style="cursor:pointer;">
-          <circle cx="${ax}" cy="${ay}" r="${ar*0.6}" fill="#f59e0b" opacity="0.38"/>
-          <title>${escapeXml(task.text)}</title>
-        </g>`);
-      }
-    });
-  });
-
-  // Blüten bei 100%
-  const allTasks = subprojects.flatMap(sp => sp.tasks || []);
-  const doneCore = allTasks.filter(t => t.done && !t.isExtra).length;
-  const totalCore = allTasks.filter(t => !t.isExtra).length;
-  if (totalCore > 0 && doneCore === totalCore) {
-    const bRng = seededRand(idToSeed(project.id) + 5555);
-    for (let i = 0; i < 9; i++) {
-      const angle = bRng() * Math.PI * 2;
-      const dist  = crownR * (0.2 + bRng() * 0.75);
-      const bx    = cx + Math.cos(angle) * dist;
-      const by    = crownY + Math.sin(angle) * dist * 0.68;
-      const br    = W * 0.028;
-      parts.push(`<circle cx="${bx}" cy="${by}" r="${br}" fill="#fbcfe8" opacity="0.82"/>
-        <circle cx="${bx}" cy="${by}" r="${br*0.45}" fill="#f9a8d4" opacity="0.9"/>`);
-    }
-  }
-
-  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="overflow:visible;">${parts.join('')}</svg>`;
-}
 
 // =========================
 // WALD HINTERGRUND
@@ -482,7 +177,11 @@ function openProjectDetail(projectId) {
   if (!currentDetailProject) return;
   detailSubLayer = 0;
 
-  // Views umschalten
+  const vh = document.querySelector('#view-projects > .view-header');
+  if (vh) vh.style.display = 'none';
+  const dc = document.querySelector('#view-projects .dash-content');
+  if (dc) dc.classList.add('pdt-active');
+
   document.getElementById('project-grid').style.display   = 'none';
   document.getElementById('project-forest').style.display = 'none';
   document.getElementById('view-project-detail').style.display = '';
@@ -491,6 +190,11 @@ function openProjectDetail(projectId) {
 }
 
 function closeProjectDetail() {
+  const vh = document.querySelector('#view-projects > .view-header');
+  if (vh) vh.style.display = '';
+  const dc = document.querySelector('#view-projects .dash-content');
+  if (dc) dc.classList.remove('pdt-active');
+
   document.getElementById('view-project-detail').style.display = 'none';
   currentDetailProject = null;
   switchToForestView();
@@ -653,31 +357,9 @@ function renderDetailTiles() {
   });
 }
 
-// Nur Sichtbarkeit der Blätter/Äpfel updaten, ohne den ganzen Baum neu zu zeichnen
-function updateDetailTreeElements(p) {
-  const treeContainer = document.getElementById('proj-detail-tree');
-  // Einfacher Re-render des SVG (Struktur bleibt identisch dank stabiler Slots)
-  const W = 520, H = 420;
-  treeContainer.innerHTML = drawDetailTree(p, W, H, detailSubLayer * 7);
-  // Events neu binden
-  treeContainer.querySelectorAll('.detail-leaf, .detail-apple').forEach(el => {
-    el.addEventListener('click', e => {
-      e.stopPropagation();
-      const sp   = p.subprojects.find(s => s.id === el.dataset.spId);
-      if (!sp) return;
-      const task = sp.tasks.find(t => t.id === el.dataset.taskId);
-      if (!task) return;
-      openTaskDetail(task, sp, p);
-    });
-  });
-  // Fortschritt updaten
-  const allTasks = (p.subprojects||[]).flatMap(sp => sp.tasks||[]);
-  const done = allTasks.filter(t => t.done).length;
-  const pct  = allTasks.length === 0 ? 0 : Math.round(done/allTasks.length*100);
-  document.getElementById('proj-detail-pct').textContent        = pct + '%';
-  document.getElementById('proj-detail-bar-fill').style.cssText = `width:${pct}%;background:${p.color||'#4a7c59'};`;
-  document.getElementById('proj-detail-task-count').textContent = `${done} / ${allTasks.length} Aufgaben`;
-}
+
+// updateDetailTreeElements -> project-tree.js
+
 
 // =========================
 // AUFGABE DETAIL MODAL

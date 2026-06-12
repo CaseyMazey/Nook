@@ -27,11 +27,19 @@ function migrateProject(p) {
   if (!p.subprojects) p.subprojects = [];
   if (!p.startDate)   p.startDate   = p.createdAt || Date.now();
   if (p.archived === undefined) p.archived = false;
+  if (!p.priority)    p.priority    = 'Mittel';
+  if (!p.updatedAt)   p.updatedAt   = p.createdAt || Date.now();
+  // dueDate bleibt undefined wenn nicht gesetzt
   p.subprojects.forEach(sp => {
     if (!sp.tasks)     sp.tasks     = [];
     if (sp.collapsed === undefined) sp.collapsed = true;
   });
   return p;
+}
+
+function touchProject(project) {
+  project.updatedAt = Date.now();
+  saveProjects();
 }
 projects = projects.map(migrateProject);
 
@@ -684,26 +692,31 @@ document.getElementById('proj-confirm-overlay').addEventListener('click', e => {
 // =========================
 
 let editingProject = null;
-let selectedProjectColor = PROJECT_COLORS[0];
+let selectedPriority = 'Mittel';
 
 function openProjectModal(existing = null) {
-  editingProject = existing || null;
-  selectedProjectColor = existing ? (existing.color || PROJECT_COLORS[0]) : PROJECT_COLORS[0];
+  editingProject   = existing || null;
+  selectedPriority = existing ? (existing.priority || 'Mittel') : 'Mittel';
 
   document.getElementById('project-modal-title').textContent = existing ? 'Projekt bearbeiten' : 'Neues Projekt';
   document.getElementById('project-modal-name').value = existing ? existing.name : '';
   document.getElementById('project-modal-desc').value = existing ? (existing.description || '') : '';
 
-  // Startdatum
-  const sdInput = document.getElementById('project-modal-startdate');
-  if (existing && existing.startDate) {
-    const d = new Date(existing.startDate);
-    sdInput.value = d.toISOString().slice(0, 10);
-  } else {
-    sdInput.value = new Date().toISOString().slice(0, 10);
+  // Fälligkeit
+  const dueInput = document.getElementById('project-modal-due');
+  if (dueInput) {
+    dueInput.value = (existing && existing.dueDate)
+      ? new Date(existing.dueDate).toISOString().slice(0, 10)
+      : '';
   }
 
-  renderColorPicker();
+  // Priorität Buttons
+  ['low','mid','high'].forEach(k => {
+    const map = { low:'Niedrig', mid:'Mittel', high:'Hoch' };
+    const btn = document.getElementById(`prio-${k}`);
+    if (btn) btn.classList.toggle('active', map[k] === selectedPriority);
+  });
+
   document.getElementById('project-modal-overlay').classList.remove('hidden');
   setTimeout(() => document.getElementById('project-modal-name').focus(), 50);
 }
@@ -713,24 +726,18 @@ function closeProjectModal() {
   editingProject = null;
 }
 
-function renderColorPicker() {
-  const picker = document.getElementById('project-color-picker');
-  picker.innerHTML = '';
-  PROJECT_COLORS.forEach(color => {
-    const btn = document.createElement('button');
-    btn.className = 'project-color-btn' + (color === selectedProjectColor ? ' active' : '');
-    btn.style.background = color;
-    btn.dataset.color = color;
-    btn.title = color;
-    btn.addEventListener('click', () => {
-      selectedProjectColor = color;
-      document.querySelectorAll('.project-color-btn').forEach(b => {
-        b.classList.toggle('active', b.dataset.color === color);
-      });
+// Priorität Buttons
+['low','mid','high'].forEach(k => {
+  const map = { low:'Niedrig', mid:'Mittel', high:'Hoch' };
+  const btn = document.getElementById(`prio-${k}`);
+  if (btn) btn.addEventListener('click', () => {
+    selectedPriority = map[k];
+    ['low','mid','high'].forEach(j => {
+      const b = document.getElementById(`prio-${j}`);
+      if (b) b.classList.toggle('active', map[j] === selectedPriority);
     });
-    picker.appendChild(btn);
   });
-}
+});
 
 document.getElementById('project-modal-close').addEventListener('click', closeProjectModal);
 document.getElementById('project-modal-cancel').addEventListener('click', closeProjectModal);
@@ -746,25 +753,29 @@ document.getElementById('project-modal-save').addEventListener('click', () => {
   const name = document.getElementById('project-modal-name').value.trim();
   if (!name) return;
   const description = document.getElementById('project-modal-desc').value.trim();
-  const sdVal = document.getElementById('project-modal-startdate').value;
-  const startDate = sdVal ? new Date(sdVal).getTime() : Date.now();
+  const dueVal  = document.getElementById('project-modal-due') ? document.getElementById('project-modal-due').value : '';
+  const dueDate = dueVal ? new Date(dueVal).getTime() : null;
+  const now = Date.now();
 
   if (editingProject) {
     const idx = projects.findIndex(p => p.id === editingProject.id);
     if (idx !== -1) {
       projects[idx].name        = name;
       projects[idx].description = description;
-      projects[idx].color       = selectedProjectColor;
-      projects[idx].startDate   = startDate;
+      projects[idx].priority    = selectedPriority;
+      projects[idx].dueDate     = dueDate;
+      projects[idx].updatedAt   = now;
     }
   } else {
     projects.push({
       id:          crypto.randomUUID(),
       name,
       description,
-      color:       selectedProjectColor,
-      createdAt:   Date.now(),
-      startDate,
+      priority:    selectedPriority,
+      dueDate,
+      createdAt:   now,
+      startDate:   now,
+      updatedAt:   now,
       archived:    false,
       tasks:       [],
       subprojects: []
@@ -830,9 +841,9 @@ document.getElementById('project-task-modal-save').addEventListener('click', () 
     saveCollapseState();
     proj.tasks.push(newTask);
   }
+  proj.updatedAt = Date.now();
   saveProjects(); closeAddTaskModal(); renderProjects();
   if (typeof currentDetailProject !== "undefined" && currentDetailProject && currentDetailProject.id === addTaskTargetProjectId) renderProjectDetail();
-  saveProjects(); closeAddTaskModal(); renderProjects();
 });
 
 // =========================
@@ -881,6 +892,7 @@ document.getElementById('proj-sub-modal-save').addEventListener('click', () => {
     collapsed: false,
     tasks:     []
   });
+  proj.updatedAt = Date.now();
   saveProjects(); closeAddSubprojectModal(); renderProjects();
 });
 
