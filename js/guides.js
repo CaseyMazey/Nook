@@ -224,8 +224,7 @@ function importGuideFromMd(categoryId) {
         imported++;
         if (imported === files.length) {
           saveGuideCategories();
-          renderGuideCategoryList();
-          renderGuideCategoryContent();
+          renderGuideContent();
         }
       };
       reader.readAsText(file);
@@ -234,239 +233,317 @@ function importGuideFromMd(categoryId) {
   input.click();
 }
 
-// ── Category sidebar ──────────────────────────────────────
+// ── Library helpers ───────────────────────────────────────
 
-function renderGuideCategoryList() {
-  const list  = document.getElementById('guide-category-list');
-  const empty = document.getElementById('guide-category-empty');
-  list.innerHTML = '';
+const GUIDE_BOOK_COLORS = 6; // number of pastel spine variants (css: .guide-book-0 .. .guide-book-5)
 
-  const filtered = guideSearchQuery
-    ? null // in search mode, don't highlight a category
-    : guideCategories;
+function fmtDate(iso) {
+  if (!iso) return '–';
+  return new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
 
-  if (!guideSearchQuery && guideCategories.length === 0) {
-    empty.classList.remove('hidden');
-    return;
+function fmtOpened(iso) {
+  if (!iso) return '–';
+  const d = new Date(iso);
+  const now = new Date();
+  if (d.toDateString() === now.toDateString()) return 'Heute';
+  return fmtDate(iso);
+}
+
+function fmtOpenedFull(iso) {
+  if (!iso) return '–';
+  const d = new Date(iso);
+  const now = new Date();
+  if (d.toDateString() === now.toDateString()) {
+    return 'Heute, ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
   }
-  empty.classList.add('hidden');
+  return fmtDate(iso);
+}
 
-  guideCategories.forEach(cat => {
-    const count = cat.guides.length;
-    const active = !guideSearchQuery && state.activeGuideCategoryId === cat.id;
+function categoryGuideCount(cat) { return cat.guides.length; }
 
-    const btn = document.createElement('button');
-    btn.className = 'guide-category-item' + (active ? ' active' : '');
-    btn.innerHTML = `
-      <span class="guide-category-icon">${cat.icon || '📁'}</span>
-      <span class="guide-category-name">${escHtml(cat.name)}</span>
-      <span class="guide-category-count">${count}</span>
-    `;
-    btn.addEventListener('click', () => {
-      state.activeGuideCategoryId = cat.id;
-      guideSearchQuery = '';
-      document.getElementById('guide-search-input').value = '';
-      activeGuideId = null;
-      renderGuideCategoryList();
-      renderGuideContent();
-    });
+function totalGuideCount() {
+  return guideCategories.reduce((sum, c) => sum + c.guides.length, 0);
+}
 
-    // Delete button
+// Aggregate stats for a whole book (category)
+function getCategoryStats(cat) {
+  const guides = cat.guides;
+  let created = null, updated = null, opened = null, mostRead = null, maxOpen = 0, favCount = 0;
+  guides.forEach(g => {
+    if (g.favorite) favCount++;
+    if (g.createdAt && (!created || new Date(g.createdAt) < new Date(created))) created = g.createdAt;
+    if (g.updatedAt && (!updated || new Date(g.updatedAt) > new Date(updated))) updated = g.updatedAt;
+    if (g.lastOpened && (!opened || new Date(g.lastOpened) > new Date(opened))) opened = g.lastOpened;
+    if ((g.openCount || 0) > maxOpen) { maxOpen = g.openCount; mostRead = g; }
+  });
+  return { created, updated, opened, favCount, count: guides.length, mostRead };
+}
+
+// Find the first fenced code block in markdown content
+function extractFirstCodeBlock(content) {
+  if (!content) return null;
+  const m = content.match(/```(\w*)\n([\s\S]*?)```/);
+  if (!m) return null;
+  return { lang: m[1] || 'code', code: m[2].trimEnd() };
+}
+
+// ── Library header (book + chapter counts) ────────────────
+
+function renderLibraryHeader() {
+  const sub = document.getElementById('lib-subtitle');
+  if (!sub) return;
+  const books = guideCategories.length;
+  const chapters = totalGuideCount();
+  sub.textContent = `${books} ${books === 1 ? 'Buch' : 'Bücher'} · ${chapters} Kapitel`;
+}
+
+// ── Bookshelf ──────────────────────────────────────────────
+
+function renderGuideShelf() {
+  const shelf = document.getElementById('guide-shelf');
+  const empty = document.getElementById('guide-category-empty');
+  if (!shelf) return;
+  shelf.innerHTML = '';
+  renderLibraryHeader();
+
+  if (guideCategories.length === 0) {
+    empty.classList.remove('hidden');
+  } else {
+    empty.classList.add('hidden');
+  }
+
+  guideCategories.forEach((cat, idx) => {
+    const stats = getCategoryStats(cat);
+    const activeOrOpenChapter = !guideSearchQuery && state.activeGuideCategoryId === cat.id;
+
+    const book = document.createElement('div');
+    book.className = `guide-book guide-book-${idx % GUIDE_BOOK_COLORS}` +
+      (activeOrOpenChapter ? ' active' : '');
+    book.title = cat.name;
+
     const del = document.createElement('button');
-    del.className = 'task-delete guide-cat-del';
+    del.className = 'guide-book-del';
+    del.title = 'Buch löschen';
     del.textContent = '✕';
-    del.title = 'Kategorie löschen';    del.addEventListener('click', e => {
+    del.addEventListener('click', e => {
       e.stopPropagation();
-      if (!confirm(`Kategorie „${cat.name}" und alle ${count} Anleitungen löschen?`)) return;
+      const count = cat.guides.length;
+      if (!confirm(`Buch „${cat.name}" und alle ${count} Kapitel löschen?`)) return;
       guideCategories = guideCategories.filter(c => c.id !== cat.id);
       if (state.activeGuideCategoryId === cat.id) {
         state.activeGuideCategoryId = null;
         activeGuideId = null;
       }
       saveGuideCategories();
-      renderGuideCategoryList();
       renderGuideContent();
     });
-    btn.appendChild(del);
-    list.appendChild(btn);
+
+    book.innerHTML = `
+      <div class="guide-book-icon">${cat.icon || '📁'}</div>
+      <div class="guide-book-title">${escHtml(cat.name)}</div>
+      <div class="guide-book-meta">${categoryGuideCount(cat)} Kapitel</div>
+      <div class="guide-book-spacer"></div>
+      <div class="guide-book-footer">
+        <span class="guide-book-opened-label">zuletzt geöffnet:</span>
+        <span class="guide-book-opened-val">${fmtOpened(stats.opened)}</span>
+      </div>
+    `;
+    book.appendChild(del);
+
+    book.addEventListener('click', () => {
+      guideSearchQuery = '';
+      const input = document.getElementById('guide-search-input');
+      if (input) input.value = '';
+      state.activeGuideCategoryId = cat.id;
+      activeGuideId = null;
+      renderGuideContent();
+    });
+
+    shelf.appendChild(book);
   });
+
+  // "Add new book" tile
+  const addTile = document.createElement('div');
+  addTile.className = 'guide-book guide-book-add';
+  addTile.innerHTML = `
+    <div class="guide-book-add-icon">+</div>
+    <div class="guide-book-add-label">Neues Buch<br>erstellen</div>
+  `;
+  addTile.addEventListener('click', openGuideCatModal);
+  shelf.appendChild(addTile);
 }
 
-// ── Main content area ─────────────────────────────────────
+// ── Main content dispatcher ───────────────────────────────
 
 function renderGuideContent() {
+  renderGuideShelf();
+
   const placeholder = document.getElementById('guide-placeholder');
-  const catView     = document.getElementById('guide-category-view');
-  const detailView  = document.getElementById('guide-detail-view');
+  const grid        = document.getElementById('guide-detail-grid');
 
   // Search mode
   if (guideSearchQuery.trim().length >= 2) {
     placeholder.classList.add('hidden');
-    detailView.classList.add('hidden');
-    catView.classList.remove('hidden');
+    grid.classList.remove('hidden');
     renderGuideSearchResults();
+    renderSearchSidebar();
     return;
   }
 
-  // Detail view (single guide open)
+  // Single guide open
   if (activeGuideId) {
+    const result = findGuide(activeGuideId);
+    if (!result) { activeGuideId = null; renderGuideContent(); return; }
     placeholder.classList.add('hidden');
-    catView.classList.add('hidden');
-    detailView.classList.remove('hidden');
+    grid.classList.remove('hidden');
     renderSingleGuide(activeGuideId);
     return;
   }
 
-  // Category list view
+  // Book (category) selected → chapter list
   if (state.activeGuideCategoryId) {
+    const cat = guideCategories.find(c => c.id === state.activeGuideCategoryId);
+    if (!cat) { state.activeGuideCategoryId = null; renderGuideContent(); return; }
     placeholder.classList.add('hidden');
-    detailView.classList.add('hidden');
-    catView.classList.remove('hidden');
-    renderGuideCategoryContent();
+    grid.classList.remove('hidden');
+    renderGuideChapterList(cat);
+    renderSidebarForCategory(cat, null);
     return;
   }
 
-  // Nothing selected → placeholder
+  // Nothing selected
   placeholder.classList.remove('hidden');
-  catView.classList.add('hidden');
-  detailView.classList.add('hidden');
+  grid.classList.add('hidden');
 }
 
-// ── Category content (list of guide cards) ───────────────
+// ── Chapter list (book detail) ────────────────────────────
 
-function renderGuideCategoryContent() {
-  const cat = guideCategories.find(c => c.id === state.activeGuideCategoryId);
-  if (!cat) return;
+function renderGuideChapterList(cat) {
+  const main = document.getElementById('guide-main');
+  main.innerHTML = '';
 
-  const header = document.getElementById('guide-cat-header');
-  const list   = document.getElementById('guide-cat-list');
-  header.innerHTML = '';
-  list.innerHTML   = '';
-
-  // Header row
-  const titleBlock = document.createElement('div');
-  titleBlock.className = 'guide-cat-title-block';
-  titleBlock.innerHTML = `
-    <span class="guide-cat-big-icon">${cat.icon || '📁'}</span>
-    <div>
-      <h2 class="guide-cat-title">${escHtml(cat.name)}</h2>
-      <div class="guide-cat-subtitle">${cat.guides.length} Anleitung${cat.guides.length !== 1 ? 'en' : ''}</div>
+  const header = document.createElement('div');
+  header.className = 'guide-book-header';
+  header.innerHTML = `
+    <div class="guide-book-header-left">
+      <span class="guide-book-header-icon">${cat.icon || '📁'}</span>
+      <div>
+        <h2 class="guide-book-detail-title">${escHtml(cat.name)}</h2>
+        <div class="guide-book-detail-sub">${cat.guides.length} Kapitel</div>
+      </div>
     </div>
+    <div class="guide-book-header-actions"></div>
   `;
-  const addBtn = document.createElement('button');
-  addBtn.className = 'btn-primary';
-  addBtn.textContent = '+ Anleitung';
-  addBtn.addEventListener('click', () => openGuideModal(cat.id));
+  const actions = header.querySelector('.guide-book-header-actions');
+
   const importBtn = document.createElement('button');
   importBtn.className = 'btn-ghost';
-  importBtn.textContent = '⬆ Import';
   importBtn.title = '.md Datei(en) importieren';
+  importBtn.textContent = '⬆ Import';
   importBtn.addEventListener('click', () => importGuideFromMd(cat.id));
-  header.appendChild(titleBlock);
-  const headerBtns = document.createElement('div');
-  headerBtns.style.cssText = 'display:flex;gap:8px;';
-  headerBtns.append(importBtn, addBtn);
-  header.appendChild(headerBtns);
+  actions.appendChild(importBtn);
+
+  const addBtn = document.createElement('button');
+  addBtn.className = 'btn-primary';
+  addBtn.textContent = '+ Kapitel';
+  addBtn.addEventListener('click', () => openGuideModal(cat.id));
+  actions.appendChild(addBtn);
+
+  main.appendChild(header);
+
+  const list = document.createElement('div');
+  list.className = 'guide-chapter-list';
 
   if (cat.guides.length === 0) {
     const empty = document.createElement('p');
     empty.className = 'empty-state';
     empty.style.padding = '30px 0';
-    empty.textContent = 'Noch keine Anleitungen in dieser Kategorie.';
+    empty.textContent = 'Noch keine Kapitel in diesem Buch.';
     list.appendChild(empty);
-    return;
+  } else {
+    cat.guides.forEach((guide, idx) => {
+      list.appendChild(buildChapterRow(guide, cat, idx + 1));
+    });
   }
 
-  // Sort: favorites first, then by updatedAt desc
-  const sorted = [...cat.guides].sort((a, b) => {
-    if (a.favorite && !b.favorite) return -1;
-    if (!a.favorite && b.favorite) return 1;
-    return new Date(b.updatedAt) - new Date(a.updatedAt);
-  });
+  main.appendChild(list);
 
-  sorted.forEach(guide => {
-    list.appendChild(buildGuideCard(guide, cat.id));
-  });
+  const footer = document.createElement('div');
+  footer.className = 'guide-chapter-list-footer';
+  const addBtn2 = document.createElement('button');
+  addBtn2.className = 'btn-ghost';
+  addBtn2.textContent = '+ Kapitel hinzufügen';
+  addBtn2.addEventListener('click', () => openGuideModal(cat.id));
+  footer.appendChild(addBtn2);
+  main.appendChild(footer);
 }
 
-function buildGuideCard(guide, categoryId) {
-  const card = document.createElement('div');
-  card.className = 'guide-card-item' + (guide.favorite ? ' guide-fav' : '');
+function buildChapterRow(guide, cat, number) {
+  const row = document.createElement('div');
+  row.className = 'guide-chapter-row';
 
-  const tags = (guide.tags || []).map(t =>
-    `<span class="guide-tag">${escHtml(t)}</span>`
-  ).join('');
-
-  const updDate = guide.updatedAt
-    ? new Date(guide.updatedAt).toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit', year:'numeric' })
-    : '';
-
-  card.innerHTML = `
-    <div class="guide-card-top">
-      <div class="guide-card-meta-row">
-        ${guide.favorite ? '<span class="guide-fav-star" title="Favorit">★</span>' : ''}
-        <h3 class="guide-card-title">${escHtml(guide.title)}</h3>
-      </div>
-      ${guide.description ? `<p class="guide-card-desc">${escHtml(guide.description)}</p>` : ''}
-      ${tags ? `<div class="guide-tags-row">${tags}</div>` : ''}
-    </div>
-    <div class="guide-card-footer">
-      ${updDate ? `<span class="guide-card-date">Bearbeitet: ${updDate}</span>` : ''}
-      <div class="guide-card-actions">
-        <button class="btn-ghost guide-card-btn guide-fav-toggle" title="${guide.favorite ? 'Favorit entfernen' : 'Als Favorit markieren'}">
-          ${guide.favorite ? '★' : '☆'}
-        </button>
-        <button class="btn-ghost guide-card-btn guide-edit-btn" title="Bearbeiten">✏️</button>
-        <button class="task-delete guide-card-btn guide-del-btn" style="opacity:1;" title="Löschen">✕</button>
-      </div>
+  row.innerHTML = `
+    <span class="guide-chapter-num">${number}</span>
+    <span class="guide-chapter-title">${escHtml(guide.title)}</span>
+    <div class="guide-chapter-actions">
+      <button class="guide-chapter-btn guide-chapter-fav" title="${guide.favorite ? 'Favorit entfernen' : 'Als Favorit markieren'}">${guide.favorite ? '★' : '☆'}</button>
+      <button class="guide-chapter-btn guide-chapter-edit" title="Bearbeiten">✏️</button>
+      <button class="guide-chapter-btn guide-chapter-del" title="Löschen">✕</button>
+      <button class="guide-chapter-open" title="Öffnen">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
     </div>
   `;
 
-  // Click on card → open detail
-  card.addEventListener('click', e => {
-    if (e.target.closest('.guide-card-btn')) return;
+  const openChapter = () => {
+    guide.lastOpened = new Date().toISOString();
+    guide.openCount  = (guide.openCount || 0) + 1;
+    saveGuideCategories();
     activeGuideId = guide.id;
     renderGuideContent();
+  };
+
+  row.addEventListener('click', e => {
+    if (e.target.closest('.guide-chapter-actions')) return;
+    openChapter();
   });
 
-  // Favorite toggle
-  card.querySelector('.guide-fav-toggle').addEventListener('click', e => {
+  row.querySelector('.guide-chapter-open').addEventListener('click', e => { e.stopPropagation(); openChapter(); });
+
+  row.querySelector('.guide-chapter-fav').addEventListener('click', e => {
     e.stopPropagation();
     guide.favorite = !guide.favorite;
     saveGuideCategories();
-    renderGuideCategoryContent();
-  });
-
-  // Edit
-  card.querySelector('.guide-edit-btn').addEventListener('click', e => {
-    e.stopPropagation();
-    openGuideModal(categoryId, guide.id);
-  });
-
-  // Delete
-  card.querySelector('.guide-del-btn').addEventListener('click', e => {
-    e.stopPropagation();
-    if (!confirm(`Anleitung „${guide.title}" löschen?`)) return;
-    const cat = guideCategories.find(c => c.id === categoryId);
-    if (cat) cat.guides = cat.guides.filter(g => g.id !== guide.id);
-    if (activeGuideId === guide.id) activeGuideId = null;
-    saveGuideCategories();
-    renderGuideCategoryContent();
     renderGuideContent();
   });
 
-  return card;
+  row.querySelector('.guide-chapter-edit').addEventListener('click', e => {
+    e.stopPropagation();
+    openGuideModal(cat.id, guide.id);
+  });
+
+  row.querySelector('.guide-chapter-del').addEventListener('click', e => {
+    e.stopPropagation();
+    if (!confirm(`Kapitel „${guide.title}" löschen?`)) return;
+    cat.guides = cat.guides.filter(g => g.id !== guide.id);
+    if (activeGuideId === guide.id) activeGuideId = null;
+    saveGuideCategories();
+    renderGuideContent();
+  });
+
+  return row;
 }
 
-// ── Single guide detail ───────────────────────────────────
+// ── Single guide detail (chapter view) ────────────────────
 
 function renderSingleGuide(guideId) {
   const result = findGuide(guideId);
   if (!result) { activeGuideId = null; renderGuideContent(); return; }
   const { guide, category } = result;
 
-  const view = document.getElementById('guide-detail-view');
-  view.innerHTML = '';
+  const main = document.getElementById('guide-main');
+  main.innerHTML = '';
 
   // Back button
   const back = document.createElement('button');
@@ -475,7 +552,7 @@ function renderSingleGuide(guideId) {
     <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
       <path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
-    ${escHtml(category.name)}
+    ${escHtml(category.icon || '📁')} ${escHtml(category.name)}
   `;
   back.addEventListener('click', () => { hideGuideScrollBtn(); activeGuideId = null; renderGuideContent(); });
 
@@ -492,8 +569,8 @@ function renderSingleGuide(guideId) {
     ${guide.description ? `<p class="guide-detail-desc">${escHtml(guide.description)}</p>` : ''}
     <div class="guide-detail-info-row">
       ${(guide.tags || []).map(t => `<span class="guide-tag">${escHtml(t)}</span>`).join('')}
-      ${guide.createdAt ? `<span class="guide-detail-date">Erstellt: ${new Date(guide.createdAt).toLocaleDateString('de-DE')}</span>` : ''}
-      ${guide.updatedAt ? `<span class="guide-detail-date">Bearbeitet: ${new Date(guide.updatedAt).toLocaleDateString('de-DE')}</span>` : ''}
+      ${guide.createdAt ? `<span class="guide-detail-date">Erstellt: ${fmtDate(guide.createdAt)}</span>` : ''}
+      ${guide.updatedAt ? `<span class="guide-detail-date">Bearbeitet: ${fmtDate(guide.updatedAt)}</span>` : ''}
     </div>
   `;
 
@@ -510,6 +587,8 @@ function renderSingleGuide(guideId) {
     guide.favorite = !guide.favorite;
     saveGuideCategories();
     renderSingleGuide(guideId);
+    renderGuideShelf();
+    renderSidebarForCategory(category, guide);
   });
   const exportBtn = document.createElement('button');
   exportBtn.className = 'btn-ghost';
@@ -527,96 +606,88 @@ function renderSingleGuide(guideId) {
   // Bookmark navigation bar
   const bmNav = buildBookmarkNav(guide.id);
 
-  view.append(back, header, bmNav, content);
+  main.append(back, header, bmNav, content);
   renderBookmarkNav(guide.id, bmNav);
   showGuideScrollBtn();
+
+  renderSidebarForCategory(category, guide);
 }
 
-// ── Bookmark Navigation ───────────────────────────────────
+// ── Sidebar: statistics + code snippet ────────────────────
 
-function buildBookmarkNav(guideId) {
-  const nav = document.createElement('div');
-  nav.className = 'guide-bm-nav';
-  nav.id = 'guide-bm-nav';
-  // nav is rendered after DOM insertion — see renderSingleGuide
-  return nav;
-}
+function renderSidebarForCategory(cat, guide) {
+  const statsBody   = document.getElementById('guide-stats-body');
+  const snippetBody = document.getElementById('guide-snippet-body');
+  const snippetLabel = document.getElementById('guide-snippet-label');
+  if (!statsBody || !snippetBody) return;
 
-function renderBookmarkNav(guideId, navEl) {
-  const nav = navEl || document.getElementById('guide-bm-nav');
-  if (!nav) return;
-  const ids = guideBookmarks[guideId] || [];
-  // filter to only blocks that exist in DOM
-  const blocks = ids.map(id => document.getElementById(id)).filter(Boolean);
-  const count  = blocks.length;
-  bookmarkNavIndex = Math.min(bookmarkNavIndex, Math.max(0, count - 1));
+  const stats = getCategoryStats(cat);
 
-  nav.innerHTML = '';
-  if (count === 0) {
-    nav.innerHTML = '<span class="guide-bm-empty">Keine Code-Bookmarks — ☆ auf einem Codeblock klicken</span>';
-    nav.classList.add('empty');
+  const created  = guide ? guide.createdAt : stats.created;
+  const updated  = guide ? guide.updatedAt : stats.updated;
+  const opened   = guide ? guide.lastOpened : stats.opened;
+  const mostReadGuide = stats.mostRead;
+
+  statsBody.innerHTML = `
+    <div class="b-free-row"><span class="b-free-label">Erstellt am</span><span class="b-free-val">${fmtDate(created)}</span></div>
+    <div class="b-free-row"><span class="b-free-label">Zuletzt bearbeitet</span><span class="b-free-val">${fmtDate(updated)}</span></div>
+    <div class="b-free-row"><span class="b-free-label">Zuletzt geöffnet</span><span class="b-free-val">${fmtOpenedFull(opened)}</span></div>
+    <div class="b-free-divider"></div>
+    <div class="b-free-row"><span class="b-free-label">Anzahl Kapitel</span><span class="b-free-val">${stats.count}</span></div>
+    <div class="b-free-row"><span class="b-free-label">Favoriten (Kapitel)</span><span class="b-free-val">${stats.favCount}</span></div>
+    <div class="b-free-row"><span class="b-free-label">Meist gelesenes Kapitel</span><span class="b-free-val guide-stat-truncate" title="${mostReadGuide ? escHtml(mostReadGuide.title) : ''}">${mostReadGuide ? escHtml(mostReadGuide.title) : '–'}</span></div>
+  `;
+
+  // Code snippet: prefer the open guide, otherwise the most-read chapter, otherwise first guide with a code block
+  let snippetGuide = guide || mostReadGuide || cat.guides.find(g => extractFirstCodeBlock(g.content));
+  const block = snippetGuide ? extractFirstCodeBlock(snippetGuide.content) : null;
+
+  snippetLabel.textContent = guide ? 'Code-Snippet aus diesem Kapitel' : 'Code-Snippet aus diesem Guide';
+
+  if (!block) {
+    snippetBody.innerHTML = `<p class="guide-snippet-empty">Kein Code-Snippet vorhanden.</p>`;
     return;
   }
-  nav.classList.remove('empty');
 
-  const prevBtn = document.createElement('button');
-  prevBtn.className = 'guide-bm-btn';
-  prevBtn.innerHTML = '↑';
-  prevBtn.title = 'Vorheriger Bookmark';
-  prevBtn.disabled = count === 0;
-  prevBtn.addEventListener('click', () => { bookmarkNavIndex = (bookmarkNavIndex - 1 + count) % count; jumpToBookmark(blocks[bookmarkNavIndex]); renderBookmarkNav(guideId); });
-
-  const label = document.createElement('span');
-  label.className = 'guide-bm-label';
-  label.textContent = `Bookmark ${bookmarkNavIndex + 1} / ${count}`;
-
-  const nextBtn = document.createElement('button');
-  nextBtn.className = 'guide-bm-btn';
-  nextBtn.innerHTML = '↓';
-  nextBtn.title = 'Nächster Bookmark';
-  nextBtn.disabled = count === 0;
-  nextBtn.addEventListener('click', () => { bookmarkNavIndex = (bookmarkNavIndex + 1) % count; jumpToBookmark(blocks[bookmarkNavIndex]); renderBookmarkNav(guideId); });
-
-  nav.append(prevBtn, label, nextBtn);
+  const idx = cat.guides.indexOf(snippetGuide) + 1;
+  snippetBody.innerHTML = `
+    <div class="guide-snippet-block">
+      <div class="guide-snippet-header">
+        <span class="guide-code-lang">${escHtml(block.lang)}</span>
+        <button class="guide-copy-btn" onclick="copyCode(this)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="5" y="5" width="9" height="9" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M3 11V3a2 2 0 0 1 2-2h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> Kopieren</button>
+      </div>
+      <pre class="guide-code-pre guide-snippet-pre"><code>${escHtml(block.code)}</code></pre>
+    </div>
+    <div class="guide-snippet-ref">Kapitel: ${idx}. ${escHtml(snippetGuide.title)}</div>
+  `;
 }
 
-function jumpToBookmark(el) {
-  if (!el) return;
-  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  el.classList.remove('guide-bm-flash');
-  void el.offsetWidth;
-  el.classList.add('guide-bm-flash');
-  setTimeout(() => el.classList.remove('guide-bm-flash'), 900);
-}
-
-function showGuideScrollBtn() {
-  let btn = document.getElementById('guide-scroll-top');
-  if (!btn) {
-    btn = document.createElement('button');
-    btn.id = 'guide-scroll-top';
-    btn.title = 'Nach oben';
-    btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 12V4M4 7l4-4 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-    btn.addEventListener('click', () => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-    document.body.appendChild(btn);
-  }
-  btn.classList.add('visible');
-}
-
-function hideGuideScrollBtn() {
-  const btn = document.getElementById('guide-scroll-top');
-  if (btn) btn.classList.remove('visible');
+function renderSearchSidebar() {
+  const statsBody   = document.getElementById('guide-stats-body');
+  const snippetBody = document.getElementById('guide-snippet-body');
+  const snippetLabel = document.getElementById('guide-snippet-label');
+  if (!statsBody || !snippetBody) return;
+  const q = guideSearchQuery.trim();
+  const results = getAllGuides().filter(g =>
+    g.title.toLowerCase().includes(q.toLowerCase()) ||
+    (g.description || '').toLowerCase().includes(q.toLowerCase()) ||
+    (g.content || '').toLowerCase().includes(q.toLowerCase()) ||
+    (g.tags || []).some(t => t.toLowerCase().includes(q.toLowerCase()))
+  );
+  statsBody.innerHTML = `
+    <div class="b-free-row"><span class="b-free-label">Suchbegriff</span><span class="b-free-val">„${escHtml(q)}"</span></div>
+    <div class="b-free-row"><span class="b-free-label">Treffer</span><span class="b-free-val">${results.length}</span></div>
+  `;
+  snippetLabel.textContent = 'Code-Snippet aus diesem Guide';
+  snippetBody.innerHTML = `<p class="guide-snippet-empty">Wähle ein Ergebnis, um Details zu sehen.</p>`;
 }
 
 // ── Search ────────────────────────────────────────────────
 
 function renderGuideSearchResults() {
-  const header = document.getElementById('guide-cat-header');
-  const list   = document.getElementById('guide-cat-list');
-  const q      = guideSearchQuery.toLowerCase().trim();
-  header.innerHTML = `<div class="guide-search-header">Suchergebnisse für „<strong>${escHtml(q)}</strong>"</div>`;
-  list.innerHTML = '';
+  const main = document.getElementById('guide-main');
+  const q = guideSearchQuery.toLowerCase().trim();
+  main.innerHTML = `<div class="guide-search-header">Suchergebnisse für „<strong>${escHtml(guideSearchQuery.trim())}</strong>"</div>`;
 
   const results = getAllGuides().filter(g =>
     g.title.toLowerCase().includes(q) ||
@@ -625,26 +696,70 @@ function renderGuideSearchResults() {
     (g.tags || []).some(t => t.toLowerCase().includes(q))
   );
 
+  const list = document.createElement('div');
+  list.className = 'guide-chapter-list';
+
   if (results.length === 0) {
     const p = document.createElement('p');
     p.className = 'empty-state';
     p.style.padding = '30px 0';
-    p.textContent = 'Keine Anleitungen gefunden.';
+    p.textContent = 'Keine Kapitel gefunden.';
     list.appendChild(p);
+    main.appendChild(list);
     return;
   }
 
-  results.forEach(g => {
-    const card = buildGuideCard(g, g.categoryId);
-    // Add category badge
-    const badge = document.createElement('span');
-    badge.className = 'guide-tag guide-tag-cat';
-    badge.textContent = g.categoryName;
-    card.querySelector('.guide-card-top').prepend(badge);
-    list.appendChild(card);
+  results.forEach((g, i) => {
+    const cat = guideCategories.find(c => c.id === g.categoryId);
+    list.appendChild(buildSearchChapterRow(g, cat, i + 1));
   });
+
+  main.appendChild(list);
 }
 
+function buildSearchChapterRow(guide, cat, number) {
+  const row = document.createElement('div');
+  row.className = 'guide-chapter-row';
+  row.innerHTML = `
+    <span class="guide-chapter-num">${number}</span>
+    <div class="guide-chapter-title-wrap">
+      <span class="guide-tag guide-tag-cat">${escHtml(cat.icon || '📁')} ${escHtml(cat.name)}</span>
+      <span class="guide-chapter-title">${escHtml(guide.title)}</span>
+    </div>
+    <div class="guide-chapter-actions">
+      <button class="guide-chapter-btn guide-chapter-fav" title="${guide.favorite ? 'Favorit entfernen' : 'Als Favorit markieren'}">${guide.favorite ? '★' : '☆'}</button>
+      <button class="guide-chapter-open" title="Öffnen">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+  `;
+
+  const open = () => {
+    guideSearchQuery = '';
+    const input = document.getElementById('guide-search-input');
+    if (input) input.value = '';
+    state.activeGuideCategoryId = guide.categoryId;
+    guide.lastOpened = new Date().toISOString();
+    guide.openCount  = (guide.openCount || 0) + 1;
+    saveGuideCategories();
+    activeGuideId = guide.id;
+    renderGuideContent();
+  };
+
+  row.addEventListener('click', e => {
+    if (e.target.closest('.guide-chapter-actions')) return;
+    open();
+  });
+  row.querySelector('.guide-chapter-open').addEventListener('click', e => { e.stopPropagation(); open(); });
+  row.querySelector('.guide-chapter-fav').addEventListener('click', e => {
+    e.stopPropagation();
+    guide.favorite = !guide.favorite;
+    saveGuideCategories();
+    renderGuideContent();
+  });
+
+  return row;
+}
 // ── Modal ─────────────────────────────────────────────────
 
 let guideModalCategoryId = null;
@@ -737,7 +852,6 @@ let _guidesInitialized = false;
 
 function initGuides() {
   if (_guidesInitialized) {
-    renderGuideCategoryList();
     renderGuideContent();
     return;
   }
@@ -791,7 +905,7 @@ function initGuides() {
     });
     saveGuideCategories();
     closeGuideCatModal();
-    renderGuideCategoryList();
+    renderGuideContent();
   });
 
   // Category modal: save on Enter in name field
@@ -807,7 +921,6 @@ function initGuides() {
       state.activeGuideCategoryId = null;
       activeGuideId = null;
     }
-    renderGuideCategoryList();
     renderGuideContent();
   });
 
@@ -861,11 +974,12 @@ function initGuides() {
 
     if (guideModalGuideId && activeGuideId === guideModalGuideId) {
       renderSingleGuide(activeGuideId);
+      renderGuideShelf();
     } else {
-      renderGuideCategoryContent();
+      activeGuideId = activeGuideId || null;
+      if (!guideModalGuideId) state.activeGuideCategoryId = cat.id;
       renderGuideContent();
     }
-    renderGuideCategoryList();
   });
 
   // Insert snippet buttons in modal
@@ -915,7 +1029,21 @@ function initGuides() {
     });
   });
 
+  // Grid/List view toggle for the bookshelf
+  const gridBtn = document.getElementById('lib-view-grid');
+  const listBtn = document.getElementById('lib-view-list');
+  const shelf   = document.getElementById('guide-shelf');
+  gridBtn.addEventListener('click', () => {
+    shelf.classList.remove('list-mode');
+    gridBtn.classList.add('active');
+    listBtn.classList.remove('active');
+  });
+  listBtn.addEventListener('click', () => {
+    shelf.classList.add('list-mode');
+    listBtn.classList.add('active');
+    gridBtn.classList.remove('active');
+  });
+
   // Initial render
-  renderGuideCategoryList();
   renderGuideContent();
 }
