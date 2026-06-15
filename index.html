@@ -618,7 +618,7 @@
           <div id="project-forest" style="display:none;"></div>
           <!-- Detailansicht — innerhalb der normalen View, Sidebar bleibt sichtbar -->
           <div id="view-project-detail" style="display:none;">
-
+ 
             <!-- TOOLBAR — schlank, nur Navigation + Edit -->
             <div class="pdt-toolbar">
               <button class="pdt-back-btn" id="proj-detail-back">
@@ -638,7 +638,7 @@
                 <button id="proj-detail-add-branch" style="display:none;">+ Ast hinzufügen</button>
               </div>
             </div>
-
+ 
             <!-- HERO — großer immersiver Bereich -->
             <div class="pdt-hero">
               <!-- Hintergrundbild (optional, wenn vorhanden) -->
@@ -646,15 +646,15 @@
                 <img src="img/landscape.jpg" alt="" class="pdt-landscape" onerror="this.style.display='none'"/>
                 <div class="pdt-hero-overlay"></div>
               </div>
-
+ 
               <!-- LINKS: Hauptprojektinfo -->
               <div class="pdt-left">
                 <div class="pdt-status-badge" id="proj-detail-status">Aktives Projekt</div>
-
+ 
                 <h1 class="pdt-project-name" id="proj-detail-name"></h1>
-
+ 
                 <p class="pdt-project-desc" id="proj-detail-desc"></p>
-
+ 
                 <div class="pdt-progress-section">
                   <div class="pdt-progress-label-row">
                     <span class="pdt-progress-label">Fortschritt</span>
@@ -672,16 +672,16 @@
                   </div>
                 </div>
               </div>
-
+ 
               <!-- MITTE: Baum -->
               <div class="pdt-tree-col">
                 <div id="proj-detail-tree"></div>
               </div>
-
+ 
               <!-- RECHTS: Projektinfos-Karte -->
               <div class="pdt-info-card">
                 <div class="pdt-info-card-title">Projektinfos</div>
-
+ 
                 <div class="pdt-info-item">
                   <div class="pdt-info-icon">
                     <span class="pdt-color-dot" id="proj-detail-color-dot"></span>
@@ -691,7 +691,7 @@
                     <div class="pdt-info-val" id="proj-detail-color-name">—</div>
                   </div>
                 </div>
-
+ 
                 <div class="pdt-info-item">
                   <div class="pdt-info-icon">
                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="2.5" width="12" height="10.5" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M4.5 1v3M9.5 1v3M1 6.5h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
@@ -701,7 +701,7 @@
                     <div class="pdt-info-val" id="proj-detail-startdate">—</div>
                   </div>
                 </div>
-
+ 
                 <div class="pdt-info-item">
                   <div class="pdt-info-icon">
                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.3"/><path d="M7 4v3l2 2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
@@ -711,7 +711,7 @@
                     <div class="pdt-info-val pdt-status-val" id="proj-detail-status-val">Aktiv</div>
                   </div>
                 </div>
-
+ 
                 <div class="pdt-info-item">
                   <div class="pdt-info-icon">
                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1.5L8.8 5.2l4.2.6-3 2.9.7 4.1L7 10.8l-3.7 2 .7-4.1-3-2.9 4.2-.6L7 1.5Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
@@ -721,16 +721,16 @@
                     <div class="pdt-info-val" id="proj-detail-sub-val">—</div>
                   </div>
                 </div>
-
+ 
                 <div class="pdt-info-divider"></div>
-
+ 
                 <div class="pdt-info-quote">
                   <svg width="16" height="12" viewBox="0 0 16 12" fill="none" style="flex-shrink:0;opacity:0.35;margin-top:2px;"><path d="M0 12V7.5C0 3.36 2.4 1.14 7.2 0l.8 1.5C5.2 2.3 3.6 3.6 3.2 6H6V12H0ZM10 12V7.5C10 3.36 12.4 1.14 17.2 0l.8 1.5C15.2 2.3 13.6 3.6 13.2 6H16V12H10Z" fill="currentColor"/></svg>
                   <span>Große Dinge entstehen aus vielen kleinen Schritten.</span>
                 </div>
               </div>
             </div>
-
+ 
             <!-- AUFGABENBEREICH -->
             <div class="pdt-tasks-section">
               <div class="pdt-tasks-header">
@@ -745,7 +745,7 @@
               </div>
               <div id="proj-detail-tiles" class="pdt-tiles-grid"></div>
             </div>
-
+ 
           </div>
         </div>
       </section>
@@ -781,9 +781,9 @@
       </section>
  
       <!-- GUIDES -->
-      <section id="view-guides" class="view">
+      <section id="view-guides" class="view view-fullbleed">
         <div class="dash-content">
-
+ 
           <!-- Library header -->
           <div class="lib-header">
             <div class="lib-header-left">
@@ -818,14 +818,14 @@
               <button class="btn-primary" id="add-guide-category-btn">+ Neues Buch</button>
             </div>
           </div>
-
+ 
           <!-- Bookshelf -->
           <div class="guide-shelf-wrap">
             <div id="guide-shelf" class="guide-shelf"></div>
             <div class="guide-shelf-board"></div>
           </div>
           <div id="guide-category-empty" class="empty-state hidden">Noch keine Bücher in deiner Bibliothek — lege mit „+ Neues Buch" los.</div>
-
+ 
           <!-- Detail area -->
           <div id="guide-detail-grid" class="guide-detail-grid hidden">
             <div id="guide-main" class="guide-main panel"></div>
@@ -840,7 +840,7 @@
               </div>
             </div>
           </div>
-
+ 
           <div id="guide-placeholder" class="empty-state full" style="flex-direction:column;gap:8px;">
             <svg width="40" height="40" viewBox="0 0 40 40" fill="none" opacity=".25">
               <path d="M8 9c0-1.66 1.34-3 3-3h9v28h-9a3 3 0 0 1-3-3V9Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
@@ -848,7 +848,7 @@
             </svg>
             <span>Buch aus dem Regal auswählen oder suchen</span>
           </div>
-
+ 
         </div>
       </section>
  
@@ -1520,7 +1520,7 @@
       <div id="project-archive-list" style="overflow-y:auto;flex:1;"></div>
     </div>
   </div>
-
+ 
   <!-- Unterprojekt hinzufügen Modal -->
   <div id="proj-sub-modal-overlay" class="modal-backdrop hidden">
     <div class="modal-box" style="width:400px;">
@@ -1535,7 +1535,7 @@
       </div>
     </div>
   </div>
-
+ 
   <!-- Bestätigungs-Modal (Archivieren / Löschen) -->
   <div id="proj-confirm-overlay" class="modal-backdrop hidden">
     <div class="modal-box" style="width:400px;">
@@ -1550,7 +1550,7 @@
       </div>
     </div>
   </div>
-
+ 
   <!-- Aufgabe verschieben Modal -->
   <div id="proj-move-modal-overlay" class="modal-backdrop hidden">
     <div class="modal-box" style="width:380px;">
@@ -1569,7 +1569,7 @@
       </div>
     </div>
   </div>
-
+ 
   <!-- Projekt Detailansicht (Fullscreen Overlay) -->
   <!-- Aufgaben Detail Modal -->
   <div id="task-detail-overlay" class="modal-backdrop hidden" style="z-index:300;">
@@ -1600,7 +1600,7 @@
       </div>
     </div>
   </div>
-
+ 
   <script src="js/main.js"></script>
   <script src="js/calendar.js"></script>
   <script src="js/today.js"></script>

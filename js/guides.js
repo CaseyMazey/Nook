@@ -62,7 +62,7 @@ function getBookmarkedBlocks(guideId) {
 // Lightweight renderer: headings, bold, italic, code blocks,
 // inline code, lists, horizontal rules, links.
 
-function renderMarkdown(raw, guideId = null) {
+function renderMarkdown(raw, guideId = null, categoryId = null, featuredBlockId = null) {
   if (!raw) return '';
   let html = escHtml(raw);
 
@@ -72,11 +72,19 @@ function renderMarkdown(raw, guideId = null) {
     const blockId  = guideId ? makeBlockId(guideId, code, _blockIndex++) : null;
     const idAttr   = blockId ? `id="${blockId}"` : '';
     const bookmarked = guideId ? isBookmarked(guideId, blockId) : false;
+    const bmIcon = bookmarked
+      ? `<svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M4 2.5A1.5 1.5 0 0 1 5.5 1h5A1.5 1.5 0 0 1 12 2.5V14l-4-2.4L4 14V2.5Z"/></svg>`
+      : `<svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M4 2.5A1.5 1.5 0 0 1 5.5 1h5A1.5 1.5 0 0 1 12 2.5V14l-4-2.4L4 14V2.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>`;
     const bmBtn    = guideId
-      ? `<button class="guide-bookmark-btn ${bookmarked ? 'active' : ''}" onclick="handleBookmarkClick(this,'${guideId}','${blockId}')" title="Code-Block merken">${bookmarked ? '★' : '☆'}</button>`
+      ? `<button class="guide-bookmark-btn ${bookmarked ? 'active' : ''}" onclick="handleBookmarkClick(this,'${guideId}','${blockId}')" title="${bookmarked ? 'Bookmark entfernen' : 'Code-Block merken'}">${bmIcon}</button>`
+      : '';
+    const featured = (guideId && categoryId && blockId && featuredBlockId === blockId);
+    const featBtn  = (guideId && categoryId)
+      ? `<button class="guide-feature-btn ${featured ? 'active' : ''}" onclick="handleFeatureClick(this,'${categoryId}','${guideId}','${blockId}')" title="${featured ? 'Als Bibliothek-Snippet entfernen' : 'Als Bibliothek-Snippet verwenden'}">${featured ? '★' : '☆'}</button>`
       : '';
     const langLabel = `<span class="guide-code-lang">${lang || 'code'}</span>`;
-    return `<div class="guide-code-block" ${idAttr}><div class="guide-code-header">${langLabel}<div class="guide-code-header-right">${bmBtn}<button class="guide-copy-btn" onclick="copyCode(this)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="5" y="5" width="9" height="9" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M3 11V3a2 2 0 0 1 2-2h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> Copy</button></div></div><pre class="guide-code-pre"><code>${code.trimEnd()}</code></pre></div>`;
+    const blockClass = 'guide-code-block' + (bookmarked ? ' bookmarked' : '');
+    return `<div class="${blockClass}" ${idAttr}><div class="guide-code-header">${langLabel}<div class="guide-code-header-right">${featBtn}${bmBtn}<button class="guide-copy-btn" onclick="copyCode(this)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="5" y="5" width="9" height="9" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M3 11V3a2 2 0 0 1 2-2h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> Copy</button></div></div><pre class="guide-code-pre"><code>${code.trimEnd()}</code></pre></div>`;
   });
 
   // Inline code `...`
@@ -146,8 +154,13 @@ window.handleBookmarkClick = function(btn, guideId, blockId) {
   toggleBookmark(guideId, blockId);
   const active = isBookmarked(guideId, blockId);
   btn.classList.toggle('active', active);
-  btn.textContent = active ? '★' : '☆';
-  renderBookmarkNav(guideId);
+  btn.title = active ? 'Bookmark entfernen' : 'Code-Block merken';
+  btn.innerHTML = active
+    ? `<svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M4 2.5A1.5 1.5 0 0 1 5.5 1h5A1.5 1.5 0 0 1 12 2.5V14l-4-2.4L4 14V2.5Z"/></svg>`
+    : `<svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M4 2.5A1.5 1.5 0 0 1 5.5 1h5A1.5 1.5 0 0 1 12 2.5V14l-4-2.4L4 14V2.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>`;
+  const block = btn.closest('.guide-code-block');
+  if (block) block.classList.toggle('bookmarked', active);
+  renderSidebarBookmarks(guideId);
 };
 
 // Copy code button handler (global so onclick works)
@@ -161,8 +174,33 @@ window.copyCode = function(btn) {
   });
 };
 
+// Featured snippet click handler (global so onclick works)
+window.handleFeatureClick = function(btn, categoryId, guideId, blockId) {
+  const cat = guideCategories.find(c => c.id === categoryId);
+  if (!cat) return;
+  const cur = cat.featuredSnippet;
+  if (cur && cur.guideId === guideId && cur.blockId === blockId) {
+    cat.featuredSnippet = null; // toggle off
+  } else {
+    cat.featuredSnippet = { guideId, blockId };
+  }
+  saveGuideCategories();
+  // Re-render so all star buttons + sidebar reflect the new state
+  renderGuideContent();
+};
 
-// ── Export / Import ───────────────────────────────────────
+// Returns all fenced code blocks of a guide together with their stable IDs
+function getCodeBlocksWithIds(content, guideId) {
+  if (!content) return [];
+  const blocks = [];
+  let idx = 0;
+  const re = /```(\w*)\n([\s\S]*?)```/g;
+  let m;
+  while ((m = re.exec(content))) {
+    blocks.push({ lang: m[1] || 'code', code: m[2].trimEnd(), id: makeBlockId(guideId, m[2], idx++) });
+  }
+  return blocks;
+}
 
 function exportGuideAsMd(guideId) {
   const result = findGuide(guideId);
@@ -236,6 +274,13 @@ function importGuideFromMd(categoryId) {
 // ── Library helpers ───────────────────────────────────────
 
 const GUIDE_BOOK_COLORS = 6; // number of pastel spine variants (css: .guide-book-0 .. .guide-book-5)
+
+// Returns the cover color index (0-5) for a book. Falls back to a
+// position-based color for books created before coverColor existed.
+function getCatColor(cat, idx) {
+  if (typeof cat.coverColor === 'number') return cat.coverColor % GUIDE_BOOK_COLORS;
+  return idx % GUIDE_BOOK_COLORS;
+}
 
 function fmtDate(iso) {
   if (!iso) return '–';
@@ -318,7 +363,7 @@ function renderGuideShelf() {
     const activeOrOpenChapter = !guideSearchQuery && state.activeGuideCategoryId === cat.id;
 
     const book = document.createElement('div');
-    book.className = `guide-book guide-book-${idx % GUIDE_BOOK_COLORS}` +
+    book.className = `guide-book guide-book-${getCatColor(cat, idx)}` +
       (activeOrOpenChapter ? ' active' : '');
     book.title = cat.name;
 
@@ -340,7 +385,6 @@ function renderGuideShelf() {
     });
 
     book.innerHTML = `
-      <div class="guide-book-icon">${cat.icon || '📁'}</div>
       <div class="guide-book-title">${escHtml(cat.name)}</div>
       <div class="guide-book-meta">${categoryGuideCount(cat)} Kapitel</div>
       <div class="guide-book-spacer"></div>
@@ -365,7 +409,7 @@ function renderGuideShelf() {
 
   // "Add new book" tile
   const addTile = document.createElement('div');
-  addTile.className = 'guide-book guide-book-add';
+  addTile.className = 'guide-book-add';
   addTile.innerHTML = `
     <div class="guide-book-add-icon">+</div>
     <div class="guide-book-add-label">Neues Buch<br>erstellen</div>
@@ -388,6 +432,7 @@ function renderGuideContent() {
     grid.classList.remove('hidden');
     renderGuideSearchResults();
     renderSearchSidebar();
+    hideSidebarBookmarks();
     return;
   }
 
@@ -409,6 +454,7 @@ function renderGuideContent() {
     grid.classList.remove('hidden');
     renderGuideChapterList(cat);
     renderSidebarForCategory(cat, null);
+    hideSidebarBookmarks();
     return;
   }
 
@@ -425,9 +471,10 @@ function renderGuideChapterList(cat) {
 
   const header = document.createElement('div');
   header.className = 'guide-book-header';
+  const catIdx = guideCategories.indexOf(cat);
   header.innerHTML = `
     <div class="guide-book-header-left">
-      <span class="guide-book-header-icon">${cat.icon || '📁'}</span>
+      <span class="guide-book-header-swatch guide-book-${getCatColor(cat, catIdx)}"></span>
       <div>
         <h2 class="guide-book-detail-title">${escHtml(cat.name)}</h2>
         <div class="guide-book-detail-sub">${cat.guides.length} Kapitel</div>
@@ -488,8 +535,6 @@ function buildChapterRow(guide, cat, number) {
     <span class="guide-chapter-title">${escHtml(guide.title)}</span>
     <div class="guide-chapter-actions">
       <button class="guide-chapter-btn guide-chapter-fav" title="${guide.favorite ? 'Favorit entfernen' : 'Als Favorit markieren'}">${guide.favorite ? '★' : '☆'}</button>
-      <button class="guide-chapter-btn guide-chapter-edit" title="Bearbeiten">✏️</button>
-      <button class="guide-chapter-btn guide-chapter-del" title="Löschen">✕</button>
       <button class="guide-chapter-open" title="Öffnen">
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
@@ -518,20 +563,6 @@ function buildChapterRow(guide, cat, number) {
     renderGuideContent();
   });
 
-  row.querySelector('.guide-chapter-edit').addEventListener('click', e => {
-    e.stopPropagation();
-    openGuideModal(cat.id, guide.id);
-  });
-
-  row.querySelector('.guide-chapter-del').addEventListener('click', e => {
-    e.stopPropagation();
-    if (!confirm(`Kapitel „${guide.title}" löschen?`)) return;
-    cat.guides = cat.guides.filter(g => g.id !== guide.id);
-    if (activeGuideId === guide.id) activeGuideId = null;
-    saveGuideCategories();
-    renderGuideContent();
-  });
-
   return row;
 }
 
@@ -552,7 +583,7 @@ function renderSingleGuide(guideId) {
     <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
       <path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
-    ${escHtml(category.icon || '📁')} ${escHtml(category.name)}
+    ${escHtml(category.name)}
   `;
   back.addEventListener('click', () => { hideGuideScrollBtn(); activeGuideId = null; renderGuideContent(); });
 
@@ -576,44 +607,171 @@ function renderSingleGuide(guideId) {
 
   const actions = document.createElement('div');
   actions.className = 'guide-detail-actions';
-  const editBtn = document.createElement('button');
-  editBtn.className = 'btn-ghost';
-  editBtn.textContent = '✏️ Bearbeiten';
-  editBtn.addEventListener('click', () => openGuideModal(category.id, guide.id));
+
   const favBtn = document.createElement('button');
-  favBtn.className = 'btn-ghost';
-  favBtn.textContent = guide.favorite ? '★ Favorit' : '☆ Favorit';
+  favBtn.className = 'guide-detail-fav-btn';
+  favBtn.title = guide.favorite ? 'Favorit entfernen' : 'Als Favorit markieren';
+  favBtn.textContent = guide.favorite ? '★' : '☆';
   favBtn.addEventListener('click', () => {
     guide.favorite = !guide.favorite;
     saveGuideCategories();
-    renderSingleGuide(guideId);
-    renderGuideShelf();
-    renderSidebarForCategory(category, guide);
+    renderGuideContent();
   });
-  const exportBtn = document.createElement('button');
-  exportBtn.className = 'btn-ghost';
-  exportBtn.textContent = '⬇ Export';
-  exportBtn.title = 'Als .md herunterladen';
-  exportBtn.addEventListener('click', () => exportGuideAsMd(guide.id));
-  actions.append(favBtn, editBtn, exportBtn);
+
+  const menuWrap = document.createElement('div');
+  menuWrap.className = 'guide-detail-menu-wrap';
+  const menuBtn = document.createElement('button');
+  menuBtn.className = 'guide-detail-menu-btn';
+  menuBtn.title = 'Weitere Optionen';
+  menuBtn.innerHTML = '⋮';
+  const dropdown = document.createElement('div');
+  dropdown.className = 'guide-detail-menu-dropdown';
+
+  const editItem = document.createElement('button');
+  editItem.className = 'guide-detail-menu-item';
+  editItem.textContent = '✏️ Bearbeiten';
+  editItem.addEventListener('click', () => {
+    dropdown.classList.remove('open');
+    openGuideModal(category.id, guide.id);
+  });
+
+  const exportItem = document.createElement('button');
+  exportItem.className = 'guide-detail-menu-item';
+  exportItem.textContent = '⬇ Exportieren';
+  exportItem.addEventListener('click', () => {
+    dropdown.classList.remove('open');
+    exportGuideAsMd(guide.id);
+  });
+
+  const deleteItem = document.createElement('button');
+  deleteItem.className = 'guide-detail-menu-item danger';
+  deleteItem.textContent = '🗑 Löschen';
+  deleteItem.addEventListener('click', () => {
+    dropdown.classList.remove('open');
+    if (!confirm(`Kapitel „${guide.title}" löschen?`)) return;
+    category.guides = category.guides.filter(g => g.id !== guide.id);
+    activeGuideId = null;
+    saveGuideCategories();
+    renderGuideContent();
+  });
+
+  dropdown.append(editItem, exportItem, deleteItem);
+
+  menuBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    const willOpen = !dropdown.classList.contains('open');
+    document.querySelectorAll('.guide-detail-menu-dropdown.open').forEach(d => d.classList.remove('open'));
+    document.querySelectorAll('.guide-detail-menu-btn.active').forEach(b => b.classList.remove('active'));
+    if (willOpen) { dropdown.classList.add('open'); menuBtn.classList.add('active'); }
+  });
+
+  menuWrap.append(menuBtn, dropdown);
+  actions.append(favBtn, menuWrap);
   header.append(titleArea, actions);
 
   // Content
   const content = document.createElement('div');
   content.className = 'guide-detail-content';
-  content.innerHTML = renderMarkdown(guide.content || '', guide.id);
+  const featuredBlockId = (category.featuredSnippet && category.featuredSnippet.guideId === guide.id)
+    ? category.featuredSnippet.blockId
+    : null;
+  content.innerHTML = renderMarkdown(guide.content || '', guide.id, category.id, featuredBlockId);
 
-  // Bookmark navigation bar
-  const bmNav = buildBookmarkNav(guide.id);
-
-  main.append(back, header, bmNav, content);
-  renderBookmarkNav(guide.id, bmNav);
+  main.append(back, header, content);
   showGuideScrollBtn();
 
   renderSidebarForCategory(category, guide);
+  renderSidebarBookmarks(guide.id);
 }
 
 // ── Sidebar: statistics + code snippet ────────────────────
+
+function renderSidebarBookmarks(guideId) {
+  const card = document.getElementById('guide-bookmarks-card');
+  const body = document.getElementById('guide-bookmarks-body');
+  if (!card || !body) return;
+  card.classList.remove('hidden');
+
+  const ids = guideBookmarks[guideId] || [];
+  const blocks = ids.map(id => document.getElementById(id)).filter(Boolean);
+  const count = blocks.length;
+  bookmarkNavIndex = Math.min(bookmarkNavIndex, Math.max(0, count - 1));
+
+  body.innerHTML = '';
+
+  if (count === 0) {
+    body.innerHTML = '<div class="guide-bm-empty">Keine Code-Bookmarks — 🔖 an einem Codeblock klicken</div>';
+    return;
+  }
+
+  const nav = document.createElement('div');
+  nav.className = 'guide-bm-nav';
+
+  const prevBtn = document.createElement('button');
+  prevBtn.className = 'guide-bm-btn';
+  prevBtn.innerHTML = '↑';
+  prevBtn.title = 'Vorheriger Bookmark';
+  prevBtn.addEventListener('click', () => { bookmarkNavIndex = (bookmarkNavIndex - 1 + count) % count; jumpToBookmark(blocks[bookmarkNavIndex]); renderSidebarBookmarks(guideId); });
+
+  const label = document.createElement('span');
+  label.className = 'guide-bm-label';
+  label.textContent = `Bookmark ${bookmarkNavIndex + 1} / ${count}`;
+
+  const nextBtn = document.createElement('button');
+  nextBtn.className = 'guide-bm-btn';
+  nextBtn.innerHTML = '↓';
+  nextBtn.title = 'Nächster Bookmark';
+  nextBtn.addEventListener('click', () => { bookmarkNavIndex = (bookmarkNavIndex + 1) % count; jumpToBookmark(blocks[bookmarkNavIndex]); renderSidebarBookmarks(guideId); });
+
+  nav.append(prevBtn, label, nextBtn);
+  body.appendChild(nav);
+
+  const list = document.createElement('div');
+  list.className = 'guide-bm-list';
+  blocks.forEach((block, i) => {
+    const lang = block.querySelector('.guide-code-lang');
+    const item = document.createElement('button');
+    item.className = 'guide-bm-item';
+    item.innerHTML = `<span class="guide-bm-item-lang">${lang ? escHtml(lang.textContent) : 'code'}</span><span>Codeblock ${i + 1}</span>`;
+    item.addEventListener('click', () => { bookmarkNavIndex = i; jumpToBookmark(block); renderSidebarBookmarks(guideId); });
+    list.appendChild(item);
+  });
+  body.appendChild(list);
+}
+
+function hideSidebarBookmarks() {
+  const card = document.getElementById('guide-bookmarks-card');
+  if (card) card.classList.add('hidden');
+}
+
+function jumpToBookmark(el) {
+  if (!el) return;
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  el.classList.remove('guide-bm-flash');
+  void el.offsetWidth;
+  el.classList.add('guide-bm-flash');
+  setTimeout(() => el.classList.remove('guide-bm-flash'), 900);
+}
+
+function showGuideScrollBtn() {
+  let btn = document.getElementById('guide-scroll-top');
+  if (!btn) {
+    btn = document.createElement('button');
+    btn.id = 'guide-scroll-top';
+    btn.title = 'Nach oben';
+    btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 12V4M4 7l4-4 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    btn.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+    document.body.appendChild(btn);
+  }
+  btn.classList.add('visible');
+}
+
+function hideGuideScrollBtn() {
+  const btn = document.getElementById('guide-scroll-top');
+  if (btn) btn.classList.remove('visible');
+}
 
 function renderSidebarForCategory(cat, guide) {
   const statsBody   = document.getElementById('guide-stats-body');
@@ -638,14 +796,22 @@ function renderSidebarForCategory(cat, guide) {
     <div class="b-free-row"><span class="b-free-label">Meist gelesenes Kapitel</span><span class="b-free-val guide-stat-truncate" title="${mostReadGuide ? escHtml(mostReadGuide.title) : ''}">${mostReadGuide ? escHtml(mostReadGuide.title) : '–'}</span></div>
   `;
 
-  // Code snippet: prefer the open guide, otherwise the most-read chapter, otherwise first guide with a code block
-  let snippetGuide = guide || mostReadGuide || cat.guides.find(g => extractFirstCodeBlock(g.content));
-  const block = snippetGuide ? extractFirstCodeBlock(snippetGuide.content) : null;
+  // Code snippet: only the book's explicitly chosen "featured" snippet.
+  let snippetGuide = null;
+  let block = null;
 
-  snippetLabel.textContent = guide ? 'Code-Snippet aus diesem Kapitel' : 'Code-Snippet aus diesem Guide';
+  if (cat.featuredSnippet) {
+    const fg = cat.guides.find(g => g.id === cat.featuredSnippet.guideId);
+    if (fg) {
+      const fb = getCodeBlocksWithIds(fg.content, fg.id).find(b => b.id === cat.featuredSnippet.blockId);
+      if (fb) { snippetGuide = fg; block = fb; }
+    }
+  }
+
+  snippetLabel.textContent = 'Featured Snippet';
 
   if (!block) {
-    snippetBody.innerHTML = `<p class="guide-snippet-empty">Kein Code-Snippet vorhanden.</p>`;
+    snippetBody.innerHTML = `<p class="guide-snippet-empty">Kein Featured Snippet ausgewählt — ⭐ an einem Codeblock klicken.</p>`;
     return;
   }
 
@@ -723,7 +889,7 @@ function buildSearchChapterRow(guide, cat, number) {
   row.innerHTML = `
     <span class="guide-chapter-num">${number}</span>
     <div class="guide-chapter-title-wrap">
-      <span class="guide-tag guide-tag-cat">${escHtml(cat.icon || '📁')} ${escHtml(cat.name)}</span>
+      <span class="guide-tag guide-tag-cat">${escHtml(cat.name)}</span>
       <span class="guide-chapter-title">${escHtml(guide.title)}</span>
     </div>
     <div class="guide-chapter-actions">
@@ -775,7 +941,6 @@ function openGuideModal(categoryId, guideId = null) {
   const descIn  = document.getElementById('guide-modal-desc-input');
   const contIn  = document.getElementById('guide-modal-content-input');
   const tagsIn  = document.getElementById('guide-modal-tags-input');
-  const previewBtn = document.getElementById('guide-modal-preview-btn');
 
   title.textContent = guideId ? 'Anleitung bearbeiten' : 'Neue Anleitung';
 
@@ -807,8 +972,8 @@ function closeGuideModal() {
 function setGuideModalTab(tab) {
   const editorPane  = document.getElementById('guide-modal-editor-pane');
   const previewPane = document.getElementById('guide-modal-preview-pane');
-  const editorTab   = document.getElementById('guide-modal-tab-editor');
-  const previewTab  = document.getElementById('guide-modal-tab-preview');
+  const editorTab   = document.getElementById('guide-tab-edit');
+  const previewTab  = document.getElementById('guide-tab-preview');
 
   if (tab === 'editor') {
     editorPane.classList.remove('hidden');
@@ -830,15 +995,14 @@ function setGuideModalTab(tab) {
 
 // ── Category Modal ────────────────────────────────────────
 
-let selectedCatEmoji = '📁';
+let selectedCatColor = 0;
 
 function openGuideCatModal() {
-  selectedCatEmoji = '📁';
+  selectedCatColor = 0;
   document.getElementById('guide-cat-name-input').value = '';
-  document.getElementById('guide-cat-emoji-custom').value = '';
-  // Reset emoji grid selection
-  document.querySelectorAll('.guide-emoji-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.emoji === '📁');
+  // Reset color grid selection
+  document.querySelectorAll('.guide-color-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.color === '0');
   });
   document.getElementById('guide-cat-modal-overlay').classList.remove('hidden');
   setTimeout(() => document.getElementById('guide-cat-name-input').focus(), 50);
@@ -861,29 +1025,13 @@ function initGuides() {
   const guideView = document.getElementById('view-guides');
   if (guideView) { void guideView.offsetHeight; }
 
-  // Add category → open modal
-  document.getElementById('add-guide-category-btn').addEventListener('click', openGuideCatModal);
-
-  // Category modal: emoji grid clicks
-  document.getElementById('guide-emoji-grid').addEventListener('click', e => {
-    const btn = e.target.closest('.guide-emoji-btn');
+  // Category modal: color grid clicks
+  document.getElementById('guide-color-grid').addEventListener('click', e => {
+    const btn = e.target.closest('.guide-color-btn');
     if (!btn) return;
-    selectedCatEmoji = btn.dataset.emoji;
-    document.querySelectorAll('.guide-emoji-btn').forEach(b => b.classList.remove('active'));
+    selectedCatColor = parseInt(btn.dataset.color, 10) || 0;
+    document.querySelectorAll('.guide-color-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    document.getElementById('guide-cat-emoji-custom').value = '';
-  });
-
-  // Category modal: custom emoji input overrides grid
-  document.getElementById('guide-cat-emoji-custom').addEventListener('input', e => {
-    const val = e.target.value.trim();
-    if (val) {
-      selectedCatEmoji = val;
-      document.querySelectorAll('.guide-emoji-btn').forEach(b => b.classList.remove('active'));
-    } else {
-      selectedCatEmoji = '📁';
-      document.querySelector('.guide-emoji-btn[data-emoji="📁"]').classList.add('active');
-    }
   });
 
   // Category modal: close
@@ -900,7 +1048,7 @@ function initGuides() {
     guideCategories.push({
       id:     crypto.randomUUID(),
       name,
-      icon:   selectedCatEmoji || '📁',
+      coverColor: selectedCatColor,
       guides: []
     });
     saveGuideCategories();
@@ -925,8 +1073,8 @@ function initGuides() {
   });
 
   // Modal tabs
-  document.getElementById('guide-modal-tab-editor').addEventListener('click', () => setGuideModalTab('editor'));
-  document.getElementById('guide-modal-tab-preview').addEventListener('click', () => setGuideModalTab('preview'));
+  document.getElementById('guide-tab-edit').addEventListener('click', () => setGuideModalTab('editor'));
+  document.getElementById('guide-tab-preview').addEventListener('click', () => setGuideModalTab('preview'));
 
   // Modal close
   document.getElementById('guide-modal-close').addEventListener('click', closeGuideModal);
@@ -1042,6 +1190,12 @@ function initGuides() {
     shelf.classList.add('list-mode');
     listBtn.classList.add('active');
     gridBtn.classList.remove('active');
+  });
+
+  // Close chapter-detail meatball menu on outside click
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.guide-detail-menu-dropdown.open').forEach(d => d.classList.remove('open'));
+    document.querySelectorAll('.guide-detail-menu-btn.active').forEach(b => b.classList.remove('active'));
   });
 
   // Initial render
