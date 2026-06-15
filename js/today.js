@@ -607,11 +607,16 @@ function renderBlocks() {
 
   const dayTasks = getTasksForBlockView();
   dayTasks.forEach(task => {
-    const ul = document.getElementById(`block-${task.block}`); if (!ul) return;
-    const li = document.createElement('li');
-    li.className = task.done ? 'block-task-done' : '';
-    li.textContent = task.title;
-    ul.appendChild(li);
+    // Support both legacy single block (task.block) and new multi-block (task.blocks)
+    const blockIds = Array.isArray(task.blocks) ? task.blocks
+                   : (task.block != null ? [task.block] : []);
+    blockIds.forEach(bid => {
+      const ul = document.getElementById(`block-${bid}`); if (!ul) return;
+      const li = document.createElement('li');
+      li.className = task.done ? 'block-task-done' : '';
+      li.textContent = task.title;
+      ul.appendChild(li);
+    });
   });
 
   renderBlocksProgress();
@@ -660,7 +665,11 @@ function buildTaskItem(task) {
   const title = document.createElement('span'); title.className = 'task-title'; title.textContent = task.title;
   title.addEventListener('click', () => openTaskModal(task)); info.appendChild(title);
   if (task.notes) { const sub = document.createElement('span'); sub.className = 'task-sub'; sub.textContent = task.notes; info.appendChild(sub); }
-  const badge = document.createElement('span'); badge.className = 'task-block-badge'; badge.textContent = `B${task.block}`;
+  // Build badge for all assigned blocks (legacy: task.block, new: task.blocks)
+  const _blockIds = Array.isArray(task.blocks) ? task.blocks
+                  : (task.block != null ? [task.block] : []);
+  const badge = document.createElement('span'); badge.className = 'task-block-badge';
+  badge.textContent = _blockIds.length ? _blockIds.map(b => `B${b}`).join(' ') : '–';
   const del   = document.createElement('button'); del.className = 'task-delete'; del.textContent = '✕';
   del.addEventListener('click', () => { tasks = tasks.filter(t => t.id !== task.id); saveTasks(); renderTasks(); renderBlocks(); });
   li.append(cb, dot, info, badge, del);
@@ -679,12 +688,23 @@ function openTaskModal(existingTask = null) {
   document.getElementById('modal-title').textContent = existingTask ? 'Aufgabe bearbeiten' : 'Neue Aufgabe';
   document.getElementById('modal-task-input').value = existingTask ? existingTask.title : '';
   document.getElementById('modal-task-notes').value = existingTask?.notes || '';
-  const sel = document.getElementById('modal-block-select'); sel.innerHTML = '';
+  // Determine pre-selected block IDs: migrate legacy task.block → task.blocks
+  const _preSelected = existingTask
+    ? (Array.isArray(existingTask.blocks) ? existingTask.blocks
+       : existingTask.block != null ? [existingTask.block] : [])
+    : [2]; // default: Block 2
+
+  const chipsWrap = document.getElementById('modal-block-chips');
+  chipsWrap.innerHTML = '';
   blocks.forEach(b => {
-    const opt = document.createElement('option'); opt.value = b.id;
-    opt.textContent = `${b.label} (${b.start}–${b.end})`;
-    if (existingTask ? existingTask.block === b.id : b.id === 2) opt.selected = true;
-    sel.appendChild(opt);
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'task-chip' + (_preSelected.includes(b.id) ? ' active' : '');
+    chip.dataset.blockId = b.id;
+    chip.textContent = `Block ${b.id}`;
+    chip.title = `${b.label} (${b.start}–${b.end})`;
+    chip.addEventListener('click', () => chip.classList.toggle('active'));
+    chipsWrap.appendChild(chip);
   });
   document.querySelectorAll('.prio-btn').forEach(b => b.classList.toggle('active', Number(b.dataset.prio) === state.selectedPriority));
   taskOverlay.classList.remove('hidden');
@@ -709,12 +729,16 @@ document.getElementById('modal-task-input').addEventListener('keydown', e => {
 });
 document.getElementById('modal-save').addEventListener('click', () => {
   const title = document.getElementById('modal-task-input').value.trim(); if (!title) return;
-  const block = Number(document.getElementById('modal-block-select').value);
+  // Collect selected block IDs from chips
+  const selectedBlocks = [...document.querySelectorAll('#modal-block-chips .task-chip.active')]
+    .map(c => Number(c.dataset.blockId));
   const notesTxt = document.getElementById('modal-task-notes').value.trim();
   if (state.editingTask) {
-    Object.assign(state.editingTask, { title, block, priority: state.selectedPriority, notes: notesTxt });
+    Object.assign(state.editingTask, { title, blocks: selectedBlocks, priority: state.selectedPriority, notes: notesTxt });
+    // Remove legacy field to keep data clean
+    delete state.editingTask.block;
   } else {
-    tasks.push({ id: crypto.randomUUID(), title, notes: notesTxt, priority: state.selectedPriority, block, done: false, createdAt: Date.now(), completedAt: null });
+    tasks.push({ id: crypto.randomUUID(), title, notes: notesTxt, priority: state.selectedPriority, blocks: selectedBlocks, done: false, createdAt: Date.now(), completedAt: null });
   }
   saveTasks(); closeTaskModal(); renderTasks(); renderBlocks();
 });

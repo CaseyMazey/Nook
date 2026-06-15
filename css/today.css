@@ -377,3 +377,46 @@
   border: none;
   opacity: 0.55;
 }
+
+/* =========================
+   TASK-LIST — Layout-Bug-Fix
+   style.css setzt grid-template-columns: 20px 8px 1fr auto auto
+   mit gap:10px → 48px Einzug vor dem Text + 20px padding links = 68px.
+   Override: kompaktere Spalten, weniger Padding.
+========================= */
+.task-item {
+  grid-template-columns: 16px 6px 1fr auto auto;
+  gap: 7px;
+  padding: 9px 14px;
+}
+
+/* =========================
+   BLOCK-CHIPS — Mehrfach-Auswahl im Modal
+========================= */
+.task-block-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.task-chip {
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: 12.5px;
+  font-family: var(--mono);
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition), color var(--transition);
+  white-space: nowrap;
+}
+.task-chip:hover {
+  border-color: var(--sage);
+  color: var(--text);
+}
+.task-chip.active {
+  border-color: var(--sage);
+  background: var(--sage-bg);
+  color: var(--sage-dark, var(--sage));
+  font-weight: 500;
+}
