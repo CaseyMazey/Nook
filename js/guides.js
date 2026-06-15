@@ -64,12 +64,25 @@ function getBookmarkedBlocks(guideId) {
 
 function renderMarkdown(raw, guideId = null, categoryId = null, featuredBlockId = null) {
   if (!raw) return '';
+
+  // Pre-compute stable block IDs from the RAW (unescaped) content so they always
+  // match the IDs produced by getCodeBlocksWithIds(). Computing them after escHtml()
+  // would alter the hash for any code containing <, >, & or " (e.g. comparisons,
+  // logical operators, string literals) causing a mismatch with stored IDs.
+  const _rawBlockIds = [];
+  if (guideId) {
+    let _ri = 0;
+    const _re = /```(\w*)\n([\s\S]*?)```/g;
+    let _m;
+    while ((_m = _re.exec(raw))) { _rawBlockIds.push(makeBlockId(guideId, _m[2], _ri++)); }
+  }
+
   let html = escHtml(raw);
 
   // Fenced code blocks  ```lang\n...\n```
   let _blockIndex = 0;
   html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
-    const blockId  = guideId ? makeBlockId(guideId, code, _blockIndex++) : null;
+    const blockId  = guideId ? _rawBlockIds[_blockIndex++] : null;
     const idAttr   = blockId ? `id="${blockId}"` : '';
     const bookmarked = guideId ? isBookmarked(guideId, blockId) : false;
     const bmIcon = bookmarked
@@ -273,13 +286,42 @@ function importGuideFromMd(categoryId) {
 
 // ── Library helpers ───────────────────────────────────────
 
-const GUIDE_BOOK_COLORS = 6; // number of pastel spine variants (css: .guide-book-0 .. .guide-book-5)
+const GUIDE_BOOK_COLORS = 6; // legacy pastel count (css: .guide-book-0 .. .guide-book-5)
+// Palette used when converting legacy index to hex for the color picker preview
+const GUIDE_PALETTE_HEX = ['#C9D6BC','#ECDFCB','#DAD3EA','#F2E6AE','#E2DED4','#E4CBE6'];
 
-// Returns the cover color index (0-5) for a book. Falls back to a
-// position-based color for books created before coverColor existed.
-function getCatColor(cat, idx) {
-  if (typeof cat.coverColor === 'number') return cat.coverColor % GUIDE_BOOK_COLORS;
-  return idx % GUIDE_BOOK_COLORS;
+// Persistent user color library (array of hex strings)
+let guideUserColors = DB.get('guideUserColors', []);
+function saveUserColors() { DB.set('guideUserColors', guideUserColors); }
+
+// Returns a hex string for a book regardless of whether coverColor is a legacy
+// index (number 0-5) or a modern hex string.
+function getCatHex(cat, idx) {
+  if (typeof cat.coverColor === 'string' && /^#/.test(cat.coverColor)) return cat.coverColor;
+  const legacyIdx = (typeof cat.coverColor === 'number') ? cat.coverColor : idx;
+  return GUIDE_PALETTE_HEX[legacyIdx % GUIDE_BOOK_COLORS];
+}
+
+// Applies the correct color class or inline style to a book element.
+function applyBookColor(el, cat, idx) {
+  for (let i = 0; i < GUIDE_BOOK_COLORS; i++) el.classList.remove('guide-book-' + i);
+  if (typeof cat.coverColor === 'string' && /^#/.test(cat.coverColor)) {
+    el.style.background = hexToBookGradient(cat.coverColor);
+  } else {
+    const legacyIdx = (typeof cat.coverColor === 'number') ? cat.coverColor : idx;
+    el.classList.add('guide-book-' + (legacyIdx % GUIDE_BOOK_COLORS));
+    el.style.background = '';
+  }
+}
+
+// Darken a hex color by factor (0..1) for the gradient end-stop
+function hexDarken(hex, factor) {
+  let r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  r = Math.round(r * (1 - factor)); g = Math.round(g * (1 - factor)); b = Math.round(b * (1 - factor));
+  return '#' + [r,g,b].map(v => v.toString(16).padStart(2,'0')).join('');
+}
+function hexToBookGradient(hex) {
+  return 'linear-gradient(160deg, ' + hex + ' 0%, ' + hexDarken(hex, 0.12) + ' 100%)';
 }
 
 function fmtDate(iso) {
@@ -363,9 +405,9 @@ function renderGuideShelf() {
     const activeOrOpenChapter = !guideSearchQuery && state.activeGuideCategoryId === cat.id;
 
     const book = document.createElement('div');
-    book.className = `guide-book guide-book-${getCatColor(cat, idx)}` +
-      (activeOrOpenChapter ? ' active' : '');
+    book.className = 'guide-book' + (activeOrOpenChapter ? ' active' : '');
     book.title = cat.name;
+    applyBookColor(book, cat, idx);
 
     const del = document.createElement('button');
     del.className = 'guide-book-del';
@@ -474,7 +516,7 @@ function renderGuideChapterList(cat) {
   const catIdx = guideCategories.indexOf(cat);
   header.innerHTML = `
     <div class="guide-book-header-left">
-      <span class="guide-book-header-swatch guide-book-${getCatColor(cat, catIdx)}"></span>
+      <span class="guide-book-header-swatch" id="guide-book-header-swatch-tmp"></span>
       <div>
         <h2 class="guide-book-detail-title">${escHtml(cat.name)}</h2>
         <div class="guide-book-detail-sub">${cat.guides.length} Kapitel</div>
@@ -482,6 +524,13 @@ function renderGuideChapterList(cat) {
     </div>
     <div class="guide-book-header-actions"></div>
   `;
+  // Apply book color to the swatch (inline style for custom hex, class for legacy)
+  const swatch = header.querySelector('#guide-book-header-swatch-tmp');
+  if (swatch) {
+    swatch.removeAttribute('id');
+    applyBookColor(swatch, cat, catIdx);
+  }
+
   const actions = header.querySelector('.guide-book-header-actions');
 
   const importBtn = document.createElement('button');
@@ -995,17 +1044,49 @@ function setGuideModalTab(tab) {
 
 // ── Category Modal ────────────────────────────────────────
 
-let selectedCatColor = 0;
+let selectedCatColor = GUIDE_PALETTE_HEX[0]; // hex string
 
 function openGuideCatModal() {
-  selectedCatColor = 0;
+  selectedCatColor = GUIDE_PALETTE_HEX[0];
   document.getElementById('guide-cat-name-input').value = '';
-  // Reset color grid selection
-  document.querySelectorAll('.guide-color-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.color === '0');
-  });
+  syncColorPicker(selectedCatColor);
   document.getElementById('guide-cat-modal-overlay').classList.remove('hidden');
   setTimeout(() => document.getElementById('guide-cat-name-input').focus(), 50);
+}
+
+// Sync the color picker UI to a given hex value
+function syncColorPicker(hex) {
+  selectedCatColor = hex;
+  const picker = document.getElementById('guide-color-picker');
+  if (picker) picker.value = hex;
+  const preview = document.getElementById('guide-color-preview');
+  if (preview) { preview.style.background = hexToBookGradient(hex); }
+  renderUserColorLibrary();
+}
+
+function renderUserColorLibrary() {
+  const lib = document.getElementById('guide-color-library');
+  if (!lib) return;
+  lib.innerHTML = '';
+  guideUserColors.forEach(hex => {
+    const btn = document.createElement('button');
+    btn.className = 'guide-usercolor-swatch' + (hex === selectedCatColor ? ' active' : '');
+    btn.style.background = hexToBookGradient(hex);
+    btn.title = hex;
+    btn.addEventListener('click', () => syncColorPicker(hex));
+    const del = document.createElement('span');
+    del.className = 'guide-usercolor-del';
+    del.textContent = '✕';
+    del.title = 'Entfernen';
+    del.addEventListener('click', e => {
+      e.stopPropagation();
+      guideUserColors = guideUserColors.filter(c => c !== hex);
+      saveUserColors();
+      renderUserColorLibrary();
+    });
+    btn.appendChild(del);
+    lib.appendChild(btn);
+  });
 }
 
 function closeGuideCatModal() {
@@ -1025,14 +1106,24 @@ function initGuides() {
   const guideView = document.getElementById('view-guides');
   if (guideView) { void guideView.offsetHeight; }
 
-  // Category modal: color grid clicks
-  document.getElementById('guide-color-grid').addEventListener('click', e => {
-    const btn = e.target.closest('.guide-color-btn');
-    if (!btn) return;
-    selectedCatColor = parseInt(btn.dataset.color, 10) || 0;
-    document.querySelectorAll('.guide-color-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-  });
+  // Category modal: color picker
+  const colorPicker = document.getElementById('guide-color-picker');
+  if (colorPicker) {
+    colorPicker.addEventListener('input', () => syncColorPicker(colorPicker.value));
+    colorPicker.addEventListener('change', () => syncColorPicker(colorPicker.value));
+  }
+
+  // Save color to library
+  const colorAddBtn = document.getElementById('guide-color-add-btn');
+  if (colorAddBtn) {
+    colorAddBtn.addEventListener('click', () => {
+      const hex = selectedCatColor;
+      if (!hex || guideUserColors.includes(hex)) return;
+      guideUserColors.push(hex);
+      saveUserColors();
+      renderUserColorLibrary();
+    });
+  }
 
   // Category modal: close
   document.getElementById('guide-cat-modal-close').addEventListener('click', closeGuideCatModal);
@@ -1048,7 +1139,7 @@ function initGuides() {
     guideCategories.push({
       id:     crypto.randomUUID(),
       name,
-      coverColor: selectedCatColor,
+      coverColor: selectedCatColor, // hex string
       guides: []
     });
     saveGuideCategories();

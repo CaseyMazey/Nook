@@ -815,7 +815,6 @@
                   <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="2" width="13" height="2.6" rx="1" fill="currentColor"/><rect x="1.5" y="6.7" width="13" height="2.6" rx="1" fill="currentColor"/><rect x="1.5" y="11.4" width="13" height="2.6" rx="1" fill="currentColor"/></svg>
                 </button>
               </div>
-              <button class="btn-primary" id="add-guide-category-btn">+ Neues Buch</button>
             </div>
           </div>
  
@@ -837,6 +836,10 @@
               <div class="panel guide-side-card guide-snippet-card">
                 <div class="panel-header"><span class="panel-label" id="guide-snippet-label">Code-Snippet aus diesem Guide</span></div>
                 <div id="guide-snippet-body" class="guide-snippet-body"></div>
+              </div>
+              <div class="panel guide-side-card hidden" id="guide-bookmarks-card">
+                <div class="panel-header"><span class="panel-label">Code-Bookmarks</span></div>
+                <div id="guide-bookmarks-body" class="guide-bookmarks-body"></div>
               </div>
             </div>
           </div>
@@ -1247,7 +1250,7 @@
  
   <!-- Guide Category Modal -->
   <div id="guide-cat-modal-overlay" class="modal-backdrop hidden">
-    <div class="modal-box" style="width:440px;">
+    <div class="modal-box" style="width:460px;">
       <div class="modal-head">
         <span id="guide-cat-modal-title">Neues Buch</span>
         <button class="modal-x" id="guide-cat-modal-close">✕</button>
@@ -1257,28 +1260,17 @@
         <input type="text" class="modal-input" id="guide-cat-name-input" placeholder="z.B. Git &amp; GitHub">
       </div>
       <div class="modal-row">
-        <label>Icon</label>
-        <div class="guide-emoji-grid" id="guide-emoji-grid">
-          <button class="guide-emoji-btn active" data-emoji="📁">📁</button>
-          <button class="guide-emoji-btn" data-emoji="🐙">🐙</button>
-          <button class="guide-emoji-btn" data-emoji="🐧">🐧</button>
-          <button class="guide-emoji-btn" data-emoji="🖥️">🖥️</button>
-          <button class="guide-emoji-btn" data-emoji="🏫">🏫</button>
-          <button class="guide-emoji-btn" data-emoji="🎮">🎮</button>
-          <button class="guide-emoji-btn" data-emoji="🌐">🌐</button>
-          <button class="guide-emoji-btn" data-emoji="📖">📖</button>
-          <button class="guide-emoji-btn" data-emoji="⚙️">⚙️</button>
-          <button class="guide-emoji-btn" data-emoji="🔧">🔧</button>
-          <button class="guide-emoji-btn" data-emoji="💡">💡</button>
-          <button class="guide-emoji-btn" data-emoji="🔒">🔒</button>
-          <button class="guide-emoji-btn" data-emoji="📊">📊</button>
-          <button class="guide-emoji-btn" data-emoji="🚀">🚀</button>
-          <button class="guide-emoji-btn" data-emoji="☁️">☁️</button>
-          <button class="guide-emoji-btn" data-emoji="🗄️">🗄️</button>
-          <button class="guide-emoji-btn" data-emoji="📱">📱</button>
-          <button class="guide-emoji-btn" data-emoji="🎨">🎨</button>
-          <button class="guide-emoji-btn" data-emoji="📝">📝</button>
-          <button class="guide-emoji-btn" data-emoji="🧪">🧪</button>
+        <label>Farbe</label>
+        <div class="guide-color-picker-wrap">
+          <div class="guide-color-picker-row">
+            <input type="color" id="guide-color-picker" value="#C9D6BC" class="guide-color-input">
+            <div id="guide-color-preview" class="guide-color-preview"></div>
+            <button class="guide-color-add-btn" id="guide-color-add-btn" title="Farbe zur Bibliothek hinzufügen">+</button>
+          </div>
+          <div class="guide-color-library-wrap">
+            <span class="guide-color-library-label">Meine Farben</span>
+            <div id="guide-color-library" class="guide-color-library"></div>
+          </div>
         </div>
       </div>
       <div class="modal-actions">
