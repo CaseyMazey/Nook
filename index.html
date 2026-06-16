@@ -20,6 +20,7 @@
   <link rel="stylesheet" href="css/project-tree.css" />
   <link rel="stylesheet" href="css/today.css" />
   <link rel="stylesheet" href="css/settings.css" />
+  <link rel="stylesheet" href="css/positivity.css" />
   <link rel="stylesheet" href="css/national_day.css" />
   <style>
     /* =========================
@@ -432,7 +433,10 @@
           Einstellungen
         </button></li>
       </ul>
- 
+
+      <!-- Positivity — unter der Navigation, über den Countdowns -->
+      <div id="sidebar-positivity"></div>
+
       <!-- Countdowns — below nav, above footer -->
       <div id="sidebar-countdowns">
         <div id="sidebar-countdowns-label">COUNTDOWNS</div>
@@ -1156,6 +1160,11 @@
               <div class="panel-header"><span class="panel-label">Unterrichtsblöcke</span><button class="icon-btn" id="add-block-btn">+</button></div>
               <div id="blocks-settings-list"></div>
             </div>
+
+            <div class="panel settings-panel" id="positivity-settings-panel">
+              <div class="panel-header"><span class="panel-label">Positivity</span><span class="positivity-total-badge" id="positivity-total-count"></span></div>
+              <div id="positivity-category-list"></div>
+            </div>
  
             <div class="panel settings-panel">
               <div class="panel-header"><span class="panel-label">Daten &amp; Backup</span></div>
@@ -1674,6 +1683,70 @@
       </div>
     </div>
   </div>
+
+  <!-- Positivity: Karten-Detail Modal -->
+  <div id="positivity-card-modal-overlay" class="modal-backdrop hidden">
+    <div class="modal-box" style="width:380px;">
+      <div class="modal-head">
+        <span id="positivity-card-modal-cat">Kategorie</span>
+        <button class="modal-x" id="positivity-card-modal-close">✕</button>
+      </div>
+      <p class="positivity-modal-text" id="positivity-card-modal-text"></p>
+      <div class="modal-actions" style="justify-content:flex-start;gap:8px;">
+        <button class="positivity-action-btn" id="positivity-card-modal-fav"></button>
+        <button class="positivity-action-btn" id="positivity-card-modal-pin"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Positivity: Kategorie bearbeiten Modal -->
+  <div id="positivity-cat-edit-overlay" class="modal-backdrop hidden">
+    <div class="modal-box" style="width:360px;">
+      <div class="modal-head">
+        <span>Kategorie bearbeiten</span>
+        <button class="modal-x" id="positivity-cat-edit-close">✕</button>
+      </div>
+      <div class="modal-row">
+        <label>Name</label>
+        <input type="text" class="modal-input" id="positivity-cat-edit-name" autocomplete="off"/>
+      </div>
+      <div class="modal-row">
+        <label>Farbe</label>
+        <input type="color" class="color-swatch" id="positivity-cat-edit-color"/>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-ghost" id="positivity-cat-edit-cancel">Abbrechen</button>
+        <button class="btn-primary" id="positivity-cat-edit-save">Speichern</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Positivity: Karten verwalten Modal -->
+  <div id="positivity-cards-overlay" class="modal-backdrop hidden">
+    <div class="modal-box" style="width:440px;max-height:80vh;display:flex;flex-direction:column;">
+      <div class="modal-head">
+        <span id="positivity-cards-modal-title">Kategorie</span>
+        <button class="modal-x" id="positivity-cards-modal-close">✕</button>
+      </div>
+      <div id="positivity-new-card-row" class="positivity-new-card-row">
+        <textarea class="modal-input" id="positivity-new-card-input" maxlength="150" rows="2" placeholder="Neue Karte…" style="resize:vertical;"></textarea>
+        <div class="positivity-new-card-footer">
+          <span class="positivity-char-count" id="positivity-char-count">0 / 150</span>
+          <button class="btn-primary" id="positivity-new-card-add">+ Hinzufügen</button>
+        </div>
+      </div>
+      <div id="positivity-cards-list" style="overflow-y:auto;"></div>
+    </div>
+  </div>
+
+  <!-- Positivity: Kategorie-Menü (Burger) -->
+  <div id="positivity-cat-menu" class="positivity-cat-menu hidden">
+    <button class="positivity-cat-menu-item" data-action="edit">Bearbeiten</button>
+    <button class="positivity-cat-menu-item" data-action="new">Neue Karte erstellen</button>
+    <button class="positivity-cat-menu-item" data-action="export">Karten exportieren</button>
+    <button class="positivity-cat-menu-item" data-action="import">Karten importieren</button>
+  </div>
+  <input type="file" id="positivity-import-input" accept=".json" style="display:none;"/>
  
   <script src="js/main.js"></script>
   <script src="js/calendar.js"></script>
@@ -1687,6 +1760,7 @@
   <!-- Spiele werden dynamisch von games.js über games/games.json geladen -->
   <script src="js/games.js"></script>
   <script src="js/settings.js"></script>
+  <script src="js/positivity.js"></script>
   <script src="js/national_day.js"></script>
 </body>
 </html>

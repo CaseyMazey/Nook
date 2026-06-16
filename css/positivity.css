@@ -1,0 +1,56 @@
+/* =============================================================
+   POSITIVITY.CSS — Sidebar-Widget, Einstellungen, Modals
+============================================================= */
+
+/* ── Sidebar Widget ──────────────────────────────────────── */
+#sidebar-positivity { padding: 10px 18px 4px; }
+#sidebar-positivity.hidden { display: none; }
+
+#positivity-widget-card { background: var(--surface-2); border: 1px solid var(--border); border-left: 3px solid var(--positivity-color, var(--sage)); border-radius: var(--radius); padding: 12px 13px 10px; cursor: pointer; transition: box-shadow var(--transition); }
+#positivity-widget-card:hover { box-shadow: var(--shadow-xs); }
+
+.positivity-widget-top { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.positivity-widget-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--positivity-color, var(--sage)); flex-shrink: 0; }
+.positivity-widget-cat { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); }
+.positivity-widget-text { font-size: 12.5px; line-height: 1.55; color: var(--text-2); margin-bottom: 8px; }
+.positivity-widget-actions { display: flex; align-items: center; gap: 2px; justify-content: flex-end; }
+
+.positivity-action-btn { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 50%; color: var(--text-3); transition: background var(--transition), color var(--transition); }
+.positivity-action-btn:hover { background: var(--accent-soft); color: var(--text); }
+.positivity-action-btn.active { color: var(--positivity-fav-color, #B8755A); }
+.positivity-action-btn.small { width: 22px; height: 22px; flex-shrink: 0; }
+[data-theme="dark"] .positivity-action-btn.active { color: #D99577; }
+
+/* ── Einstellungen: Kategorie-Liste ──────────────────────── */
+.positivity-total-badge { font-family: var(--mono); font-size: 11px; color: var(--sage); font-weight: 600; }
+
+.positivity-cat-row { display: flex; align-items: center; gap: 10px; padding: 11px 18px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background var(--transition); }
+.positivity-cat-row:last-child { border-bottom: none; }
+.positivity-cat-row:hover { background: var(--surface-2); }
+
+.positivity-cat-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 9px; line-height: 1; }
+.positivity-cat-dot.is-fav { color: #B8755A; background: none; }
+[data-theme="dark"] .positivity-cat-dot.is-fav { color: #D99577; }
+
+.positivity-cat-name { flex: 1; font-size: 13.5px; color: var(--text); }
+.positivity-cat-count { font-size: 11.5px; font-family: var(--mono); color: var(--text-3); }
+.positivity-cat-menu-btn { font-size: 12px; flex-shrink: 0; }
+
+/* ── Kategorie-Burger-Menü (fixed, gegen Clipping durch .panel overflow:hidden) ── */
+.positivity-cat-menu { position: fixed; z-index: 250; background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); box-shadow: var(--shadow-md); padding: 6px; min-width: 180px; display: flex; flex-direction: column; gap: 2px; }
+.positivity-cat-menu.hidden { display: none; }
+.positivity-cat-menu-item { text-align: left; padding: 8px 10px; border-radius: var(--radius-sm); font-size: 13px; color: var(--text-2); transition: background var(--transition), color var(--transition); }
+.positivity-cat-menu-item:hover { background: var(--accent-soft); color: var(--text); }
+
+/* ── Karten-Detail Modal ──────────────────────────────────── */
+.positivity-modal-text { font-size: 14.5px; line-height: 1.7; color: var(--text); }
+
+/* ── Karten verwalten Modal ──────────────────────────────── */
+.positivity-new-card-row { border: 1px solid var(--border); border-radius: var(--radius); padding: 10px; margin-bottom: 4px; background: var(--surface-2); }
+.positivity-new-card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
+.positivity-char-count { font-size: 11px; font-family: var(--mono); color: var(--text-3); }
+
+.positivity-card-row { display: flex; align-items: center; gap: 10px; padding: 10px 4px; border-bottom: 1px solid var(--border); }
+.positivity-card-row:last-child { border-bottom: none; }
+.positivity-card-row-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.positivity-card-row-text { flex: 1; font-size: 13px; color: var(--text); line-height: 1.5; }

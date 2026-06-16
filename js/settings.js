@@ -7,6 +7,7 @@ function renderSettings(){
   document.getElementById('setting-darkmode').checked = darkMode;
   renderBlockSettings();
   renderWeatherSettings();
+  if (typeof renderPositivitySettings === 'function') renderPositivitySettings();
 }
 
 function renderWeatherSettings() {
