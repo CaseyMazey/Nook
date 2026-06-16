@@ -21,7 +21,7 @@ Anschließend einfach `index.html` öffnen.
 - 📅 Kalender mit Termin- und Countdownsystem
 - 💰 Budgetverwaltung mit Liquiditätsvorschau
 - 🌱 Finanzgarten zur Visualisierung von Sparzielen
-- 📚 Karteikarten-Lernsystem
+- 📚 Karteikarten mit Leitner-System und Lernstatistiken
 - 📝 Persönliches Markdown-Wiki
 - 📁 Projektverwaltung
 - 🎮 Modularer Spiele-Hub
@@ -111,13 +111,16 @@ Lernsystem für Ausbildung, Schule oder Studium.
 
 ## Features
 
-- Fächer
-- Themengruppen
-- Lernkarten
-- Fortschrittsanzeige
-- Lernsessions
-- Lokale Speicherung
-- Einklappbare Bereiche
+- Fächer und Themengruppen 
+- Lernkarten 
+- Leitner-System 
+- Lernsessions 
+- Lernfortschritt und Statistiken 
+- Lernserien (Streaks) 
+- Schwierige Karten markieren 
+- Kartenexport 
+- Lokale Speicherung 
+- Einklappbare Bereiche 
 
 ---
 
@@ -382,8 +385,5 @@ Geplante Erweiterungen:
 - Weitere Spiele-Plugins
 - Game-Hub Funktionalität ergänzen
 - Zusätzliche Finanzgarten-Pflanzen
-<<<<<<< HEAD
 - Erweiterte Projektverwaltung
-=======
-- Erweiterte Projektverwaltung
->>>>>>> 1bdf31cda20ee9f6ee2ae3dc1b7c0d9782ca312c
+- Fertigstellung des Projektwaldes
