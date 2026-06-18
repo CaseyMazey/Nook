@@ -433,10 +433,10 @@
           Einstellungen
         </button></li>
       </ul>
-
+ 
       <!-- Positivity — unter der Navigation, über den Countdowns -->
       <div id="sidebar-positivity"></div>
-
+ 
       <!-- Countdowns — below nav, above footer -->
       <div id="sidebar-countdowns">
         <div id="sidebar-countdowns-label">COUNTDOWNS</div>
@@ -755,7 +755,7 @@
       </section>
  
       <!-- FLASHCARDS -->
-      <section id="view-flashcards" class="view view-fullbleed">
+      <section id="view-flashcards" class="view">
         <div class="view-header">
           <h1 class="view-title">Karteikarten</h1>
           <button class="btn-primary" id="add-subject-btn">+ Fach</button>
@@ -845,7 +845,7 @@
       </section>
  
       <!-- GUIDES -->
-      <section id="view-guides" class="view view-fullbleed">
+      <section id="view-guides" class="view">
         <div class="dash-content">
  
           <!-- Library header -->
@@ -1117,7 +1117,7 @@
               </div>
             </div>
  
-            <div class="panel settings-panel">
+            <div class="panel settings-panel" style="display:none;">
               <div class="panel-header"><span class="panel-label">Darstellung</span></div>
               <div class="settings-row">
                 <div><div class="settings-row-title">Dark Mode</div><div class="settings-row-sub">Dunkles Farbschema</div></div>
@@ -1142,30 +1142,6 @@
                   autocomplete="off"/>
               </div>
             </div>
- 
-            <div class="panel settings-panel">
-              <div class="panel-header"><span class="panel-label">Feedback</span></div>
-              <div class="settings-row">
-                <div>
-                  <div class="settings-row-title">Feedback senden</div>
-                  <div class="settings-row-sub">Fehler melden oder Verbesserungen vorschlagen</div>
-                </div>
-                <button class="btn-ghost" id="feedback-btn" style="font-size:13px;">✉ Senden</button>
-              </div>
-            </div>
-          </div>
- 
-          <div class="settings-col">
-            <div class="panel settings-panel">
-              <div class="panel-header"><span class="panel-label">Unterrichtsblöcke</span><button class="icon-btn" id="add-block-btn">+</button></div>
-              <div id="blocks-settings-list"></div>
-            </div>
-
-            <div class="panel settings-panel" id="positivity-settings-panel">
-              <div class="panel-header"><span class="panel-label">Positivity</span><span class="positivity-total-badge" id="positivity-total-count"></span></div>
-              <div id="positivity-category-list"></div>
-            </div>
- 
             <div class="panel settings-panel">
               <div class="panel-header"><span class="panel-label">Daten &amp; Backup</span></div>
               <div class="settings-row">
@@ -1182,6 +1158,21 @@
                 <button class="btn-ghost" id="reset-highscores-btn" style="font-size:13px;color:var(--prio-1);border-color:var(--prio-1);">Zurücksetzen</button>
               </div>
             </div>
+ 
+          </div>
+ 
+          <div class="settings-col">
+            <div class="panel settings-panel">
+              <div class="panel-header"><span class="panel-label">Unterrichtsblöcke</span><button class="icon-btn" id="add-block-btn">+</button></div>
+              <div id="blocks-settings-list"></div>
+            </div>
+ 
+            <div class="panel settings-panel" id="positivity-settings-panel">
+              <div class="panel-header"><span class="panel-label">Positivity</span><span class="positivity-total-badge" id="positivity-total-count"></span></div>
+              <div id="positivity-category-list"></div>
+            </div>
+ 
+ 
           </div>
  
         </div><!-- /settings-layout -->
@@ -1285,7 +1276,7 @@
       <div class="modal-actions"><button id="fc-modal-cancel" class="btn-ghost">Abbrechen</button><button id="fc-modal-save" class="btn-primary">Speichern</button></div>
     </div>
   </div>
-
+ 
   <!-- Fach erstellen Modal -->
   <div id="fc-subject-modal-overlay" class="modal-backdrop hidden">
     <div class="modal-box" style="width:420px;">
@@ -1304,7 +1295,7 @@
       </div>
     </div>
   </div>
-
+ 
   <!-- Themengruppe erstellen/umbenennen Modal -->
   <div id="fc-group-modal-overlay" class="modal-backdrop hidden">
     <div class="modal-box" style="width:420px;">
@@ -1319,7 +1310,7 @@
       </div>
     </div>
   </div>
-
+ 
   <!-- Fach bearbeiten Modal -->
   <div id="fc-subject-edit-modal-overlay" class="modal-backdrop hidden">
     <div class="modal-box" style="width:420px;">
@@ -1683,7 +1674,7 @@
       </div>
     </div>
   </div>
-
+ 
   <!-- Positivity: Karten-Detail Modal -->
   <div id="positivity-card-modal-overlay" class="modal-backdrop hidden">
     <div class="modal-box" style="width:380px;">
@@ -1698,7 +1689,7 @@
       </div>
     </div>
   </div>
-
+ 
   <!-- Positivity: Kategorie bearbeiten Modal -->
   <div id="positivity-cat-edit-overlay" class="modal-backdrop hidden">
     <div class="modal-box" style="width:360px;">
@@ -1720,7 +1711,7 @@
       </div>
     </div>
   </div>
-
+ 
   <!-- Positivity: Karten verwalten Modal -->
   <div id="positivity-cards-overlay" class="modal-backdrop hidden">
     <div class="modal-box" style="width:440px;max-height:80vh;display:flex;flex-direction:column;">
@@ -1738,7 +1729,7 @@
       <div id="positivity-cards-list" style="overflow-y:auto;"></div>
     </div>
   </div>
-
+ 
   <!-- Positivity: Kategorie-Menü (Burger) -->
   <div id="positivity-cat-menu" class="positivity-cat-menu hidden">
     <button class="positivity-cat-menu-item" data-action="edit">Bearbeiten</button>

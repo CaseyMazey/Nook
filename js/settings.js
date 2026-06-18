@@ -142,15 +142,6 @@ document.getElementById('reset-highscores-btn').addEventListener('click', () => 
   alert('Highscores wurden zurückgesetzt.');
 });
 
-// =========================
-// FEEDBACK
-// =========================
-
-document.getElementById('feedback-btn').addEventListener('click', () => {
-  const subject = encodeURIComponent('Feedback – Schul-Hub');
-  const body    = encodeURIComponent('Hallo,\n\nfolgenden Feedback habe ich:\n\n\n---\nGesendet aus dem Schul-Hub');
-  window.location.href = `mailto:DEINE@EMAIL.DE?subject=${subject}&body=${body}`;
-});
 
 // =========================
 // UTIL

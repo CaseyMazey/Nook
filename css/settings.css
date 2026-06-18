@@ -7,7 +7,6 @@
   grid-template-columns: 1fr 1fr;
   gap: 18px;
   align-items: start;
-  max-width: 1100px;
 }
 .settings-col { display: flex; flex-direction: column; gap: 18px; }
 

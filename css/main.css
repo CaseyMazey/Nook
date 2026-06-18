@@ -317,11 +317,9 @@ ul { list-style: none; }
 .view {
   display: none;
   padding: 28px 32px 52px;
-  max-width: 1500px;
   animation: fadeIn 200ms ease;
 }
 .view.active { display: block; }
-.view-fullbleed { max-width: none; }
 
 /* ── Dashboard container — unified across all views ──────── */
 /* Applied to the inner content wrapper in each view.        */
