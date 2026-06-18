@@ -11,9 +11,21 @@ window.registerGame({
   icon: '⭕',
   accent: 'purple',
 
+  // Generisches Format: Liste aus {label, value}. Der Hub zeigt die ersten
+  // zwei Einträge auf der Karte, der Stats-Dialog zeigt alle.
   getStats() {
     const all = DB.get('gameHighscores', {});
-    const wins = all.ttt?.playerWins || 0;
-    return { statLabel: 'Siege', statValue: wins, secondaryStat: 'Gewonnen' };
+    const ttt = all.ttt || {};
+    return [
+      { label: 'Siege', value: ttt.playerWins || 0 },
+      { label: 'Niederlagen', value: ttt.opponentWins || 0 },
+      { label: 'Unentschieden', value: ttt.draws || 0 }
+    ];
+  },
+
+  resetStats() {
+    const all = DB.get('gameHighscores', {});
+    delete all.ttt;
+    DB.set('gameHighscores', all);
   }
 });

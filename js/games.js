@@ -81,6 +81,20 @@ function unloadGameCss(id) {
 // Wird von main.js über renderView('games') aufgerufen.
 // =========================
 
+let manifestsLoadedPromise = null;
+
+// Lädt alle manifest.js-Dateien genau einmal — unabhängig davon, ob der
+// Spiele-Tab schon geöffnet wurde. Wird auch von außerhalb (z.B. Settings)
+// genutzt, damit window.GameHub.registry zuverlässig befüllt ist.
+function ensureManifestsLoaded() {
+  if (!manifestsLoadedPromise) {
+    manifestsLoadedPromise = Promise.all(
+      (window.GAMES_LIST || []).map(id => loadScript(`games/${id}/manifest.js`))
+    );
+  }
+  return manifestsLoadedPromise;
+}
+
 async function initGames() {
 
   if (window.GameHub.initialized) {
@@ -98,12 +112,26 @@ async function initGames() {
   wireSearch();
   wireLibraryGrid();
 
-  await Promise.all(
-    (window.GAMES_LIST || []).map(id => loadScript(`games/${id}/manifest.js`))
-  );
+  await ensureManifestsLoaded();
   renderLibraryGrid();
 }
 window.initGames = initGames;
+
+// =========================
+// GENERISCHE HUB-API
+// Für andere Tabs (z.B. Settings), die mit Spielen interagieren wollen,
+// ohne einzelne IDs zu kennen.
+// =========================
+
+window.GameHub.resetAllStats = async function () {
+  await ensureManifestsLoaded();
+  Object.values(window.GameHub.registry).forEach(game => {
+    if (typeof game.resetStats === 'function') {
+      try { game.resetStats(); } catch (err) { console.error(err); }
+    }
+  });
+  if (window.GameHub.initialized) renderLibraryGrid();
+};
 
 // =========================
 // KARTEN-DATEN
@@ -116,14 +144,20 @@ function buildCardList() {
     .map(id => window.GameHub.registry[id])
     .filter(Boolean)
     .map(game => {
-      const fallbackStats = game.comingSoon
-        ? { statLabel: 'Status', statValue: '—', secondaryStat: 'Bald da' }
-        : { statLabel: '–', statValue: '–', secondaryStat: '–' };
-      const stats = typeof game.getStats === 'function' ? game.getStats() : fallbackStats;
+      // getStats() liefert eine generische Liste [{label, value}, ...].
+      // Der Hub kennt keine Bedeutung dieser Werte — er zeigt einfach die
+      // ersten zwei Einträge auf der Karte; der Stats-Dialog zeigt alle.
+      const stats = typeof game.getStats === 'function' ? game.getStats() : [];
+      const primary = stats[0] || { label: game.comingSoon ? 'Status' : '–', value: game.comingSoon ? '—' : '–' };
+      const secondary = stats[1] || { label: game.comingSoon ? 'Bald da' : 'Fortschritt', value: game.comingSoon ? '' : '–' };
 
       return {
         ...game,
-        ...stats,
+        statLabel: primary.label,
+        statValue: primary.value,
+        secondaryLabel: secondary.label,
+        secondaryValue: secondary.value,
+        hasStats: stats.length > 0,
         button: game.comingSoon ? 'Bald verfügbar' : 'Spielen',
         badge: game.comingSoon ? 'Bald verfügbar' : null
       };
@@ -287,6 +321,7 @@ function renderLibraryGrid() {
 
 function renderGameCard(game) {
   const disabled = !!game.comingSoon;
+  const statsDisabled = disabled || !game.hasStats;
 
   return `
     <div
@@ -310,14 +345,17 @@ function renderGameCard(game) {
           <span class="game-card-stat-value">${game.statValue}</span>
         </div>
         <div class="game-card-stat">
-          <span class="game-card-stat-label">${disabled ? 'Status' : 'Fortschritt'}</span>
-          <span class="game-card-stat-value">${game.secondaryStat}</span>
+          <span class="game-card-stat-label">${game.secondaryLabel}</span>
+          <span class="game-card-stat-value">${game.secondaryValue}</span>
         </div>
       </div>
 
       <div class="game-card-actions">
         <button class="game-play-btn" data-game-id="${game.id}" ${disabled ? 'disabled' : ''}>
           ${game.button}
+        </button>
+        <button class="game-stats-btn" data-game-id="${game.id}" ${statsDisabled ? 'disabled' : ''} title="Statistik" aria-label="Statistik">
+          📊
         </button>
       </div>
 
@@ -355,9 +393,11 @@ function wireLibraryGrid() {
   if (!grid) return;
 
   grid.addEventListener('click', e => {
-    const btn = e.target.closest('.game-play-btn');
-    if (!btn || btn.disabled) return;
-    openGamePlayModal(btn.dataset.gameId);
+    const playBtn = e.target.closest('.game-play-btn');
+    if (playBtn && !playBtn.disabled) { openGamePlayModal(playBtn.dataset.gameId); return; }
+
+    const statsBtn = e.target.closest('.game-stats-btn');
+    if (statsBtn && !statsBtn.disabled) { openGameStatsModal(statsBtn.dataset.gameId); return; }
   });
 }
 
@@ -441,3 +481,47 @@ function wireGamePlayModal() {
 // vom Spiele-Tab — daher wird es sofort beim Laden verkabelt
 // (gleiches Muster wie die Modals in budget.js).
 wireGamePlayModal();
+
+// =========================
+// STATS-MODAL
+// Zeigt einfach das an, was game.getStats() zurückgibt — der Hub kennt
+// keine einzelne Stat-Bedeutung, nur das generische {label, value}-Format.
+// =========================
+
+function openGameStatsModal(gameId) {
+  const game = window.GameHub.registry[gameId];
+  if (!game) return;
+
+  document.getElementById('games-stats-modal-icon').textContent = game.icon || '📊';
+  document.getElementById('games-stats-modal-name').textContent = game.title;
+
+  const stats = typeof game.getStats === 'function' ? game.getStats() : [];
+  const body = document.getElementById('games-stats-modal-body');
+
+  body.innerHTML = stats.length
+    ? stats.map(s => `
+        <div class="games-stats-row">
+          <span class="games-stats-label">${s.label}</span>
+          <span class="games-stats-value">${s.value}</span>
+        </div>`).join('')
+    : `<p class="games-play-loading">Noch keine Statistiken vorhanden.</p>`;
+
+  document.getElementById('games-stats-modal-overlay').classList.remove('hidden');
+}
+
+function closeGameStatsModal() {
+  document.getElementById('games-stats-modal-overlay').classList.add('hidden');
+}
+
+function wireGameStatsModal() {
+  const overlay = document.getElementById('games-stats-modal-overlay');
+  if (!overlay) return;
+
+  document.getElementById('games-stats-modal-close').addEventListener('click', closeGameStatsModal);
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeGameStatsModal(); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && !overlay.classList.contains('hidden')) closeGameStatsModal();
+  });
+}
+
+wireGameStatsModal();

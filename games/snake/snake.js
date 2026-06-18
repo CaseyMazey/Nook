@@ -77,12 +77,18 @@
 
   function gameOver() {
     stop();
+
     const all = DB.get('gameHighscores', {});
-    const isNew = state.score > (all.snake || 0);
-    if (isNew) {
-      all.snake = state.score;
-      DB.set('gameHighscores', all);
-    }
+    // Altes Format war eine reine Zahl — nicht-destruktiv migrieren.
+    const prev = typeof all.snake === 'number' ? { best: all.snake, totalGames: 0 } : (all.snake || { best: 0, totalGames: 0 });
+
+    const isNew = state.score > (prev.best || 0);
+    all.snake = {
+      best: isNew ? state.score : (prev.best || 0),
+      totalGames: (prev.totalGames || 0) + 1
+    };
+    DB.set('gameHighscores', all);
+
     els.status.innerHTML = `Game Over! &nbsp;<strong>${state.score} Punkte</strong>${isNew ? ' 🏆' : ''}`;
     draw(true);
   }

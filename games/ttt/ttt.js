@@ -17,6 +17,26 @@
 
   let els = {};
 
+  // ---- Diagnose-Hilfe (temporär) ----
+  // Auf true setzen, um im Browser zu sehen, ob/wo sich die Zellgröße
+  // zwischen mount() und dem ersten Klick unterscheidet. Kann nach
+  // Bestätigung, dass das Grid sofort korrekt sichtbar ist, wieder raus.
+  const DEBUG_LAYOUT = false;
+
+  function logCellRect(label) {
+    if (!DEBUG_LAYOUT) return;
+    const cell = els.board && els.board.querySelector('.ttt-cell');
+    if (!cell) { console.log(`[ttt-debug] ${label}: keine Zelle im DOM`); return; }
+    const rect = cell.getBoundingClientRect();
+    console.log(`[ttt-debug] ${label}:`, {
+      width: rect.width,
+      height: rect.height,
+      cssWidth: getComputedStyle(cell).width,
+      cssHeight: getComputedStyle(cell).height,
+      cssDisplay: getComputedStyle(cell).display
+    });
+  }
+
   // ---- Highscores ----
 
   function readHighscores() {
@@ -90,13 +110,15 @@
 
   function handleCellClick(i) {
     if (state.board[i] || state.gameOver) return;
+    logCellRect('handleCellClick: VOR render()');
     state.board[i] = state.current;
 
     const r = checkWinner(state.board);
-    if (r) { handleEnd(r); render(); return; }
+    if (r) { handleEnd(r); render(); logCellRect('handleCellClick: NACH render() (Spielende)'); return; }
 
     state.current = state.current === 'X' ? 'O' : 'X';
     render();
+    logCellRect('handleCellClick: NACH render()');
 
     if (state.vsAI && state.current === 'O' && !checkWinner(state.board)) {
       setTimeout(() => {
@@ -117,6 +139,8 @@
     const all = readHighscores();
     all.ttt.totalGames = (all.ttt.totalGames || 0) + 1;
     if (r.winner === 'X') all.ttt.playerWins = (all.ttt.playerWins || 0) + 1;
+    else if (r.winner === 'O') all.ttt.opponentWins = (all.ttt.opponentWins || 0) + 1;
+    else all.ttt.draws = (all.ttt.draws || 0) + 1;
     DB.set('gameHighscores', all);
 
     state.gameOver = true;
@@ -192,6 +216,10 @@
     state.gameOver = false;
     state.scores = { X: 0, O: 0, draw: 0 };
     render();
+    logCellRect('mount(): direkt nach render()');
+    if (DEBUG_LAYOUT) {
+      requestAnimationFrame(() => logCellRect('mount(): im nächsten Frame (rAF)'));
+    }
   }
 
   function destroy() {

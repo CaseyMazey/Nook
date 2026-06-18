@@ -4,6 +4,15 @@
 // Die eigentliche Spiellogik (snake.js) lädt erst beim Klick auf "Spielen".
 // =========================
 
+// Snake hat seine Highscores früher als reine Zahl gespeichert
+// (all.snake = 240). Für "Spiele gespielt" brauchen wir ein Objekt —
+// diese Funktion liest beide Formate und migriert nicht-destruktiv.
+function readSnakeStats(all) {
+  const raw = all.snake;
+  if (typeof raw === 'number') return { best: raw, totalGames: 0 };
+  return raw || { best: 0, totalGames: 0 };
+}
+
 window.registerGame({
   id: 'snake',
   title: 'Snake',
@@ -11,9 +20,19 @@ window.registerGame({
   icon: '🐍',
   accent: '',
 
+  // Generisches Format: Liste aus {label, value}. Der Hub zeigt die ersten
+  // zwei Einträge auf der Karte, der Stats-Dialog zeigt alle.
   getStats() {
+    const snake = readSnakeStats(DB.get('gameHighscores', {}));
+    return [
+      { label: 'Highscore', value: snake.best > 0 ? snake.best : '—' },
+      { label: 'Spiele gespielt', value: snake.totalGames || 0 }
+    ];
+  },
+
+  resetStats() {
     const all = DB.get('gameHighscores', {});
-    const best = all.snake || 0;
-    return { statLabel: 'Best', statValue: best > 0 ? best : '—', secondaryStat: 'Punkte' };
+    delete all.snake;
+    DB.set('gameHighscores', all);
   }
 });

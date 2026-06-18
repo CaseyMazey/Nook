@@ -135,10 +135,13 @@ document.getElementById('backup-file-input').addEventListener('change', e => {
   e.target.value = '';
 });
 
-document.getElementById('reset-highscores-btn').addEventListener('click', () => {
+document.getElementById('reset-highscores-btn').addEventListener('click', async () => {
   if (!confirm('Alle Highscores zurücksetzen?')) return;
-  gameHighscores = { ttt: {}, memory: {}, snake: 0 };
-  saveHighscores();
+  // settings.js kennt keine einzelnen Spiele — der Hub fragt alle
+  // registrierten Spiele durch und ruft deren resetStats() auf, falls vorhanden.
+  if (window.GameHub && typeof window.GameHub.resetAllStats === 'function') {
+    await window.GameHub.resetAllStats();
+  }
   alert('Highscores wurden zurückgesetzt.');
 });
 

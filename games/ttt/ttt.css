@@ -10,14 +10,16 @@
 
 .ttt-board {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 96px 96px 96px;
+  grid-template-rows: 96px 96px 96px;
   gap: 8px;
-  max-width: 320px;
+  width: 304px; /* 3 × 96px + 2 × 8px Gap */
   margin: 0 auto;
 }
 
 .ttt-cell {
-  aspect-ratio: 1;
+  width: 96px;
+  height: 96px;
   border-radius: var(--radius);
   border: 1.5px solid var(--border-strong);
   background: var(--surface-2);

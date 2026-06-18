@@ -121,13 +121,15 @@
 
     const key = `p${state.pairs}`;
     const all = readAll();
+    all.memory.totalGames = (all.memory.totalGames || 0) + 1;
+
     const prev = all.memory[key];
     let newBest = false;
     if (!prev || state.seconds < prev.seconds || (state.seconds === prev.seconds && state.moves < prev.moves)) {
       all.memory[key] = { seconds: state.seconds, moves: state.moves };
-      DB.set('gameHighscores', all);
       newBest = true;
     }
+    DB.set('gameHighscores', all);
 
     els.done.className = 'memory-done-new';
     els.done.innerHTML = `
