@@ -277,6 +277,8 @@ Bereich für langfristige Planung.
 - Ideen
 - Langfristige Ziele
 
+🚧 Projektgarten noch in Bearbeitung
+
 ---
 
 # 🎮 Spiele
@@ -291,17 +293,85 @@ Kleiner lokaler Cozy-Game-Hub.
 
 ## Plugin-System
 
-Der Spielebereich wurde auf eine modulare Architektur umgestellt.
+Der Spielebereich ist eine vollständig modulare Plugin-Architektur. Der Hub (`js/games.js`) kennt kein einzelnes Spiel – er weiß nur, welche IDs in `games/games-list.js` eingetragen sind, und zeigt an, was sich selbst bei ihm registriert.
 
-Features:
+Jedes Spiel bringt mit:
 
-- `games.json`
-- Manifest-System
-- Dynamische Registrierung
-- Eigene CSS-Dateien pro Spiel
-- Plugin-Lifecycle
+- ein leichtgewichtiges `manifest.js` (Titel, Beschreibung, Icon, Statistiken) – lädt sofort beim Start
+- eine eigene `<id>.js` mit der eigentlichen Spiellogik – lädt erst beim Klick auf „Spielen“
+- eine eigene `<id>.css` – wird beim Öffnen eingebunden und beim Schließen wieder entfernt
 
-Neue Spiele können ohne Änderungen am Hub ergänzt werden.
+Highscores, Statistiken und das Zurücksetzen der eigenen Daten verwaltet jedes Spiel selbst. Weder `games.js` noch die Einstellungen kennen einzelne Spiele-IDs.
+
+> **Warum keine `games.json`?** Der Hub läuft direkt über `file://`, ohne Server. `fetch()`/`XMLHttpRequest` werden von Browsern für lokale Dateien blockiert – `<script src="...">` und `<link href="...">` aber nicht. Deshalb ist die Spieleliste eine kleine JS-Datei (`games-list.js`) statt einer JSON-Datei, und jedes Spiel registriert sich aktiv selbst, statt vom Hub eingelesen zu werden.
+
+## Eigenes Spiel hinzufügen
+
+1. Neuen Ordner anlegen: `games/meinspiel/`
+
+2. Darin `manifest.js` erstellen – registriert Metadaten und optional Statistiken:
+
+   ```js
+   window.registerGame({
+     id: 'meinspiel',
+     title: 'Mein Spiel',
+     description: 'Kurze Beschreibung für die Karte.',
+     icon: '🎲',
+     accent: 'blue', // optional: '', 'blue', 'orange', 'purple', 'pink'
+
+     getStats() {
+       // optional – Liste von {label, value}. Karte zeigt die ersten
+       // zwei Einträge, der Statistik-Dialog zeigt alle.
+       return [{ label: 'Highscore', value: 0 }];
+     },
+
+     resetStats() {
+       // optional – wird von "Highscores zurücksetzen" in den
+       // Einstellungen aufgerufen.
+     }
+   });
+   ```
+
+3. `meinspiel.js` erstellen – die eigentliche Spiellogik. Lädt erst beim ersten Klick auf "Spielen", ergänzt nur `mount`/`destroy` zur bereits registrierten Karte:
+
+   ```js
+   (function () {
+     function mount(container) {
+       container.innerHTML = `<p>Hier kommt das Spiel hin.</p>`;
+       // DOM aufbauen, Events binden, State initialisieren
+     }
+
+     function destroy() {
+       // Timer, Intervalle oder globale Event-Listener aufräumen
+     }
+
+     window.registerGame({ id: 'meinspiel', mount, destroy });
+   })();
+   ```
+
+4. `meinspiel.css` erstellen – nur die Styles, die das Spiel selbst braucht.
+
+5. Die ID in `games/games-list.js` eintragen:
+
+   ```js
+   window.GAMES_LIST = ['ttt', 'memory', 'snake', 'meinspiel'];
+   ```
+
+Das war's – `js/games.js` und `index.html` müssen dafür nicht angefasst werden.
+
+### Platzhalter ohne Logik
+
+Spiele, die noch in Arbeit sind, brauchen nur ein `manifest.js` mit `comingSoon: true`. Sie erscheinen dann als "Bald verfügbar"-Karte, ganz ohne `<id>.js`/`<id>.css`:
+
+```js
+window.registerGame({
+  id: 'meinspiel',
+  title: 'Mein Spiel',
+  description: '...',
+  icon: '🎲',
+  comingSoon: true
+});
+```
 
 ---
 
