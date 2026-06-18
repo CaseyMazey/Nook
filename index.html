@@ -8,9 +8,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/main.css" />
-  <link rel="stylesheet" href="games/tictactoe/style.css">
-  <link rel="stylesheet" href="games/snake/style.css">
-  <link rel="stylesheet" href="games/memory/style.css">
   <link rel="stylesheet" href="css/budget.css" />
   <link rel="stylesheet" href="css/calendar.css" />
   <link rel="stylesheet" href="css/flashcards.css" />
@@ -1085,14 +1082,7 @@
       </section>
  
       <!-- GAMES -->
-      <section id="view-games" class="view games-view">
-        <h1 class="view-title" style="margin-bottom:20px;">Spiele</h1>
-        <div class="games-tabs"></div>
-        <div class="games-layout">
-          <div class="games-area"></div>
-          <div class="games-hs-panel"></div>
-        </div>
-      </section>
+      <section id="view-games" class="view games-view"></section>
  
       <!-- SETTINGS -->
       <section id="view-settings" class="view">
@@ -1738,6 +1728,20 @@
     <button class="positivity-cat-menu-item" data-action="import">Karten importieren</button>
   </div>
   <input type="file" id="positivity-import-input" accept=".json" style="display:none;"/>
+
+  <!-- Games: Play-Modal -->
+  <div id="games-play-modal-overlay" class="modal-backdrop hidden">
+    <div class="modal-box games-play-modal-box">
+      <div class="modal-head">
+        <span class="games-play-modal-title">
+          <span id="games-play-modal-icon" class="games-play-modal-icon">🎮</span>
+          <span id="games-play-modal-name">Spiel</span>
+        </span>
+        <button class="modal-x" id="games-play-modal-close">✕</button>
+      </div>
+      <div class="games-play-modal-body" id="games-play-modal-body"></div>
+    </div>
+  </div>
  
   <script src="js/main.js"></script>
   <script src="js/calendar.js"></script>
@@ -1748,8 +1752,11 @@
   <script src="js/projects.js"></script>
   <script src="js/project-tree.js"></script>
   <script src="js/forest.js"></script>
-  <!-- Spiele werden dynamisch von games.js über games/games.json geladen -->
+  <!-- Spiele: games.js ist der Hub, die drei Module registrieren sich selbst -->
   <script src="js/games.js"></script>
+  <script src="js/games-ttt.js"></script>
+  <script src="js/games-memory.js"></script>
+  <script src="js/games-snake.js"></script>
   <script src="js/settings.js"></script>
   <script src="js/positivity.js"></script>
   <script src="js/national_day.js"></script>
