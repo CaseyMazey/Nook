@@ -1,0 +1,39 @@
+/* =========================
+   MEMORY
+   Wird vom Hub dynamisch geladen/entfernt — siehe games.js loadCss()/unloadCss().
+========================= */
+
+.memory-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.memory-stats { display: flex; gap: 18px; }
+.memory-stat { display: flex; flex-direction: column; gap: 2px; }
+.memory-stat-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); }
+.memory-stat-value { font-size: 16px; font-weight: 700; color: var(--text); font-family: var(--mono); }
+
+.memory-slider { width: 100%; }
+
+.memory-board { display: grid; gap: 10px; justify-content: center; }
+
+.mem-card { width: 70px; height: 70px; perspective: 600px; cursor: pointer; }
+.mem-card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.35s; transform-style: preserve-3d; }
+.mem-card.flipped .mem-card-inner { transform: rotateY(180deg); }
+
+.mem-card-front, .mem-card-back {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+  backface-visibility: hidden;
+  font-size: 26px;
+}
+
+.mem-card-front { background: var(--surface-3); border: 1.5px solid var(--border-strong); color: var(--text-3); }
+.mem-card-back { background: var(--sage-bg); border: 1.5px solid var(--sage-border); transform: rotateY(180deg); }
+.mem-card.matched .mem-card-back { background: var(--accent-soft); opacity: 0.7; }
+
+.memory-done-new { text-align: center; padding: 20px 0; }
+.memory-done-title { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+.memory-done-stats { color: var(--text-2); margin-bottom: 18px; }
+.memory-new-best { color: var(--sage-dark); font-weight: 700; }
+.memory-done-btns { display: flex; justify-content: center; gap: 8px; }

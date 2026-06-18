@@ -1,0 +1,51 @@
+/* =========================
+   TIC-TAC-TOE
+   Wird vom Hub dynamisch geladen/entfernt — siehe games.js loadCss()/unloadCss().
+========================= */
+
+.ttt-status-new { text-align: center; font-size: 14px; color: var(--text-2); min-height: 20px; }
+.ttt-status-new.win { color: var(--sage-dark); font-weight: 600; }
+.ttt-turn-x { color: var(--prio-1); font-weight: 700; }
+.ttt-turn-o { color: var(--sage); font-weight: 700; }
+
+.ttt-board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+.ttt-cell {
+  aspect-ratio: 1;
+  border-radius: var(--radius);
+  border: 1.5px solid var(--border-strong);
+  background: var(--surface-2);
+  font-size: 32px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition);
+}
+
+.ttt-cell:not(.filled):hover { background: var(--sage-bg); border-color: var(--sage); }
+.ttt-cell.x-cell { color: var(--prio-1); }
+.ttt-cell.o-cell { color: var(--sage); }
+.ttt-cell.winning { background: var(--sage-bg); border-color: var(--sage); }
+.ttt-cell:disabled { cursor: default; }
+
+.ttt-score {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-2);
+  font-family: var(--mono);
+}
+
+.ttt-score-x { color: var(--prio-1); }
+.ttt-score-o { color: var(--sage); }
+.ttt-score-sep { color: var(--text-3); }

@@ -412,98 +412,18 @@
 
 .game-action-btn:hover { background: var(--sage-dark); box-shadow: var(--shadow-sm); }
 
-/* ---- Tic-Tac-Toe ---- */
-
-.ttt-status-new { text-align: center; font-size: 14px; color: var(--text-2); min-height: 20px; }
-.ttt-status-new.win { color: var(--sage-dark); font-weight: 600; }
-.ttt-turn-x { color: var(--prio-1); font-weight: 700; }
-.ttt-turn-o { color: var(--sage); font-weight: 700; }
-
-.ttt-board {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  max-width: 320px;
-  margin: 0 auto;
+.games-play-loading {
+  text-align: center;
+  color: var(--text-3);
+  font-size: 14px;
+  padding: 24px 0;
 }
 
-.ttt-cell {
-  aspect-ratio: 1;
-  border-radius: var(--radius);
-  border: 1.5px solid var(--border-strong);
-  background: var(--surface-2);
-  font-size: 32px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background var(--transition), border-color var(--transition);
+.games-library-empty {
+  color: var(--text-3);
+  font-size: 14px;
+  padding: 20px 0;
 }
-
-.ttt-cell:not(.filled):hover { background: var(--sage-bg); border-color: var(--sage); }
-.ttt-cell.x-cell { color: var(--prio-1); }
-.ttt-cell.o-cell { color: var(--sage); }
-.ttt-cell.winning { background: var(--sage-bg); border-color: var(--sage); }
-.ttt-cell:disabled { cursor: default; }
-
-.ttt-score {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text-2);
-  font-family: var(--mono);
-}
-
-.ttt-score-x { color: var(--prio-1); }
-.ttt-score-o { color: var(--sage); }
-.ttt-score-sep { color: var(--text-3); }
-
-/* ---- Memory ---- */
-
-.memory-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-.memory-stats { display: flex; gap: 18px; }
-.memory-stat { display: flex; flex-direction: column; gap: 2px; }
-.memory-stat-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); }
-.memory-stat-value { font-size: 16px; font-weight: 700; color: var(--text); font-family: var(--mono); }
-
-.memory-slider { width: 100%; }
-
-.memory-board { display: grid; gap: 10px; justify-content: center; }
-
-.mem-card { width: 70px; height: 70px; perspective: 600px; cursor: pointer; }
-.mem-card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.35s; transform-style: preserve-3d; }
-.mem-card.flipped .mem-card-inner { transform: rotateY(180deg); }
-
-.mem-card-front, .mem-card-back {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius);
-  backface-visibility: hidden;
-  font-size: 26px;
-}
-
-.mem-card-front { background: var(--surface-3); border: 1.5px solid var(--border-strong); color: var(--text-3); }
-.mem-card-back { background: var(--sage-bg); border: 1.5px solid var(--sage-border); transform: rotateY(180deg); }
-.mem-card.matched .mem-card-back { background: var(--accent-soft); opacity: 0.7; }
-
-.memory-done-new { text-align: center; padding: 20px 0; }
-.memory-done-title { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
-.memory-done-stats { color: var(--text-2); margin-bottom: 18px; }
-.memory-new-best { color: var(--sage-dark); font-weight: 700; }
-.memory-done-btns { display: flex; justify-content: center; gap: 8px; }
-
-/* ---- Snake ---- */
-
-.snake-wrap { display: flex; flex-direction: column; align-items: center; gap: 12px; }
-.snake-canvas { border-radius: var(--radius); border: 1.5px solid var(--border-strong); }
-.snake-status { font-size: 14px; font-weight: 600; color: var(--text-2); min-height: 20px; }
-.snake-hint { font-size: 12px; color: var(--text-3); }
 
 /* =========================
    RESPONSIVE

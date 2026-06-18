@@ -1,9 +1,0 @@
-{
-  "id": "tictactoe",
-  "name": "Tic-Tac-Toe",
-  "icon": "✕",
-  "version": "1.0",
-  "author": "Casey",
-  "description": "Klassisches 3×3 Spiel gegen KI oder zweiten Spieler.",
-  "highscoreLabel": "Siege als X"
-}

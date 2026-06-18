@@ -1,6 +1,7 @@
 // =========================
-// GAME: SNAKE
-// Registriert sich selbst bei window.GameHub über registerGame().
+// SPIEL-LOGIK: SNAKE
+// Wird erst beim ersten Klick auf "Spielen" geladen.
+// Ergänzt die bereits über manifest.js registrierte Karte um mount/destroy.
 // =========================
 
 (function () {
@@ -170,21 +171,10 @@
     }
   }
 
-  function getStats() {
-    const all = DB.get('gameHighscores', {});
-    const best = all.snake || 0;
-    return { statLabel: 'Best', statValue: best > 0 ? best : '—', secondaryStat: 'Punkte' };
-  }
-
   window.registerGame({
     id: 'snake',
-    title: 'Snake',
-    description: 'Der Klassiker. Wie lange schaffst du es?',
-    icon: '🐍',
-    accent: '',
     mount,
-    destroy,
-    getStats
+    destroy
   });
 
 })();

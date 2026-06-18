@@ -1,43 +1,87 @@
 // =========================
 // GAME HUB
-// Cozy-Library-Design + echte Spiele-Registry.
-// Spiele registrieren sich selbst über window.registerGame()
-// (siehe games-ttt.js, games-memory.js, games-snake.js).
+// Reiner Launcher/Container: Registry, Library-Rendering, Suche, Modal.
+// Kennt keine einzelne Spiel-ID — alles kommt aus window.GAMES_LIST
+// (games/games-list.js) und den selbst-registrierenden Spiel-Dateien.
+//
+// Ladestrategie pro Spiel:
+//   1. games/<id>/manifest.js   → lädt sofort (Meta + getStats, für die Karte)
+//   2. games/<id>/<id>.js       → lädt erst beim ersten Klick auf "Spielen"
+//   3. games/<id>/<id>.css      → wird beim Öffnen injiziert, beim Schließen entfernt
 // =========================
 
 window.GameHub = {
   registry: {},
   activeGame: null,
-  initialized: false
+  initialized: false,
+  loadedCss: new Map() // gameId -> <link>-Element
 };
 
+// Spiele rufen das selbst auf (in manifest.js UND später nochmal in <id>.js).
+// Mehrfache Aufrufe werden zusammengeführt, nicht überschrieben — so kann
+// manifest.js zuerst die Meta-Daten registrieren und <id>.js später nur
+// mount/destroy ergänzen.
 window.registerGame = function (gameConfig) {
   if (!gameConfig || !gameConfig.id) {
     console.warn('registerGame: ungültige Config, id fehlt.');
     return;
   }
-  window.GameHub.registry[gameConfig.id] = gameConfig;
+  const existing = window.GameHub.registry[gameConfig.id] || {};
+  window.GameHub.registry[gameConfig.id] = Object.assign({}, existing, gameConfig);
 };
 
-// Reihenfolge der echten Spiele in der Library
-const REAL_GAME_ORDER = ['ttt', 'memory', 'snake'];
-
-// Noch nicht umgesetzte Spiele — werden als "Bald verfügbar" angezeigt,
-// Klick auf die Karte tut nichts.
-const COMING_SOON_GAMES = [
-  { id: 'flashcard-battle', title: 'Flashcard Battle', description: 'Kämpfe gegen den Wissens-Boss und steige im Level auf!', icon: '🃏', accent: '' },
-  { id: 'debug-hero', title: 'Debug Hero', description: 'Finde den Fehler im Code und werde zum Debug Master!', icon: '🐞', accent: 'orange' },
-  { id: 'virtual-pet', title: 'Virtual Pet', description: 'Kümmere dich um dein Pet und lass es wachsen!', icon: '🐾', accent: 'pink' }
-];
-
 let lastSearchTerm = '';
+
+// =========================
+// SCRIPT/CSS-LOADER
+// Funktioniert unter file:// (kein fetch() — nur <script>/<link>-Tags,
+// die der Browser ganz normal lädt, anders als fetch()/XHR).
+// =========================
+
+function loadScript(src) {
+  return new Promise(resolve => {
+    if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = () => resolve();
+    s.onerror = () => {
+      console.warn(`GameHub: Skript nicht gefunden – ${src}`);
+      resolve(); // ein fehlendes Spiel soll den Hub nicht blockieren
+    };
+    document.head.appendChild(s);
+  });
+}
+
+function loadGameCss(id) {
+  if (window.GameHub.loadedCss.has(id)) return Promise.resolve();
+  return new Promise(resolve => {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = `games/${id}/${id}.css`;
+    link.onload = () => resolve();
+    link.onerror = () => {
+      console.warn(`GameHub: CSS nicht gefunden – games/${id}/${id}.css`);
+      resolve(); // fehlende CSS soll das Spiel nicht blockieren
+    };
+    document.head.appendChild(link);
+    window.GameHub.loadedCss.set(id, link);
+  });
+}
+
+function unloadGameCss(id) {
+  const link = window.GameHub.loadedCss.get(id);
+  if (link) {
+    link.remove();
+    window.GameHub.loadedCss.delete(id);
+  }
+}
 
 // =========================
 // INIT
 // Wird von main.js über renderView('games') aufgerufen.
 // =========================
 
-function initGames() {
+async function initGames() {
 
   if (window.GameHub.initialized) {
     // Tab erneut geöffnet: nur Stats/Highscores auf den Karten auffrischen.
@@ -50,36 +94,40 @@ function initGames() {
   const view = document.getElementById('view-games');
   if (!view) return;
 
-  renderGamesHub(view);
+  renderGamesHub(view); // Shell + leeres Grid
   wireSearch();
   wireLibraryGrid();
+
+  await Promise.all(
+    (window.GAMES_LIST || []).map(id => loadScript(`games/${id}/manifest.js`))
+  );
+  renderLibraryGrid();
 }
 window.initGames = initGames;
 
 // =========================
 // KARTEN-DATEN
+// Der Hub weiß hier nichts über einzelne Spiele — nur, dass eine ID
+// in GAMES_LIST steht und sich (hoffentlich) registriert hat.
 // =========================
 
 function buildCardList() {
-  const real = REAL_GAME_ORDER
+  return (window.GAMES_LIST || [])
     .map(id => window.GameHub.registry[id])
     .filter(Boolean)
     .map(game => {
-      const stats = typeof game.getStats === 'function' ? game.getStats() : {};
-      return { ...game, ...stats, button: 'Spielen', comingSoon: false };
+      const fallbackStats = game.comingSoon
+        ? { statLabel: 'Status', statValue: '—', secondaryStat: 'Bald da' }
+        : { statLabel: '–', statValue: '–', secondaryStat: '–' };
+      const stats = typeof game.getStats === 'function' ? game.getStats() : fallbackStats;
+
+      return {
+        ...game,
+        ...stats,
+        button: game.comingSoon ? 'Bald verfügbar' : 'Spielen',
+        badge: game.comingSoon ? 'Bald verfügbar' : null
+      };
     });
-
-  const comingSoon = COMING_SOON_GAMES.map(game => ({
-    ...game,
-    statLabel: 'Status',
-    statValue: '—',
-    secondaryStat: 'Bald da',
-    button: 'Bald verfügbar',
-    badge: 'Bald verfügbar',
-    comingSoon: true
-  }));
-
-  return [...real, ...comingSoon];
 }
 
 // =========================
@@ -230,7 +278,9 @@ function renderLibraryGrid() {
   if (!grid) return;
 
   const cards = buildCardList();
-  grid.innerHTML = cards.map(renderGameCard).join('');
+  grid.innerHTML = cards.length
+    ? cards.map(renderGameCard).join('')
+    : `<p class="games-library-empty">Lädt Spiele…</p>`;
 
   applySearchFilter(lastSearchTerm);
 }
@@ -250,7 +300,7 @@ function renderGameCard(game) {
         <div class="game-card-icon-tile">${game.icon || '🎮'}</div>
         <div class="game-card-text">
           <div class="game-card-title">${game.title}</div>
-          <div class="game-card-description">${game.description}</div>
+          <div class="game-card-description">${game.description || ''}</div>
         </div>
       </div>
 
@@ -313,11 +363,13 @@ function wireLibraryGrid() {
 
 // =========================
 // PLAY-MODAL
+// Lädt die eigentliche Spiellogik (<id>.js) + CSS (<id>.css) erst hier,
+// beim ersten Öffnen — nicht beim Start der App.
 // =========================
 
-function openGamePlayModal(gameId) {
+async function openGamePlayModal(gameId) {
   const game = window.GameHub.registry[gameId];
-  if (!game) return;
+  if (!game || game.comingSoon) return;
 
   window.GameHub.activeGame = gameId;
 
@@ -325,18 +377,42 @@ function openGamePlayModal(gameId) {
   document.getElementById('games-play-modal-name').textContent = game.title;
 
   const body = document.getElementById('games-play-modal-body');
-  body.innerHTML = '';
+  body.innerHTML = `<p class="games-play-loading">Lädt…</p>`;
 
   document.getElementById('games-play-modal-overlay').classList.remove('hidden');
 
-  try { game.mount(body); } catch (err) { console.error(err); }
+  // Wichtig: BEIDE awaiten, nicht nur das Script. Sonst kann mount() das
+  // Board bauen, bevor das Stylesheet geladen ist — die Zellen rendern
+  // dann kurz mit Browser-Default-Größe (siehe Bugfix-Notiz unten).
+  const cssReady = loadGameCss(gameId);
+  const scriptReady = typeof game.mount === 'function'
+    ? Promise.resolve()
+    : loadScript(`games/${gameId}/${gameId}.js`);
+
+  await Promise.all([cssReady, scriptReady]);
+
+  // Falls der Nutzer in der Ladezeit schon wieder geschlossen oder ein
+  // anderes Spiel geöffnet hat: nicht mehr in ein fremdes Modal mounten.
+  if (window.GameHub.activeGame !== gameId) return;
+
+  const ready = window.GameHub.registry[gameId];
+  body.innerHTML = '';
+
+  if (typeof ready.mount === 'function') {
+    try { ready.mount(body); } catch (err) { console.error(err); }
+  } else {
+    body.innerHTML = `<p class="games-play-loading">Spiel konnte nicht geladen werden.</p>`;
+  }
 }
 
 function closeGamePlayModal() {
-  const game = window.GameHub.registry[window.GameHub.activeGame];
+  const gameId = window.GameHub.activeGame;
+  const game = window.GameHub.registry[gameId];
+
   if (game && typeof game.destroy === 'function') {
     try { game.destroy(); } catch (err) { console.error(err); }
   }
+  if (gameId) unloadGameCss(gameId);
 
   document.getElementById('games-play-modal-overlay').classList.add('hidden');
   document.getElementById('games-play-modal-body').innerHTML = '';

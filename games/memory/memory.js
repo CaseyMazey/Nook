@@ -1,6 +1,7 @@
 // =========================
-// GAME: MEMORY
-// Registriert sich selbst bei window.GameHub über registerGame().
+// SPIEL-LOGIK: MEMORY
+// Wird erst beim ersten Klick auf "Spielen" geladen.
+// Ergänzt die bereits über manifest.js registrierte Karte um mount/destroy.
 // =========================
 
 (function () {
@@ -14,8 +15,6 @@
 
   let els = {};
 
-  // ---- Highscores ----
-
   function readAll() {
     const all = DB.get('gameHighscores', {});
     if (!all.memory) all.memory = {};
@@ -26,8 +25,6 @@
     const m = Math.floor(seconds / 60), s = seconds % 60;
     return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   }
-
-  // ---- Timer ----
 
   function startTimer() {
     if (!state.running) {
@@ -40,8 +37,6 @@
     state.timer = null;
     state.running = false;
   }
-
-  // ---- Render ----
 
   function renderStats() {
     els.stats.innerHTML = `
@@ -197,24 +192,10 @@
     stopTimer();
   }
 
-  function getStats() {
-    const all = DB.get('gameHighscores', {});
-    const memHs = all.memory || {};
-    const entries = Object.values(memHs);
-    if (!entries.length) return { statLabel: 'Best', statValue: '—', secondaryStat: 'Zeit' };
-    const best = entries.sort((a, b) => a.seconds - b.seconds)[0];
-    return { statLabel: 'Best', statValue: fmtTime(best.seconds), secondaryStat: 'Zeit' };
-  }
-
   window.registerGame({
     id: 'memory',
-    title: 'Memory',
-    description: 'Trainiere dein Gedächtnis und schlage deine Zeit!',
-    icon: '🧩',
-    accent: 'blue',
     mount,
-    destroy,
-    getStats
+    destroy
   });
 
 })();

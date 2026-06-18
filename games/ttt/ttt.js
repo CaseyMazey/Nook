@@ -1,7 +1,7 @@
 // =========================
-// GAME: TIC-TAC-TOE
-// Registriert sich selbst bei window.GameHub über registerGame().
-// Wird vom Hub (games.js) in das Play-Modal gemountet.
+// SPIEL-LOGIK: TIC-TAC-TOE
+// Wird erst beim ersten Klick auf "Spielen" geladen.
+// Ergänzt die bereits über manifest.js registrierte Karte um mount/destroy.
 // =========================
 
 (function () {
@@ -114,7 +114,6 @@
     if (r.winner === 'draw') state.scores.draw++;
     else state.scores[r.winner] = (state.scores[r.winner] || 0) + 1;
 
-    // Nur echte Partien (mit Ergebnis für den Spieler) fließen in die Highscores ein.
     const all = readHighscores();
     all.ttt.totalGames = (all.ttt.totalGames || 0) + 1;
     if (r.winner === 'X') all.ttt.playerWins = (all.ttt.playerWins || 0) + 1;
@@ -199,21 +198,12 @@
     // Keine Timer/Intervalle bei TTT — nichts aufzuräumen.
   }
 
-  function getStats() {
-    const all = DB.get('gameHighscores', {});
-    const wins = all.ttt?.playerWins || 0;
-    return { statLabel: 'Siege', statValue: wins, secondaryStat: 'Gewonnen' };
-  }
-
+  // Ergänzt nur mount/destroy — Meta-Daten kommen bereits aus manifest.js,
+  // registerGame() merged beide Aufrufe zusammen.
   window.registerGame({
     id: 'ttt',
-    title: 'Tic-Tac-Toe',
-    description: 'Fordere die KI oder einen Freund heraus!',
-    icon: '⭕',
-    accent: 'purple',
     mount,
-    destroy,
-    getStats
+    destroy
   });
 
 })();

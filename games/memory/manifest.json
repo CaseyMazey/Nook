@@ -1,9 +1,0 @@
-{
-  "id": "memory",
-  "name": "Memory",
-  "icon": "🃏",
-  "version": "1.0",
-  "author": "Casey",
-  "description": "Finde alle Kartenpaare so schnell wie möglich.",
-  "highscoreLabel": "Beste Zeit"
-}
