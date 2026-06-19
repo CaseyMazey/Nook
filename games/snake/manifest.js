@@ -34,5 +34,26 @@ window.registerGame({
     const all = DB.get('gameHighscores', {});
     delete all.snake;
     DB.set('gameHighscores', all);
+  },
+
+  getPets() {
+    return [
+      {
+        id: 'slangel',
+        name: 'Schlängel',
+
+        sourceGame: 'snake',
+
+        image: 'games/snake/assets/slangel.png',
+
+        personality: 'Rollt sich gerne unter Decken ein.',
+
+        unlockCondition: {
+          type: 'highscore',
+          value: 500
+        }
+      }
+    ];
   }
+
 });

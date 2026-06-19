@@ -157,9 +157,11 @@ function buildCardList() {
         statValue: primary.value,
         secondaryLabel: secondary.label,
         secondaryValue: secondary.value,
-        hasStats: stats.length > 0,
+        hasStats: stats.length > 0 || typeof game.getHighscores === 'function',
         button: game.comingSoon ? 'Bald verfügbar' : 'Spielen',
-        badge: game.comingSoon ? 'Bald verfügbar' : null
+        // Spiele können ihr eigenes Badge setzen (z.B. "Neu"); "Bald verfügbar"
+        // hat bei comingSoon-Spielen weiterhin Vorrang.
+        badge: game.comingSoon ? 'Bald verfügbar' : (game.badge || null)
       };
     });
 }
@@ -332,7 +334,7 @@ function renderGameCard(game) {
       ${game.badge ? `<div class="game-badge">${game.badge}</div>` : ''}
 
       <div class="game-card-main">
-        <div class="game-card-icon-tile">${game.icon || '🎮'}</div>
+        <div class="game-card-icon-tile">${game.iconSrc ? `<img src="${game.iconSrc}" alt="" class="game-card-icon-img">` : (game.icon || '🎮')}</div>
         <div class="game-card-text">
           <div class="game-card-title">${game.title}</div>
           <div class="game-card-description">${game.description || ''}</div>
@@ -496,15 +498,22 @@ function openGameStatsModal(gameId) {
   document.getElementById('games-stats-modal-name').textContent = game.title;
 
   const stats = typeof game.getStats === 'function' ? game.getStats() : [];
+  const highscores = typeof game.getHighscores === 'function' ? game.getHighscores() : [];
   const body = document.getElementById('games-stats-modal-body');
 
-  body.innerHTML = stats.length
-    ? stats.map(s => `
-        <div class="games-stats-row">
-          <span class="games-stats-label">${s.label}</span>
-          <span class="games-stats-value">${s.value}</span>
-        </div>`).join('')
-    : `<p class="games-play-loading">Noch keine Statistiken vorhanden.</p>`;
+  const renderRows = list => list.map(s => `
+    <div class="games-stats-row">
+      <span class="games-stats-label">${s.label}</span>
+      <span class="games-stats-value">${s.value}</span>
+    </div>`).join('');
+
+  if (!stats.length && !highscores.length) {
+    body.innerHTML = `<p class="games-play-loading">Noch keine Statistiken vorhanden.</p>`;
+  } else {
+    body.innerHTML =
+      renderRows(stats) +
+      (highscores.length ? `<div class="games-stats-subheading">Bestenliste</div>${renderRows(highscores)}` : '');
+  }
 
   document.getElementById('games-stats-modal-overlay').classList.remove('hidden');
 }

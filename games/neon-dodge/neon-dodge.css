@@ -1,0 +1,139 @@
+/* =========================================================
+   NEON DODGE
+   Wird vom Hub dynamisch geladen/entfernt — siehe games.js
+   loadGameCss()/unloadGameCss(). Alles hier ist unter
+   .neon-dodge-root gescoped, keine globalen body-Regeln.
+========================================================= */
+
+.neon-dodge-root {
+  /* eigene, lokale Farbvariablen — keine Abhängigkeit vom Hub-Theme */
+  --nd-bg-main: #0f1116;
+  --nd-bg-card: #151924;
+  --nd-text-main: #e6e6e6;
+
+  color: var(--nd-text-main);
+  font-family: system-ui, "Segoe UI", Roboto, Arial;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Neon Dodge braucht mehr Platz als die anderen Spiele (Canvas + 2 Panels).
+   Diese Regel wirkt nur, solange diese CSS-Datei geladen ist — also nur,
+   während Neon Dodge offen ist. Nach dem Schließen ist das Modal wieder
+   in seiner normalen Breite. */
+.games-play-modal-box {
+  width: 620px;
+}
+
+/* =========================
+   TOP BAR (HUD + Settings)
+========================= */
+.nd-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  opacity: .9;
+}
+
+.nd-hud {
+  font-family: "Courier New", monospace;
+}
+
+.nd-settings-btn {
+  background: var(--nd-bg-card);
+  color: var(--nd-text-main);
+  border: none;
+  border-radius: 8px;
+  padding: 6px 8px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.nd-settings-btn:hover {
+  background: #1d2433;
+}
+
+/* =========================
+   CANVAS
+   width:100% + aspect-ratio skaliert die DARSTELLUNG; die interne
+   Render-Auflösung bleibt 960×540 (über width/height-Attribute am
+   <canvas>) — neon-dodge.js skaliert Maus-Koordinaten entsprechend.
+========================= */
+.nd-canvas {
+  width: 100%;
+  display: block;
+  aspect-ratio: 16 / 9;
+  background:
+    radial-gradient(
+      1200px 500px at 50% 30%,
+      #1a2030 0%,
+      #0f1116 60%,
+      #0b0d12 100%
+    );
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.45);
+}
+
+/* =========================
+   SIDE PANELS (Perma / Run)
+   Im Original standen sie neben dem Canvas — im schmaleren Hub-Modal
+   passt das nicht mehr, deshalb liegen sie hier in einer Reihe darunter.
+========================= */
+.nd-panels {
+  display: flex;
+  gap: 14px;
+}
+
+.nd-panel {
+  flex: 1;
+  min-width: 0;
+  background: var(--nd-bg-card);
+  border-radius: 14px;
+  padding: 12px;
+  font-size: 13px;
+  line-height: 1.4;
+  box-shadow: 0 6px 20px rgba(0,0,0,.35);
+  box-sizing: border-box;
+}
+
+.nd-panel h3 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  opacity: .85;
+}
+
+.nd-panel ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.nd-panel li {
+  opacity: .8;
+  margin-bottom: 6px;
+}
+
+/* =========================
+   HINWEIS-TEXT
+========================= */
+.nd-hint {
+  font-size: 12px;
+  opacity: .75;
+  line-height: 1.6;
+}
+
+.neon-dodge-root kbd {
+  background: #1d2433;
+  border: 1px solid #2c364b;
+  border-bottom-width: 2px;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+@media (max-width: 560px) {
+  .nd-panels {
+    flex-direction: column;
+  }
+}

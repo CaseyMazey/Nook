@@ -11,7 +11,8 @@ window.GAMES_LIST = [
   'ttt',
   'memory',
   'snake',
+  'neon-dodge',
   'flashcard-battle',
   'debug-hero',
-  'virtual-pet'
+  'cozy-home'
 ];

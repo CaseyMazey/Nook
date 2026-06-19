@@ -1,0 +1,301 @@
+/* ==========================================
+   COZY HOME - PHASE 1
+   ========================================== */
+
+.cozy-home {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    color: var(--text);
+    width: min(1100px, 95vw);
+}
+
+/* ==========================================
+   HEADER
+   ========================================== */
+
+.cozy-header h2 {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.cozy-header p {
+    margin-top: 6px;
+    color: var(--text-3);
+    font-size: 0.95rem;
+}
+
+/* ==========================================
+   MAIN CARD
+   ========================================== */
+
+.cozy-main-card{
+    background:#f8eee1;
+    border:1px solid rgba(0,0,0,.05);
+    border-radius:28px;
+    padding:28px;
+
+    display:grid;
+    grid-template-columns:260px 1fr;
+    gap:32px;
+}
+
+/* ==========================================
+   PET IMAGE
+   ========================================== */
+
+.cozy-left {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.cozy-pet-frame{
+    width:220px;
+    height:220px;
+
+    background:#fff8f1;
+    border-radius:24px;
+    border:1px solid rgba(0,0,0,.05);
+
+    overflow:hidden;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    margin:auto;
+}
+
+.cozy-pet-frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.cozy-pet-image {
+    font-size: 7rem;
+}
+
+.cozy-pet-name {
+    margin-top: 18px;
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.cozy-pet-mood {
+    margin-top: 6px;
+    font-size: 1.1rem;
+    color: #e595ad;
+}
+
+/* ==========================================
+   RIGHT SIDE
+   ========================================== */
+
+.cozy-right {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+/* ==========================================
+   STATUS CARD
+   ========================================== */
+
+.cozy-status-card {
+    background: #fff8f1;
+    border-radius: 24px;
+    padding: 20px;
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+.cozy-status-card h3 {
+    margin-top: 0;
+    margin-bottom: 18px;
+    font-size: 1.2rem;
+}
+
+.cozy-stat {
+    margin-bottom: 18px;
+}
+
+.cozy-stat:last-child {
+    margin-bottom: 0;
+}
+
+.cozy-stat-label {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+}
+
+.cozy-bar {
+    width: 100%;
+    height: 12px;
+    background: #e8ddd0;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.cozy-bar-fill {
+    height: 100%;
+    border-radius: inherit;
+}
+
+.cozy-bar-fill.hunger {
+    background: #ff8ca8;
+}
+
+.cozy-bar-fill.energy {
+    background: #b08cf1;
+}
+
+.cozy-bar-fill.happiness {
+    background: #ffb5c8;
+}
+
+/* ==========================================
+   ACTIONS
+   ========================================== */
+
+.cozy-actions{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:16px;
+}
+
+.cozy-action-btn {
+    background: #fff8f1;
+    border: 1px solid rgba(0,0,0,0.05);
+    border-radius: 24px;
+    padding: 20px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+
+    cursor: pointer;
+
+    transition: .2s;
+}
+
+.cozy-action-btn:hover {
+    transform: translateY(-2px);
+    background: white;
+}
+
+.cozy-action-icon {
+    font-size: 2rem;
+}
+
+.cozy-action-title {
+    font-weight: 600;
+}
+
+.cozy-action-desc {
+    font-size: .85rem;
+    color: var(--text-3);
+}
+
+/* ==========================================
+   PET LIST
+   ========================================== */
+
+.cozy-pets-card {
+    background: #f8eee1;
+    border: 1px solid rgba(0,0,0,0.05);
+    border-radius: 28px;
+    padding: 20px;
+}
+
+.cozy-pets-title {
+    font-weight: 700;
+    margin-bottom: 18px;
+}
+
+.cozy-pets-list {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+}
+
+.cozy-pet-chip {
+    width: 90px;
+    flex-shrink: 0;
+
+    background: #fff8f1;
+    border-radius: 22px;
+    border: 2px solid transparent;
+
+    padding: 14px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+
+    cursor: pointer;
+
+    transition: .2s;
+}
+
+.cozy-pet-chip.active {
+    border-color: #e595ad;
+}
+
+.cozy-pet-chip:hover {
+    transform: translateY(-2px);
+}
+
+.cozy-chip-icon {
+    font-size: 2rem;
+}
+
+.cozy-chip-name {
+    font-size: .85rem;
+    text-align: center;
+}
+
+
+.cozy-warnings{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    margin-top:12px;
+}
+
+.cozy-warning{
+    background:#fff0ef;
+    color:#d46b6b;
+    border-radius:12px;
+    padding:10px 14px;
+    font-size:.9rem;
+}
+
+/* ==========================================
+   MOBILE
+   ========================================== */
+
+@media (max-width:900px){
+
+    .cozy-main-card{
+        grid-template-columns: 1fr;
+    }
+
+}
+@media (max-width:900px){
+
+    .cozy-actions{
+        grid-template-columns:repeat(2,1fr);
+    }
+
+    .cozy-pet-frame{
+        width:180px;
+        height:180px;
+    }
+
+}
