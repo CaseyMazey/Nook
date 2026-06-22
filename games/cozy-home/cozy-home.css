@@ -1,5 +1,6 @@
 /* ==========================================
-   COZY HOME - PHASE 1
+   COZY HOME - PHASE 3
+   Tagesaufgaben, Coins, Inventar
    ========================================== */
 
 .cozy-home {
@@ -30,45 +31,38 @@
    MAIN CARD
    ========================================== */
 
-.cozy-main-card{
-    background:#f8eee1;
-    border:1px solid rgba(0,0,0,.05);
-    border-radius:28px;
-    padding:28px;
-
-    display:grid;
-
-    grid-template-columns:1fr 1fr;
-    align-items:start;
-
-    gap:32px;
+.cozy-main-card {
+    background: #f8eee1;
+    border: 1px solid rgba(0,0,0,.05);
+    border-radius: 28px;
+    padding: 28px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+    gap: 32px;
 }
 
 /* ==========================================
-   PET IMAGE
+   LEFT – ROOM + PET
    ========================================== */
 
-.cozy-left{
-    display:flex;
-    flex-direction:column;
-    gap:18px;
+.cozy-left {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
 }
 
-.cozy-pet-frame{
-    width:220px;
-    height:220px;
-
-    background:#fff8f1;
-    border-radius:24px;
-    border:1px solid rgba(0,0,0,.05);
-
-    overflow:hidden;
-
-    display:flex;
-    align-items:center;
-    justify-content:center;
-
-    margin:auto;
+.cozy-pet-frame {
+    width: 220px;
+    height: 220px;
+    background: #fff8f1;
+    border-radius: 24px;
+    border: 1px solid rgba(0,0,0,.05);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: auto;
 }
 
 .cozy-pet-frame img {
@@ -77,22 +71,20 @@
     object-fit: cover;
 }
 
-.cozy-pet-image {
-    font-size: 7rem;
-}
+.cozy-pet-image { font-size: 7rem; }
 
 .cozy-pet-name {
     margin-top: 18px;
     font-size: 2rem;
     font-weight: 700;
-    text-align:center;
+    text-align: center;
 }
 
 .cozy-pet-mood {
     margin-top: 6px;
     font-size: 1.1rem;
     color: #e595ad;
-    text-align:center;
+    text-align: center;
 }
 
 /* ==========================================
@@ -116,19 +108,32 @@
     border: 1px solid rgba(0,0,0,0.05);
 }
 
-.cozy-status-card h3 {
-    margin-top: 0;
+/* Phase 3: Header-Zeile mit Coin-Anzeige */
+.cozy-status-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     margin-bottom: 18px;
+}
+
+.cozy-status-header h3 {
+    margin: 0;
     font-size: 1.2rem;
 }
 
-.cozy-stat {
-    margin-bottom: 18px;
+/* Phase 3: Coin-Display */
+.cozy-coin-display {
+    background: #fdf3dc;
+    border: 1px solid rgba(0,0,0,.06);
+    border-radius: 20px;
+    padding: 5px 14px;
+    font-size: .95rem;
+    font-weight: 700;
+    color: #b07c20;
 }
 
-.cozy-stat:last-child {
-    margin-bottom: 0;
-}
+.cozy-stat { margin-bottom: 18px; }
+.cozy-stat:last-child { margin-bottom: 0; }
 
 .cozy-stat-label {
     display: flex;
@@ -150,26 +155,37 @@
     border-radius: inherit;
 }
 
-.cozy-bar-fill.hunger {
-    background: #ff8ca8;
+.cozy-bar-fill.hunger    { background: #ff8ca8; }
+.cozy-bar-fill.energy    { background: #b08cf1; }
+.cozy-bar-fill.happiness { background: #ffb5c8; }
+
+/* ==========================================
+   WARNKARTEN (Phase 2)
+   ========================================== */
+
+.cozy-warnings {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
 }
 
-.cozy-bar-fill.energy {
-    background: #b08cf1;
-}
-
-.cozy-bar-fill.happiness {
-    background: #ffb5c8;
+.cozy-warning {
+    background: #fff0ef;
+    color: #d46b6b;
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-size: .9rem;
 }
 
 /* ==========================================
-   ACTIONS
+   AKTIONEN
    ========================================== */
 
-.cozy-actions{
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    gap:16px;
+.cozy-actions {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
 }
 
 .cozy-action-btn {
@@ -177,14 +193,11 @@
     border: 1px solid rgba(0,0,0,0.05);
     border-radius: 24px;
     padding: 10px;
-
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 8px;
-
     cursor: pointer;
-
     transition: .2s;
 }
 
@@ -193,20 +206,16 @@
     background: white;
 }
 
-.cozy-action-icon {
-    font-size: 1.6rem;
-}
-
-.cozy-action-title {
-    font-weight: 600;
-}
+.cozy-action-icon  { font-size: 1.6rem; }
+.cozy-action-title { font-weight: 600; }
 
 .cozy-action-desc {
     font-size: .85rem;
     color: var(--text-3);
+    text-align: center;
 }
 
-/* Phase 2: deaktivierter Aktions-Button (z.B. Spielen im Schlafmodus) */
+/* Deaktivierter Button (Schlafmodus / kein Futter) */
 .cozy-action-btn.disabled {
     cursor: not-allowed;
     opacity: .5;
@@ -218,230 +227,190 @@
 }
 
 /* ==========================================
-   PET LIST
+   TAGESAUFGABEN (Phase 3)
    ========================================== */
 
-.cozy-pets-card {
-    background: #f8eee1;
-    border: 1px solid rgba(0,0,0,0.05);
-    border-radius: 28px;
+.cozy-tasks-card {
+    background: #fff8f1;
+    border: 1px solid rgba(0,0,0,.05);
+    border-radius: 24px;
     padding: 20px;
 }
 
-.cozy-pets-title {
-    font-weight: 700;
-    margin-bottom: 18px;
-}
-
-.cozy-pets-list {
+.cozy-tasks-header {
     display: flex;
-    gap: 16px;
-    overflow-x: auto;
+    align-items: center;
+    margin-bottom: 14px;
 }
 
-.cozy-pet-chip {
-    width: 90px;
-    flex-shrink: 0;
+.cozy-tasks-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+}
 
-    background: #fff8f1;
-    border-radius: 22px;
-    border: 2px solid transparent;
-
-    padding: 14px;
-
+.cozy-tasks-list {
     display: flex;
     flex-direction: column;
+    gap: 10px;
+}
+
+.cozy-task-item {
+    display: flex;
     align-items: center;
-    gap: 8px;
-
-    cursor: pointer;
-
+    gap: 10px;
+    padding: 10px 14px;
+    background: #f8eee1;
+    border-radius: 14px;
+    font-size: .92rem;
     transition: .2s;
 }
 
-.cozy-pet-chip.active {
-    border-color: #e595ad;
+/* Erledigte Aufgabe */
+.cozy-task-item.done {
+    background: #edf7ee;
+    color: #5a9e6b;
 }
 
-.cozy-pet-chip:hover {
-    transform: translateY(-2px);
-}
-
-.cozy-chip-icon {
-    font-size: 2rem;
-}
-
-.cozy-chip-name {
-    font-size: .85rem;
+.cozy-task-check {
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    width: 20px;
     text-align: center;
 }
 
-
-.cozy-warnings{
-    display:flex;
-    flex-direction:column;
-    gap:8px;
-    margin-top:12px;
+.cozy-task-text {
+    flex: 1;
 }
 
-.cozy-warning{
-    background:#fff0ef;
-    color:#d46b6b;
-    border-radius:12px;
-    padding:10px 14px;
-    font-size:.9rem;
+.cozy-task-reward {
+    font-size: .85rem;
+    font-weight: 700;
+    color: #b07c20;
+    flex-shrink: 0;
 }
+
+/* Reward-Text grau wenn bereits abgeholt */
+.cozy-task-item.done .cozy-task-reward {
+    color: #5a9e6b;
+}
+
 /* ==========================================
    ROOM
    ========================================== */
 
-.cozy-room{
-    position:relative;
-
-    width:100%;
-    max-width:520px;
-    margin:auto;
-
-    overflow:hidden;
-
-    border-radius:32px;
-
-    background:#fff8f1;
+.cozy-room {
+    position: relative;
+    width: 100%;
+    max-width: 520px;
+    margin: auto;
+    overflow: hidden;
+    border-radius: 32px;
+    background: #fff8f1;
 }
 
-.cozy-room-bg{
-    width:100%;
-    display:block;
+.cozy-room-bg {
+    width: 100%;
+    display: block;
 }
 
-.cozy-room-pet{
-
-    position:absolute;
-
-    width:160px;
-
-    left:50%;
-    bottom:60px;
-
-    transform:translateX(-50%);
-
-    image-rendering:auto;
-
-    /* Phase 2: sanftes Schweben */
+.cozy-room-pet {
+    position: absolute;
+    width: 160px;
+    left: 50%;
+    bottom: 60px;
+    transform: translateX(-50%);
+    image-rendering: auto;
     animation: cozyPetFloat 4s ease-in-out infinite;
 }
 
 @keyframes cozyPetFloat {
     0%, 100% { transform: translateX(-50%) translateY(0); }
-    50%      { transform: translateX(-50%) translateY(-8px); }
+    50%       { transform: translateX(-50%) translateY(-8px); }
 }
 
 /* ==========================================
    GEDANKENBLASE (Phase 2)
    ========================================== */
 
-.cozy-thought-bubble{
-    position:absolute;
-
-    top:18px;
-    left:50%;
-
-    transform:translateX(-50%);
-
-    background:#fff;
-    color:var(--text);
-
-    padding:8px 16px;
-
-    border-radius:16px;
-
-    font-size:.85rem;
-
-    box-shadow:0 4px 14px rgba(0,0,0,.08);
-
-    white-space:nowrap;
-
-    z-index:2;
-
-    opacity:0;
-
+.cozy-thought-bubble {
+    position: absolute;
+    top: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #fff;
+    color: var(--text);
+    padding: 8px 16px;
+    border-radius: 16px;
+    font-size: .85rem;
+    box-shadow: 0 4px 14px rgba(0,0,0,.08);
+    white-space: nowrap;
+    z-index: 2;
+    opacity: 0;
     animation:
         cozyBubbleIn .6s ease forwards,
         cozyBubbleFloat 4s ease-in-out .6s infinite;
 }
 
 @keyframes cozyBubbleIn {
-    from { opacity:0; transform:translateX(-50%) translateY(6px); }
-    to   { opacity:1; transform:translateX(-50%) translateY(0); }
+    from { opacity: 0; transform: translateX(-50%) translateY(6px); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
 @keyframes cozyBubbleFloat {
-    0%, 100% { transform:translateX(-50%) translateY(0); }
-    50%      { transform:translateX(-50%) translateY(-4px); }
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50%      { transform: translateX(-50%) translateY(-4px); }
 }
 
 /* ==========================================
-   PET LIST
+   HAUSTIERLISTE
    ========================================== */
 
-.cozy-pets{
-    display:flex;
-    gap:20px;
-    flex-wrap:wrap;
-
+.cozy-pets {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
 }
 
-.cozy-pet-slot{
-    width:110px;
-
-    background:#fff8f1;
-
-    border:1px solid rgba(0,0,0,.08);
-    border-radius:20px;
-
-    padding:14px;
-
-    cursor:pointer;
-
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-
-    gap:10px;
-
-    transition:.2s;
+.cozy-pet-slot {
+    width: 110px;
+    background: #fff8f1;
+    border: 1px solid rgba(0,0,0,.08);
+    border-radius: 20px;
+    padding: 14px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    transition: .2s;
 }
 
-.cozy-pet-slot.active{
-    border:2px solid #e595ad;
+.cozy-pet-slot.active  { border: 2px solid #e595ad; }
+.cozy-pet-slot:hover   { transform: translateY(-2px); }
+
+.cozy-pet-slot-img {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
 }
 
-.cozy-pet-slot-img{
-    width:64px;
-    height:64px;
-
-    object-fit:contain;
-}
 /* ==========================================
    MOBILE
    ========================================== */
 
-@media (max-width:900px){
+@media (max-width: 900px) {
 
-    .cozy-main-card{
+    .cozy-main-card {
         grid-template-columns: 1fr;
     }
 
-}
-@media (max-width:900px){
-
-    .cozy-actions{
-        grid-template-columns:repeat(2,1fr);
+    .cozy-actions {
+        grid-template-columns: repeat(2, 1fr);
     }
 
-    .cozy-pet-frame{
-        width:180px;
-        height:180px;
+    .cozy-pet-frame {
+        width: 180px;
+        height: 180px;
     }
 
 }

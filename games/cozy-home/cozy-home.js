@@ -1,6 +1,6 @@
 // =========================
-// COZY HOME - PHASE 2
-// Lebendigkeit + Warnsystem
+// COZY HOME - PHASE 3
+// Tagesaufgaben, Coins, Inventar
 // =========================
 
 (function () {
@@ -11,10 +11,51 @@
 
     const SLEEP_THRESHOLD = 20;
 
+    // ====================================
+    // AUFGABEN-DEFINITIONEN
+    // (zentrale Quelle der Wahrheit)
+    // ====================================
+
+    const TASK_DEFINITIONS = [
+        {
+            id: "pet",
+            text: "❤️ Streichle dein Haustier",
+            reward: 10
+        },
+        {
+            id: "feed",
+            text: "🍖 Füttere dein Haustier",
+            reward: 20
+        },
+        {
+            id: "play",
+            text: "🎮 Spiele mit deinem Haustier",
+            reward: 25
+        }
+    ];
+
+    // ====================================
+    // DEFAULT SAVE (Phase 3 – vollständig)
+    // ====================================
+
     const DEFAULT_SAVE = {
         activePet: "cat",
 
         lastUpdate: Date.now(),
+
+        // Phase 3
+        coins: 0,
+
+        inventory: {
+            kibble: 10,
+            snack: 5,
+            toyBall: 1
+        },
+
+        dailyTasks: {
+            lastReset: null,
+            tasks: []
+        },
 
         pets: {
             cat: {
@@ -29,7 +70,7 @@
     let root = null;
     let save = null;
 
-    // Phase 2: Timer-Handle, damit niemals mehrere Intervalle gleichzeitig laufen
+    // Phase 2: Timer-Handle – niemals mehrere Intervalle gleichzeitig
     let tickIntervalId = null;
 
     // ====================================
@@ -42,32 +83,86 @@
 
         if (!raw) {
 
+            const fresh = structuredClone(DEFAULT_SAVE);
+
             localStorage.setItem(
                 SAVE_KEY,
-                JSON.stringify(DEFAULT_SAVE)
+                JSON.stringify(fresh)
             );
 
-            return structuredClone(DEFAULT_SAVE);
+            return fresh;
 
         }
 
         try {
 
-            return {
+            const parsed = JSON.parse(raw);
+
+            // Shallow-Merge: DEFAULT_SAVE stellt fehlende Top-Level-Keys bereit,
+            // bestehende Werte aus dem alten Save bleiben erhalten.
+            const merged = {
                 ...structuredClone(DEFAULT_SAVE),
-                ...JSON.parse(raw)
+                ...parsed
             };
+
+            // Phase 3: Save-Migration für alte Stände
+            return migrateSave(merged);
 
         } catch {
 
+            const fresh = structuredClone(DEFAULT_SAVE);
+
             localStorage.setItem(
                 SAVE_KEY,
-                JSON.stringify(DEFAULT_SAVE)
+                JSON.stringify(fresh)
             );
 
-            return structuredClone(DEFAULT_SAVE);
+            return fresh;
 
         }
+
+    }
+
+    // ====================================
+    // MIGRATION (Phase 3)
+    // Alte Saves ohne coins / inventory /
+    // dailyTasks werden sicher ergänzt.
+    // ====================================
+
+    function migrateSave(s) {
+
+        // coins
+        if (typeof s.coins !== "number") {
+            s.coins = 0;
+        }
+
+        // inventory
+        if (!s.inventory || typeof s.inventory !== "object") {
+            s.inventory = structuredClone(
+                DEFAULT_SAVE.inventory
+            );
+        } else {
+            if (typeof s.inventory.kibble !== "number")
+                s.inventory.kibble = 10;
+            if (typeof s.inventory.snack !== "number")
+                s.inventory.snack = 5;
+            if (typeof s.inventory.toyBall !== "number")
+                s.inventory.toyBall = 1;
+        }
+
+        // dailyTasks
+        if (
+            !s.dailyTasks ||
+            typeof s.dailyTasks !== "object" ||
+            !Array.isArray(s.dailyTasks.tasks)
+        ) {
+            s.dailyTasks = {
+                lastReset: null,
+                tasks: []
+            };
+        }
+
+        return s;
 
     }
 
@@ -87,13 +182,11 @@
     function getAvailablePets() {
 
         return [
-
             {
                 id: "cat",
                 name: "Katze",
                 image: "games/cozy-home/assets/cat.png"
             }
-
         ];
 
     }
@@ -175,7 +268,6 @@
 
     function getMood(pet) {
 
-        // Schlafmodus hat Vorrang vor der normalen Stimmung
         if (isSleepy(pet))
             return "😴 Müde";
 
@@ -229,6 +321,58 @@
     }
 
     // ====================================
+    // TAGESAUFGABEN (Phase 3)
+    // ====================================
+
+    function generateDailyTasks() {
+
+        save.dailyTasks.lastReset = Date.now();
+
+        save.dailyTasks.tasks = TASK_DEFINITIONS.map(def => ({
+            id:        def.id,
+            text:      def.text,
+            reward:    def.reward,
+            completed: false
+        }));
+
+    }
+
+    function checkDailyReset() {
+
+        const today = new Date().toDateString();
+
+        const lastReset = save.dailyTasks.lastReset
+            ? new Date(save.dailyTasks.lastReset).toDateString()
+            : null;
+
+        // Neuer Tag ODER noch nie initialisiert
+        if (lastReset !== today) {
+            generateDailyTasks();
+            saveData();
+        }
+
+    }
+
+    // Schließt eine Aufgabe ab und gibt einmalig Coins.
+    // Wird direkt nach der jeweiligen Aktion aufgerufen.
+    function completeTask(id) {
+
+        const task = save.dailyTasks.tasks.find(
+            t => t.id === id
+        );
+
+        // Bereits erledigt oder nicht vorhanden → kein Effekt
+        if (!task || task.completed) return;
+
+        task.completed = true;
+
+        save.coins += task.reward;
+
+        saveData();
+
+    }
+
+    // ====================================
     // INTERAKTIONEN
     // ====================================
 
@@ -240,6 +384,8 @@
             pet.happiness + 5
         );
 
+        completeTask("pet"); // Phase 3
+
         saveData();
 
         render();
@@ -247,6 +393,9 @@
     }
 
     function feedPet() {
+
+        // Phase 3: Kein Futter → Aktion blockieren
+        if (save.inventory.kibble <= 0) return;
 
         const pet = getPetState(save.activePet);
 
@@ -256,6 +405,11 @@
         pet.energy = clamp(
             pet.energy + 5
         );
+
+        // Phase 3: Futter verbrauchen
+        save.inventory.kibble -= 1;
+
+        completeTask("feed"); // Phase 3
 
         saveData();
 
@@ -267,16 +421,22 @@
 
         const pet = getPetState(save.activePet);
 
-        // Im Schlafmodus ist Spielen gesperrt
+        // Im Schlafmodus gesperrt
         if (isSleepy(pet)) return;
 
+        // Phase 3: Spielzeug-Bonus (Ball wird NICHT verbraucht)
+        const happinessBonus =
+            save.inventory.toyBall > 0 ? 15 : 10;
+
         pet.happiness = clamp(
-            pet.happiness + 10
+            pet.happiness + happinessBonus
         );
 
         pet.energy = clamp(
             pet.energy - 10
         );
+
+        completeTask("play"); // Phase 3
 
         saveData();
 
@@ -344,8 +504,7 @@
 
     function startTickTimer() {
 
-        // Sicherheitsnetz: niemals mehrere Timer gleichzeitig
-        stopTickTimer();
+        stopTickTimer(); // Sicherheitsnetz: niemals doppelte Timer
 
         tickIntervalId = setInterval(
             tick,
@@ -376,15 +535,13 @@
             p => p.id === save.activePet
         );
 
-        const pet = getPetState(
-            save.activePet
-        );
+        const pet = getPetState(save.activePet);
 
-        const warnings = getWarnings(pet);
-
-        const sleepy = isSleepy(pet);
-
-        const thought = getPetThought(pet);
+        const warnings  = getWarnings(pet);
+        const sleepy    = isSleepy(pet);
+        const thought   = getPetThought(pet);
+        const noFood    = save.inventory.kibble <= 0;
+        const tasks     = save.dailyTasks.tasks;
 
         root.innerHTML = `
 
@@ -427,52 +584,45 @@
     <!-- RECHTS -->
     <div class="cozy-right">
 
+        <!-- STATUS + COINS -->
         <div class="cozy-status-card">
 
-            <h3>Zustand</h3>
+            <div class="cozy-status-header">
+                <h3>Zustand</h3>
+                <div class="cozy-coin-display">🪙 ${save.coins}</div>
+            </div>
 
             <div class="cozy-stat">
-
                 <div class="cozy-stat-label">
                     <span>🍖 Hunger</span>
                     <span>${Math.round(pet.hunger)} / 100</span>
                 </div>
-
                 <div class="cozy-bar">
                     <div class="cozy-bar-fill hunger"
                          style="width:${pet.hunger}%"></div>
                 </div>
-
             </div>
 
-
             <div class="cozy-stat">
-
                 <div class="cozy-stat-label">
                     <span>⚡ Energie</span>
                     <span>${Math.round(pet.energy)} / 100</span>
                 </div>
-
                 <div class="cozy-bar">
                     <div class="cozy-bar-fill energy"
                          style="width:${pet.energy}%"></div>
                 </div>
-
             </div>
 
-
             <div class="cozy-stat">
-
                 <div class="cozy-stat-label">
                     <span>❤️ Happiness</span>
                     <span>${Math.round(pet.happiness)} / 100</span>
                 </div>
-
                 <div class="cozy-bar">
                     <div class="cozy-bar-fill happiness"
                          style="width:${pet.happiness}%"></div>
                 </div>
-
             </div>
 
             ${warnings.length > 0 ? `
@@ -486,6 +636,7 @@
         </div>
 
 
+        <!-- AKTIONEN -->
         <div class="cozy-actions">
 
             <button id="cozy-pet-btn" class="cozy-action-btn">
@@ -494,16 +645,26 @@
                 <div class="cozy-action-desc">+5 Happiness</div>
             </button>
 
-            <button id="cozy-feed-btn" class="cozy-action-btn">
+            <button id="cozy-feed-btn"
+                    class="cozy-action-btn ${noFood ? "disabled" : ""}">
                 <div class="cozy-action-icon">🍖</div>
                 <div class="cozy-action-title">Füttern</div>
-                <div class="cozy-action-desc">+20 Hunger</div>
+                <div class="cozy-action-desc">
+                    ${noFood
+                        ? "Kein Futter"
+                        : `+20 Hunger · ${save.inventory.kibble} übrig`}
+                </div>
             </button>
 
-            <button id="cozy-play-btn" class="cozy-action-btn ${sleepy ? "disabled" : ""}">
+            <button id="cozy-play-btn"
+                    class="cozy-action-btn ${sleepy ? "disabled" : ""}">
                 <div class="cozy-action-icon">🎮</div>
                 <div class="cozy-action-title">Spielen</div>
-                <div class="cozy-action-desc">${sleepy ? "Zu müde zum Spielen" : "+10 Happiness<br>-10 Energie"}</div>
+                <div class="cozy-action-desc">
+                    ${sleepy
+                        ? "Zu müde zum Spielen"
+                        : `+${save.inventory.toyBall > 0 ? 15 : 10} Happiness`}
+                </div>
             </button>
 
             <button id="cozy-sleep-btn" class="cozy-action-btn">
@@ -514,41 +675,62 @@
 
         </div>
 
+
+        <!-- TAGESAUFGABEN (Phase 3) -->
+        <div class="cozy-tasks-card">
+
+            <div class="cozy-tasks-header">
+                <span class="cozy-tasks-title">Tagesaufgaben</span>
+            </div>
+
+            <div class="cozy-tasks-list">
+
+                ${tasks.map(task => `
+                <div class="cozy-task-item ${task.completed ? "done" : ""}">
+                    <span class="cozy-task-check">
+                        ${task.completed ? "✓" : "□"}
+                    </span>
+                    <span class="cozy-task-text">${task.text}</span>
+                    <span class="cozy-task-reward">+${task.reward} 🪙</span>
+                </div>
+                `).join("")}
+
+            </div>
+
+        </div>
+
     </div>
 
 </div>
 
-    <h3>Deine Haustiere</h3>
 
-        <div class="cozy-pets">
+<!-- HAUSTIERLISTE -->
+<h3>Deine Haustiere</h3>
 
-        ${getAvailablePets().map(p => `
+<div class="cozy-pets">
 
-        <button
+    ${getAvailablePets().map(p => `
+
+    <button
         class="cozy-pet-slot ${save.activePet === p.id ? "active" : ""}"
         data-id="${p.id}">
 
-        <img
-        src="${p.image}"
-        class="cozy-pet-slot-img">
+        <img src="${p.image}" class="cozy-pet-slot-img">
 
-        <div>
-        ${p.name}
-        </div>
+        <div>${p.name}</div>
 
-        </button>
+    </button>
 
-        `).join("")}
+    `).join("")}
 
-        </div>
+</div>
 
 </div>
 `;
 
         // ====================================
         // EVENT LISTENER NEU VERBINDEN
-        // (nach jedem render() neu, da innerHTML
-        //  alte Elemente inkl. Listener ersetzt)
+        // (innerHTML löscht alle alten Listener)
         // ====================================
 
         root
@@ -557,13 +739,10 @@
 
         root
             .querySelector("#cozy-feed-btn")
-            .onclick = feedPet;
+            .onclick = noFood ? null : feedPet;
 
         const playBtn = root.querySelector("#cozy-play-btn");
-
-        playBtn.onclick = sleepy
-            ? null
-            : playPet;
+        playBtn.onclick = sleepy ? null : playPet;
 
         root
             .querySelector("#cozy-sleep-btn")
@@ -571,16 +750,8 @@
 
         root
             .querySelectorAll(".cozy-pet-slot[data-id]")
-            .forEach(button => {
-
-                button.onclick = () => {
-
-                    selectPet(
-                        button.dataset.id
-                    );
-
-                };
-
+            .forEach(btn => {
+                btn.onclick = () => selectPet(btn.dataset.id);
             });
 
     }
@@ -594,6 +765,8 @@
         save = loadSave();
 
         applyOfflineProgress();
+
+        checkDailyReset(); // Phase 3: Tagesreset prüfen
 
         root = container;
 
