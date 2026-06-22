@@ -6,6 +6,7 @@
 window.registerGame({
   id: 'cozy-home',
   title: 'Cozy Home',
+  modalSize: "large",
   description: 'Sammle süße Pets und kümmer dich um sie.',
   icon: '🏠',
   accent: 'pink',

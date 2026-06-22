@@ -391,8 +391,16 @@
    PLAY-MODAL
 ========================= */
 
-.games-play-modal-box {
-  width: 520px;
+.games-play-modal-box{
+    width:min(95vw, 1200px);
+    max-height:90vh;
+}
+.games-play-modal-box.large{
+    width:min(95vw, 1200px);
+}
+
+.games-play-modal-box.normal{
+    width:520px;
 }
 
 .games-play-modal-title {

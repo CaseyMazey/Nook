@@ -8,6 +8,7 @@
 window.registerGame({
   id: 'flashcard-battle',
   title: 'Flashcard Battle',
+  modalSize: "large",
   description: 'Kämpfe gegen den Wissens-Boss und steige im Level auf!',
   icon: '🃏',
   accent: '',

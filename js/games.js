@@ -414,6 +414,13 @@ async function openGamePlayModal(gameId) {
   if (!game || game.comingSoon) return;
 
   window.GameHub.activeGame = gameId;
+  const modalBox = document.querySelector(".games-play-modal-box");
+
+  modalBox.classList.remove("normal", "large");
+
+  modalBox.classList.add(
+    game.modalSize || "normal"
+  );
 
   document.getElementById('games-play-modal-icon').textContent = game.icon || '🎮';
   document.getElementById('games-play-modal-name').textContent = game.title;

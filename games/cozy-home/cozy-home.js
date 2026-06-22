@@ -1,11 +1,15 @@
 // =========================
-// COZY HOME - PHASE 1.5
-// Haustierliste + Pet-Wechsel
+// COZY HOME - PHASE 2
+// Lebendigkeit + Warnsystem
 // =========================
 
 (function () {
 
     const SAVE_KEY = "cozyHomeData";
+
+    const TICK_INTERVAL_MS = 60000; // 60 Sekunden
+
+    const SLEEP_THRESHOLD = 20;
 
     const DEFAULT_SAVE = {
         activePet: "cat",
@@ -24,6 +28,9 @@
 
     let root = null;
     let save = null;
+
+    // Phase 2: Timer-Handle, damit niemals mehrere Intervalle gleichzeitig laufen
+    let tickIntervalId = null;
 
     // ====================================
     // SAVE
@@ -160,7 +167,17 @@
 
     }
 
+    function isSleepy(pet) {
+
+        return pet.energy < SLEEP_THRESHOLD;
+
+    }
+
     function getMood(pet) {
+
+        // Schlafmodus hat Vorrang vor der normalen Stimmung
+        if (isSleepy(pet))
+            return "😴 Müde";
 
         if (pet.happiness >= 80)
             return "😊 Glücklich";
@@ -193,6 +210,25 @@
     }
 
     // ====================================
+    // GEDANKENBLASEN (Phase 2)
+    // ====================================
+
+    function getPetThought(pet) {
+
+        if (pet.hunger < 25)
+            return "💭 Ich habe Hunger!";
+
+        if (pet.energy < 25)
+            return "💭 Ich bin müde...";
+
+        if (pet.happiness < 25)
+            return "💭 Spielst du mit mir?";
+
+        return "💭 Heute ist ein schöner Tag!";
+
+    }
+
+    // ====================================
     // INTERAKTIONEN
     // ====================================
 
@@ -217,6 +253,9 @@
         pet.hunger = clamp(
             pet.hunger + 20
         );
+        pet.energy = clamp(
+            pet.energy + 5
+        );
 
         saveData();
 
@@ -228,12 +267,15 @@
 
         const pet = getPetState(save.activePet);
 
+        // Im Schlafmodus ist Spielen gesperrt
+        if (isSleepy(pet)) return;
+
         pet.happiness = clamp(
             pet.happiness + 10
         );
 
         pet.energy = clamp(
-            pet.energy - 5
+            pet.energy - 10
         );
 
         saveData();
@@ -271,6 +313,60 @@
     }
 
     // ====================================
+    // ECHTZEIT-SYSTEM (Phase 2)
+    // ====================================
+
+    function tick() {
+
+        Object.values(save.pets).forEach(pet => {
+
+            pet.hunger = clamp(
+                pet.hunger - 1
+            );
+
+            pet.energy = clamp(
+                pet.energy - 0.5
+            );
+
+            pet.happiness = clamp(
+                pet.happiness - 0.5
+            );
+
+        });
+
+        save.lastUpdate = Date.now();
+
+        saveData();
+
+        render();
+
+    }
+
+    function startTickTimer() {
+
+        // Sicherheitsnetz: niemals mehrere Timer gleichzeitig
+        stopTickTimer();
+
+        tickIntervalId = setInterval(
+            tick,
+            TICK_INTERVAL_MS
+        );
+
+    }
+
+    function stopTickTimer() {
+
+        if (tickIntervalId !== null) {
+
+            clearInterval(tickIntervalId);
+
+            tickIntervalId = null;
+
+        }
+
+    }
+
+    // ====================================
     // RENDER
     // ====================================
 
@@ -280,27 +376,38 @@
             p => p.id === save.activePet
         );
 
-        console.log(petInfo);
         const pet = getPetState(
             save.activePet
         );
 
         const warnings = getWarnings(pet);
+
+        const sleepy = isSleepy(pet);
+
+        const thought = getPetThought(pet);
+
         root.innerHTML = `
 
 <div class="cozy-home">
 
-    <div class="cozy-header">
-        <h2>🏡 Cozy Home</h2>
-        <p>Ein gemütliches Zuhause für deine Begleiter.</p>
-    </div>
+<div class="cozy-main-card">
 
-    <div class="cozy-current-pet">
+    <!-- LINKS -->
+    <div class="cozy-left">
 
-        <div class="cozy-pet-frame">
+        <div class="cozy-room">
 
             <img
-                class="cozy-pet-img"
+                class="cozy-room-bg"
+                src="games/cozy-home/assets/room.png"
+                alt="Zimmer">
+
+            <div class="cozy-thought-bubble">
+                ${thought}
+            </div>
+
+            <img
+                class="cozy-room-pet"
                 src="${petInfo.image}"
                 alt="${petInfo.name}">
 
@@ -314,85 +421,119 @@
             ${getMood(pet)}
         </div>
 
-        ${
-        warnings.length
-        ?
-        `
-        <div class="cozy-warnings">
+    </div>
 
-        ${warnings.map(
-        warning => `
-        <div class="cozy-warning">
-        ${warning}
-        </div>
-        `
-        ).join("")}
+
+    <!-- RECHTS -->
+    <div class="cozy-right">
+
+        <div class="cozy-status-card">
+
+            <h3>Zustand</h3>
+
+            <div class="cozy-stat">
+
+                <div class="cozy-stat-label">
+                    <span>🍖 Hunger</span>
+                    <span>${Math.round(pet.hunger)} / 100</span>
+                </div>
+
+                <div class="cozy-bar">
+                    <div class="cozy-bar-fill hunger"
+                         style="width:${pet.hunger}%"></div>
+                </div>
+
+            </div>
+
+
+            <div class="cozy-stat">
+
+                <div class="cozy-stat-label">
+                    <span>⚡ Energie</span>
+                    <span>${Math.round(pet.energy)} / 100</span>
+                </div>
+
+                <div class="cozy-bar">
+                    <div class="cozy-bar-fill energy"
+                         style="width:${pet.energy}%"></div>
+                </div>
+
+            </div>
+
+
+            <div class="cozy-stat">
+
+                <div class="cozy-stat-label">
+                    <span>❤️ Happiness</span>
+                    <span>${Math.round(pet.happiness)} / 100</span>
+                </div>
+
+                <div class="cozy-bar">
+                    <div class="cozy-bar-fill happiness"
+                         style="width:${pet.happiness}%"></div>
+                </div>
+
+            </div>
+
+            ${warnings.length > 0 ? `
+            <div class="cozy-warnings">
+                ${warnings.map(w => `
+                <div class="cozy-warning">${w}</div>
+                `).join("")}
+            </div>
+            ` : ""}
 
         </div>
-        `
-        :
-        ""
-        }
+
+
+        <div class="cozy-actions">
+
+            <button id="cozy-pet-btn" class="cozy-action-btn">
+                <div class="cozy-action-icon">❤️</div>
+                <div class="cozy-action-title">Streicheln</div>
+                <div class="cozy-action-desc">+5 Happiness</div>
+            </button>
+
+            <button id="cozy-feed-btn" class="cozy-action-btn">
+                <div class="cozy-action-icon">🍖</div>
+                <div class="cozy-action-title">Füttern</div>
+                <div class="cozy-action-desc">+20 Hunger</div>
+            </button>
+
+            <button id="cozy-play-btn" class="cozy-action-btn ${sleepy ? "disabled" : ""}">
+                <div class="cozy-action-icon">🎮</div>
+                <div class="cozy-action-title">Spielen</div>
+                <div class="cozy-action-desc">${sleepy ? "Zu müde zum Spielen" : "+10 Happiness<br>-10 Energie"}</div>
+            </button>
+
+            <button id="cozy-sleep-btn" class="cozy-action-btn">
+                <div class="cozy-action-icon">💤</div>
+                <div class="cozy-action-title">Schlafen</div>
+                <div class="cozy-action-desc">+25 Energie</div>
+            </button>
+
+        </div>
 
     </div>
 
-    <div class="cozy-bars">
-
-        <div>
-            Hunger
-            <progress value="${pet.hunger}" max="100"></progress>
-        </div>
-
-        <div>
-            Energie
-            <progress value="${pet.energy}" max="100"></progress>
-        </div>
-
-        <div>
-            Glück
-            <progress value="${pet.happiness}" max="100"></progress>
-        </div>
-
-    </div>
-
-    <div class="cozy-actions">
-
-        <button id="cozy-pet-btn">
-            ❤️ Streicheln
-        </button>
-
-        <button id="cozy-feed-btn">
-            🍖 Füttern
-        </button>
-
-        <button id="cozy-play-btn">
-            🎮 Spielen
-        </button>
-
-        <button id="cozy-sleep-btn">
-            💤 Schlafen
-        </button>
-
-    </div>
-
-    <hr>
+</div>
 
     <h3>Deine Haustiere</h3>
 
         <div class="cozy-pets">
 
-        ${getAvailablePets().map(pet => `
+        ${getAvailablePets().map(p => `
 
         <button
-        class="cozy-pet-slot ${save.activePet === pet.id ? "active" : ""}"
-        data-id="${pet.id}">
+        class="cozy-pet-slot ${save.activePet === p.id ? "active" : ""}"
+        data-id="${p.id}">
 
         <img
-        src="${pet.image}"
+        src="${p.image}"
         class="cozy-pet-slot-img">
 
         <div>
-        ${pet.name}
+        ${p.name}
         </div>
 
         </button>
@@ -404,6 +545,12 @@
 </div>
 `;
 
+        // ====================================
+        // EVENT LISTENER NEU VERBINDEN
+        // (nach jedem render() neu, da innerHTML
+        //  alte Elemente inkl. Listener ersetzt)
+        // ====================================
+
         root
             .querySelector("#cozy-pet-btn")
             .onclick = petPet;
@@ -412,9 +559,11 @@
             .querySelector("#cozy-feed-btn")
             .onclick = feedPet;
 
-        root
-            .querySelector("#cozy-play-btn")
-            .onclick = playPet;
+        const playBtn = root.querySelector("#cozy-play-btn");
+
+        playBtn.onclick = sleepy
+            ? null
+            : playPet;
 
         root
             .querySelector("#cozy-sleep-btn")
@@ -450,9 +599,13 @@
 
         render();
 
+        startTickTimer();
+
     }
 
     function destroy() {
+
+        stopTickTimer();
 
         if (root) {
 

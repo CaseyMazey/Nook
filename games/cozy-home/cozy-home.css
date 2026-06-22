@@ -37,7 +37,10 @@
     padding:28px;
 
     display:grid;
-    grid-template-columns:260px 1fr;
+
+    grid-template-columns:1fr 1fr;
+    align-items:start;
+
     gap:32px;
 }
 
@@ -45,10 +48,10 @@
    PET IMAGE
    ========================================== */
 
-.cozy-left {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+.cozy-left{
+    display:flex;
+    flex-direction:column;
+    gap:18px;
 }
 
 .cozy-pet-frame{
@@ -82,12 +85,14 @@
     margin-top: 18px;
     font-size: 2rem;
     font-weight: 700;
+    text-align:center;
 }
 
 .cozy-pet-mood {
     margin-top: 6px;
     font-size: 1.1rem;
     color: #e595ad;
+    text-align:center;
 }
 
 /* ==========================================
@@ -171,7 +176,7 @@
     background: #fff8f1;
     border: 1px solid rgba(0,0,0,0.05);
     border-radius: 24px;
-    padding: 20px;
+    padding: 10px;
 
     display: flex;
     flex-direction: column;
@@ -189,7 +194,7 @@
 }
 
 .cozy-action-icon {
-    font-size: 2rem;
+    font-size: 1.6rem;
 }
 
 .cozy-action-title {
@@ -199,6 +204,17 @@
 .cozy-action-desc {
     font-size: .85rem;
     color: var(--text-3);
+}
+
+/* Phase 2: deaktivierter Aktions-Button (z.B. Spielen im Schlafmodus) */
+.cozy-action-btn.disabled {
+    cursor: not-allowed;
+    opacity: .5;
+}
+
+.cozy-action-btn.disabled:hover {
+    transform: none;
+    background: #fff8f1;
 }
 
 /* ==========================================
@@ -275,7 +291,137 @@
     padding:10px 14px;
     font-size:.9rem;
 }
+/* ==========================================
+   ROOM
+   ========================================== */
 
+.cozy-room{
+    position:relative;
+
+    width:100%;
+    max-width:520px;
+    margin:auto;
+
+    overflow:hidden;
+
+    border-radius:32px;
+
+    background:#fff8f1;
+}
+
+.cozy-room-bg{
+    width:100%;
+    display:block;
+}
+
+.cozy-room-pet{
+
+    position:absolute;
+
+    width:160px;
+
+    left:50%;
+    bottom:60px;
+
+    transform:translateX(-50%);
+
+    image-rendering:auto;
+
+    /* Phase 2: sanftes Schweben */
+    animation: cozyPetFloat 4s ease-in-out infinite;
+}
+
+@keyframes cozyPetFloat {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50%      { transform: translateX(-50%) translateY(-8px); }
+}
+
+/* ==========================================
+   GEDANKENBLASE (Phase 2)
+   ========================================== */
+
+.cozy-thought-bubble{
+    position:absolute;
+
+    top:18px;
+    left:50%;
+
+    transform:translateX(-50%);
+
+    background:#fff;
+    color:var(--text);
+
+    padding:8px 16px;
+
+    border-radius:16px;
+
+    font-size:.85rem;
+
+    box-shadow:0 4px 14px rgba(0,0,0,.08);
+
+    white-space:nowrap;
+
+    z-index:2;
+
+    opacity:0;
+
+    animation:
+        cozyBubbleIn .6s ease forwards,
+        cozyBubbleFloat 4s ease-in-out .6s infinite;
+}
+
+@keyframes cozyBubbleIn {
+    from { opacity:0; transform:translateX(-50%) translateY(6px); }
+    to   { opacity:1; transform:translateX(-50%) translateY(0); }
+}
+
+@keyframes cozyBubbleFloat {
+    0%, 100% { transform:translateX(-50%) translateY(0); }
+    50%      { transform:translateX(-50%) translateY(-4px); }
+}
+
+/* ==========================================
+   PET LIST
+   ========================================== */
+
+.cozy-pets{
+    display:flex;
+    gap:20px;
+    flex-wrap:wrap;
+
+}
+
+.cozy-pet-slot{
+    width:110px;
+
+    background:#fff8f1;
+
+    border:1px solid rgba(0,0,0,.08);
+    border-radius:20px;
+
+    padding:14px;
+
+    cursor:pointer;
+
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+
+    gap:10px;
+
+    transition:.2s;
+}
+
+.cozy-pet-slot.active{
+    border:2px solid #e595ad;
+}
+
+.cozy-pet-slot-img{
+    width:64px;
+    height:64px;
+
+    object-fit:contain;
+}
 /* ==========================================
    MOBILE
    ========================================== */

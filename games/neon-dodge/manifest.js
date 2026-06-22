@@ -15,6 +15,7 @@
 window.registerGame({
   id: 'neon-dodge',
   title: 'Neon Dodge',
+  modalSize: "large",
   description: 'Überlebe so lange du kannst — sammle Coins, weiche allem anderen aus.',
   icon: '⚡',
   accent: 'orange',
