@@ -1,472 +1,449 @@
 /* ==========================================
-   COZY HOME – PHASE 5
-   3-Spalten-Layout, kein Scrollen,
-   Inventar/Shop als Accordion
+   COZY HOME – 4-SPALTEN-LAYOUT
+   Feintuning nach Screenshot
    ========================================== */
 
-.cozy-home {
-    color: var(--text);
+.ch-root {
     width: 100%;
     height: 100%;
-    display: flex;
-    flex-direction: column;
+    overflow: hidden;
+    box-sizing: border-box;
+    color: var(--text);
+    font-family: inherit;
 }
 
-/* ==========================================
-   HAUPTLAYOUT: 3 SPALTEN
-   ========================================== */
-
-.cozy-layout {
+/* Grid: SP1 200px | SP2 1fr | SP3 260px | SP4 220px */
+.ch-grid {
     display: grid;
-    grid-template-columns: 110px 1fr 1fr;
-    gap: 16px;
+    grid-template-columns: 200px 1fr 260px 220px;
+    gap: 12px;
     height: 100%;
     min-height: 0;
-    align-items: stretch;
+    box-sizing: border-box;
 }
 
-/* ==========================================
-   SPALTE 1: HAUSTIERLISTE
-   ========================================== */
+/* ══ SP1 – HAUSTIERLISTE ══ */
 
-.cozy-pet-list {
+.ch-col-pets {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    padding-top: 4px;
+    min-height: 0;
     overflow: hidden;
-    align-self: start;
+    gap: 8px;
 }
 
-.cozy-pet-list-title {
-    font-size: .75rem;
+.ch-pets-label {
+    font-size: .68rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: .1em;
+    letter-spacing: .12em;
     color: var(--text-3);
-    margin-bottom: 4px;
-    text-align: center;
+    flex-shrink: 0;
+    padding-bottom: 2px;
 }
 
-.cozy-pet-slot {
+.ch-pets-list {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    min-height: 0;
+    padding-right: 2px;
+}
+
+.ch-pet-btn {
     width: 100%;
     background: #fff8f1;
     border: 1.5px solid rgba(0,0,0,.07);
-    border-radius: 16px;
-    padding: 10px 6px;
+    border-radius: 14px;
+    padding: 10px 12px;
     cursor: pointer;
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 6px;
-    transition: .2s;
+    gap: 10px;
+    transition: .15s;
+    text-align: left;
+    flex-shrink: 0;
 }
 
-.cozy-pet-slot.active  { border: 2px solid #e595ad; background: #fff0f4; }
-.cozy-pet-slot:hover   { transform: translateY(-2px); background: white; }
+.ch-pet-btn.active { border: 2px solid #e595ad; background: #fff0f4; }
+.ch-pet-btn:hover:not(.locked)  { background: white; transform: translateX(2px); }
 
-.cozy-pet-slot-img {
-    width: 52px;
-    height: 52px;
+/* Gesperrte Karte */
+.ch-pet-btn.locked {
+    opacity: .45;
+    cursor: default;
+    filter: grayscale(1);
+}
+
+.ch-pet-btn-lock { font-size: 1.1rem; flex-shrink: 0; width: 40px; text-align: center; }
+
+.ch-pet-btn-img {
+    width: 46px;
+    height: 46px;
     object-fit: contain;
+    flex-shrink: 0;
 }
 
-.cozy-pet-slot-name {
-    font-size: .75rem;
-    font-weight: 600;
-    color: var(--text-2);
-    text-align: center;
-}
+.ch-pet-btn-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.ch-pet-btn-name { font-size: .88rem; font-weight: 700; color: var(--text); }
+.ch-pet-btn-mood { font-size: .73rem; color: var(--text-3); }
 
-/* ==========================================
-   SPALTE 2: ZIMMER
-   ========================================== */
+/* ══ SP2 – ZIMMER + INFO ══ */
 
-.cozy-room-col {
+.ch-col-main {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    overflow: hidden;
+    gap: 6px;
     min-height: 0;
+    overflow: hidden;
 }
 
-.cozy-room {
+/* Zimmer: etwas größer als vorher (~10-15%) */
+.ch-room {
     position: relative;
     width: 100%;
+    height: min(380px, 46vh);
+    flex-shrink: 0;
+    border-radius: 22px;
     overflow: hidden;
-    border-radius: 24px;
     background: #fff8f1;
 }
 
-.cozy-room-bg   { width: 100%; display: block; }
+.ch-room-bg {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center bottom;
+    display: block;
+    background: #fff8f1;
+    border-radius: 20px;
+}
 
-.cozy-room-pet {
+.ch-room-pet {
     position: absolute;
-    width: 60%;
+    width: 42%;
+    max-width: 150px;
     left: 50%;
     bottom: 0;
     transform: translateX(-50%);
     image-rendering: auto;
-    animation: cozyPetFloat 4s ease-in-out infinite;
+    animation: chPetFloat 4s ease-in-out infinite;
 }
 
-@keyframes cozyPetFloat {
+@keyframes chPetFloat {
     0%, 100% { transform: translateX(-50%) translateY(0);   }
-    50%      { transform: translateX(-50%) translateY(-8px); }
+    50%       { transform: translateX(-50%) translateY(-5px); }
 }
 
-.cozy-thought-bubble {
+.ch-bubble {
     position: absolute;
-    top: 12px;
+    top: 8px;
     left: 50%;
     transform: translateX(-50%);
     background: #fff;
     color: var(--text);
-    padding: 6px 14px;
-    border-radius: 14px;
-    font-size: .82rem;
-    box-shadow: 0 4px 14px rgba(0,0,0,.08);
+    padding: 5px 12px;
+    border-radius: 11px;
+    font-size: .78rem;
+    box-shadow: 0 3px 12px rgba(0,0,0,.1);
     white-space: nowrap;
     z-index: 2;
     opacity: 0;
-    animation:
-        cozyBubbleIn   .6s ease          forwards,
-        cozyBubbleFloat 4s ease-in-out .6s infinite;
+    animation: chBubbleIn .6s ease forwards, chBubbleFloat 4s ease-in-out .6s infinite;
 }
 
-@keyframes cozyBubbleIn {
-    from { opacity: 0; transform: translateX(-50%) translateY(6px); }
+@keyframes chBubbleIn {
+    from { opacity: 0; transform: translateX(-50%) translateY(5px); }
     to   { opacity: 1; transform: translateX(-50%) translateY(0);   }
 }
-
-@keyframes cozyBubbleFloat {
+@keyframes chBubbleFloat {
     0%, 100% { transform: translateX(-50%) translateY(0);   }
-    50%      { transform: translateX(-50%) translateY(-4px); }
+    50%       { transform: translateX(-50%) translateY(-3px); }
 }
 
-.cozy-pet-name {
-    font-size: 1.3rem;
+.ch-pet-name {
+    font-size: 1.2rem;
     font-weight: 700;
     text-align: center;
+    flex-shrink: 0;
+    line-height: 1.2;
 }
 
-.cozy-pet-mood {
-    font-size: .95rem;
+.ch-pet-mood {
+    font-size: .88rem;
     color: #e595ad;
     text-align: center;
+    flex-shrink: 0;
 }
 
-/* STECKBRIEF */
-.cozy-profile-card {
+/* Steckbrief: füllt verbleibenden Raum aus, klebt unten */
+.ch-profile {
     background: #fff8f1;
     border: 1px solid rgba(0,0,0,.05);
-    border-radius: 16px;
-    padding: 12px 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.cozy-profile-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: .85rem;
-}
-
-.cozy-profile-label { color: var(--text-3); flex-shrink: 0; }
-.cozy-profile-value { font-weight: 600; text-align: right; }
-
-.cozy-profile-desc {
-    font-size: .8rem;
-    color: var(--text-3);
-    line-height: 1.5;
-    border-top: 1px solid rgba(0,0,0,.06);
-    padding-top: 8px;
-    margin-top: 2px;
-}
-
-/* ==========================================
-   SPALTE 3: STATUS + AKTIONEN + AUFGABEN + ACCORDION
-   ========================================== */
-
-.cozy-right {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    overflow-y: auto;
-    overflow-x: hidden;
+    border-radius: 14px;
+    padding: 11px 14px;
+    flex: 1;               /* nimmt verbleibenden Platz ein → schiebt sich nach unten */
     min-height: 0;
-    padding-right: 4px;
-}
-
-/* STATUS CARD */
-.cozy-status-card {
-    background: #fff8f1;
-    border-radius: 18px;
-    padding: 14px 16px;
-    border: 1px solid rgba(0,0,0,0.05);
-}
-
-.cozy-status-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 12px;
-}
-
-.cozy-status-header h3 { margin: 0; font-size: 1rem; }
-
-.cozy-coin-display {
-    background: #fdf3dc;
-    border: 1px solid rgba(0,0,0,.06);
-    border-radius: 16px;
-    padding: 4px 12px;
-    font-size: .88rem;
-    font-weight: 700;
-    color: #b07c20;
-}
-
-.cozy-stat           { margin-bottom: 12px; }
-.cozy-stat:last-child { margin-bottom: 0; }
-
-.cozy-stat-label {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 6px;
-    font-size: .85rem;
-}
-
-.cozy-bar {
-    width: 100%;
-    height: 10px;
-    background: #e8ddd0;
-    border-radius: 999px;
-    overflow: hidden;
-}
-
-.cozy-bar-fill            { height: 100%; border-radius: inherit; }
-.cozy-bar-fill.hunger     { background: #ff8ca8; }
-.cozy-bar-fill.energy     { background: #b08cf1; }
-.cozy-bar-fill.happiness  { background: #ffb5c8; }
-
-/* WARNKARTEN */
-.cozy-warnings {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    margin-top: 10px;
-}
-
-.cozy-warning {
-    background: #fff0ef;
-    color: #d46b6b;
-    border-radius: 10px;
-    padding: 7px 12px;
-    font-size: .82rem;
-}
-
-/* AKTIONEN */
-.cozy-actions {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
     gap: 8px;
+    box-sizing: border-box;
 }
 
-.cozy-action-btn {
-    background: #fff8f1;
-    border: 1px solid rgba(0,0,0,0.05);
-    border-radius: 16px;
-    padding: 8px 4px;
-    display: flex;
-    flex-direction: column;
+.ch-profile-title { font-size: .8rem; font-weight: 700; flex-shrink: 0; }
+
+/* 2-spaltig: Links Daten, Rechts Beschreibung */
+.ch-profile-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    flex: 1;
+    min-height: 0;
     align-items: center;
-    gap: 4px;
-    cursor: pointer;
-    transition: .2s;
 }
 
-.cozy-action-btn:hover    { transform: translateY(-2px); background: white; }
-.cozy-action-icon          { font-size: 1.3rem; }
-.cozy-action-title         { font-weight: 600; font-size: .78rem; }
-.cozy-action-desc          { font-size: .72rem; color: var(--text-3); text-align: center; line-height: 1.3; }
-
-.cozy-action-btn.disabled  { cursor: not-allowed; opacity: .5; }
-.cozy-action-btn.disabled:hover { transform: none; background: #fff8f1; }
-
-/* TAGESAUFGABEN */
-.cozy-tasks-card {
-    background: #fff8f1;
-    border: 1px solid rgba(0,0,0,.05);
-    border-radius: 16px;
-    padding: 12px 14px;
-}
-
-.cozy-tasks-header    { margin-bottom: 10px; }
-.cozy-tasks-title     { font-size: .92rem; font-weight: 700; }
-
-.cozy-tasks-list {
+.ch-profile-data {
     display: flex;
     flex-direction: column;
     gap: 7px;
 }
 
-.cozy-task-item {
+.ch-profile-row {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: 8px;
-    padding: 7px 10px;
-    background: #f8eee1;
-    border-radius: 10px;
-    font-size: .82rem;
-    transition: .2s;
+    font-size: .78rem;
+    gap: 6px;
 }
 
-.cozy-task-item.done  { background: #edf7ee; color: #5a9e6b; }
-.cozy-task-check      { font-size: 1rem; flex-shrink: 0; width: 16px; text-align: center; }
-.cozy-task-text       { flex: 1; }
-.cozy-task-reward     { font-size: .8rem; font-weight: 700; color: #b07c20; flex-shrink: 0; }
-.cozy-task-item.done .cozy-task-reward { color: #5a9e6b; }
+.ch-pl { color: var(--text-3); flex-shrink: 0; }
+.ch-pv { font-weight: 600; text-align: right; }
 
-/* ==========================================
-   ACCORDION
-   ========================================== */
-
-.cozy-accordion-btns {
+.ch-profile-desc {
+    font-size: .78rem;
+    color: var(--text-3);
+    line-height: 1.6;
+    border-left: 2px solid rgba(0,0,0,.07);
+    padding-left: 12px;
     display: flex;
-    gap: 8px;
+    align-items: center;   /* vertikal mittig */
 }
 
-.cozy-accordion-toggle {
-    flex: 1;
-    padding: 9px 10px;
-    border-radius: 12px;
-    border: 1.5px solid rgba(0,0,0,.08);
-    background: #fff8f1;
-    font-size: .85rem;
-    font-weight: 600;
-    color: var(--text-2);
-    cursor: pointer;
-    transition: .2s;
-}
+/* ══ SP3 – STATUS + AKTIONEN + AUFGABEN ══ */
 
-.cozy-accordion-toggle:hover { background: white; border-color: #e595ad; }
-.cozy-accordion-toggle.active { background: #fff0f4; border-color: #e595ad; color: #c4708a; }
-
-.cozy-accordion-panel { margin-top: 2px; }
-.cozy-accordion-panel.hidden { display: none; }
-
-/* INVENTAR */
-.cozy-inv-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-}
-
-.cozy-inv-item {
-    background: #fff8f1;
-    border: 1px solid rgba(0,0,0,.06);
-    border-radius: 12px;
-    padding: 10px 6px;
+.ch-col-status {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 4px;
+    gap: 7px;
+    min-height: 0;
+    overflow: hidden;
 }
 
-.cozy-inv-item.empty { opacity: .4; }
-.cozy-inv-emoji  { font-size: 1.3rem; }
-.cozy-inv-name   { font-size: .72rem; color: var(--text-3); text-align: center; }
-.cozy-inv-count  { font-size: .85rem; font-weight: 700; }
+.ch-card {
+    background: #fff8f1;
+    border: 1px solid rgba(0,0,0,.05);
+    border-radius: 13px;
+    padding: 9px 12px;
+    flex-shrink: 0;
+}
 
-/* SHOP */
-.cozy-shop-coins-row {
-    font-size: .85rem;
-    font-weight: 700;
-    color: #b07c20;
+.ch-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     margin-bottom: 8px;
 }
 
-.cozy-shop-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
+.ch-card-title {
+    font-size: .82rem;
+    font-weight: 700;
+    color: var(--text);
+    display: block;
+    margin-bottom: 7px;
 }
 
-.cozy-shop-item {
-    background: #fff8f1;
+.ch-card-header .ch-card-title { margin-bottom: 0; }
+
+.ch-coins {
+    background: #fdf3dc;
     border: 1px solid rgba(0,0,0,.06);
-    border-radius: 12px;
-    padding: 10px 8px;
+    border-radius: 13px;
+    padding: 2px 9px;
+    font-size: .76rem;
+    font-weight: 700;
+    color: #b07c20;
+}
+
+.ch-stat            { margin-bottom: 6px; }
+.ch-stat:last-child { margin-bottom: 0; }
+
+.ch-stat-row {
     display: flex;
-    flex-direction: column;
-    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 3px;
+    font-size: .73rem;
+}
+
+.ch-bar {
+    width: 100%;
+    height: 7px;
+    background: #e8ddd0;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.ch-bar-fill           { height: 100%; border-radius: inherit; }
+.ch-bar-fill.hunger    { background: #ff8ca8; }
+.ch-bar-fill.energy    { background: #b08cf1; }
+.ch-bar-fill.happiness { background: #ffb5c8; }
+
+.ch-warnings { display: flex; flex-direction: column; gap: 3px; margin-top: 5px; }
+.ch-warning  { background: #fff0ef; color: #d46b6b; border-radius: 7px; padding: 3px 7px; font-size: .7rem; }
+
+/* Aktionen: 2×2 */
+.ch-actions {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
     gap: 5px;
 }
 
-.cozy-shop-emoji  { font-size: 1.4rem; }
-.cozy-shop-name   { font-size: .78rem; font-weight: 600; text-align: center; }
-.cozy-shop-price  { font-size: .78rem; color: #b07c20; font-weight: 700; }
+.ch-action {
+    background: var(--surface, #fff);
+    border: 1px solid rgba(0,0,0,.06);
+    border-radius: 10px;
+    padding: 7px 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    cursor: pointer;
+    transition: .13s;
+}
 
-.cozy-buy-btn {
+.ch-action:hover    { transform: translateY(-2px); background: white; box-shadow: 0 2px 8px rgba(0,0,0,.07); }
+.ch-action-icon      { font-size: 1.1rem; }
+.ch-action-label     { font-size: .7rem; font-weight: 700; }
+.ch-action-sub       { font-size: .62rem; color: var(--text-3); text-align: center; line-height: 1.2; }
+.ch-action.disabled  { cursor: not-allowed; opacity: .45; }
+.ch-action.disabled:hover { transform: none; box-shadow: none; }
+
+/* Tagesaufgaben */
+.ch-tasks { display: flex; flex-direction: column; gap: 4px; }
+
+.ch-task {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 8px;
+    background: #f8eee1;
+    border-radius: 8px;
+    font-size: .73rem;
+}
+
+.ch-task.done        { background: #edf7ee; color: #5a9e6b; }
+.ch-task-check       { flex-shrink: 0; width: 13px; text-align: center; font-size: .8rem; }
+.ch-task-text        { flex: 1; line-height: 1.3; }
+.ch-task-reward      { font-size: .7rem; font-weight: 700; color: #b07c20; flex-shrink: 0; }
+.ch-task.done .ch-task-reward { color: #5a9e6b; }
+
+/* ══ SP4 – INVENTAR + SHOP ══ */
+
+.ch-col-inv {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.ch-accordion {
+    background: #fff8f1;
+    border: 1px solid rgba(0,0,0,.05);
+    border-radius: 13px;
+    overflow: hidden;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.ch-accordion:has(.ch-acc-body:not(.hidden)) {
+    flex: 1;
+    min-height: 0;
+}
+
+.ch-acc-row {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 13px;
+    background: transparent;
+    border: none;
+    font-size: .85rem;
+    font-weight: 600;
+    color: var(--text);
+    cursor: pointer;
+    transition: background .12s;
+    flex-shrink: 0;
+}
+
+.ch-acc-row:hover { background: rgba(0,0,0,.03); }
+.ch-acc-row.open  { background: rgba(229,149,173,.08); }
+.ch-chevron       { font-size: .72rem; color: var(--text-3); }
+.ch-coins-inline  { font-size: .75rem; font-weight: 700; color: #b07c20; margin-left: 6px; }
+
+.ch-acc-body        { border-top: 1px solid rgba(0,0,0,.05); overflow-y: auto; flex: 1; min-height: 0; }
+.ch-acc-body.hidden { display: none; }
+
+.ch-inv-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 13px;
+    font-size: .8rem;
+    transition: background .1s;
+}
+
+.ch-inv-row:hover { background: rgba(0,0,0,.03); }
+.ch-inv-row.empty { opacity: .38; }
+.ch-inv-count     { font-weight: 700; }
+
+.ch-shop-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 13px;
+    font-size: .8rem;
+    transition: background .1s;
+}
+
+.ch-shop-row:hover  { background: rgba(0,0,0,.03); }
+.ch-shop-item-name  { flex: 1; }
+.ch-shop-price      { font-size: .75rem; color: #b07c20; font-weight: 700; flex-shrink: 0; }
+
+.ch-buy-btn {
     background: #e595ad;
     color: white;
     border: none;
-    border-radius: 8px;
-    padding: 5px 10px;
-    font-size: .78rem;
+    border-radius: 7px;
+    padding: 3px 9px;
+    font-size: .72rem;
     font-weight: 600;
     cursor: pointer;
-    transition: .2s;
-    width: 100%;
+    transition: background .12s;
+    flex-shrink: 0;
 }
 
-.cozy-buy-btn:hover        { background: #d4809a; }
-.cozy-buy-btn.disabled     { background: #e8ddd0; color: var(--text-3); cursor: not-allowed; }
-.cozy-buy-btn.disabled:hover { background: #e8ddd0; }
+.ch-buy-btn:hover          { background: #d4809a; }
+.ch-buy-btn.disabled       { background: #e8ddd0; color: var(--text-3); cursor: not-allowed; }
+.ch-buy-btn.disabled:hover { background: #e8ddd0; }
 
-/* ==========================================
-   RESPONSIVE GRID
-   ========================================== */
-
-/* Mittelgroße Modale / kleine Desktops */
-@media (max-width: 1100px) {
-    .cozy-layout {
-        grid-template-columns: 100px 1fr 1fr;
-        gap: 12px;
-    }
-    .cozy-actions { grid-template-columns: repeat(2, 1fr); }
-}
-
-/* 2-Spalten: Haustiere links + Rest zusammen */
-@media (max-width: 800px) {
-    .cozy-layout {
-        grid-template-columns: 90px 1fr;
-        grid-template-rows: auto auto;
-    }
-    .cozy-right {
-        grid-column: 2;
-        grid-row: 1 / 3;
-    }
-    .cozy-room-col {
-        grid-column: 2;
-        grid-row: 1;
-    }
-}
-
-/* 1-Spalte */
-@media (max-width: 560px) {
-    .cozy-layout {
-        grid-template-columns: 1fr;
-    }
-    .cozy-pet-list {
-        flex-direction: row;
-        flex-wrap: wrap;
-        justify-content: center;
-    }
-    .cozy-pet-slot { width: 80px; }
-    .cozy-right { grid-column: 1; }
-    .cozy-room-col { grid-column: 1; }
-    .cozy-inv-grid  { grid-template-columns: repeat(3, 1fr); }
-    .cozy-shop-grid { grid-template-columns: repeat(2, 1fr); }
+/* ══ MODAL-GRÖSSE ══ */
+.games-play-modal-box.very-big {
+    width:  min(1700px, 96vw);
+    height: min(950px,  92vh);
 }

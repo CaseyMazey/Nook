@@ -29,6 +29,7 @@
     // ====================================
 
     const SHOP_ITEMS = [
+        { key: "kibble",  name: "Trockenfutter", emoji: "🥣", price: 1 },
         { key: "meat",    name: "Fleisch",  emoji: "🍖", price: 5 },
         { key: "fish",    name: "Fisch",    emoji: "🐟", price: 5 },
         { key: "cheese",  name: "Käse",     emoji: "🧀", price: 5 },
@@ -57,11 +58,6 @@
 
         inventory: {
             kibble:  10,
-            meat:     5,
-            fish:     5,
-            cheese:   5,
-            snack:    5,
-            toyBall:  1
         },
 
         dailyTasks: {
@@ -450,180 +446,163 @@
         const unlockedPets = getUnlockedPets();
 
         // Accordion-Zustand aus DOM erhalten (damit er durch render() nicht verloren geht)
-        const openPanel = root.querySelector('.cozy-accordion-panel:not(.hidden)')?.dataset.panel || null;
+        const openPanel = root.querySelector('.ch-acc-body:not(.hidden)')?.dataset.panel || null;
 
         root.innerHTML = `
-<div class="cozy-home">
+<div class="ch-root">
+  <div class="ch-grid">
 
-  <!-- ===== 3-SPALTEN HAUPTLAYOUT ===== -->
-  <div class="cozy-layout">
-
-    <!-- SPALTE 1: HAUSTIERLISTE -->
-    <div class="cozy-pet-list">
-      <div class="cozy-pet-list-title">Haustiere</div>
-      ${unlockedPets.map(p => `
-      <button class="cozy-pet-slot ${save.activePet === p.id ? 'active' : ''}" data-id="${p.id}">
-        <img src="${p.image}" class="cozy-pet-slot-img" alt="${p.name}">
-        <div class="cozy-pet-slot-name">${p.name}</div>
-      </button>`).join('')}
-    </div>
-
-    <!-- SPALTE 2: ZIMMER -->
-    <div class="cozy-room-col">
-      <div class="cozy-room">
-        <img class="cozy-room-bg" src="games/cozy-home/assets/room.png" alt="Zimmer">
-        <div class="cozy-thought-bubble">${thought}</div>
-        <img class="cozy-room-pet" src="${def.image}" alt="${def.name}">
-      </div>
-      <div class="cozy-pet-name">${def.name}</div>
-      <div class="cozy-pet-mood">${getMood(pet)}</div>
-
-      <!-- STECKBRIEF -->
-      <div class="cozy-profile-card">
-        <div class="cozy-profile-row">
-          <span class="cozy-profile-label">Art</span>
-          <span class="cozy-profile-value">${def.species}</span>
-        </div>
-        <div class="cozy-profile-row">
-          <span class="cozy-profile-label">Lieblingsessen</span>
-          <span class="cozy-profile-value">${def.favoriteFoodEmoji} ${def.favoriteFoodName}</span>
-        </div>
-        <div class="cozy-profile-row">
-          <span class="cozy-profile-label">Lieblingsaktivität</span>
-          <span class="cozy-profile-value">${def.favoriteActivity}</span>
-        </div>
-        <div class="cozy-profile-row">
-          <span class="cozy-profile-label">Eigenschaft</span>
-          <span class="cozy-profile-value">${def.traits}</span>
-        </div>
-        <div class="cozy-profile-desc">${def.description}</div>
+    <!-- ── SP1: HAUSTIERE ── -->
+    <div class="ch-col-pets">
+      <div class="ch-pets-label">Haustiere</div>
+      <div class="ch-pets-list">
+        ${unlockedPets.map(p => `
+        <button class="ch-pet-btn ${save.activePet === p.id ? 'active' : ''}" data-id="${p.id}">
+          <img src="${p.image}" class="ch-pet-btn-img" alt="${p.name}">
+          <div class="ch-pet-btn-info">
+            <div class="ch-pet-btn-name">${p.name}</div>
+            <div class="ch-pet-btn-mood">${getMood(save.pets[p.id])}</div>
+          </div>
+        </button>`).join('')}
+        ${Array.from({length: 4}).map(() => `
+        <div class="ch-pet-btn locked">
+          <div class="ch-pet-btn-lock">🔒</div>
+          <div class="ch-pet-btn-info">
+            <div class="ch-pet-btn-name">???</div>
+          </div>
+        </div>`).join('')}
       </div>
     </div>
 
-    <!-- SPALTE 3: STATUS + AKTIONEN + AUFGABEN + ACCORDION -->
-    <div class="cozy-right">
+    <!-- ── SP2: ZIMMER + INFO ── -->
+    <div class="ch-col-main">
 
-      <!-- STATUS + COINS -->
-      <div class="cozy-status-card">
-        <div class="cozy-status-header">
-          <h3>Zustand</h3>
-          <div class="cozy-coin-display">🪙 ${save.coins}</div>
-        </div>
-
-        <div class="cozy-stat">
-          <div class="cozy-stat-label">
-            <span>🍖 Hunger</span>
-            <span>${Math.round(pet.hunger)} / 100</span>
-          </div>
-          <div class="cozy-bar"><div class="cozy-bar-fill hunger" style="width:${pet.hunger}%"></div></div>
-        </div>
-
-        <div class="cozy-stat">
-          <div class="cozy-stat-label">
-            <span>⚡ Energie</span>
-            <span>${Math.round(pet.energy)} / 100</span>
-          </div>
-          <div class="cozy-bar"><div class="cozy-bar-fill energy" style="width:${pet.energy}%"></div></div>
-        </div>
-
-        <div class="cozy-stat">
-          <div class="cozy-stat-label">
-            <span>❤️ Happiness</span>
-            <span>${Math.round(pet.happiness)} / 100</span>
-          </div>
-          <div class="cozy-bar"><div class="cozy-bar-fill happiness" style="width:${pet.happiness}%"></div></div>
-        </div>
-
-        ${warnings.length > 0 ? `
-        <div class="cozy-warnings">
-          ${warnings.map(w => `<div class="cozy-warning">${w}</div>`).join('')}
-        </div>` : ''}
+      <div class="ch-room">
+        <img class="ch-room-bg" src="games/cozy-home/assets/room.png" alt="Zimmer">
+        <div class="ch-bubble">${thought}</div>
+        <img class="ch-room-pet" src="${def.image}" alt="${def.name}">
       </div>
 
-      <!-- AKTIONEN -->
-      <div class="cozy-actions">
-        <button id="cozy-pet-btn" class="cozy-action-btn">
-          <div class="cozy-action-icon">❤️</div>
-          <div class="cozy-action-title">Streicheln</div>
-          <div class="cozy-action-desc">+5 Happiness</div>
-        </button>
-        <button id="cozy-feed-btn" class="cozy-action-btn ${noFood ? 'disabled' : ''}">
-          <div class="cozy-action-icon">${noFood ? '🍽️' : feedInfo.emoji}</div>
-          <div class="cozy-action-title">Füttern</div>
-          <div class="cozy-action-desc">${noFood ? 'Kein Futter' : `+${feedInfo.hungerGain} · ${feedInfo.count} übrig`}</div>
-        </button>
-        <button id="cozy-play-btn" class="cozy-action-btn ${sleepy ? 'disabled' : ''}">
-          <div class="cozy-action-icon">🎮</div>
-          <div class="cozy-action-title">Spielen</div>
-          <div class="cozy-action-desc">${sleepy ? 'Zu müde' : `+${playBonus} Happiness`}</div>
-        </button>
-        <button id="cozy-sleep-btn" class="cozy-action-btn">
-          <div class="cozy-action-icon">💤</div>
-          <div class="cozy-action-title">Schlafen</div>
-          <div class="cozy-action-desc">+25 Energie</div>
-        </button>
+      <div class="ch-profile">
+        <div class="ch-profile-title">Steckbrief</div>
+        <div class="ch-profile-body">
+          <div class="ch-profile-data">
+            <div class="ch-profile-row"><span class="ch-pl">🐾 Art</span><span class="ch-pv">${def.species}</span></div>
+            <div class="ch-profile-row"><span class="ch-pl">🍽️ Lieblingsessen</span><span class="ch-pv">${def.favoriteFoodEmoji} ${def.favoriteFoodName}</span></div>
+            <div class="ch-profile-row"><span class="ch-pl">🎯 Lieblingsaktivität</span><span class="ch-pv">${def.favoriteActivity}</span></div>
+            <div class="ch-profile-row"><span class="ch-pl">⭐ Eigenschaft</span><span class="ch-pv">${def.traits}</span></div>
+          </div>
+          <div class="ch-profile-desc">${def.description}</div>
+        </div>
       </div>
 
-      <!-- TAGESAUFGABEN -->
-      <div class="cozy-tasks-card">
-        <div class="cozy-tasks-header">
-          <span class="cozy-tasks-title">Tagesaufgaben</span>
+    </div>
+
+    <!-- ── SP3: STATUS + AKTIONEN + AUFGABEN ── -->
+    <div class="ch-col-status">
+
+      <div class="ch-card">
+        <div class="ch-card-header">
+          <span class="ch-card-title">Zustand</span>
+          <span class="ch-coins">🪙 ${save.coins}</span>
         </div>
-        <div class="cozy-tasks-list">
-          ${tasks.map(task => `
-          <div class="cozy-task-item ${task.completed ? 'done' : ''}">
-            <span class="cozy-task-check">${task.completed ? '✓' : '□'}</span>
-            <span class="cozy-task-text">${task.text}</span>
-            <span class="cozy-task-reward">+${task.reward} 🪙</span>
+        <div class="ch-stat">
+          <div class="ch-stat-row"><span>🍖 Hunger</span><span>${Math.round(pet.hunger)} / 100</span></div>
+          <div class="ch-bar"><div class="ch-bar-fill hunger" style="width:${pet.hunger}%"></div></div>
+        </div>
+        <div class="ch-stat">
+          <div class="ch-stat-row"><span>⚡ Energie</span><span>${Math.round(pet.energy)} / 100</span></div>
+          <div class="ch-bar"><div class="ch-bar-fill energy" style="width:${pet.energy}%"></div></div>
+        </div>
+        <div class="ch-stat">
+          <div class="ch-stat-row"><span>❤️ Happiness</span><span>${Math.round(pet.happiness)} / 100</span></div>
+          <div class="ch-bar"><div class="ch-bar-fill happiness" style="width:${pet.happiness}%"></div></div>
+        </div>
+        ${warnings.length > 0 ? `<div class="ch-warnings">${warnings.map(w => `<div class="ch-warning">${w}</div>`).join('')}</div>` : ''}
+      </div>
+
+      <div class="ch-card">
+        <div class="ch-card-title">Aktionen</div>
+        <div class="ch-actions">
+          <button id="cozy-pet-btn" class="ch-action ${'' }">
+            <div class="ch-action-icon">❤️</div>
+            <div class="ch-action-label">Streicheln</div>
+            <div class="ch-action-sub">+5 Happiness</div>
+          </button>
+          <button id="cozy-feed-btn" class="ch-action ${noFood ? 'disabled' : ''}">
+            <div class="ch-action-icon">${noFood ? '🍽️' : feedInfo.emoji}</div>
+            <div class="ch-action-label">Füttern</div>
+            <div class="ch-action-sub">${noFood ? 'Kein Futter' : `+${feedInfo.hungerGain} (${feedInfo.count})`}</div>
+          </button>
+          <button id="cozy-play-btn" class="ch-action ${sleepy ? 'disabled' : ''}">
+            <div class="ch-action-icon">🎮</div>
+            <div class="ch-action-label">Spielen</div>
+            <div class="ch-action-sub">${sleepy ? 'Zu müde' : `+${playBonus}`}</div>
+          </button>
+          <button id="cozy-sleep-btn" class="ch-action">
+            <div class="ch-action-icon">💤</div>
+            <div class="ch-action-label">Schlafen</div>
+            <div class="ch-action-sub">+25 Energie</div>
+          </button>
+        </div>
+      </div>
+
+      <div class="ch-card">
+        <div class="ch-card-title">Tagesaufgaben</div>
+        <div class="ch-tasks">
+          ${tasks.map(t => `
+          <div class="ch-task ${t.completed ? 'done' : ''}">
+            <span class="ch-task-check">${t.completed ? '✓' : '□'}</span>
+            <span class="ch-task-text">${t.text}</span>
+            <span class="ch-task-reward">+${t.reward} 🪙</span>
           </div>`).join('')}
         </div>
       </div>
 
-      <!-- ACCORDION BUTTONS -->
-      <div class="cozy-accordion-btns">
-        <button class="cozy-accordion-toggle ${openPanel === 'inv' ? 'active' : ''}" data-target="inv">🎒 Inventar</button>
-        <button class="cozy-accordion-toggle ${openPanel === 'shop' ? 'active' : ''}" data-target="shop">🛒 Shop</button>
-      </div>
+    </div>
 
-      <!-- INVENTAR PANEL -->
-      <div class="cozy-accordion-panel ${openPanel === 'inv' ? '' : 'hidden'}" data-panel="inv">
-        <div class="cozy-inv-grid">
+    <!-- ── SP4: INVENTAR + SHOP ── -->
+    <div class="ch-col-inv">
+
+      <div class="ch-accordion">
+        <button class="ch-acc-row ${openPanel === 'inv' ? 'open' : ''}" data-target="inv">
+          <span>📦 Inventar</span>
+          <span class="ch-chevron">${openPanel === 'inv' ? '▲' : '▼'}</span>
+        </button>
+        <div class="ch-acc-body ${openPanel === 'inv' ? '' : 'hidden'}" data-panel="inv">
           ${INVENTORY_DISPLAY.map(item => {
             const count = save.inventory[item.key] || 0;
-            return `
-          <div class="cozy-inv-item ${count === 0 ? 'empty' : ''}">
-            <span class="cozy-inv-emoji">${item.emoji}</span>
-            <span class="cozy-inv-name">${item.name}</span>
-            <span class="cozy-inv-count">x${count}</span>
-          </div>`;
+            return `<div class="ch-inv-row ${count === 0 ? 'empty' : ''}">
+              <span>${item.emoji} ${item.name}</span>
+              <span class="ch-inv-count">x${count}</span>
+            </div>`;
           }).join('')}
         </div>
       </div>
 
-      <!-- SHOP PANEL -->
-      <div class="cozy-accordion-panel ${openPanel === 'shop' ? '' : 'hidden'}" data-panel="shop">
-        <div class="cozy-shop-coins-row">🪙 ${save.coins} Coins</div>
-        <div class="cozy-shop-grid">
+      <div class="ch-accordion">
+        <button class="ch-acc-row ${openPanel === 'shop' ? 'open' : ''}" data-target="shop">
+          <span>🛒 Shop <span class="ch-coins-inline">🪙 ${save.coins}</span></span>
+          <span class="ch-chevron">${openPanel === 'shop' ? '▲' : '▼'}</span>
+        </button>
+        <div class="ch-acc-body ${openPanel === 'shop' ? '' : 'hidden'}" data-panel="shop">
           ${SHOP_ITEMS.map(item => {
             const canBuy = save.coins >= item.price;
-            return `
-          <div class="cozy-shop-item">
-            <span class="cozy-shop-emoji">${item.emoji}</span>
-            <span class="cozy-shop-name">${item.name}</span>
-            <span class="cozy-shop-price">🪙 ${item.price}</span>
-            <button class="cozy-buy-btn ${canBuy ? '' : 'disabled'}" data-buy="${item.key}">
-              ${canBuy ? 'Kaufen' : 'Zu wenig'}
-            </button>
-          </div>`;
+            return `<div class="ch-shop-row">
+              <span>${item.emoji} ${item.name}</span>
+              <span class="ch-shop-price">🪙${item.price}</span>
+              <button class="ch-buy-btn ${canBuy ? '' : 'disabled'}" data-buy="${item.key}">${canBuy ? 'Kaufen' : '—'}</button>
+            </div>`;
           }).join('')}
         </div>
       </div>
 
     </div>
-  </div>
 
+  </div>
 </div>
 `;
+
 
         // ====================================
         // EVENT LISTENER
@@ -632,36 +611,36 @@
         root.querySelector("#cozy-pet-btn").onclick   = petPet;
         root.querySelector("#cozy-feed-btn").onclick  = noFood  ? null : feedPet;
         root.querySelector("#cozy-sleep-btn").onclick = sleepPet;
+        root.querySelector("#cozy-play-btn").onclick  = sleepy  ? null : playPet;
 
-        const playBtn = root.querySelector("#cozy-play-btn");
-        playBtn.onclick = sleepy ? null : playPet;
-
-        root.querySelectorAll(".cozy-pet-slot[data-id]").forEach(btn => {
+        root.querySelectorAll(".ch-pet-btn[data-id]").forEach(btn => {
             btn.onclick = () => selectPet(btn.dataset.id);
         });
 
-        root.querySelectorAll(".cozy-buy-btn[data-buy]").forEach(btn => {
+        root.querySelectorAll(".ch-buy-btn[data-buy]").forEach(btn => {
             const key  = btn.dataset.buy;
             const item = SHOP_ITEMS.find(i => i.key === key);
             if (!item) return;
             btn.onclick = save.coins >= item.price ? () => buyItem(key) : null;
         });
 
-        // Accordion-Toggles
-        root.querySelectorAll(".cozy-accordion-toggle[data-target]").forEach(btn => {
+        // Accordion
+        root.querySelectorAll(".ch-acc-row[data-target]").forEach(btn => {
             btn.onclick = () => {
-                const target  = btn.dataset.target;
-                const panel   = root.querySelector(`.cozy-accordion-panel[data-panel="${target}"]`);
-                const isOpen  = !panel.classList.contains('hidden');
+                const target = btn.dataset.target;
+                const body   = root.querySelector(`.ch-acc-body[data-panel="${target}"]`);
+                const isOpen = !body.classList.contains('hidden');
 
-                // Alle schließen
-                root.querySelectorAll('.cozy-accordion-panel').forEach(p => p.classList.add('hidden'));
-                root.querySelectorAll('.cozy-accordion-toggle').forEach(b => b.classList.remove('active'));
+                root.querySelectorAll('.ch-acc-body').forEach(b => b.classList.add('hidden'));
+                root.querySelectorAll('.ch-acc-row').forEach(b => {
+                    b.classList.remove('open');
+                    b.querySelector('.ch-chevron').textContent = '▼';
+                });
 
-                // Dieses öffnen (wenn es vorher zu war)
                 if (!isOpen) {
-                    panel.classList.remove('hidden');
-                    btn.classList.add('active');
+                    body.classList.remove('hidden');
+                    btn.classList.add('open');
+                    btn.querySelector('.ch-chevron').textContent = '▲';
                 }
             };
         });
