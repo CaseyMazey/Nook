@@ -416,7 +416,7 @@ async function openGamePlayModal(gameId) {
   window.GameHub.activeGame = gameId;
   const modalBox = document.querySelector(".games-play-modal-box");
 
-  modalBox.classList.remove("normal", "large");
+  modalBox.classList.remove("normal", "middle", "big", "very-big");
 
   modalBox.classList.add(
     game.modalSize || "normal"

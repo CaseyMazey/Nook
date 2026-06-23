@@ -1,416 +1,472 @@
 /* ==========================================
-   COZY HOME - PHASE 3
-   Tagesaufgaben, Coins, Inventar
+   COZY HOME – PHASE 5
+   3-Spalten-Layout, kein Scrollen,
+   Inventar/Shop als Accordion
    ========================================== */
 
 .cozy-home {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
     color: var(--text);
-    width: min(1100px, 95vw);
-}
-
-/* ==========================================
-   HEADER
-   ========================================== */
-
-.cozy-header h2 {
-    margin: 0;
-    font-size: 2rem;
-    font-weight: 700;
-}
-
-.cozy-header p {
-    margin-top: 6px;
-    color: var(--text-3);
-    font-size: 0.95rem;
-}
-
-/* ==========================================
-   MAIN CARD
-   ========================================== */
-
-.cozy-main-card {
-    background: #f8eee1;
-    border: 1px solid rgba(0,0,0,.05);
-    border-radius: 28px;
-    padding: 28px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    align-items: start;
-    gap: 32px;
-}
-
-/* ==========================================
-   LEFT – ROOM + PET
-   ========================================== */
-
-.cozy-left {
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-}
-
-.cozy-pet-frame {
-    width: 220px;
-    height: 220px;
-    background: #fff8f1;
-    border-radius: 24px;
-    border: 1px solid rgba(0,0,0,.05);
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: auto;
-}
-
-.cozy-pet-frame img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
-}
-
-.cozy-pet-image { font-size: 7rem; }
-
-.cozy-pet-name {
-    margin-top: 18px;
-    font-size: 2rem;
-    font-weight: 700;
-    text-align: center;
-}
-
-.cozy-pet-mood {
-    margin-top: 6px;
-    font-size: 1.1rem;
-    color: #e595ad;
-    text-align: center;
-}
-
-/* ==========================================
-   RIGHT SIDE
-   ========================================== */
-
-.cozy-right {
     display: flex;
     flex-direction: column;
-    gap: 18px;
 }
 
 /* ==========================================
-   STATUS CARD
+   HAUPTLAYOUT: 3 SPALTEN
    ========================================== */
 
-.cozy-status-card {
-    background: #fff8f1;
-    border-radius: 24px;
-    padding: 20px;
-    border: 1px solid rgba(0,0,0,0.05);
-}
-
-/* Phase 3: Header-Zeile mit Coin-Anzeige */
-.cozy-status-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 18px;
-}
-
-.cozy-status-header h3 {
-    margin: 0;
-    font-size: 1.2rem;
-}
-
-/* Phase 3: Coin-Display */
-.cozy-coin-display {
-    background: #fdf3dc;
-    border: 1px solid rgba(0,0,0,.06);
-    border-radius: 20px;
-    padding: 5px 14px;
-    font-size: .95rem;
-    font-weight: 700;
-    color: #b07c20;
-}
-
-.cozy-stat { margin-bottom: 18px; }
-.cozy-stat:last-child { margin-bottom: 0; }
-
-.cozy-stat-label {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 8px;
-    font-size: 0.95rem;
-}
-
-.cozy-bar {
-    width: 100%;
-    height: 12px;
-    background: #e8ddd0;
-    border-radius: 999px;
-    overflow: hidden;
-}
-
-.cozy-bar-fill {
-    height: 100%;
-    border-radius: inherit;
-}
-
-.cozy-bar-fill.hunger    { background: #ff8ca8; }
-.cozy-bar-fill.energy    { background: #b08cf1; }
-.cozy-bar-fill.happiness { background: #ffb5c8; }
-
-/* ==========================================
-   WARNKARTEN (Phase 2)
-   ========================================== */
-
-.cozy-warnings {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-top: 12px;
-}
-
-.cozy-warning {
-    background: #fff0ef;
-    color: #d46b6b;
-    border-radius: 12px;
-    padding: 10px 14px;
-    font-size: .9rem;
-}
-
-/* ==========================================
-   AKTIONEN
-   ========================================== */
-
-.cozy-actions {
+.cozy-layout {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: 110px 1fr 1fr;
     gap: 16px;
+    height: 100%;
+    min-height: 0;
+    align-items: stretch;
 }
 
-.cozy-action-btn {
-    background: #fff8f1;
-    border: 1px solid rgba(0,0,0,0.05);
-    border-radius: 24px;
-    padding: 10px;
+/* ==========================================
+   SPALTE 1: HAUSTIERLISTE
+   ========================================== */
+
+.cozy-pet-list {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    transition: .2s;
+    gap: 10px;
+    padding-top: 4px;
+    overflow: hidden;
+    align-self: start;
 }
 
-.cozy-action-btn:hover {
-    transform: translateY(-2px);
-    background: white;
-}
-
-.cozy-action-icon  { font-size: 1.6rem; }
-.cozy-action-title { font-weight: 600; }
-
-.cozy-action-desc {
-    font-size: .85rem;
+.cozy-pet-list-title {
+    font-size: .75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .1em;
     color: var(--text-3);
+    margin-bottom: 4px;
     text-align: center;
 }
 
-/* Deaktivierter Button (Schlafmodus / kein Futter) */
-.cozy-action-btn.disabled {
-    cursor: not-allowed;
-    opacity: .5;
-}
-
-.cozy-action-btn.disabled:hover {
-    transform: none;
+.cozy-pet-slot {
+    width: 100%;
     background: #fff8f1;
-}
-
-/* ==========================================
-   TAGESAUFGABEN (Phase 3)
-   ========================================== */
-
-.cozy-tasks-card {
-    background: #fff8f1;
-    border: 1px solid rgba(0,0,0,.05);
-    border-radius: 24px;
-    padding: 20px;
-}
-
-.cozy-tasks-header {
-    display: flex;
-    align-items: center;
-    margin-bottom: 14px;
-}
-
-.cozy-tasks-title {
-    font-size: 1.05rem;
-    font-weight: 700;
-}
-
-.cozy-tasks-list {
+    border: 1.5px solid rgba(0,0,0,.07);
+    border-radius: 16px;
+    padding: 10px 6px;
+    cursor: pointer;
     display: flex;
     flex-direction: column;
-    gap: 10px;
-}
-
-.cozy-task-item {
-    display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px 14px;
-    background: #f8eee1;
-    border-radius: 14px;
-    font-size: .92rem;
+    gap: 6px;
     transition: .2s;
 }
 
-/* Erledigte Aufgabe */
-.cozy-task-item.done {
-    background: #edf7ee;
-    color: #5a9e6b;
+.cozy-pet-slot.active  { border: 2px solid #e595ad; background: #fff0f4; }
+.cozy-pet-slot:hover   { transform: translateY(-2px); background: white; }
+
+.cozy-pet-slot-img {
+    width: 52px;
+    height: 52px;
+    object-fit: contain;
 }
 
-.cozy-task-check {
-    font-size: 1.1rem;
-    flex-shrink: 0;
-    width: 20px;
+.cozy-pet-slot-name {
+    font-size: .75rem;
+    font-weight: 600;
+    color: var(--text-2);
     text-align: center;
 }
 
-.cozy-task-text {
-    flex: 1;
-}
-
-.cozy-task-reward {
-    font-size: .85rem;
-    font-weight: 700;
-    color: #b07c20;
-    flex-shrink: 0;
-}
-
-/* Reward-Text grau wenn bereits abgeholt */
-.cozy-task-item.done .cozy-task-reward {
-    color: #5a9e6b;
-}
-
 /* ==========================================
-   ROOM
+   SPALTE 2: ZIMMER
    ========================================== */
+
+.cozy-room-col {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow: hidden;
+    min-height: 0;
+}
 
 .cozy-room {
     position: relative;
     width: 100%;
-    max-width: 520px;
-    margin: auto;
     overflow: hidden;
-    border-radius: 32px;
+    border-radius: 24px;
     background: #fff8f1;
 }
 
-.cozy-room-bg {
-    width: 100%;
-    display: block;
-}
+.cozy-room-bg   { width: 100%; display: block; }
 
 .cozy-room-pet {
     position: absolute;
-    width: 160px;
+    width: 60%;
     left: 50%;
-    bottom: 60px;
+    bottom: 0;
     transform: translateX(-50%);
     image-rendering: auto;
     animation: cozyPetFloat 4s ease-in-out infinite;
 }
 
 @keyframes cozyPetFloat {
-    0%, 100% { transform: translateX(-50%) translateY(0); }
-    50%       { transform: translateX(-50%) translateY(-8px); }
+    0%, 100% { transform: translateX(-50%) translateY(0);   }
+    50%      { transform: translateX(-50%) translateY(-8px); }
 }
-
-/* ==========================================
-   GEDANKENBLASE (Phase 2)
-   ========================================== */
 
 .cozy-thought-bubble {
     position: absolute;
-    top: 18px;
+    top: 12px;
     left: 50%;
     transform: translateX(-50%);
     background: #fff;
     color: var(--text);
-    padding: 8px 16px;
-    border-radius: 16px;
-    font-size: .85rem;
+    padding: 6px 14px;
+    border-radius: 14px;
+    font-size: .82rem;
     box-shadow: 0 4px 14px rgba(0,0,0,.08);
     white-space: nowrap;
     z-index: 2;
     opacity: 0;
     animation:
-        cozyBubbleIn .6s ease forwards,
+        cozyBubbleIn   .6s ease          forwards,
         cozyBubbleFloat 4s ease-in-out .6s infinite;
 }
 
 @keyframes cozyBubbleIn {
     from { opacity: 0; transform: translateX(-50%) translateY(6px); }
-    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0);   }
 }
 
 @keyframes cozyBubbleFloat {
-    0%, 100% { transform: translateX(-50%) translateY(0); }
+    0%, 100% { transform: translateX(-50%) translateY(0);   }
     50%      { transform: translateX(-50%) translateY(-4px); }
 }
 
-/* ==========================================
-   HAUSTIERLISTE
-   ========================================== */
-
-.cozy-pets {
-    display: flex;
-    gap: 20px;
-    flex-wrap: wrap;
+.cozy-pet-name {
+    font-size: 1.3rem;
+    font-weight: 700;
+    text-align: center;
 }
 
-.cozy-pet-slot {
-    width: 110px;
+.cozy-pet-mood {
+    font-size: .95rem;
+    color: #e595ad;
+    text-align: center;
+}
+
+/* STECKBRIEF */
+.cozy-profile-card {
     background: #fff8f1;
-    border: 1px solid rgba(0,0,0,.08);
-    border-radius: 20px;
-    padding: 14px;
-    cursor: pointer;
+    border: 1px solid rgba(0,0,0,.05);
+    border-radius: 16px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.cozy-profile-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: .85rem;
+}
+
+.cozy-profile-label { color: var(--text-3); flex-shrink: 0; }
+.cozy-profile-value { font-weight: 600; text-align: right; }
+
+.cozy-profile-desc {
+    font-size: .8rem;
+    color: var(--text-3);
+    line-height: 1.5;
+    border-top: 1px solid rgba(0,0,0,.06);
+    padding-top: 8px;
+    margin-top: 2px;
+}
+
+/* ==========================================
+   SPALTE 3: STATUS + AKTIONEN + AUFGABEN + ACCORDION
+   ========================================== */
+
+.cozy-right {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-height: 0;
+    padding-right: 4px;
+}
+
+/* STATUS CARD */
+.cozy-status-card {
+    background: #fff8f1;
+    border-radius: 18px;
+    padding: 14px 16px;
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+.cozy-status-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.cozy-status-header h3 { margin: 0; font-size: 1rem; }
+
+.cozy-coin-display {
+    background: #fdf3dc;
+    border: 1px solid rgba(0,0,0,.06);
+    border-radius: 16px;
+    padding: 4px 12px;
+    font-size: .88rem;
+    font-weight: 700;
+    color: #b07c20;
+}
+
+.cozy-stat           { margin-bottom: 12px; }
+.cozy-stat:last-child { margin-bottom: 0; }
+
+.cozy-stat-label {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    font-size: .85rem;
+}
+
+.cozy-bar {
+    width: 100%;
+    height: 10px;
+    background: #e8ddd0;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.cozy-bar-fill            { height: 100%; border-radius: inherit; }
+.cozy-bar-fill.hunger     { background: #ff8ca8; }
+.cozy-bar-fill.energy     { background: #b08cf1; }
+.cozy-bar-fill.happiness  { background: #ffb5c8; }
+
+/* WARNKARTEN */
+.cozy-warnings {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.cozy-warning {
+    background: #fff0ef;
+    color: #d46b6b;
+    border-radius: 10px;
+    padding: 7px 12px;
+    font-size: .82rem;
+}
+
+/* AKTIONEN */
+.cozy-actions {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+
+.cozy-action-btn {
+    background: #fff8f1;
+    border: 1px solid rgba(0,0,0,0.05);
+    border-radius: 16px;
+    padding: 8px 4px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
+    gap: 4px;
+    cursor: pointer;
     transition: .2s;
 }
 
-.cozy-pet-slot.active  { border: 2px solid #e595ad; }
-.cozy-pet-slot:hover   { transform: translateY(-2px); }
+.cozy-action-btn:hover    { transform: translateY(-2px); background: white; }
+.cozy-action-icon          { font-size: 1.3rem; }
+.cozy-action-title         { font-weight: 600; font-size: .78rem; }
+.cozy-action-desc          { font-size: .72rem; color: var(--text-3); text-align: center; line-height: 1.3; }
 
-.cozy-pet-slot-img {
-    width: 64px;
-    height: 64px;
-    object-fit: contain;
+.cozy-action-btn.disabled  { cursor: not-allowed; opacity: .5; }
+.cozy-action-btn.disabled:hover { transform: none; background: #fff8f1; }
+
+/* TAGESAUFGABEN */
+.cozy-tasks-card {
+    background: #fff8f1;
+    border: 1px solid rgba(0,0,0,.05);
+    border-radius: 16px;
+    padding: 12px 14px;
 }
 
+.cozy-tasks-header    { margin-bottom: 10px; }
+.cozy-tasks-title     { font-size: .92rem; font-weight: 700; }
+
+.cozy-tasks-list {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.cozy-task-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    background: #f8eee1;
+    border-radius: 10px;
+    font-size: .82rem;
+    transition: .2s;
+}
+
+.cozy-task-item.done  { background: #edf7ee; color: #5a9e6b; }
+.cozy-task-check      { font-size: 1rem; flex-shrink: 0; width: 16px; text-align: center; }
+.cozy-task-text       { flex: 1; }
+.cozy-task-reward     { font-size: .8rem; font-weight: 700; color: #b07c20; flex-shrink: 0; }
+.cozy-task-item.done .cozy-task-reward { color: #5a9e6b; }
+
 /* ==========================================
-   MOBILE
+   ACCORDION
    ========================================== */
 
-@media (max-width: 900px) {
+.cozy-accordion-btns {
+    display: flex;
+    gap: 8px;
+}
 
-    .cozy-main-card {
+.cozy-accordion-toggle {
+    flex: 1;
+    padding: 9px 10px;
+    border-radius: 12px;
+    border: 1.5px solid rgba(0,0,0,.08);
+    background: #fff8f1;
+    font-size: .85rem;
+    font-weight: 600;
+    color: var(--text-2);
+    cursor: pointer;
+    transition: .2s;
+}
+
+.cozy-accordion-toggle:hover { background: white; border-color: #e595ad; }
+.cozy-accordion-toggle.active { background: #fff0f4; border-color: #e595ad; color: #c4708a; }
+
+.cozy-accordion-panel { margin-top: 2px; }
+.cozy-accordion-panel.hidden { display: none; }
+
+/* INVENTAR */
+.cozy-inv-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.cozy-inv-item {
+    background: #fff8f1;
+    border: 1px solid rgba(0,0,0,.06);
+    border-radius: 12px;
+    padding: 10px 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.cozy-inv-item.empty { opacity: .4; }
+.cozy-inv-emoji  { font-size: 1.3rem; }
+.cozy-inv-name   { font-size: .72rem; color: var(--text-3); text-align: center; }
+.cozy-inv-count  { font-size: .85rem; font-weight: 700; }
+
+/* SHOP */
+.cozy-shop-coins-row {
+    font-size: .85rem;
+    font-weight: 700;
+    color: #b07c20;
+    margin-bottom: 8px;
+}
+
+.cozy-shop-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.cozy-shop-item {
+    background: #fff8f1;
+    border: 1px solid rgba(0,0,0,.06);
+    border-radius: 12px;
+    padding: 10px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.cozy-shop-emoji  { font-size: 1.4rem; }
+.cozy-shop-name   { font-size: .78rem; font-weight: 600; text-align: center; }
+.cozy-shop-price  { font-size: .78rem; color: #b07c20; font-weight: 700; }
+
+.cozy-buy-btn {
+    background: #e595ad;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 5px 10px;
+    font-size: .78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: .2s;
+    width: 100%;
+}
+
+.cozy-buy-btn:hover        { background: #d4809a; }
+.cozy-buy-btn.disabled     { background: #e8ddd0; color: var(--text-3); cursor: not-allowed; }
+.cozy-buy-btn.disabled:hover { background: #e8ddd0; }
+
+/* ==========================================
+   RESPONSIVE GRID
+   ========================================== */
+
+/* Mittelgroße Modale / kleine Desktops */
+@media (max-width: 1100px) {
+    .cozy-layout {
+        grid-template-columns: 100px 1fr 1fr;
+        gap: 12px;
+    }
+    .cozy-actions { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* 2-Spalten: Haustiere links + Rest zusammen */
+@media (max-width: 800px) {
+    .cozy-layout {
+        grid-template-columns: 90px 1fr;
+        grid-template-rows: auto auto;
+    }
+    .cozy-right {
+        grid-column: 2;
+        grid-row: 1 / 3;
+    }
+    .cozy-room-col {
+        grid-column: 2;
+        grid-row: 1;
+    }
+}
+
+/* 1-Spalte */
+@media (max-width: 560px) {
+    .cozy-layout {
         grid-template-columns: 1fr;
     }
-
-    .cozy-actions {
-        grid-template-columns: repeat(2, 1fr);
+    .cozy-pet-list {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
     }
-
-    .cozy-pet-frame {
-        width: 180px;
-        height: 180px;
-    }
-
+    .cozy-pet-slot { width: 80px; }
+    .cozy-right { grid-column: 1; }
+    .cozy-room-col { grid-column: 1; }
+    .cozy-inv-grid  { grid-template-columns: repeat(3, 1fr); }
+    .cozy-shop-grid { grid-template-columns: repeat(2, 1fr); }
 }
