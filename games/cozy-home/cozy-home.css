@@ -1,6 +1,6 @@
 /* ==========================================
-   COZY HOME – 4-SPALTEN-LAYOUT
-   Feintuning nach Screenshot
+   COZY HOME – RESPONSIVES GRID
+   Keine festen px-Spalten. Proportionen stabil.
    ========================================== */
 
 .ch-root {
@@ -10,13 +10,26 @@
     box-sizing: border-box;
     color: var(--text);
     font-family: inherit;
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
 }
 
-/* Grid: SP1 200px | SP2 1fr | SP3 260px | SP4 220px */
+/* Max-Width-Container: Content wächst nie über 1600px */
 .ch-grid {
+    width: 100%;
+    max-width: 1600px;
     display: grid;
-    grid-template-columns: 200px 1fr 260px 220px;
-    gap: 12px;
+    /* SP1 Haustiere:   ~13%  min 160px max 210px
+       SP2 Zimmer+Info: ~42%  nimmt verbleibenden Platz
+       SP3 Status:      ~24%  min 220px max 300px
+       SP4 Inv/Shop:    ~21%  min 190px max 260px  */
+    grid-template-columns:
+        minmax(160px, 13%)
+        1fr
+        minmax(220px, 24%)
+        minmax(190px, 21%);
+    gap: clamp(10px, 1.2vw, 16px);
     height: 100%;
     min-height: 0;
     box-sizing: border-box;
@@ -58,40 +71,33 @@
     background: #fff8f1;
     border: 1.5px solid rgba(0,0,0,.07);
     border-radius: 14px;
-    padding: 10px 12px;
+    padding: 9px 11px;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 9px;
     transition: .15s;
     text-align: left;
     flex-shrink: 0;
+    box-sizing: border-box;
 }
 
-.ch-pet-btn.active { border: 2px solid #e595ad; background: #fff0f4; }
+.ch-pet-btn.active              { border: 2px solid #e595ad; background: #fff0f4; }
 .ch-pet-btn:hover:not(.locked)  { background: white; transform: translateX(2px); }
 
-/* Gesperrte Karte */
 .ch-pet-btn.locked {
-    opacity: .45;
+    opacity: .4;
     cursor: default;
     filter: grayscale(1);
 }
 
-.ch-pet-btn-lock { font-size: 1.1rem; flex-shrink: 0; width: 40px; text-align: center; }
+.ch-pet-btn-lock  { font-size: 1rem; flex-shrink: 0; width: 36px; text-align: center; }
+.ch-pet-btn-img   { width: 44px; height: 44px; object-fit: contain; flex-shrink: 0; }
+.ch-pet-btn-info  { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.ch-pet-btn-name  { font-size: .86rem; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ch-pet-btn-mood  { font-size: .72rem; color: var(--text-3); }
 
-.ch-pet-btn-img {
-    width: 46px;
-    height: 46px;
-    object-fit: contain;
-    flex-shrink: 0;
-}
-
-.ch-pet-btn-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.ch-pet-btn-name { font-size: .88rem; font-weight: 700; color: var(--text); }
-.ch-pet-btn-mood { font-size: .73rem; color: var(--text-3); }
-
-/* ══ SP2 – ZIMMER + INFO ══ */
+/* ══ SP2 – ZIMMER + STECKBRIEF ══ */
 
 .ch-col-main {
     display: flex;
@@ -101,11 +107,12 @@
     overflow: hidden;
 }
 
-/* Zimmer: etwas größer als vorher (~10-15%) */
+/* Zimmer: wächst bis zu einem sinnvollen Maximum */
 .ch-room {
     position: relative;
     width: 100%;
-    height: min(380px, 46vh);
+    /* Höhe: 40% des Viewports, aber nie mehr als 420px */
+    height: clamp(220px, 40vh, 420px);
     flex-shrink: 0;
     border-radius: 22px;
     overflow: hidden;
@@ -119,13 +126,13 @@
     object-position: center bottom;
     display: block;
     background: #fff8f1;
-    border-radius: 20px;
+    border-radius: 22px;
 }
 
 .ch-room-pet {
     position: absolute;
-    width: 42%;
-    max-width: 150px;
+    /* skaliert mit Zimmer: nie kleiner als 140px, nie größer als 260px */
+    width: clamp(140px, 36%, 260px);
     left: 50%;
     bottom: 0;
     transform: translateX(-50%);
@@ -164,33 +171,21 @@
     50%       { transform: translateX(-50%) translateY(-3px); }
 }
 
-.ch-pet-name {
-    font-size: 1.2rem;
-    font-weight: 700;
-    text-align: center;
-    flex-shrink: 0;
-    line-height: 1.2;
-}
-
-.ch-pet-mood {
-    font-size: .88rem;
-    color: #e595ad;
-    text-align: center;
-    flex-shrink: 0;
-}
-
-/* Steckbrief: füllt verbleibenden Raum aus, klebt unten */
+/* Steckbrief: füllt verbleibenden Raum, wächst NICHT ins Unendliche */
 .ch-profile {
     background: #fff8f1;
     border: 1px solid rgba(0,0,0,.05);
     border-radius: 14px;
     padding: 11px 14px;
-    flex: 1;               /* nimmt verbleibenden Platz ein → schiebt sich nach unten */
+    flex: 1;
     min-height: 0;
+    /* Maximalhöhe damit er auf großen Monitoren nicht explodiert */
+    max-height: 220px;
     display: flex;
     flex-direction: column;
     gap: 8px;
     box-sizing: border-box;
+    overflow: hidden;
 }
 
 .ch-profile-title { font-size: .8rem; font-weight: 700; flex-shrink: 0; }
@@ -205,11 +200,7 @@
     align-items: center;
 }
 
-.ch-profile-data {
-    display: flex;
-    flex-direction: column;
-    gap: 7px;
-}
+.ch-profile-data  { display: flex; flex-direction: column; gap: 6px; }
 
 .ch-profile-row {
     display: flex;
@@ -229,7 +220,7 @@
     border-left: 2px solid rgba(0,0,0,.07);
     padding-left: 12px;
     display: flex;
-    align-items: center;   /* vertikal mittig */
+    align-items: center;
 }
 
 /* ══ SP3 – STATUS + AKTIONEN + AUFGABEN ══ */
@@ -303,7 +294,6 @@
 .ch-warnings { display: flex; flex-direction: column; gap: 3px; margin-top: 5px; }
 .ch-warning  { background: #fff0ef; color: #d46b6b; border-radius: 7px; padding: 3px 7px; font-size: .7rem; }
 
-/* Aktionen: 2×2 */
 .ch-actions {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -323,14 +313,13 @@
     transition: .13s;
 }
 
-.ch-action:hover    { transform: translateY(-2px); background: white; box-shadow: 0 2px 8px rgba(0,0,0,.07); }
-.ch-action-icon      { font-size: 1.1rem; }
-.ch-action-label     { font-size: .7rem; font-weight: 700; }
-.ch-action-sub       { font-size: .62rem; color: var(--text-3); text-align: center; line-height: 1.2; }
-.ch-action.disabled  { cursor: not-allowed; opacity: .45; }
-.ch-action.disabled:hover { transform: none; box-shadow: none; }
+.ch-action:hover             { transform: translateY(-2px); background: white; box-shadow: 0 2px 8px rgba(0,0,0,.07); }
+.ch-action-icon               { font-size: 1.1rem; }
+.ch-action-label              { font-size: .7rem; font-weight: 700; }
+.ch-action-sub                { font-size: .62rem; color: var(--text-3); text-align: center; line-height: 1.2; }
+.ch-action.disabled           { cursor: not-allowed; opacity: .45; }
+.ch-action.disabled:hover     { transform: none; box-shadow: none; }
 
-/* Tagesaufgaben */
 .ch-tasks { display: flex; flex-direction: column; gap: 4px; }
 
 .ch-task {
@@ -343,11 +332,11 @@
     font-size: .73rem;
 }
 
-.ch-task.done        { background: #edf7ee; color: #5a9e6b; }
-.ch-task-check       { flex-shrink: 0; width: 13px; text-align: center; font-size: .8rem; }
-.ch-task-text        { flex: 1; line-height: 1.3; }
-.ch-task-reward      { font-size: .7rem; font-weight: 700; color: #b07c20; flex-shrink: 0; }
-.ch-task.done .ch-task-reward { color: #5a9e6b; }
+.ch-task.done                  { background: #edf7ee; color: #5a9e6b; }
+.ch-task-check                 { flex-shrink: 0; width: 13px; text-align: center; font-size: .8rem; }
+.ch-task-text                  { flex: 1; line-height: 1.3; }
+.ch-task-reward                { font-size: .7rem; font-weight: 700; color: #b07c20; flex-shrink: 0; }
+.ch-task.done .ch-task-reward  { color: #5a9e6b; }
 
 /* ══ SP4 – INVENTAR + SHOP ══ */
 
