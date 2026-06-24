@@ -131,10 +131,10 @@
 
 .ch-room-pet {
     position: absolute;
-    /* skaliert mit Zimmer: nie kleiner als 240px, nie größer als 446px (~20% größer) */
+    /* skaliert mit Zimmer: nie kleiner als 170px, nie größer als 310px (~20% größer) */
     width: clamp(240px, 62%, 446px);
     left: 50%;
-    bottom: -15px;
+    bottom: -12px;
     transform: translateX(-50%);
     image-rendering: auto;
     animation: chPetFloat 4s ease-in-out infinite;
@@ -435,4 +435,171 @@
 .games-play-modal-box.very-big {
     width:  min(1700px, 96vw);
     height: min(950px,  92vh);
+}
+
+/* ══════════════════════════════
+   ONBOARDING / PET-KAUF SCREENS
+   ══════════════════════════════ */
+
+.ch-onboarding {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ch-ob-box {
+    background: #fff8f1;
+    border: 1px solid rgba(0,0,0,.06);
+    border-radius: 22px;
+    padding: 32px 36px;
+    max-width: 680px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    align-items: center;
+}
+
+.ch-ob-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+.ch-ob-sub {
+    font-size: .88rem;
+    color: var(--text-3);
+    text-align: center;
+}
+
+.ch-ob-coins {
+    font-weight: 700;
+    color: #b07c20;
+    font-size: .88rem;
+}
+
+.ch-ob-species-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 14px;
+    width: 100%;
+}
+
+.ch-ob-species-btn {
+    background: #fff;
+    border: 2px solid rgba(0,0,0,.07);
+    border-radius: 16px;
+    padding: 16px 10px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    transition: .15s;
+}
+
+.ch-ob-species-btn:hover:not(.disabled) { border-color: #e595ad; background: #fff0f4; transform: translateY(-2px); }
+.ch-ob-species-btn.disabled { opacity: .45; cursor: not-allowed; }
+
+.ch-ob-species-img   { width: 80px; height: 80px; object-fit: contain; }
+.ch-ob-species-name  { font-size: .9rem; font-weight: 700; }
+.ch-ob-species-desc  { font-size: .73rem; color: var(--text-3); text-align: center; line-height: 1.4; }
+
+.ch-ob-pet-preview   { display: flex; justify-content: center; }
+.ch-ob-preview-img   { width: 120px; height: 120px; object-fit: contain; }
+
+.ch-ob-name-row {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+    max-width: 340px;
+}
+
+.ch-ob-name-input {
+    flex: 1;
+    height: 42px;
+    border: 1.5px solid rgba(0,0,0,.12);
+    border-radius: 11px;
+    padding: 0 13px;
+    font-size: .9rem;
+    outline: none;
+    background: #fff;
+    color: var(--text);
+}
+
+.ch-ob-name-input:focus { border-color: #e595ad; }
+
+.ch-ob-random-btn {
+    width: 42px;
+    height: 42px;
+    border: 1.5px solid rgba(0,0,0,.1);
+    border-radius: 11px;
+    background: #fff;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: .13s;
+    flex-shrink: 0;
+}
+
+.ch-ob-random-btn:hover { background: #fff0f4; border-color: #e595ad; }
+
+.ch-ob-actions {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    max-width: 340px;
+}
+
+.ch-ob-back-btn {
+    flex: 1;
+    height: 42px;
+    border: 1.5px solid rgba(0,0,0,.1);
+    border-radius: 11px;
+    background: #fff;
+    font-size: .85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: .13s;
+}
+
+.ch-ob-back-btn:hover { background: #f5f5f5; }
+
+.ch-ob-confirm-btn {
+    flex: 2;
+    height: 42px;
+    border: none;
+    border-radius: 11px;
+    background: #e595ad;
+    color: #fff;
+    font-size: .88rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: .13s;
+}
+
+.ch-ob-confirm-btn:hover { background: #d4809a; }
+
+.ch-ob-warn {
+    font-size: .8rem;
+    color: #d46b6b;
+    text-align: center;
+}
+
+/* Pet-Shop-Bild in Accordion */
+.ch-petshop-img { width: 32px; height: 32px; object-fit: contain; flex-shrink: 0; }
+
+/* Neu-Tier-Button in SP1 */
+.ch-pet-add {
+    border-style: dashed;
+    opacity: .65;
+}
+.ch-pet-add:hover { opacity: 1; }
+
+/* Persönlichkeits-Hinweis im Steckbrief */
+.ch-profile-pers-hint {
+    font-size: .73rem;
+    color: var(--text-3);
+    margin-top: 8px;
+    line-height: 1.4;
+    font-style: normal;
 }

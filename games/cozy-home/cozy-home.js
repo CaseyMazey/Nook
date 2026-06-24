@@ -1,20 +1,115 @@
 // =========================
-// COZY HOME - PHASE 5
-// Ordnerbasiertes Asset-System
-// Bildlogik via petImgTag() / getPetImageState() in pets.js
-// Cross-Game-Haustiere via assets.basePath in PET_DEFINITIONS
+// COZY HOME - PHASE 6
+// Individuelle Haustier-Instanzen
+// Persönlichkeiten, Pet-Shop, Onboarding
+// Save-Migration von Phase 5
 // =========================
 
 (function () {
 
-    const SAVE_KEY        = "cozyHomeData";
+    // ====================================
+    // KONSTANTEN
+    // ====================================
+
+    const SAVE_KEY         = "cozyHomeData";
     const TICK_INTERVAL_MS = 60000;
     const SLEEP_THRESHOLD  = 20;
-    const PLAY_ENERGY_COST = 10;   // Spielen kostet 10 Energie
-
+    const PLAY_ENERGY_COST = 10;
+    const STARTER_PET_COST = 0;    // erstes Tier kostenlos
+    const EXTRA_PET_COST   = 100;  // weitere Tiere im Shop
 
     // ====================================
-    // INVENTAR-ANZEIGECONFIG
+    // PERSÖNLICHKEITEN
+    // Vollständig datengetrieben.
+    // Neue Persönlichkeiten hier ergänzen.
+    // ====================================
+
+    const PERSONALITIES = {
+        playful: {
+            id:          "playful",
+            name:        "Verspielt",
+            emoji:       "🎾",
+            description: "+5 Happiness beim Spielen",
+            applyPlay:       (bonus) => bonus + 5,
+            applyPet:        (bonus) => bonus,
+            applyHungerDecay:(m)     => m,
+            applyHappDecay:  (v)     => v,
+            playCostExtra:   0
+        },
+        lazy: {
+            id:          "lazy",
+            name:        "Faul",
+            emoji:       "💤",
+            description: "+5 Happiness beim Schlafen, Spielen kostet mehr Energie",
+            applyPlay:       (bonus) => bonus,
+            applyPet:        (bonus) => bonus,
+            applyHungerDecay:(m)     => m,
+            applyHappDecay:  (v)     => v,
+            playCostExtra:   5
+        },
+        balanced: {
+            id:          "balanced",
+            name:        "Ausgeglichen",
+            emoji:       "⚖️",
+            description: "Keine besonderen Boni",
+            applyPlay:       (bonus) => bonus,
+            applyPet:        (bonus) => bonus,
+            applyHungerDecay:(m)     => m,
+            applyHappDecay:  (v)     => v,
+            playCostExtra:   0
+        },
+        affectionate: {
+            id:          "affectionate",
+            name:        "Anhänglich",
+            emoji:       "❤️",
+            description: "+5 Happiness beim Streicheln",
+            applyPlay:       (bonus) => bonus,
+            applyPet:        (bonus) => bonus + 5,
+            applyHungerDecay:(m)     => m,
+            applyHappDecay:  (v)     => v,
+            playCostExtra:   0
+        },
+        frugal: {
+            id:          "frugal",
+            name:        "Genügsam",
+            emoji:       "🌱",
+            description: "Hunger und Happiness sinken langsamer",
+            applyPlay:       (bonus) => bonus,
+            applyPet:        (bonus) => bonus,
+            applyHungerDecay:(m)     => m * 0.6,
+            applyHappDecay:  (v)     => v * 0.6,
+            playCostExtra:   0
+        },
+        glutton: {
+            id:          "glutton",
+            name:        "Vielfraß",
+            emoji:       "🍖",
+            description: "+5 Hunger beim Füttern, Hunger sinkt schneller",
+            applyPlay:       (bonus) => bonus,
+            applyPet:        (bonus) => bonus,
+            applyHungerDecay:(m)     => m * 1.5,
+            applyHappDecay:  (v)     => v,
+            playCostExtra:   0
+        }
+    };
+
+    const PERSONALITY_KEYS = Object.keys(PERSONALITIES);
+
+    // ====================================
+    // ZUFALLSNAMEN PRO TIERART
+    // Nur für den Namensgenerator.
+    // Kein Hardcode in der Spiellogik.
+    // ====================================
+
+    const PET_NAME_POOLS = {
+        cat:   ["Momo", "Luna", "Nala", "Mochi", "Socks", "Bella", "Cleo", "Kiki"],
+        dog:   ["Rex", "Buddy", "Bruno", "Rocky", "Max", "Bello", "Luca", "Finn"],
+        mouse: ["Pip", "Peanut", "Nibbles", "Squeak", "Cheddar", "Whisker"],
+        _default: ["Flöckchen", "Schnuffi", "Kuschel", "Biscuit", "Nugget"]
+    };
+
+    // ====================================
+    // INVENTAR & SHOP
     // ====================================
 
     const INVENTORY_DISPLAY = [
@@ -26,51 +121,46 @@
         { key: "toyBall", name: "Ball",           emoji: "⚽" }
     ];
 
-    // ====================================
-    // SHOP-KONFIGURATION
-    // ====================================
-
     const SHOP_ITEMS = [
-        { key: "kibble",  name: "Trockenfutter", emoji: "🥣", price: 1 },
-        { key: "meat",    name: "Fleisch",  emoji: "🍖", price: 5 },
-        { key: "fish",    name: "Fisch",    emoji: "🐟", price: 5 },
-        { key: "cheese",  name: "Käse",     emoji: "🧀", price: 5 },
-        { key: "snack",   name: "Leckerli", emoji: "🍪", price: 10 },
-        { key: "toyBall", name: "Ball",     emoji: "⚽", price: 50 }
+        { key: "kibble",  name: "Trockenfutter", emoji: "🥣", price: 1  },
+        { key: "meat",    name: "Fleisch",        emoji: "🍖", price: 5  },
+        { key: "fish",    name: "Fisch",          emoji: "🐟", price: 5  },
+        { key: "cheese",  name: "Käse",           emoji: "🧀", price: 5  },
+        { key: "snack",   name: "Leckerli",       emoji: "🍪", price: 10 },
+        { key: "toyBall", name: "Ball",           emoji: "⚽", price: 50 }
     ];
 
     // ====================================
-    // TAGESAUFGABEN-DEFINITIONEN
+    // TAGESAUFGABEN
     // ====================================
 
     const TASK_DEFINITIONS = [
-        { id: "pet",  text: "❤️ Streichle dein Haustier",  reward: 10 },
-        { id: "feed", text: "🍖 Füttere dein Haustier",     reward: 20 },
+        { id: "pet",  text: "❤️ Streichle dein Haustier",   reward: 10 },
+        { id: "feed", text: "🍖 Füttere dein Haustier",      reward: 20 },
         { id: "play", text: "🎮 Spiele mit deinem Haustier", reward: 25 }
     ];
 
     // ====================================
-    // DEFAULT SAVE (Phase 4 – vollständig)
+    // DEFAULT SAVE (Phase 6)
     // ====================================
 
     const DEFAULT_SAVE = {
-        activePet:   "cat",
-        lastUpdate:  Date.now(),
-        coins:       0,
-
+        version:       6,
+        activePetUid:  null,         // uid der aktiven Instanz
+        lastUpdate:    Date.now(),
+        coins:         0,
+        ownedPets:     [],           // Array von Pet-Instanzen
         inventory: {
             kibble:  10,
+            meat:    5,
+            fish:    5,
+            cheese:  5,
+            snack:   5,
+            toyBall: 1
         },
-
         dailyTasks: {
             lastReset: null,
             tasks:     []
-        },
-
-        pets: {
-            cat:   { unlocked: true,  hunger: 100, energy: 100, happiness: 100 },
-            dog:   { unlocked: true,  hunger: 100, energy: 100, happiness: 100 },
-            mouse: { unlocked: true,  hunger: 100, energy: 100, happiness: 100 }
         }
     };
 
@@ -78,131 +168,27 @@
     // MODULE STATE
     // ====================================
 
-    let root           = null;
-    let save           = null;
-    let tickIntervalId = null;
-
-    // Wird nach Lieblingsessen auf true gesetzt
-    // und nach dem nächsten render() automatisch zurückgesetzt.
+    let root              = null;
+    let save              = null;
+    let tickIntervalId    = null;
     let showFavoriteThought = false;
 
-    // ====================================
-    // SAVE – LADEN & SPEICHERN
-    // ====================================
-
-    function loadSave() {
-
-        const raw = localStorage.getItem(SAVE_KEY);
-
-        if (!raw) {
-            const fresh = structuredClone(DEFAULT_SAVE);
-            localStorage.setItem(SAVE_KEY, JSON.stringify(fresh));
-            return fresh;
-        }
-
-        try {
-            const parsed = JSON.parse(raw);
-            const merged = {
-                ...structuredClone(DEFAULT_SAVE),
-                ...parsed
-            };
-            return migrateSave(merged);
-        } catch {
-            const fresh = structuredClone(DEFAULT_SAVE);
-            localStorage.setItem(SAVE_KEY, JSON.stringify(fresh));
-            return fresh;
-        }
-
-    }
-
-    function saveData() {
-        localStorage.setItem(SAVE_KEY, JSON.stringify(save));
-    }
-
-    // ====================================
-    // MIGRATION
-    // Alte Saves ohne Phase-3/4-Felder
-    // werden sicher ergänzt.
-    // ====================================
-
-    function migrateSave(s) {
-
-        // coins
-        if (typeof s.coins !== "number") s.coins = 0;
-
-        // inventory – Basis
-        if (!s.inventory || typeof s.inventory !== "object") {
-            s.inventory = structuredClone(DEFAULT_SAVE.inventory);
-        } else {
-            // Phase 3-Felder
-            if (typeof s.inventory.kibble  !== "number") s.inventory.kibble  = 10;
-            if (typeof s.inventory.snack   !== "number") s.inventory.snack   =  5;
-            if (typeof s.inventory.toyBall !== "number") s.inventory.toyBall =  1;
-            // Phase 4-Felder
-            if (typeof s.inventory.meat   !== "number") s.inventory.meat   = 5;
-            if (typeof s.inventory.fish   !== "number") s.inventory.fish   = 5;
-            if (typeof s.inventory.cheese !== "number") s.inventory.cheese = 5;
-        }
-
-        // dailyTasks
-        if (!s.dailyTasks || !Array.isArray(s.dailyTasks.tasks)) {
-            s.dailyTasks = { lastReset: null, tasks: [] };
-        }
-
-        // pets – alle Standard-Haustiere anlegen falls fehlend
-        if (!s.pets || typeof s.pets !== "object") {
-            s.pets = structuredClone(DEFAULT_SAVE.pets);
-        } else {
-            Object.keys(PET_DEFINITIONS).forEach(id => {
-                if (!s.pets[id]) {
-                    // Haustiere aus DEFAULT_SAVE gelten als freigeschaltet,
-                    // alle anderen (Cross-Game) starten gesperrt.
-                    const isDefault = Object.prototype.hasOwnProperty.call(DEFAULT_SAVE.pets, id);
-                    s.pets[id] = {
-                        unlocked:  isDefault,
-                        hunger:    100,
-                        energy:    100,
-                        happiness: 100
-                    };
-                }
-            });
-        }
-
-        return s;
-
-    }
-
-    // ====================================
-    // PET STATE
-    // ====================================
-
-    function getPetState(id) {
-        if (!save.pets[id]) {
-            save.pets[id] = { unlocked: true, hunger: 100, energy: 100, happiness: 100 };
-            saveData();
-        }
-        return save.pets[id];
-    }
-
-    function getUnlockedPets() {
-        return Object.values(PET_DEFINITIONS).filter(
-            def => save.pets[def.id]?.unlocked
-        );
-    }
+    // Onboarding / Pet-Kauf UI-State
+    let uiState = "game";     // "game" | "onboarding" | "buy-pet" | "name-pet"
+    let pendingSpecies = null; // Tierart die gerade benannt wird
 
     // ====================================
     // HILFSFUNKTIONEN
     // ====================================
 
     function clamp(v) { return Math.max(0, Math.min(100, v)); }
-
-    function pick(arr) {
-        return arr[Math.floor(Math.random() * arr.length)];
-    }
+    function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+    function uid()  { return "pet_" + Date.now() + "_" + Math.floor(Math.random() * 10000); }
 
     function isSleepy(pet) { return pet.energy < SLEEP_THRESHOLD; }
 
     function getMood(pet) {
+        if (!pet) return "";
         if (isSleepy(pet))          return "😴 Müde";
         if (pet.happiness >= 80)    return "😊 Glücklich";
         if (pet.happiness >= 50)    return "🙂 Zufrieden";
@@ -218,56 +204,181 @@
         return w;
     }
 
-    // ====================================
-    // GEDANKENBLASEN (Phase 4 – per Pet)
-    // ====================================
+    function randomPersonality() {
+        return pick(PERSONALITY_KEYS);
+    }
 
-    function getPetThought(def, petState, favoriteFood) {
+    function getPersonality(pet) {
+        return PERSONALITIES[pet.personality] || PERSONALITIES.balanced;
+    }
 
-        if (favoriteFood) return "💭 Das esse ich besonders gerne!";
-
-        if (petState.hunger    < 25) return pick(def.thoughts.hungry);
-        if (petState.energy    < 25) return pick(def.thoughts.tired);
-        if (petState.happiness < 25) return pick(def.thoughts.lonely);
-        return pick(def.thoughts.happy);
-
+    function getRandomName(species) {
+        const pool = PET_NAME_POOLS[species] || PET_NAME_POOLS._default;
+        return pick(pool);
     }
 
     // ====================================
-    // FÜTTERN – Futter-Auswahl
-    // Gibt zurück, was beim Füttern
-    // verbraucht wird. null = kein Futter.
+    // AKTIVE PET-INSTANZ & DEFINITION
+    // ====================================
+
+    function getActivePet() {
+        return save.ownedPets.find(p => p.uid === save.activePetUid) || null;
+    }
+
+    function getActiveDef() {
+        const pet = getActivePet();
+        if (!pet) return null;
+        return PET_DEFINITIONS[pet.species] || null;
+    }
+
+    // ====================================
+    // PET-INSTANZ ERSTELLEN
+    // ====================================
+
+    function createPetInstance(species, name, personalityId) {
+        return {
+            uid:         uid(),
+            species:     species,
+            name:        name || getRandomName(species),
+            personality: personalityId || randomPersonality(),
+            hunger:      100,
+            energy:      100,
+            happiness:   100
+        };
+    }
+
+    function addPet(species, name, personalityId) {
+        const instance = createPetInstance(species, name, personalityId);
+        save.ownedPets.push(instance);
+        save.activePetUid = instance.uid;
+        saveData();
+        return instance;
+    }
+
+    function selectPet(uid) {
+        save.activePetUid = uid;
+        saveData();
+        render();
+    }
+
+    // ====================================
+    // SAVE – LADEN & SPEICHERN
+    // ====================================
+
+    function loadSave() {
+        const raw = localStorage.getItem(SAVE_KEY);
+        if (!raw) {
+            const fresh = structuredClone(DEFAULT_SAVE);
+            localStorage.setItem(SAVE_KEY, JSON.stringify(fresh));
+            return fresh;
+        }
+        try {
+            const parsed = JSON.parse(raw);
+            return migrateSave(parsed);
+        } catch {
+            const fresh = structuredClone(DEFAULT_SAVE);
+            localStorage.setItem(SAVE_KEY, JSON.stringify(fresh));
+            return fresh;
+        }
+    }
+
+    function saveData() {
+        localStorage.setItem(SAVE_KEY, JSON.stringify(save));
+    }
+
+    // ====================================
+    // MIGRATION
+    // Phase ≤5 → Phase 6
+    // ====================================
+
+    function migrateSave(s) {
+
+        // ── Phase 6: ownedPets noch nicht vorhanden ──
+        // Altes Format: s.pets = { cat: {unlocked, hunger, ...}, ... }
+        if (!Array.isArray(s.ownedPets)) {
+            s.ownedPets = [];
+
+            if (s.pets && typeof s.pets === "object") {
+                // Alle freigeschalteten alten Pets als Instanzen migrieren
+                Object.entries(s.pets).forEach(([species, petState]) => {
+                    if (!petState.unlocked && species !== (s.activePet)) return;
+                    const instance = createPetInstance(
+                        species,
+                        getRandomName(species),
+                        "balanced"
+                    );
+                    // Werte übernehmen
+                    instance.hunger    = petState.hunger    ?? 100;
+                    instance.energy    = petState.energy    ?? 100;
+                    instance.happiness = petState.happiness ?? 100;
+
+                    // Aktives Pet aus altem Save als erstes setzen
+                    if (species === s.activePet) {
+                        s.ownedPets.unshift(instance);
+                    } else {
+                        s.ownedPets.push(instance);
+                    }
+                });
+            }
+
+            // activePetUid setzen
+            s.activePetUid = s.ownedPets[0]?.uid || null;
+            delete s.activePet;
+            delete s.pets;
+        }
+
+        // ── Version-Feld ──
+        s.version = 6;
+
+        // ── Pflichtfelder ──
+        if (typeof s.coins !== "number") s.coins = 0;
+        if (!s.inventory || typeof s.inventory !== "object") {
+            s.inventory = structuredClone(DEFAULT_SAVE.inventory);
+        } else {
+            const inv = DEFAULT_SAVE.inventory;
+            Object.keys(inv).forEach(k => {
+                if (typeof s.inventory[k] !== "number") s.inventory[k] = inv[k];
+            });
+        }
+        if (!s.dailyTasks || !Array.isArray(s.dailyTasks.tasks)) {
+            s.dailyTasks = { lastReset: null, tasks: [] };
+        }
+        if (!s.lastUpdate) s.lastUpdate = Date.now();
+
+        return s;
+    }
+
+    // ====================================
+    // GEDANKENBLASEN
+    // ====================================
+
+    function getPetThought(def, pet, favoriteFood) {
+        if (favoriteFood) return "💭 Das esse ich besonders gerne!";
+        if (pet.hunger    < 25) return pick(def.thoughts.hungry);
+        if (pet.energy    < 25) return pick(def.thoughts.tired);
+        if (pet.happiness < 25) return pick(def.thoughts.lonely);
+        return pick(def.thoughts.happy);
+    }
+
+    // ====================================
+    // FÜTTERN
     // ====================================
 
     function getFeedInfo() {
-
-        const def    = PET_DEFINITIONS[save.activePet];
+        const def    = getActiveDef();
+        const pet    = getActivePet();
+        if (!def || !pet) return null;
         const favKey = def.favoriteFood;
 
         if (save.inventory[favKey] > 0) {
-            return {
-                key:        favKey,
-                emoji:      def.favoriteFoodEmoji,
-                name:       def.favoriteFoodName,
-                hungerGain: 30,
-                isFavorite: true,
-                count:      save.inventory[favKey]
-            };
+            return { key: favKey, emoji: def.favoriteFoodEmoji, name: def.favoriteFoodName,
+                     hungerGain: 30, isFavorite: true, count: save.inventory[favKey] };
         }
-
         if (save.inventory.kibble > 0) {
-            return {
-                key:        "kibble",
-                emoji:      "🥣",
-                name:       "Trockenfutter",
-                hungerGain: 20,
-                isFavorite: false,
-                count:      save.inventory.kibble
-            };
+            return { key: "kibble", emoji: "🥣", name: "Trockenfutter",
+                     hungerGain: 20, isFavorite: false, count: save.inventory.kibble };
         }
-
-        return null; // Kein Futter vorhanden
-
+        return null;
     }
 
     // ====================================
@@ -275,24 +386,22 @@
     // ====================================
 
     function applyOfflineProgress() {
-
         const now          = Date.now();
         const elapsedHours = (now - save.lastUpdate) / 3600000;
-
         if (elapsedHours <= 0) return;
 
-        Object.entries(save.pets).forEach(([id, pet]) => {
-            const def   = PET_DEFINITIONS[id];
-            const hMult = def ? def.hungerDecayMultiplier : 1;
+        save.ownedPets.forEach(pet => {
+            const def  = PET_DEFINITIONS[pet.species];
+            const pers = getPersonality(pet);
+            const hMult = def ? pers.applyHungerDecay(def.hungerDecayMultiplier) : 1;
 
             pet.hunger    = clamp(pet.hunger    - elapsedHours * 2 * hMult);
             pet.energy    = clamp(pet.energy    - elapsedHours * 1);
-            pet.happiness = clamp(pet.happiness - elapsedHours * 1);
+            pet.happiness = clamp(pers.applyHappDecay(pet.happiness - elapsedHours * 1));
         });
 
         save.lastUpdate = now;
         saveData();
-
     }
 
     // ====================================
@@ -302,22 +411,15 @@
     function generateDailyTasks() {
         save.dailyTasks.lastReset = Date.now();
         save.dailyTasks.tasks = TASK_DEFINITIONS.map(d => ({
-            id:        d.id,
-            text:      d.text,
-            reward:    d.reward,
-            completed: false
+            id: d.id, text: d.text, reward: d.reward, completed: false
         }));
     }
 
     function checkDailyReset() {
         const today     = new Date().toDateString();
         const lastReset = save.dailyTasks.lastReset
-            ? new Date(save.dailyTasks.lastReset).toDateString()
-            : null;
-        if (lastReset !== today) {
-            generateDailyTasks();
-            saveData();
-        }
+            ? new Date(save.dailyTasks.lastReset).toDateString() : null;
+        if (lastReset !== today) { generateDailyTasks(); saveData(); }
     }
 
     function completeTask(id) {
@@ -333,85 +435,83 @@
     // ====================================
 
     function petPet() {
-        const pet = getPetState(save.activePet);
-        pet.happiness = clamp(pet.happiness + 5);
+        const pet  = getActivePet();
+        const pers = getPersonality(pet);
+        pet.happiness = clamp(pet.happiness + pers.applyPet(5));
         completeTask("pet");
-        saveData();
-        render();
+        saveData(); render();
     }
 
     function feedPet() {
         const feedInfo = getFeedInfo();
         if (!feedInfo) return;
-
-        const pet = getPetState(save.activePet);
-        pet.hunger = clamp(pet.hunger + feedInfo.hungerGain);
+        const pet  = getActivePet();
+        const pers = getPersonality(pet);
+        const gain = feedInfo.hungerGain + (pers.id === "glutton" ? 5 : 0);
+        pet.hunger = clamp(pet.hunger + gain);
         pet.energy = clamp(pet.energy + 5);
         save.inventory[feedInfo.key] -= 1;
-
-        if (feedInfo.isFavorite) {
-            showFavoriteThought = true;
-        }
-
+        if (feedInfo.isFavorite) showFavoriteThought = true;
         completeTask("feed");
-        saveData();
-        render();
+        saveData(); render();
     }
 
     function playPet() {
-        const pet = getPetState(save.activePet);
-        if (pet.energy < PLAY_ENERGY_COST) return;
-
-        const def     = PET_DEFINITIONS[save.activePet];
+        const pet  = getActivePet();
+        const def  = getActiveDef();
+        const pers = getPersonality(pet);
+        const cost = PLAY_ENERGY_COST + pers.playCostExtra;
+        if (pet.energy < cost) return;
         const hasBall = save.inventory.toyBall > 0;
-        const bonus   = hasBall ? def.playHappinessBall : def.playHappinessBase;
-
-        pet.happiness = clamp(pet.happiness + bonus);
-        pet.energy    = clamp(pet.energy    - 10);
-
+        const base    = hasBall ? def.playHappinessBall : def.playHappinessBase;
+        pet.happiness = clamp(pet.happiness + pers.applyPlay(base));
+        pet.energy    = clamp(pet.energy - cost);
         completeTask("play");
-        saveData();
-        render();
+        saveData(); render();
     }
 
     function sleepPet() {
-        const pet = getPetState(save.activePet);
-        pet.energy = clamp(pet.energy + 25);
-        saveData();
-        render();
-    }
-
-    function selectPet(id) {
-        save.activePet = id;
-        saveData();
-        render();
+        const pet  = getActivePet();
+        const pers = getPersonality(pet);
+        const gain = pers.id === "lazy" ? 30 : 25;
+        pet.energy = clamp(pet.energy + gain);
+        saveData(); render();
     }
 
     function buyItem(key) {
         const item = SHOP_ITEMS.find(i => i.key === key);
-        if (!item) return;
-        if (save.coins < item.price) return;
+        if (!item || save.coins < item.price) return;
         save.coins -= item.price;
         save.inventory[key] = (save.inventory[key] || 0) + 1;
-        saveData();
-        render();
+        saveData(); render();
+    }
+
+    function buyPet(species, name) {
+        const isFirst = save.ownedPets.length === 0;
+        const cost    = isFirst ? STARTER_PET_COST : EXTRA_PET_COST;
+        if (save.coins < cost) return;
+        save.coins -= cost;
+        addPet(species, name);
+        uiState = "game";
+        pendingSpecies = null;
+        saveData(); render();
     }
 
     // ====================================
-    // ECHTZEIT-SYSTEM
+    // TICK
     // ====================================
 
     function tick() {
-        Object.entries(save.pets).forEach(([id, pet]) => {
-            const def   = PET_DEFINITIONS[id];
-            const hMult = def ? def.hungerDecayMultiplier : 1;
+        save.ownedPets.forEach(pet => {
+            const def  = PET_DEFINITIONS[pet.species];
+            const pers = getPersonality(pet);
+            const hMult = def ? pers.applyHungerDecay(def.hungerDecayMultiplier) : 1;
             pet.hunger    = clamp(pet.hunger    - 1 * hMult);
             pet.energy    = clamp(pet.energy    - 0.5);
-            pet.happiness = clamp(pet.happiness - 0.5);
+            pet.happiness = clamp(pers.applyHappDecay(pet.happiness - 0.5));
         });
         save.lastUpdate = Date.now();
-        saveData();
-        render();
+        saveData(); render();
     }
 
     function startTickTimer() {
@@ -420,41 +520,196 @@
     }
 
     function stopTickTimer() {
-        if (tickIntervalId !== null) {
-            clearInterval(tickIntervalId);
-            tickIntervalId = null;
-        }
+        if (tickIntervalId !== null) { clearInterval(tickIntervalId); tickIntervalId = null; }
     }
 
     // ====================================
-    // RENDER
+    // RENDER: ONBOARDING
+    // ====================================
+
+    function renderOnboarding() {
+        root.innerHTML = `
+<div class="ch-root ch-onboarding">
+  <div class="ch-ob-box">
+    <div class="ch-ob-title">🏠 Willkommen in Cozy Home!</div>
+    <div class="ch-ob-sub">Wähle dein erstes Haustier – es ist kostenlos.</div>
+    <div class="ch-ob-species-grid">
+      ${Object.values(PET_DEFINITIONS).map(d => `
+      <button class="ch-ob-species-btn" data-species="${d.id}">
+        ${petImgTag(d.id, "default", "ch-ob-species-img", d.name)}
+        <div class="ch-ob-species-name">${d.name}</div>
+        <div class="ch-ob-species-desc">${d.description}</div>
+      </button>`).join('')}
+    </div>
+  </div>
+</div>`;
+
+        root.querySelectorAll(".ch-ob-species-btn[data-species]").forEach(btn => {
+            btn.onclick = () => {
+                pendingSpecies = btn.dataset.species;
+                uiState = "name-pet";
+                renderNamePet();
+            };
+        });
+    }
+
+    // ====================================
+    // RENDER: NAME-PET SCREEN
+    // ====================================
+
+    function renderNamePet() {
+        const def  = PET_DEFINITIONS[pendingSpecies];
+        const isFirst = save.ownedPets.length === 0;
+        const cost    = isFirst ? STARTER_PET_COST : EXTRA_PET_COST;
+
+        root.innerHTML = `
+<div class="ch-root ch-onboarding">
+  <div class="ch-ob-box">
+    <div class="ch-ob-title">${def.name} benennen</div>
+    <div class="ch-ob-pet-preview">
+      ${petImgTag(pendingSpecies, "default", "ch-ob-preview-img", def.name)}
+    </div>
+    <div class="ch-ob-sub">Wie soll dein ${def.name} heißen?</div>
+    <div class="ch-ob-name-row">
+      <input class="ch-ob-name-input" id="ch-name-input" type="text"
+             placeholder="${getRandomName(pendingSpecies)}" maxlength="20">
+      <button class="ch-ob-random-btn" id="ch-random-name">🎲</button>
+    </div>
+    <div class="ch-ob-actions">
+      <button class="ch-ob-back-btn" id="ch-name-back">← Zurück</button>
+      <button class="ch-ob-confirm-btn" id="ch-name-confirm">
+        ${cost > 0 ? `🪙 ${cost} · ` : ''}Bestätigen ✓
+      </button>
+    </div>
+    ${cost > 0 && save.coins < cost
+      ? `<div class="ch-ob-warn">Nicht genug Münzen (🪙 ${save.coins} / ${cost})</div>`
+      : ''}
+  </div>
+</div>`;
+
+        const input   = root.querySelector("#ch-name-input");
+        const confirm = root.querySelector("#ch-name-confirm");
+        const back    = root.querySelector("#ch-name-back");
+        const random  = root.querySelector("#ch-random-name");
+
+        random.onclick = () => { input.value = getRandomName(pendingSpecies); };
+
+        back.onclick = () => {
+            if (save.ownedPets.length === 0) {
+                uiState = "onboarding";
+                renderOnboarding();
+            } else {
+                uiState = "buy-pet";
+                renderBuyPet();
+            }
+        };
+
+        confirm.onclick = () => {
+            const name = input.value.trim() || getRandomName(pendingSpecies);
+            const isFirst2 = save.ownedPets.length === 0;
+            const cost2    = isFirst2 ? STARTER_PET_COST : EXTRA_PET_COST;
+            if (save.coins < cost2) return;
+            buyPet(pendingSpecies, name);
+        };
+    }
+
+    // ====================================
+    // RENDER: BUY-PET SCREEN (Pet-Shop)
+    // ====================================
+
+    function renderBuyPet() {
+        root.innerHTML = `
+<div class="ch-root ch-onboarding">
+  <div class="ch-ob-box">
+    <div class="ch-ob-title">🐾 Haustiershop</div>
+    <div class="ch-ob-sub">Wähle ein neues Haustier – 🪙 ${EXTRA_PET_COST} Münzen</div>
+    <div class="ch-ob-sub ch-ob-coins">Dein Guthaben: 🪙 ${save.coins}</div>
+    <div class="ch-ob-species-grid">
+      ${Object.values(PET_DEFINITIONS).map(d => `
+      <button class="ch-ob-species-btn ${save.coins < EXTRA_PET_COST ? 'disabled' : ''}"
+              data-species="${d.id}">
+        ${petImgTag(d.id, "default", "ch-ob-species-img", d.name)}
+        <div class="ch-ob-species-name">${d.name}</div>
+        <div class="ch-ob-species-desc">${d.description}</div>
+      </button>`).join('')}
+    </div>
+    <div class="ch-ob-actions">
+      <button class="ch-ob-back-btn" id="ch-shop-back">← Zurück</button>
+    </div>
+  </div>
+</div>`;
+
+        root.querySelectorAll(".ch-ob-species-btn[data-species]:not(.disabled)").forEach(btn => {
+            btn.onclick = () => {
+                pendingSpecies = btn.dataset.species;
+                uiState = "name-pet";
+                renderNamePet();
+            };
+        });
+
+        root.querySelector("#ch-shop-back").onclick = () => {
+            uiState = "game";
+            render();
+        };
+    }
+
+    // ====================================
+    // RENDER: HAUPTSPIEL
     // ====================================
 
     function render() {
 
-        const def        = PET_DEFINITIONS[save.activePet];
-        const pet        = getPetState(save.activePet);
-        const warnings   = getWarnings(pet);
-        const canPlay    = pet.energy >= PLAY_ENERGY_COST;
-        const feedInfo   = getFeedInfo();
-        const noFood     = !feedInfo;
-        const tasks      = save.dailyTasks.tasks;
-        const hasBall    = save.inventory.toyBall > 0;
+        // Kein Haustier → Onboarding
+        if (save.ownedPets.length === 0) {
+            uiState = "onboarding";
+            renderOnboarding();
+            return;
+        }
 
-        // Bildzustand bestimmen (via pets.js – vollautomatisch)
+        // Sonderfälle UI-State
+        if (uiState === "onboarding")  { renderOnboarding(); return; }
+        if (uiState === "buy-pet")     { renderBuyPet();     return; }
+        if (uiState === "name-pet")    { renderNamePet();    return; }
+
+        const pet  = getActivePet();
+        const def  = getActiveDef();
+        if (!pet || !def) { renderOnboarding(); return; }
+
+        const pers     = getPersonality(pet);
+        const warnings = getWarnings(pet);
+        const cost     = PLAY_ENERGY_COST + pers.playCostExtra;
+        const canPlay  = pet.energy >= cost;
+        const feedInfo = getFeedInfo();
+        const noFood   = !feedInfo;
+        const tasks    = save.dailyTasks.tasks;
+        const hasBall  = save.inventory.toyBall > 0;
+        const base     = hasBall ? def.playHappinessBall : def.playHappinessBase;
+        const playBonus = pers.applyPlay(base);
+
         const petImgState = getPetImageState(pet);
 
-        // Lieblingsessen-Gedanke: einmal lesen, dann zurücksetzen
+        // Debug-Logging (auf false setzen um zu deaktivieren)
+        if (false) {
+            console.log(
+                "[CozyHome] Emotion:", petImgState,
+                "| Hunger:", Math.round(pet.hunger),
+                "| Energy:", Math.round(pet.energy),
+                "| Happiness:", Math.round(pet.happiness)
+            );
+            const _def2 = PET_DEFINITIONS[pet.species];
+            if (_def2) {
+                const _src = getPetImageSrc(pet.species, petImgState);
+                const _fb  = getPetImageFallback(pet.species);
+                console.log("[CozyHome] Asset gesucht:", _src);
+                console.log("[CozyHome] Fallback wäre:", _fb);
+            }
+        }
+
         const useFavoriteThought = showFavoriteThought;
         showFavoriteThought = false;
-
         const thought = getPetThought(def, pet, useFavoriteThought);
 
-        const playBonus    = hasBall ? def.playHappinessBall : def.playHappinessBase;
-        const unlockedPets = getUnlockedPets();
-
-        // Accordion-Zustand aus DOM erhalten (damit er durch render() nicht verloren geht)
-        const openPanel = root.querySelector('.ch-acc-body:not(.hidden)')?.dataset.panel || null;
+        const openPanel = root.querySelector?.('.ch-acc-body:not(.hidden)')?.dataset.panel || null;
 
         root.innerHTML = `
 <div class="ch-root">
@@ -464,15 +719,24 @@
     <div class="ch-col-pets">
       <div class="ch-pets-label">Haustiere</div>
       <div class="ch-pets-list">
-        ${unlockedPets.map(p => `
-        <button class="ch-pet-btn ${save.activePet === p.id ? 'active' : ''}" data-id="${p.id}">
-          ${petImgTag(p.id, "default", "ch-pet-btn-img", p.name)}
+        ${save.ownedPets.map(p => {
+            const pDef = PET_DEFINITIONS[p.species];
+            return `
+        <button class="ch-pet-btn ${p.uid === save.activePetUid ? 'active' : ''}" data-uid="${p.uid}">
+          ${petImgTag(p.species, "default", "ch-pet-btn-img", p.name)}
           <div class="ch-pet-btn-info">
             <div class="ch-pet-btn-name">${p.name}</div>
-            <div class="ch-pet-btn-mood">${getMood(save.pets[p.id])}</div>
+            <div class="ch-pet-btn-mood">${getMood(p)}</div>
           </div>
-        </button>`).join('')}
-        ${Array.from({length: 4}).map(() => `
+        </button>`;
+        }).join('')}
+        <button class="ch-pet-btn ch-pet-add" id="ch-add-pet-btn">
+          <div class="ch-pet-btn-lock">➕</div>
+          <div class="ch-pet-btn-info">
+            <div class="ch-pet-btn-name">Neues Tier</div>
+          </div>
+        </button>
+        ${Array.from({length: Math.max(0, 3 - save.ownedPets.length)}).map(() => `
         <div class="ch-pet-btn locked">
           <div class="ch-pet-btn-lock">🔒</div>
           <div class="ch-pet-btn-info">
@@ -482,28 +746,29 @@
       </div>
     </div>
 
-    <!-- ── SP2: ZIMMER + INFO ── -->
+    <!-- ── SP2: ZIMMER + STECKBRIEF ── -->
     <div class="ch-col-main">
-
       <div class="ch-room">
         <img class="ch-room-bg" src="games/cozy-home/assets/backgrounds/room.png" alt="Zimmer">
         <div class="ch-bubble">${thought}</div>
-        ${petImgTag(save.activePet, petImgState, "ch-room-pet", def.name)}
+        ${petImgTag(pet.species, petImgState, "ch-room-pet", pet.name)}
       </div>
 
       <div class="ch-profile">
-        <div class="ch-profile-title">Steckbrief</div>
+        <div class="ch-profile-title">Steckbrief · ${pet.name}</div>
         <div class="ch-profile-body">
           <div class="ch-profile-data">
             <div class="ch-profile-row"><span class="ch-pl">🐾 Art</span><span class="ch-pv">${def.species}</span></div>
+            <div class="ch-profile-row"><span class="ch-pl">✨ Persönlichkeit</span><span class="ch-pv">${pers.emoji} ${pers.name}</span></div>
             <div class="ch-profile-row"><span class="ch-pl">🍽️ Lieblingsessen</span><span class="ch-pv">${def.favoriteFoodEmoji} ${def.favoriteFoodName}</span></div>
             <div class="ch-profile-row"><span class="ch-pl">🎯 Lieblingsaktivität</span><span class="ch-pv">${def.favoriteActivity}</span></div>
-            <div class="ch-profile-row"><span class="ch-pl">⭐ Eigenschaft</span><span class="ch-pv">${def.traits}</span></div>
           </div>
-          <div class="ch-profile-desc">${def.description}</div>
+          <div class="ch-profile-desc">
+            <div>${def.description}</div>
+            <div class="ch-profile-pers-hint">${pers.emoji} <em>${pers.description}</em></div>
+          </div>
         </div>
       </div>
-
     </div>
 
     <!-- ── SP3: STATUS + AKTIONEN + AUFGABEN ── -->
@@ -526,31 +791,33 @@
           <div class="ch-stat-row"><span>❤️ Happiness</span><span>${Math.round(pet.happiness)} / 100</span></div>
           <div class="ch-bar"><div class="ch-bar-fill happiness" style="width:${pet.happiness}%"></div></div>
         </div>
-        ${warnings.length > 0 ? `<div class="ch-warnings">${warnings.map(w => `<div class="ch-warning">${w}</div>`).join('')}</div>` : ''}
+        ${warnings.length > 0
+          ? `<div class="ch-warnings">${warnings.map(w => `<div class="ch-warning">${w}</div>`).join('')}</div>`
+          : ''}
       </div>
 
       <div class="ch-card">
         <div class="ch-card-title">Aktionen</div>
         <div class="ch-actions">
-          <button id="cozy-pet-btn" class="ch-action ${'' }">
+          <button id="cozy-pet-btn" class="ch-action">
             <div class="ch-action-icon">❤️</div>
             <div class="ch-action-label">Streicheln</div>
-            <div class="ch-action-sub">+5 Happiness</div>
+            <div class="ch-action-sub">+${pers.applyPet(5)} Happiness</div>
           </button>
           <button id="cozy-feed-btn" class="ch-action ${noFood ? 'disabled' : ''}">
             <div class="ch-action-icon">${noFood ? '🍽️' : feedInfo.emoji}</div>
             <div class="ch-action-label">Füttern</div>
-            <div class="ch-action-sub">${noFood ? 'Kein Futter' : `+${feedInfo.hungerGain} (${feedInfo.count})`}</div>
+            <div class="ch-action-sub">${noFood ? 'Kein Futter' : `+${feedInfo.hungerGain}${pers.id === 'glutton' ? '+5' : ''} (${feedInfo.count})`}</div>
           </button>
           <button id="cozy-play-btn" class="ch-action ${!canPlay ? 'disabled' : ''}">
             <div class="ch-action-icon">🎮</div>
             <div class="ch-action-label">Spielen</div>
-            <div class="ch-action-sub">${!canPlay ? 'Zu wenig Energie' : `+${playBonus}`}</div>
+            <div class="ch-action-sub">${!canPlay ? 'Zu wenig Energie' : `+${playBonus} Happiness`}</div>
           </button>
           <button id="cozy-sleep-btn" class="ch-action">
             <div class="ch-action-icon">💤</div>
             <div class="ch-action-label">Schlafen</div>
-            <div class="ch-action-sub">+25 Energie</div>
+            <div class="ch-action-sub">+${pers.id === 'lazy' ? 30 : 25} Energie</div>
           </button>
         </div>
       </div>
@@ -569,7 +836,7 @@
 
     </div>
 
-    <!-- ── SP4: INVENTAR + SHOP ── -->
+    <!-- ── SP4: INVENTAR + SHOP + PET-SHOP ── -->
     <div class="ch-col-inv">
 
       <div class="ch-accordion">
@@ -599,7 +866,31 @@
             return `<div class="ch-shop-row">
               <span>${item.emoji} ${item.name}</span>
               <span class="ch-shop-price">🪙${item.price}</span>
-              <button class="ch-buy-btn ${canBuy ? '' : 'disabled'}" data-buy="${item.key}">${canBuy ? 'Kaufen' : '—'}</button>
+              <button class="ch-buy-btn ${canBuy ? '' : 'disabled'}" data-buy="${item.key}">
+                ${canBuy ? 'Kaufen' : '—'}
+              </button>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+
+      <div class="ch-accordion">
+        <button class="ch-acc-row ${openPanel === 'petshop' ? 'open' : ''}" data-target="petshop">
+          <span>🐾 Haustiershop</span>
+          <span class="ch-chevron">${openPanel === 'petshop' ? '▲' : '▼'}</span>
+        </button>
+        <div class="ch-acc-body ${openPanel === 'petshop' ? '' : 'hidden'}" data-panel="petshop">
+          <div class="ch-inv-row" style="font-size:.75rem;color:var(--text-3);padding-bottom:4px;">
+            Preis: 🪙 ${EXTRA_PET_COST} · Guthaben: 🪙 ${save.coins}
+          </div>
+          ${Object.values(PET_DEFINITIONS).map(d => {
+            const canBuy = save.coins >= EXTRA_PET_COST;
+            return `<div class="ch-shop-row">
+              ${petImgTag(d.id, "default", "ch-petshop-img", d.name)}
+              <span class="ch-shop-item-name">${d.name}</span>
+              <button class="ch-buy-btn ${canBuy ? '' : 'disabled'}" data-buypet="${d.id}">
+                ${canBuy ? 'Kaufen' : '—'}
+              </button>
             </div>`;
           }).join('')}
         </div>
@@ -611,18 +902,20 @@
 </div>
 `;
 
-
-        // ====================================
-        // EVENT LISTENER
-        // ====================================
+        // ── EVENT LISTENER ──
 
         root.querySelector("#cozy-pet-btn").onclick   = petPet;
-        root.querySelector("#cozy-feed-btn").onclick  = noFood  ? null : feedPet;
+        root.querySelector("#cozy-feed-btn").onclick  = noFood   ? null : feedPet;
         root.querySelector("#cozy-sleep-btn").onclick = sleepPet;
-        root.querySelector("#cozy-play-btn").onclick  = canPlay ? playPet : null;
+        root.querySelector("#cozy-play-btn").onclick  = canPlay  ? playPet : null;
 
-        root.querySelectorAll(".ch-pet-btn[data-id]").forEach(btn => {
-            btn.onclick = () => selectPet(btn.dataset.id);
+        root.querySelector("#ch-add-pet-btn").onclick = () => {
+            uiState = "buy-pet";
+            renderBuyPet();
+        };
+
+        root.querySelectorAll(".ch-pet-btn[data-uid]").forEach(btn => {
+            btn.onclick = () => selectPet(btn.dataset.uid);
         });
 
         root.querySelectorAll(".ch-buy-btn[data-buy]").forEach(btn => {
@@ -632,19 +925,26 @@
             btn.onclick = save.coins >= item.price ? () => buyItem(key) : null;
         });
 
+        root.querySelectorAll(".ch-buy-btn[data-buypet]").forEach(btn => {
+            const species = btn.dataset.buypet;
+            btn.onclick = save.coins >= EXTRA_PET_COST ? () => {
+                pendingSpecies = species;
+                uiState = "name-pet";
+                renderNamePet();
+            } : null;
+        });
+
         // Accordion
         root.querySelectorAll(".ch-acc-row[data-target]").forEach(btn => {
             btn.onclick = () => {
                 const target = btn.dataset.target;
                 const body   = root.querySelector(`.ch-acc-body[data-panel="${target}"]`);
                 const isOpen = !body.classList.contains('hidden');
-
                 root.querySelectorAll('.ch-acc-body').forEach(b => b.classList.add('hidden'));
                 root.querySelectorAll('.ch-acc-row').forEach(b => {
                     b.classList.remove('open');
                     b.querySelector('.ch-chevron').textContent = '▼';
                 });
-
                 if (!isOpen) {
                     body.classList.remove('hidden');
                     btn.classList.add('open');
@@ -652,9 +952,7 @@
                 }
             };
         });
-
     }
-
 
     // ====================================
     // LIFECYCLE
@@ -665,19 +963,15 @@
         applyOfflineProgress();
         checkDailyReset();
         root = container;
+        uiState = save.ownedPets.length === 0 ? "onboarding" : "game";
         render();
         startTickTimer();
     }
 
     function destroy() {
         stopTickTimer();
-        if (root) {
-            root.innerHTML = "";
-            root = null;
-        }
+        if (root) { root.innerHTML = ""; root = null; }
     }
-
-    // ====================================
 
     window.registerGame({
         id: "cozy-home",

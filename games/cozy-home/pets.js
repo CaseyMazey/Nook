@@ -76,20 +76,24 @@ function getPetImageState(petState) {
 
     const { energy, hunger, happiness } = petState;
 
+    // Schwellenwerte sind identisch mit getWarnings() in cozy-home.js
+    // damit UI-Status und Emotionsbild immer übereinstimmen.
+
     // 1. Absolut erschöpft → schläft
     if (energy < 10)  return "sleep";
 
-    // 2. Sehr müde → tired (schläfrig, aber noch wach)
+    // 2. Alles gleichzeitig kritisch → traurig
+    // MUSS vor "tired" stehen, damit sad erreichbar ist wenn energy < 25
+    if (happiness < 25 && hunger < 25 && energy < 25) return "sad";
+
+    // 3. Sehr müde → tired
     if (energy < 25)  return "tired";
 
-    // 3. Alles kritisch gleichzeitig → traurig
-    if (happiness < 20 && hunger < 20 && energy < 20) return "sad";
-
     // 4. Hunger dominant
-    if (hunger < 20)  return "hungry";
+    if (hunger < 25)  return "hungry";
 
-    // 5. Einsamkeit
-    if (happiness < 20) return "lonely";
+    // 5. Einsamkeit / unglücklich
+    if (happiness < 25) return "lonely";
 
     // 6. Energie hoch, aber unglücklich → gelangweilt
     if (energy > 80 && happiness < 50) return "bored";
