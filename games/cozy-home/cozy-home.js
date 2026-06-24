@@ -1,7 +1,8 @@
 // =========================
-// COZY HOME - PHASE 4
-// Mehr Haustiere, Persönlichkeiten,
-// Inventar & Shop
+// COZY HOME - PHASE 5
+// Ordnerbasiertes Asset-System
+// Bildlogik via petImgTag() / getPetImageState() in pets.js
+// Cross-Game-Haustiere via assets.basePath in PET_DEFINITIONS
 // =========================
 
 (function () {
@@ -9,6 +10,7 @@
     const SAVE_KEY        = "cozyHomeData";
     const TICK_INTERVAL_MS = 60000;
     const SLEEP_THRESHOLD  = 20;
+    const PLAY_ENERGY_COST = 10;   // Spielen kostet 10 Energie
 
 
     // ====================================
@@ -153,8 +155,11 @@
         } else {
             Object.keys(PET_DEFINITIONS).forEach(id => {
                 if (!s.pets[id]) {
+                    // Haustiere aus DEFAULT_SAVE gelten als freigeschaltet,
+                    // alle anderen (Cross-Game) starten gesperrt.
+                    const isDefault = Object.prototype.hasOwnProperty.call(DEFAULT_SAVE.pets, id);
                     s.pets[id] = {
-                        unlocked:  id === "cat" || id === "dog" || id === "mouse",
+                        unlocked:  isDefault,
                         hunger:    100,
                         energy:    100,
                         happiness: 100
@@ -355,7 +360,7 @@
 
     function playPet() {
         const pet = getPetState(save.activePet);
-        if (isSleepy(pet)) return;
+        if (pet.energy < PLAY_ENERGY_COST) return;
 
         const def     = PET_DEFINITIONS[save.activePet];
         const hasBall = save.inventory.toyBall > 0;
@@ -427,14 +432,17 @@
 
     function render() {
 
-        const def      = PET_DEFINITIONS[save.activePet];
-        const pet      = getPetState(save.activePet);
-        const warnings = getWarnings(pet);
-        const sleepy   = isSleepy(pet);
-        const feedInfo = getFeedInfo();
-        const noFood   = !feedInfo;
-        const tasks    = save.dailyTasks.tasks;
-        const hasBall  = save.inventory.toyBall > 0;
+        const def        = PET_DEFINITIONS[save.activePet];
+        const pet        = getPetState(save.activePet);
+        const warnings   = getWarnings(pet);
+        const canPlay    = pet.energy >= PLAY_ENERGY_COST;
+        const feedInfo   = getFeedInfo();
+        const noFood     = !feedInfo;
+        const tasks      = save.dailyTasks.tasks;
+        const hasBall    = save.inventory.toyBall > 0;
+
+        // Bildzustand bestimmen (via pets.js – vollautomatisch)
+        const petImgState = getPetImageState(pet);
 
         // Lieblingsessen-Gedanke: einmal lesen, dann zurücksetzen
         const useFavoriteThought = showFavoriteThought;
@@ -458,7 +466,7 @@
       <div class="ch-pets-list">
         ${unlockedPets.map(p => `
         <button class="ch-pet-btn ${save.activePet === p.id ? 'active' : ''}" data-id="${p.id}">
-          <img src="${p.image}" class="ch-pet-btn-img" alt="${p.name}">
+          ${petImgTag(p.id, "default", "ch-pet-btn-img", p.name)}
           <div class="ch-pet-btn-info">
             <div class="ch-pet-btn-name">${p.name}</div>
             <div class="ch-pet-btn-mood">${getMood(save.pets[p.id])}</div>
@@ -478,9 +486,9 @@
     <div class="ch-col-main">
 
       <div class="ch-room">
-        <img class="ch-room-bg" src="games/cozy-home/assets/room.png" alt="Zimmer">
+        <img class="ch-room-bg" src="games/cozy-home/assets/backgrounds/room.png" alt="Zimmer">
         <div class="ch-bubble">${thought}</div>
-        <img class="ch-room-pet" src="${def.image}" alt="${def.name}">
+        ${petImgTag(save.activePet, petImgState, "ch-room-pet", def.name)}
       </div>
 
       <div class="ch-profile">
@@ -534,10 +542,10 @@
             <div class="ch-action-label">Füttern</div>
             <div class="ch-action-sub">${noFood ? 'Kein Futter' : `+${feedInfo.hungerGain} (${feedInfo.count})`}</div>
           </button>
-          <button id="cozy-play-btn" class="ch-action ${sleepy ? 'disabled' : ''}">
+          <button id="cozy-play-btn" class="ch-action ${!canPlay ? 'disabled' : ''}">
             <div class="ch-action-icon">🎮</div>
             <div class="ch-action-label">Spielen</div>
-            <div class="ch-action-sub">${sleepy ? 'Zu müde' : `+${playBonus}`}</div>
+            <div class="ch-action-sub">${!canPlay ? 'Zu wenig Energie' : `+${playBonus}`}</div>
           </button>
           <button id="cozy-sleep-btn" class="ch-action">
             <div class="ch-action-icon">💤</div>
@@ -611,7 +619,7 @@
         root.querySelector("#cozy-pet-btn").onclick   = petPet;
         root.querySelector("#cozy-feed-btn").onclick  = noFood  ? null : feedPet;
         root.querySelector("#cozy-sleep-btn").onclick = sleepPet;
-        root.querySelector("#cozy-play-btn").onclick  = sleepy  ? null : playPet;
+        root.querySelector("#cozy-play-btn").onclick  = canPlay ? playPet : null;
 
         root.querySelectorAll(".ch-pet-btn[data-id]").forEach(btn => {
             btn.onclick = () => selectPet(btn.dataset.id);

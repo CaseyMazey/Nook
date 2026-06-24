@@ -131,10 +131,10 @@
 
 .ch-room-pet {
     position: absolute;
-    /* skaliert mit Zimmer: nie kleiner als 140px, nie größer als 260px */
-    width: clamp(140px, 36%, 260px);
+    /* skaliert mit Zimmer: nie kleiner als 240px, nie größer als 446px (~20% größer) */
+    width: clamp(240px, 62%, 446px);
     left: 50%;
-    bottom: 0;
+    bottom: -15px;
     transform: translateX(-50%);
     image-rendering: auto;
     animation: chPetFloat 4s ease-in-out infinite;
