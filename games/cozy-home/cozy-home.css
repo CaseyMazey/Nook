@@ -116,25 +116,25 @@
     flex-shrink: 0;
     border-radius: 22px;
     overflow: hidden;
-    background: #fff8f1;
+    /* kein background: das Jahreszeitenbild füllt den Hintergrund */
 }
 
 .ch-room-bg {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
-    object-fit: contain;
-    object-position: center bottom;
+    object-fit: fill;          /* füllt Container exakt, Alpha-Kanal bleibt erhalten */
     display: block;
-    background: #fff8f1;
     border-radius: 22px;
+    z-index: 2;
 }
 
 .ch-room-pet {
     position: absolute;
-    /* skaliert mit Zimmer: nie kleiner als 170px, nie größer als 310px (~20% größer) */
     width: clamp(240px, 62%, 446px);
     left: 50%;
-    bottom: -12px;
+    bottom: -15px;
     transform: translateX(-50%);
     image-rendering: auto;
     animation: chPetFloat 4s ease-in-out infinite;
@@ -603,3 +603,67 @@
     line-height: 1.4;
     font-style: normal;
 }
+
+/* ══════════════════════════════
+   ENVIRONMENT – Zimmer-Schichtung
+   ══════════════════════════════
+
+   Schichten (z-index):
+     1  ch-room-season   ← Jahreszeitenbild hinter Fenster
+     2  ch-room-bg       ← Zimmer mit transparentem Fenster
+     3  ch-room-weather  ← Wetter-Overlay (halbtransparent)
+     4  ch-bubble        ← Gedankenblase
+     5  ch-room-pet      ← Haustier
+*/
+
+/* .ch-room: Basis für alle absolut positionierten Ebenen */
+/* (position:relative, overflow:hidden bereits gesetzt) */
+
+/* Ebene 1: Jahreszeit */
+.ch-room-season {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center center;
+    display: block;
+    border-radius: 22px;
+    z-index: 1;
+}
+
+/* Ebene 3: Wetter-Overlay */
+.ch-room-weather {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 3;
+    border-radius: 22px;
+    /* Bild-Variante: object-fit: cover; opacity: 0.6; */
+}
+
+/* Ebene 4: Gedankenblase (bereits z-index:2 → auf 4 erhöhen) */
+.ch-bubble { z-index: 4; }
+
+/* Ebene 5: Haustier */
+.ch-room-pet { z-index: 5; }
+
+/* ══════════════════════════════
+   TAGESZEIT-FILTER
+   Subtile CSS-Filter auf .ch-room je nach Tageszeit.
+   Nur das Gesamtbild wird gefiltert, nicht das UI.
+   ══════════════════════════════ */
+
+/* Morgen: leicht wärmer, goldener Schimmer */
+.ch-room.env-morning { filter: brightness(1.05) sepia(0.12) saturate(1.1); }
+
+/* Mittag: neutral, volle Helligkeit */
+.ch-room.env-midday  { filter: brightness(1.0) saturate(1.0); }
+
+/* Abend: etwas dunkler, warm-orange */
+.ch-room.env-evening { filter: brightness(0.88) sepia(0.22) saturate(1.15) hue-rotate(-8deg); }
+
+/* Nacht: dunkler, leicht bläulich */
+.ch-room.env-night   { filter: brightness(0.62) saturate(0.75) hue-rotate(20deg); }

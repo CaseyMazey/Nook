@@ -19,6 +19,97 @@
     const EXTRA_PET_COST   = 100;  // weitere Tiere im Shop
 
     // ====================================
+    // ENVIRONMENT – Jahreszeit, Tageszeit, Wetter
+    // ====================================
+    //
+    // Zentrale Datenquelle für alle Umgebungsinformationen.
+    // Neue Jahreszeiten, Tageszeiten oder Wetterarten hier ergänzen.
+    // Kein weiterer Code muss angepasst werden.
+    //
+    // ORDNERSTRUKTUR:
+    //   games/cozy-home/assets/backgrounds/
+    //   ├── room.png              ← Zimmer (transparentes Fenster)
+    //   ├── spring.png            ← hinter dem Fenster sichtbar
+    //   ├── summer.png
+    //   ├── fall.png
+    //   └── winter.png
+    //   weather/                  ← Overlay-PNGs, noch nicht vorhanden
+    //   ├── rain.png              ← später: halbtransparentes Overlay
+    //   ├── snow.png
+    //   └── ...
+    // ====================================
+
+    const ENV_BACKGROUNDS_PATH = "games/cozy-home/assets/backgrounds/";
+    const ENV_WEATHER_PATH     = "games/cozy-home/assets/weather/";
+
+    // Jahreszeiten-Definition
+    // month: 0-basiert (0 = Januar)
+    const ENV_SEASONS = [
+        { id: "spring", name: "Frühling", months: [2, 3, 4],  file: "spring.png" },
+        { id: "summer", name: "Sommer",   months: [5, 6, 7],  file: "summer.png" },
+        { id: "fall",   name: "Herbst",   months: [8, 9, 10], file: "fall.png"   },
+        { id: "winter", name: "Winter",   months: [11, 0, 1], file: "winter.png" }
+    ];
+
+    // Tageszeit-Definition
+    // cssClass: wird auf .ch-room gesetzt (CSS-Filter-Klassen unten)
+    const ENV_TIMES_OF_DAY = [
+        { id: "morning", name: "Morgen", startH:  6, endH: 11, cssClass: "env-morning" },
+        { id: "midday",  name: "Mittag", startH: 11, endH: 18, cssClass: "env-midday"  },
+        { id: "evening", name: "Abend",  startH: 18, endH: 22, cssClass: "env-evening" },
+        { id: "night",   name: "Nacht",  startH: 22, endH:  6, cssClass: "env-night"   }
+    ];
+
+    // Wetter-Definition
+    // overlayFile: null = kein Overlay; später z.B. "rain.png"
+    const ENV_WEATHERS = {
+        clear:  { id: "clear",  name: "Klar",    overlayFile: null },
+        rain:   { id: "rain",   name: "Regen",   overlayFile: "rain.png"   },
+        snow:   { id: "snow",   name: "Schnee",  overlayFile: "snow.png"   },
+        fog:    { id: "fog",    name: "Nebel",   overlayFile: "fog.png"    },
+        storm:  { id: "storm",  name: "Gewitter",overlayFile: "storm.png"  }
+    };
+
+    // ── Berechnungsfunktionen ──
+
+    function getEnvSeason() {
+        const month = new Date().getMonth(); // 0-basiert
+        return ENV_SEASONS.find(s => s.months.includes(month)) || ENV_SEASONS[0];
+    }
+
+    function getEnvTimeOfDay() {
+        const hour = new Date().getHours();
+        return ENV_TIMES_OF_DAY.find(t => {
+            if (t.startH < t.endH) return hour >= t.startH && hour < t.endH;
+            return hour >= t.startH || hour < t.endH; // Mitternachts-Überlauf (Nacht)
+        }) || ENV_TIMES_OF_DAY[1];
+    }
+
+    function getEnvWeather() {
+        // Aktuell: immer "clear".
+        // Später: hier Wetter-API, Benutzerwahl oder
+        // zufällige Wetterlogik einhängen.
+        return ENV_WEATHERS.clear;
+    }
+
+    // Zentraler Snapshot – einmal pro render() berechnet
+    function getEnvironment() {
+        const season    = getEnvSeason();
+        const timeOfDay = getEnvTimeOfDay();
+        const weather   = getEnvWeather();
+        return {
+            season,
+            timeOfDay,
+            weather,
+            seasonBgSrc:     ENV_BACKGROUNDS_PATH + season.file,
+            weatherOverlaySrc: weather.overlayFile
+                ? ENV_WEATHER_PATH + weather.overlayFile
+                : null
+        };
+    }
+
+
+    // ====================================
     // PERSÖNLICHKEITEN
     // Vollständig datengetrieben.
     // Neue Persönlichkeiten hier ergänzen.
@@ -675,6 +766,8 @@
         const def  = getActiveDef();
         if (!pet || !def) { renderOnboarding(); return; }
 
+        const env = getEnvironment();
+
         const pers     = getPersonality(pet);
         const warnings = getWarnings(pet);
         const cost     = PLAY_ENERGY_COST + pers.playCostExtra;
@@ -748,9 +841,18 @@
 
     <!-- ── SP2: ZIMMER + STECKBRIEF ── -->
     <div class="ch-col-main">
-      <div class="ch-room">
+      <div class="ch-room ${env.timeOfDay.cssClass}">
+        <!-- Ebene 1: Jahreszeit hinter dem Fenster -->
+        <img class="ch-room-season" src="${env.seasonBgSrc}" alt="${env.season.name}">
+        <!-- Ebene 2: Zimmer mit transparentem Fenster -->
         <img class="ch-room-bg" src="games/cozy-home/assets/backgrounds/room.png" alt="Zimmer">
+        <!-- Ebene 3: Wetter-Overlay (null = unsichtbar) -->
+        ${env.weatherOverlaySrc
+          ? `<img class="ch-room-weather" src="${env.weatherOverlaySrc}" alt="${env.weather.name}">`
+          : '<div class="ch-room-weather" aria-hidden="true"></div>'}
+        <!-- Ebene 4: Gedankenblase -->
         <div class="ch-bubble">${thought}</div>
+        <!-- Ebene 5: Haustier -->
         ${petImgTag(pet.species, petImgState, "ch-room-pet", pet.name)}
       </div>
 
