@@ -200,25 +200,45 @@
     };
 
     // ====================================
-    // INVENTAR & SHOP
+    // FOOD_REGISTRY
+    //
+    // Zentrale Futterquelle. Kein Futter-Hardcode sonst im Code.
+    // Neues Futter: Eintrag hier ergänzen + Startwert in DEFAULT_SAVE.inventory.
+    //
+    // hungerRestore  → Hunger-Gewinn (Basis, vor Vorlieben-Modifier)
+    // energyRestore  → Energie-Gewinn beim Fressen
     // ====================================
 
-    const INVENTORY_DISPLAY = [
-        { key: "kibble",  name: "Trockenfutter", emoji: "🥣" },
-        { key: "meat",    name: "Fleisch",        emoji: "🍖" },
-        { key: "fish",    name: "Fisch",          emoji: "🐟" },
-        { key: "cheese",  name: "Käse",           emoji: "🧀" },
-        { key: "snack",   name: "Leckerli",       emoji: "🍪" },
-        { key: "toyBall", name: "Ball",           emoji: "⚽" }
-    ];
+    const FOOD_REGISTRY = {
+        kibble:  { key: "kibble",  name: "Trockenfutter", emoji: "🥣", price: 1,  hungerRestore: 20, energyRestore: 2 },
+        meat:    { key: "meat",    name: "Fleisch",        emoji: "🍖", price: 5,  hungerRestore: 28, energyRestore: 5 },
+        fish:    { key: "fish",    name: "Fisch",          emoji: "🐟", price: 5,  hungerRestore: 25, energyRestore: 4 },
+        cheese:  { key: "cheese",  name: "Käse",           emoji: "🧀", price: 5,  hungerRestore: 22, energyRestore: 3 },
+        snack:   { key: "snack",   name: "Leckerli",       emoji: "🍪", price: 10, hungerRestore: 15, energyRestore: 1 },
+        carrot:  { key: "carrot",  name: "Karotte",        emoji: "🥕", price: 2,  hungerRestore: 18, energyRestore: 2 },
+        egg:     { key: "egg",     name: "Ei",             emoji: "🥚", price: 3,  hungerRestore: 20, energyRestore: 3 }
+    };
 
+    // ====================================
+    // TOY_REGISTRY
+    //
+    // Zentrale Spielzeugquelle. Gleiche Architektur wie FOOD_REGISTRY.
+    // Neues Spielzeug: Eintrag hier + Startwert in DEFAULT_SAVE.inventory.
+    //
+    // happinessBonus → Happiness-Gewinn (Basis, vor Vorlieben-Modifier)
+    // energyCost     → Energie-Verbrauch beim Spielen (zusätzlich zu PLAY_ENERGY_COST)
+    // ====================================
+
+    const TOY_REGISTRY = {
+        toyBall:     { key: "toyBall",     name: "Ball",         emoji: "⚽", price: 50, happinessBonus: 5, energyCost: 0 },
+        toyFeather:  { key: "toyFeather",  name: "Federstab",    emoji: "🪶", price: 40, happinessBonus: 4, energyCost: 0 },
+        toyLaser:    { key: "toyLaser",    name: "Laserpointer", emoji: "🔴", price: 35, happinessBonus: 6, energyCost: 2 }
+    };
+
+    // Abgeleitete Shop-Liste: alle Futter + alle Spielzeuge
     const SHOP_ITEMS = [
-        { key: "kibble",  name: "Trockenfutter", emoji: "🥣", price: 1  },
-        { key: "meat",    name: "Fleisch",        emoji: "🍖", price: 5  },
-        { key: "fish",    name: "Fisch",          emoji: "🐟", price: 5  },
-        { key: "cheese",  name: "Käse",           emoji: "🧀", price: 5  },
-        { key: "snack",   name: "Leckerli",       emoji: "🍪", price: 10 },
-        { key: "toyBall", name: "Ball",           emoji: "⚽", price: 50 }
+        ...Object.values(FOOD_REGISTRY),
+        ...Object.values(TOY_REGISTRY)
     ];
 
     // ====================================
@@ -236,18 +256,23 @@
     // ====================================
 
     const DEFAULT_SAVE = {
-        version:       6,
+        version:       7,
         activePetUid:  null,         // uid der aktiven Instanz
         lastUpdate:    Date.now(),
         coins:         0,
         ownedPets:     [],           // Array von Pet-Instanzen
+        // Inventar: alle Food- und Toy-Keys mit Startwerten
         inventory: {
-            kibble:  10,
-            meat:    5,
-            fish:    5,
-            cheese:  5,
-            snack:   5,
-            toyBall: 1
+            kibble:     10,
+            meat:       5,
+            fish:       5,
+            cheese:     5,
+            snack:      5,
+            carrot:     3,
+            egg:        3,
+            toyBall:    1,
+            toyFeather: 0,
+            toyLaser:   0
         },
         dailyTasks: {
             lastReset: null,
@@ -262,7 +287,7 @@
     let root              = null;
     let save              = null;
     let tickIntervalId    = null;
-    let showFavoriteThought = false;
+    let showReactionThought = null;   // "love" | "like" | "dislike" | null
 
     // Onboarding / Pet-Kauf UI-State
     let uiState = "game";     // "game" | "onboarding" | "buy-pet" | "name-pet"
@@ -326,6 +351,39 @@
     // PET-INSTANZ ERSTELLEN
     // ====================================
 
+    // ====================================
+    // VORLIEBEN-SYSTEM
+    //
+    // Beim Kauf erhält jede Instanz zufällige Vorlieben für Futter + Spielzeug.
+    // "discovered" speichert, welche Items das Tier bereits bekommen hat.
+    // Nur entdeckte Vorlieben werden im Steckbrief angezeigt.
+    //
+    // preference-Level:
+    //   "love"    → Liebling   (+Hunger+Bonus-Happiness)
+    //   "like"    → Mag es     (+Hunger+kleiner Bonus)
+    //   "neutral" → Neutral    (+Hunger, kein Bonus)
+    //   "dislike" → Mag nicht  (+Hunger, -Happiness)
+    // ====================================
+
+    function buildRandomPreferences(registry) {
+        const keys = Object.keys(registry);
+        // Mischen (Fisher-Yates)
+        const shuffled = [...keys];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        // Zuweisung: 1 love, 2 like, Rest aufgeteilt neutral/dislike
+        const result = {};
+        shuffled.forEach((key, idx) => {
+            if (idx === 0)                       result[key] = "love";
+            else if (idx <= 2)                   result[key] = "like";
+            else if (idx <= Math.floor(keys.length * 0.6)) result[key] = "neutral";
+            else                                 result[key] = "dislike";
+        });
+        return result;
+    }
+
     function createPetInstance(species, name, personalityId) {
         return {
             uid:         uid(),
@@ -334,7 +392,13 @@
             personality: personalityId || randomPersonality(),
             hunger:      100,
             energy:      100,
-            happiness:   100
+            happiness:   100,
+            // Zufällige Vorlieben – beim Kauf einmalig festgelegt
+            foodPrefs: buildRandomPreferences(FOOD_REGISTRY),
+            toyPrefs:  buildRandomPreferences(TOY_REGISTRY),
+            // Entdeckte Items: { foodKey: true, ... }
+            // Nur entdeckte Items werden im Steckbrief angezeigt
+            discovered: { food: {}, toy: {} }
         };
     }
 
@@ -379,7 +443,7 @@
 
     // ====================================
     // MIGRATION
-    // Phase ≤5 → Phase 6
+    // Phase ≤5 → Phase 6 → Phase 7
     // ====================================
 
     function migrateSave(s) {
@@ -390,36 +454,37 @@
             s.ownedPets = [];
 
             if (s.pets && typeof s.pets === "object") {
-                // Alle freigeschalteten alten Pets als Instanzen migrieren
                 Object.entries(s.pets).forEach(([species, petState]) => {
                     if (!petState.unlocked && species !== (s.activePet)) return;
-                    const instance = createPetInstance(
-                        species,
-                        getRandomName(species),
-                        "balanced"
-                    );
-                    // Werte übernehmen
+                    const instance = createPetInstance(species, getRandomName(species), "balanced");
                     instance.hunger    = petState.hunger    ?? 100;
                     instance.energy    = petState.energy    ?? 100;
                     instance.happiness = petState.happiness ?? 100;
-
-                    // Aktives Pet aus altem Save als erstes setzen
-                    if (species === s.activePet) {
-                        s.ownedPets.unshift(instance);
-                    } else {
-                        s.ownedPets.push(instance);
-                    }
+                    if (species === s.activePet) s.ownedPets.unshift(instance);
+                    else                         s.ownedPets.push(instance);
                 });
             }
 
-            // activePetUid setzen
             s.activePetUid = s.ownedPets[0]?.uid || null;
             delete s.activePet;
             delete s.pets;
         }
 
+        // ── Phase 7: Vorlieben-System ──
+        // Bestehende Pet-Instanzen ohne foodPrefs/toyPrefs/discovered nachrüsten
+        if (Array.isArray(s.ownedPets)) {
+            s.ownedPets.forEach(pet => {
+                if (!pet.foodPrefs)  pet.foodPrefs  = buildRandomPreferences(FOOD_REGISTRY);
+                if (!pet.toyPrefs)   pet.toyPrefs   = buildRandomPreferences(TOY_REGISTRY);
+                if (!pet.discovered) pet.discovered = { food: {}, toy: {} };
+                // Unterfelder nachrüsten falls teilweise vorhanden
+                if (!pet.discovered.food) pet.discovered.food = {};
+                if (!pet.discovered.toy)  pet.discovered.toy  = {};
+            });
+        }
+
         // ── Version-Feld ──
-        s.version = 6;
+        s.version = 7;
 
         // ── Pflichtfelder ──
         if (typeof s.coins !== "number") s.coins = 0;
@@ -427,6 +492,7 @@
             s.inventory = structuredClone(DEFAULT_SAVE.inventory);
         } else {
             const inv = DEFAULT_SAVE.inventory;
+            // Neue Keys mit Startwert ergänzen, vorhandene nicht überschreiben
             Object.keys(inv).forEach(k => {
                 if (typeof s.inventory[k] !== "number") s.inventory[k] = inv[k];
             });
@@ -443,8 +509,11 @@
     // GEDANKENBLASEN
     // ====================================
 
-    function getPetThought(def, pet, favoriteFood) {
-        if (favoriteFood) return "💭 Das esse ich besonders gerne!";
+    function getPetThought(def, pet, reactionKey) {
+        // reactionKey: "love" | "like" | "neutral" | "dislike" | null
+        if (reactionKey === "love")    return "💭 Das esse ich besonders gerne!";
+        if (reactionKey === "like")    return "💭 Lecker!";
+        if (reactionKey === "dislike") return "💭 Das mag ich eigentlich nicht...";
         if (pet.hunger    < 25) return pick(def.thoughts.hungry);
         if (pet.energy    < 25) return pick(def.thoughts.tired);
         if (pet.happiness < 25) return pick(def.thoughts.lonely);
@@ -452,24 +521,42 @@
     }
 
     // ====================================
-    // FÜTTERN
+    // VORLIEBEN-HELPER
     // ====================================
 
-    function getFeedInfo() {
-        const def    = getActiveDef();
-        const pet    = getActivePet();
-        if (!def || !pet) return null;
-        const favKey = def.favoriteFood;
+    // Gibt den Preference-Level für ein Item zurück.
+    // Unbekannte Items → "neutral" (kein Crash, keine Spoiler).
+    function getPreferenceLevel(prefMap, key) {
+        return (prefMap && prefMap[key]) || "neutral";
+    }
 
-        if (save.inventory[favKey] > 0) {
-            return { key: favKey, emoji: def.favoriteFoodEmoji, name: def.favoriteFoodName,
-                     hungerGain: 30, isFavorite: true, count: save.inventory[favKey] };
+    // Berechnet Vorlieben-Modifier für Happiness.
+    // Rückgabe: { hungerBonus, happinessBonus, happinessPenalty }
+    function getPrefEffect(level, baseHunger) {
+        switch (level) {
+            case "love":    return { hunger: baseHunger + 10, happinessDelta: +12 };
+            case "like":    return { hunger: baseHunger,      happinessDelta: +5  };
+            case "neutral": return { hunger: baseHunger,      happinessDelta:  0  };
+            case "dislike": return { hunger: baseHunger - 5,  happinessDelta: -8  };
+            default:        return { hunger: baseHunger,      happinessDelta:  0  };
         }
-        if (save.inventory.kibble > 0) {
-            return { key: "kibble", emoji: "🥣", name: "Trockenfutter",
-                     hungerGain: 20, isFavorite: false, count: save.inventory.kibble };
-        }
-        return null;
+    }
+
+    // Markiert ein Item als entdeckt (food oder toy).
+    function markDiscovered(pet, category, key) {
+        if (!pet.discovered)           pet.discovered = { food: {}, toy: {} };
+        if (!pet.discovered[category]) pet.discovered[category] = {};
+        pet.discovered[category][key] = true;
+    }
+
+    // Gibt verfügbare Futter aus dem Inventar zurück (count > 0).
+    function getAvailableFood() {
+        return Object.values(FOOD_REGISTRY).filter(f => (save.inventory[f.key] || 0) > 0);
+    }
+
+    // Gibt verfügbare Spielzeuge aus dem Inventar zurück (count > 0).
+    function getAvailableToys() {
+        return Object.values(TOY_REGISTRY).filter(t => (save.inventory[t.key] || 0) > 0);
     }
 
     // ====================================
@@ -533,30 +620,54 @@
         saveData(); render();
     }
 
-    function feedPet() {
-        const feedInfo = getFeedInfo();
-        if (!feedInfo) return;
-        const pet  = getActivePet();
-        const pers = getPersonality(pet);
-        const gain = feedInfo.hungerGain + (pers.id === "glutton" ? 5 : 0);
-        pet.hunger = clamp(pet.hunger + gain);
-        pet.energy = clamp(pet.energy + 5);
-        save.inventory[feedInfo.key] -= 1;
-        if (feedInfo.isFavorite) showFavoriteThought = true;
+    function feedPet(foodKey) {
+        if (!foodKey) return;
+        const food = FOOD_REGISTRY[foodKey];
+        if (!food || (save.inventory[food.key] || 0) <= 0) return;
+
+        const pet   = getActivePet();
+        const pers  = getPersonality(pet);
+        const level = getPreferenceLevel(pet.foodPrefs, foodKey);
+        const eff   = getPrefEffect(level, food.hungerRestore);
+
+        const hungerGain = Math.max(0, eff.hunger) + (pers.id === "glutton" ? 5 : 0);
+        pet.hunger    = clamp(pet.hunger    + hungerGain);
+        pet.energy    = clamp(pet.energy    + food.energyRestore);
+        pet.happiness = clamp(pet.happiness + eff.happinessDelta);
+
+        // Vorliebe entdecken
+        markDiscovered(pet, "food", foodKey);
+        // Gedankenblase
+        showReactionThought = level !== "neutral" ? level : null;
+
+        save.inventory[food.key] -= 1;
         completeTask("feed");
         saveData(); render();
     }
 
-    function playPet() {
+    function playPet(toyKey) {
         const pet  = getActivePet();
         const def  = getActiveDef();
         const pers = getPersonality(pet);
         const cost = PLAY_ENERGY_COST + pers.playCostExtra;
         if (pet.energy < cost) return;
-        const hasBall = save.inventory.toyBall > 0;
-        const base    = hasBall ? def.playHappinessBall : def.playHappinessBase;
-        pet.happiness = clamp(pet.happiness + pers.applyPlay(base));
-        pet.energy    = clamp(pet.energy - cost);
+
+        // Spielzeug: wenn kein toyKey → kein Spielzeug → Basis-Bonus
+        const toy      = toyKey ? TOY_REGISTRY[toyKey] : null;
+        const toyInInv = toy && (save.inventory[toy.key] || 0) > 0;
+        const level    = toyInInv ? getPreferenceLevel(pet.toyPrefs, toyKey) : "neutral";
+        const toyBase  = toyInInv ? (def.playHappinessBase + toy.happinessBonus) : def.playHappinessBase;
+        const eff      = getPrefEffect(level, 0);  // Hunger irrelevant für Spielzeug
+        const happGain = pers.applyPlay(toyBase) + eff.happinessDelta;
+
+        pet.happiness = clamp(pet.happiness + happGain);
+        pet.energy    = clamp(pet.energy - cost - (toy?.energyCost || 0));
+
+        // Vorliebe entdecken
+        if (toyInInv) {
+            markDiscovered(pet, "toy", toyKey);
+            showReactionThought = level !== "neutral" ? level : null;
+        }
         completeTask("play");
         saveData(); render();
     }
@@ -777,13 +888,14 @@
         const pers     = getPersonality(pet);
         const warnings = getWarnings(pet);
         const cost     = PLAY_ENERGY_COST + pers.playCostExtra;
-        const canPlay  = pet.energy >= cost;
-        const feedInfo = getFeedInfo();
-        const noFood   = !feedInfo;
-        const tasks    = save.dailyTasks.tasks;
-        const hasBall  = save.inventory.toyBall > 0;
-        const base     = hasBall ? def.playHappinessBall : def.playHappinessBase;
-        const playBonus = pers.applyPlay(base);
+        const canPlay    = pet.energy >= cost;
+        const availFood  = getAvailableFood();
+        const availToys  = getAvailableToys();
+        const noFood     = availFood.length === 0;
+        const noToy      = availToys.length === 0;
+        const tasks      = save.dailyTasks.tasks;
+        // Basis-Spielbonus ohne Spielzeug (Vergleichswert für UI)
+        const playBonus  = pers.applyPlay(def.playHappinessBase);
 
         const petImgState = getPetImageState(pet);
 
@@ -804,9 +916,9 @@
             }
         }
 
-        const useFavoriteThought = showFavoriteThought;
-        showFavoriteThought = false;
-        const thought = getPetThought(def, pet, useFavoriteThought);
+        const useReactionThought = showReactionThought;
+        showReactionThought = null;
+        const thought = getPetThought(def, pet, useReactionThought);
 
         const openPanel = root.querySelector?.('.ch-acc-body:not(.hidden)')?.dataset.panel || null;
 
@@ -868,7 +980,26 @@
           <div class="ch-profile-data">
             <div class="ch-profile-row"><span class="ch-pl">🐾 Art</span><span class="ch-pv">${def.species}</span></div>
             <div class="ch-profile-row"><span class="ch-pl">✨ Persönlichkeit</span><span class="ch-pv">${pers.emoji} ${pers.name}</span></div>
-            <div class="ch-profile-row"><span class="ch-pl">🍽️ Lieblingsessen</span><span class="ch-pv">${def.favoriteFoodEmoji} ${def.favoriteFoodName}</span></div>
+            ${(() => {
+              // Vorlieben-Steckbrief generisch aus FOOD_REGISTRY und TOY_REGISTRY
+              // Jede Kategorie: love, like, dislike (neutral weggelassen = Rauschen)
+              function prefRows(registry, prefMap, discoveredMap, label, emoji) {
+                const loved    = Object.keys(registry).filter(k => discoveredMap?.[k] && prefMap?.[k] === 'love');
+                const liked    = Object.keys(registry).filter(k => discoveredMap?.[k] && prefMap?.[k] === 'like');
+                const disliked = Object.keys(registry).filter(k => discoveredMap?.[k] && prefMap?.[k] === 'dislike');
+                const anyKnown = loved.length || liked.length || disliked.length;
+                const fmt      = (keys) => keys.map(k => registry[k].emoji + ' ' + registry[k].name).join(', ');
+                return `
+                  <div class="ch-profile-row"><span class="ch-pl">${emoji} ${label} ❤️</span>
+                    <span class="ch-pv ch-pv-love">${loved.length    ? fmt(loved)    : '???'}</span></div>
+                  <div class="ch-profile-row"><span class="ch-pl">${emoji} ${label} 🙂</span>
+                    <span class="ch-pv">${liked.length    ? fmt(liked)    : '???'}</span></div>
+                  <div class="ch-profile-row"><span class="ch-pl">${emoji} ${label} 🙁</span>
+                    <span class="ch-pv ch-pv-dislike">${disliked.length ? fmt(disliked) : '???'}</span></div>`;
+              }
+              return prefRows(FOOD_REGISTRY, pet.foodPrefs, pet.discovered?.food, 'Essen', '🍽️')
+                   + prefRows(TOY_REGISTRY,  pet.toyPrefs,  pet.discovered?.toy,  'Spielzeug', '🎮');
+            })()}
             <div class="ch-profile-row"><span class="ch-pl">🎯 Lieblingsaktivität</span><span class="ch-pv">${def.favoriteActivity}</span></div>
           </div>
           <div class="ch-profile-desc">
@@ -912,16 +1043,64 @@
             <div class="ch-action-label">Streicheln</div>
             <div class="ch-action-sub">+${pers.applyPet(5)} Happiness</div>
           </button>
-          <button id="cozy-feed-btn" class="ch-action ${noFood ? 'disabled' : ''}">
-            <div class="ch-action-icon">${noFood ? '🍽️' : feedInfo.emoji}</div>
-            <div class="ch-action-label">Füttern</div>
-            <div class="ch-action-sub">${noFood ? 'Kein Futter' : `+${feedInfo.hungerGain}${pers.id === 'glutton' ? '+5' : ''} (${feedInfo.count})`}</div>
-          </button>
-          <button id="cozy-play-btn" class="ch-action ${!canPlay ? 'disabled' : ''}">
-            <div class="ch-action-icon">🎮</div>
-            <div class="ch-action-label">Spielen</div>
-            <div class="ch-action-sub">${!canPlay ? 'Zu wenig Energie' : `+${playBonus} Happiness`}</div>
-          </button>
+          <!-- Füttern-Dropdown -->
+          <div class="ch-action-wrap ${noFood ? 'disabled' : ''}" id="ch-feed-wrap">
+            <button class="ch-action ch-action-main ${noFood ? 'disabled' : ''}" id="cozy-feed-btn" ${noFood ? 'disabled' : ''}>
+              <div class="ch-action-icon">🍽️</div>
+              <div class="ch-action-label">Füttern ${noFood ? '' : '▾'}</div>
+              <div class="ch-action-sub">${noFood ? 'Kein Futter' : `${availFood.length} verfügbar`}</div>
+            </button>
+            ${!noFood ? `<div class="ch-action-dropdown" id="ch-feed-dropdown">
+              ${availFood.map(f => {
+                const level     = getPreferenceLevel(pet.foodPrefs, f.key);
+                const known     = pet.discovered?.food?.[f.key];
+                const eff       = getPrefEffect(level, f.hungerRestore);
+                const levelEmoji = known
+                  ? (level === 'love' ? '❤️' : level === 'like' ? '🙂' : level === 'dislike' ? '🙁' : '😐')
+                  : '';
+                const subLabel  = known
+                  ? `+${Math.max(0,eff.hunger)}🍖 ${eff.happinessDelta > 0 ? '+'+eff.happinessDelta+'❤️' : eff.happinessDelta < 0 ? eff.happinessDelta+'❤️' : ''}`
+                  : '?';
+                return '<button class="ch-dropdown-item" data-feed="' + f.key + '">'
+                     + '<span class="ch-dd-emoji">' + f.emoji + '</span>'
+                     + '<span class="ch-dd-name">' + f.name + ' <span class="ch-dd-pref">' + levelEmoji + '</span></span>'
+                     + '<span class="ch-dd-count">x' + save.inventory[f.key] + '</span>'
+                     + '<span class="ch-dd-sub">' + subLabel + '</span>'
+                     + '</button>';
+              }).join('')}
+            </div>` : ''}
+          </div>
+          <!-- Spielen-Dropdown -->
+          <div class="ch-action-wrap ${!canPlay ? 'disabled' : ''}" id="ch-play-wrap">
+            <button class="ch-action ch-action-main ${!canPlay ? 'disabled' : ''}" id="cozy-play-btn" ${!canPlay ? 'disabled' : ''}>
+              <div class="ch-action-icon">🎮</div>
+              <div class="ch-action-label">Spielen ${canPlay && !noToy ? '▾' : ''}</div>
+              <div class="ch-action-sub">${!canPlay ? 'Zu wenig Energie' : `+${playBonus} Happiness`}</div>
+            </button>
+            ${canPlay && !noToy ? `<div class="ch-action-dropdown" id="ch-play-dropdown">
+              ${availToys.map(t => {
+                const level      = getPreferenceLevel(pet.toyPrefs, t.key);
+                const known      = pet.discovered?.toy?.[t.key];
+                const levelEmoji = known
+                  ? (level === 'love' ? '❤️' : level === 'like' ? '🙂' : level === 'dislike' ? '🙁' : '😐')
+                  : '';
+                const toyHappBonus = pers.applyPlay(def.playHappinessBase + t.happinessBonus) + getPrefEffect(level, 0).happinessDelta;
+                const subLabel   = known ? '+' + toyHappBonus + '❤️' : '?';
+                return '<button class="ch-dropdown-item" data-play="' + t.key + '">'
+                     + '<span class="ch-dd-emoji">' + t.emoji + '</span>'
+                     + '<span class="ch-dd-name">' + t.name + ' <span class="ch-dd-pref">' + levelEmoji + '</span></span>'
+                     + '<span class="ch-dd-count">x' + save.inventory[t.key] + '</span>'
+                     + '<span class="ch-dd-sub">' + subLabel + '</span>'
+                     + '</button>';
+              }).join('')}
+              <button class="ch-dropdown-item" data-play="__bare__">
+                <span class="ch-dd-emoji">🤸</span>
+                <span class="ch-dd-name">Ohne Spielzeug</span>
+                <span class="ch-dd-count"></span>
+                <span class="ch-dd-sub">+${playBonus}❤️</span>
+              </button>
+            </div>` : ''}
+          </div>
           <button id="cozy-sleep-btn" class="ch-action">
             <div class="ch-action-icon">💤</div>
             <div class="ch-action-label">Schlafen</div>
@@ -953,7 +1132,7 @@
           <span class="ch-chevron">${openPanel === 'inv' ? '▲' : '▼'}</span>
         </button>
         <div class="ch-acc-body ${openPanel === 'inv' ? '' : 'hidden'}" data-panel="inv">
-          ${INVENTORY_DISPLAY.map(item => {
+          ${[...Object.values(FOOD_REGISTRY), ...Object.values(TOY_REGISTRY)].map(item => {
             const count = save.inventory[item.key] || 0;
             return `<div class="ch-inv-row ${count === 0 ? 'empty' : ''}">
               <span>${item.emoji} ${item.name}</span>
@@ -1049,9 +1228,54 @@
         // ── EVENT LISTENER ──
 
         root.querySelector("#cozy-pet-btn").onclick   = petPet;
-        root.querySelector("#cozy-feed-btn").onclick  = noFood   ? null : feedPet;
         root.querySelector("#cozy-sleep-btn").onclick = sleepPet;
-        root.querySelector("#cozy-play-btn").onclick  = canPlay  ? playPet : null;
+
+        // ── Dropdown-Logik: Füttern ──
+        const feedBtn  = root.querySelector("#cozy-feed-btn");
+        const feedDrop = root.querySelector("#ch-feed-dropdown");
+        if (feedBtn && feedDrop) {
+            feedBtn.onclick = (e) => {
+                e.stopPropagation();
+                feedDrop.classList.toggle("open");
+                root.querySelector("#ch-play-dropdown")?.classList.remove("open");
+            };
+            feedDrop.querySelectorAll(".ch-dropdown-item[data-feed]").forEach(item => {
+                item.onclick = (e) => {
+                    e.stopPropagation();
+                    feedDrop.classList.remove("open");
+                    feedPet(item.dataset.feed);
+                };
+            });
+        }
+
+        // ── Dropdown-Logik: Spielen ──
+        const playBtn  = root.querySelector("#cozy-play-btn");
+        const playDrop = root.querySelector("#ch-play-dropdown");
+        if (playBtn && playDrop) {
+            playBtn.onclick = (e) => {
+                e.stopPropagation();
+                playDrop.classList.toggle("open");
+                feedDrop?.classList.remove("open");
+            };
+            playDrop.querySelectorAll(".ch-dropdown-item[data-play]").forEach(item => {
+                item.onclick = (e) => {
+                    e.stopPropagation();
+                    playDrop.classList.remove("open");
+                    const key = item.dataset.play;
+                    playPet(key === "__bare__" ? null : key);
+                };
+            });
+        } else if (playBtn && canPlay) {
+            // Kein Spielzeug → direkt ohne Spielzeug spielen
+            playBtn.onclick = () => playPet(null);
+        }
+
+        // Dropdown schließen bei Klick außerhalb
+        document.addEventListener("click", function closeDropdowns() {
+            root.querySelector("#ch-feed-dropdown")?.classList.remove("open");
+            root.querySelector("#ch-play-dropdown")?.classList.remove("open");
+            document.removeEventListener("click", closeDropdowns);
+        }, { once: false });
 
         root.querySelector("#ch-add-pet-btn").onclick = () => {
             uiState = "buy-pet";

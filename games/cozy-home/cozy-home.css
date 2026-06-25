@@ -213,6 +213,8 @@
 
 .ch-pl { color: var(--text-3); flex-shrink: 0; }
 .ch-pv { font-weight: 600; text-align: right; }
+.ch-pv-love    { color: #e07090; }
+.ch-pv-dislike { color: var(--text-3); font-style: italic; }
 
 .ch-profile-desc {
     font-size: .78rem;
@@ -320,6 +322,20 @@
 .ch-action-sub                { font-size: .62rem; color: var(--text-3); text-align: center; line-height: 1.2; }
 .ch-action.disabled           { cursor: not-allowed; opacity: .45; }
 .ch-action.disabled:hover     { transform: none; box-shadow: none; }
+
+/* ── Aktions-Dropdown ── */
+.ch-action-wrap { position: relative; }
+.ch-action-wrap.disabled .ch-action-main { cursor: not-allowed; opacity: .45; pointer-events: none; }
+.ch-action-main { width: 100%; }
+.ch-action-dropdown { position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); min-width: 200px; max-width: 240px; background: var(--surface, #fff); border: 1px solid rgba(0,0,0,.1); border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,.12); z-index: 50; overflow: hidden; display: none; flex-direction: column; }
+.ch-action-dropdown.open { display: flex; }
+.ch-dropdown-item { display: grid; grid-template-columns: 1.4rem 1fr auto auto; align-items: center; gap: 5px; padding: 7px 10px; background: none; border: none; cursor: pointer; font-size: .78rem; text-align: left; transition: background .1s; }
+.ch-dropdown-item:hover { background: rgba(0,0,0,.04); }
+.ch-dd-emoji  { font-size: .9rem; }
+.ch-dd-name   { font-weight: 600; color: var(--text); }
+.ch-dd-pref   { font-size: .7rem; }
+.ch-dd-count  { font-size: .68rem; color: var(--text-3); padding-right: 4px; }
+.ch-dd-sub    { font-size: .68rem; color: var(--text-3); white-space: nowrap; }
 
 .ch-tasks { display: flex; flex-direction: column; gap: 4px; }
 
