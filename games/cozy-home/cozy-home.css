@@ -71,15 +71,16 @@
     background: #fff8f1;
     border: 1.5px solid rgba(0,0,0,.07);
     border-radius: 14px;
-    padding: 9px 11px;
+    padding: 6px 11px 6px 6px;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 9px;
+    gap: 6px;
     transition: .15s;
     text-align: left;
     flex-shrink: 0;
     box-sizing: border-box;
+    overflow: visible;
 }
 
 .ch-pet-btn.active              { border: 2px solid #e595ad; background: #fff0f4; }
@@ -92,7 +93,7 @@
 }
 
 .ch-pet-btn-lock  { font-size: 1rem; flex-shrink: 0; width: 36px; text-align: center; }
-.ch-pet-btn-img   { width: 44px; height: 44px; object-fit: contain; flex-shrink: 0; }
+.ch-pet-btn-img   { width: 94px; height: 94px; min-width: 94px; object-fit: contain; flex-shrink: 0; border-radius: 0; background: transparent; display: block; margin: -14px -8px; }
 .ch-pet-btn-info  { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .ch-pet-btn-name  { font-size: .86rem; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ch-pet-btn-mood  { font-size: .72rem; color: var(--text-3); }
@@ -404,8 +405,8 @@
 .ch-shop-row {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 13px;
+    gap: 4px;
+    padding: 4px 13px 4px 8px;
     font-size: .8rem;
     transition: background .1s;
 }
@@ -413,6 +414,14 @@
 .ch-shop-row:hover  { background: rgba(0,0,0,.03); }
 .ch-shop-item-name  { flex: 1; }
 .ch-shop-price      { font-size: .75rem; color: #b07c20; font-weight: 700; flex-shrink: 0; }
+
+/* Cross-Game-Haustiere im Accordion-Shop */
+.ch-shop-section-label { font-size: .7rem; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: .04em; padding: 8px 13px 2px; }
+.ch-shop-row-cross { align-items: center; }
+.ch-shop-row-cross.locked { opacity: .65; }
+.ch-shop-item-info { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; }
+.ch-shop-item-source { font-size: .68rem; color: var(--text-3); }
+.ch-shop-item-unlock { font-size: .67rem; color: #c47a00; font-style: italic; white-space: normal; line-height: 1.3; }
 
 .ch-buy-btn {
     background: #e595ad;
@@ -501,7 +510,7 @@
 .ch-ob-species-btn:hover:not(.disabled) { border-color: #e595ad; background: #fff0f4; transform: translateY(-2px); }
 .ch-ob-species-btn.disabled { opacity: .45; cursor: not-allowed; }
 
-.ch-ob-species-img   { width: 80px; height: 80px; object-fit: contain; }
+.ch-ob-species-img   { width: 158px; height: 158px; object-fit: contain; border-radius: 0; background: transparent; display: block; margin: 0 auto; }
 .ch-ob-species-name  { font-size: .9rem; font-weight: 700; }
 .ch-ob-species-desc  { font-size: .73rem; color: var(--text-3); text-align: center; line-height: 1.4; }
 
@@ -586,7 +595,7 @@
 }
 
 /* Pet-Shop-Bild in Accordion */
-.ch-petshop-img { width: 32px; height: 32px; object-fit: contain; flex-shrink: 0; }
+.ch-petshop-img { width: 80px; height: 80px; min-width: 80px; object-fit: contain; flex-shrink: 0; border-radius: 0; background: transparent; display: block; margin: -12px -6px; }
 
 /* Neu-Tier-Button in SP1 */
 .ch-pet-add {

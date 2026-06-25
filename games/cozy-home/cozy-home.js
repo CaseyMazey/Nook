@@ -579,7 +579,9 @@
 
     function buyPet(species, name) {
         const isFirst = save.ownedPets.length === 0;
-        const cost    = isFirst ? STARTER_PET_COST : EXTRA_PET_COST;
+        const def     = PET_DEFINITIONS[species];
+        // Cross-Game-Tiere haben einen eigenen shopPrice; Standard: EXTRA_PET_COST
+        const cost    = isFirst ? STARTER_PET_COST : (def?.shopPrice ?? EXTRA_PET_COST);
         if (save.coins < cost) return;
         save.coins -= cost;
         addPet(species, name);
@@ -627,7 +629,7 @@
     <div class="ch-ob-species-grid">
       ${Object.values(PET_DEFINITIONS).map(d => `
       <button class="ch-ob-species-btn" data-species="${d.id}">
-        ${petImgTag(d.id, "default", "ch-ob-species-img", d.name)}
+        ${petIconTag(d.id, "ch-ob-species-img", d.name)}
         <div class="ch-ob-species-name">${d.name}</div>
         <div class="ch-ob-species-desc">${d.description}</div>
       </button>`).join('')}
@@ -651,7 +653,7 @@
     function renderNamePet() {
         const def  = PET_DEFINITIONS[pendingSpecies];
         const isFirst = save.ownedPets.length === 0;
-        const cost    = isFirst ? STARTER_PET_COST : EXTRA_PET_COST;
+        const cost    = isFirst ? STARTER_PET_COST : (def?.shopPrice ?? EXTRA_PET_COST);
 
         root.innerHTML = `
 <div class="ch-root ch-onboarding">
@@ -698,7 +700,8 @@
         confirm.onclick = () => {
             const name = input.value.trim() || getRandomName(pendingSpecies);
             const isFirst2 = save.ownedPets.length === 0;
-            const cost2    = isFirst2 ? STARTER_PET_COST : EXTRA_PET_COST;
+            const def2     = PET_DEFINITIONS[pendingSpecies];
+            const cost2    = isFirst2 ? STARTER_PET_COST : (def2?.shopPrice ?? EXTRA_PET_COST);
             if (save.coins < cost2) return;
             buyPet(pendingSpecies, name);
         };
@@ -706,9 +709,12 @@
 
     // ====================================
     // RENDER: BUY-PET SCREEN (Pet-Shop)
+    // Zeigt nur Standard-Haustiere (ohne sourceGame).
+    // Cross-Game-Haustiere erscheinen ausschließlich im Accordion-Shop.
     // ====================================
 
     function renderBuyPet() {
+        const standardPets = Object.values(PET_DEFINITIONS).filter(d => !d.sourceGame);
         root.innerHTML = `
 <div class="ch-root ch-onboarding">
   <div class="ch-ob-box">
@@ -716,10 +722,10 @@
     <div class="ch-ob-sub">Wähle ein neues Haustier – 🪙 ${EXTRA_PET_COST} Münzen</div>
     <div class="ch-ob-sub ch-ob-coins">Dein Guthaben: 🪙 ${save.coins}</div>
     <div class="ch-ob-species-grid">
-      ${Object.values(PET_DEFINITIONS).map(d => `
+      ${standardPets.map(d => `
       <button class="ch-ob-species-btn ${save.coins < EXTRA_PET_COST ? 'disabled' : ''}"
               data-species="${d.id}">
-        ${petImgTag(d.id, "default", "ch-ob-species-img", d.name)}
+        ${petIconTag(d.id, "ch-ob-species-img", d.name)}
         <div class="ch-ob-species-name">${d.name}</div>
         <div class="ch-ob-species-desc">${d.description}</div>
       </button>`).join('')}
@@ -816,7 +822,7 @@
             const pDef = PET_DEFINITIONS[p.species];
             return `
         <button class="ch-pet-btn ${p.uid === save.activePetUid ? 'active' : ''}" data-uid="${p.uid}">
-          ${petImgTag(p.species, "default", "ch-pet-btn-img", p.name)}
+          ${petIconTag(p.species, "ch-pet-btn-img", p.name)}
           <div class="ch-pet-btn-info">
             <div class="ch-pet-btn-name">${p.name}</div>
             <div class="ch-pet-btn-mood">${getMood(p)}</div>
@@ -983,18 +989,54 @@
         </button>
         <div class="ch-acc-body ${openPanel === 'petshop' ? '' : 'hidden'}" data-panel="petshop">
           <div class="ch-inv-row" style="font-size:.75rem;color:var(--text-3);padding-bottom:4px;">
-            Preis: 🪙 ${EXTRA_PET_COST} · Guthaben: 🪙 ${save.coins}
+            Guthaben: 🪙 ${save.coins}
           </div>
-          ${Object.values(PET_DEFINITIONS).map(d => {
-            const canBuy = save.coins >= EXTRA_PET_COST;
-            return `<div class="ch-shop-row">
-              ${petImgTag(d.id, "default", "ch-petshop-img", d.name)}
-              <span class="ch-shop-item-name">${d.name}</span>
-              <button class="ch-buy-btn ${canBuy ? '' : 'disabled'}" data-buypet="${d.id}">
-                ${canBuy ? 'Kaufen' : '—'}
-              </button>
-            </div>`;
-          }).join('')}
+          ${(() => {
+            const allPets      = Object.values(PET_DEFINITIONS);
+            const standardPets = allPets.filter(d => !d.sourceGame);
+            const crossPets    = allPets.filter(d =>  d.sourceGame);
+
+            const renderStandard = standardPets.map(d => {
+              const price  = d.shopPrice ?? EXTRA_PET_COST;
+              const canBuy = save.coins >= price;
+              return `<div class="ch-shop-row">
+                ${petIconTag(d.id, "ch-petshop-img", d.name)}
+                <span class="ch-shop-item-name">${d.name}</span>
+                <span class="ch-shop-price">🪙${price}</span>
+                <button class="ch-buy-btn ${canBuy ? '' : 'disabled'}" data-buypet="${d.id}">
+                  ${canBuy ? 'Kaufen' : '—'}
+                </button>
+              </div>`;
+            }).join('');
+
+            const renderCross = crossPets.map(d => {
+              const unlocked = checkUnlock(d.unlock);
+              const price    = d.shopPrice ?? EXTRA_PET_COST;
+              const canBuy   = unlocked && save.coins >= price;
+              const srcGame  = window.GameHub?.registry?.[d.sourceGame]?.title ?? d.sourceGame;
+              return `<div class="ch-shop-row ch-shop-row-cross ${unlocked ? '' : 'locked'}">
+                ${petIconTag(d.id, "ch-petshop-img", unlocked ? d.name : '???')}
+                <span class="ch-shop-item-info">
+                  <span class="ch-shop-item-name">${unlocked ? d.name : '???'}</span>
+                  <span class="ch-shop-item-source">Exklusiv aus ${srcGame}</span>
+                  ${!unlocked
+                    ? `<span class="ch-shop-item-unlock">${d.unlock?.description ?? ''}</span>`
+                    : ''
+                  }
+                </span>
+                ${unlocked ? `<span class="ch-shop-price">🪙${price}</span>` : ''}
+                <button class="ch-buy-btn ${canBuy ? '' : 'disabled'}" ${canBuy ? `data-buypet="${d.id}"` : ''}>
+                  ${canBuy ? 'Kaufen' : '—'}
+                </button>
+              </div>`;
+            }).join('');
+
+            const crossSection = crossPets.length > 0
+              ? `<div class="ch-shop-section-label">Exklusive Haustiere</div>${renderCross}`
+              : '';
+
+            return renderStandard + crossSection;
+          })()}
         </div>
       </div>
 
@@ -1029,7 +1071,9 @@
 
         root.querySelectorAll(".ch-buy-btn[data-buypet]").forEach(btn => {
             const species = btn.dataset.buypet;
-            btn.onclick = save.coins >= EXTRA_PET_COST ? () => {
+            const def     = PET_DEFINITIONS[species];
+            const price   = def?.shopPrice ?? EXTRA_PET_COST;
+            btn.onclick = (save.coins >= price && checkUnlock(def?.unlock)) ? () => {
                 pendingSpecies = species;
                 uiState = "name-pet";
                 renderNamePet();
@@ -1061,6 +1105,7 @@
     // ====================================
 
     function mount(container) {
+        collectCrossGamePets();   // Cross-Game-Haustiere aus allen Manifesten einsammeln
         save = loadSave();
         applyOfflineProgress();
         checkDailyReset();

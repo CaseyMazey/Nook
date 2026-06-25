@@ -36,24 +36,57 @@ window.registerGame({
     DB.set('gameHighscores', all);
   },
 
-  getPets() {
-    return [
-      {
-        id: 'slangel',
-        name: 'Schlängel',
-
-        sourceGame: 'snake',
-
-        image: 'games/snake/assets/slangel.png',
-
-        personality: 'Rollt sich gerne unter Decken ein.',
-
-        unlockCondition: {
-          type: 'highscore',
-          value: 500
-        }
+  // ────────────────────────────────────
+  // CROSS-GAME-HAUSTIERE
+  //
+  // Jedes Spiel definiert seine eigenen Haustiere hier vollständig.
+  // Cozy Home liest diese Daten und baut den Shop daraus.
+  // Kein Hardcode in Cozy Home – nur das Spiel kennt seine Assets.
+  //
+  // assets.basePath  → Ordner mit icon.png, default.png, sleep.png usw.
+  //                    Fehlende Bilder fallen automatisch auf default.png zurück.
+  //
+  // unlock           → Generische Freischaltbedingung.
+  //   type:            "highscore" | "gamesPlayed" | "achievement" | ...
+  //   target:          Spiel-ID, gegen die geprüft wird
+  //   value:           Schwellenwert
+  //   description:     Menschenlesbare Bedingung (wird im Shop angezeigt)
+  //
+  // shopPrice        → Coins-Preis nach dem Freischalten
+  // sourceGame       → Spiel-ID für "Exklusiv aus …"-Anzeige
+  // ────────────────────────────────────
+  pets: [
+    {
+      id:                    "snake",
+      name:                  "Schlängel",
+      species:               "Schlange",
+      description:           "Eine entspannte Schlange, die das gemütliche Leben in Cozy Home genießt.",
+      favoriteFood:          "mouse",
+      favoriteFoodName:      "Maus",
+      favoriteFoodEmoji:     "🐭",
+      favoriteActivity:      "Schlafen",
+      traits:                "Gemütlich",
+      playHappinessBase:     8,
+      playHappinessBall:     12,
+      hungerDecayMultiplier: 0.8,
+      sourceGame:            "snake",
+      shopPrice:             200,
+      assets: {
+        basePath: "games/snake/assets/pets/snake/"
+      },
+      thoughts: {
+        hungry: ["💭 Ich könnte eine Maus vertragen...", "💭 Hunger..."],
+        tired:  ["💭 Ich rolle mich kurz ein.", "💭 Ein Nickerchen wäre schön."],
+        lonely: ["💭 Ist hier jemand?", "💭 Etwas Gesellschaft wäre schön."],
+        happy:  ["💭 Es ist so gemütlich hier!", "💭 Zzzz...", "💭 Perfektes Wetter zum Dösen."]
+      },
+      unlock: {
+        type:        "highscore",
+        target:      "snake",
+        value:       250,
+        description: "Erreiche 250 Punkte in Snake."
       }
-    ];
-  }
+    }
+  ]
 
 });

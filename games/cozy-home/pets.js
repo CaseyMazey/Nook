@@ -9,32 +9,42 @@
 //   │   └── room.png
 //   └── pets/
 //       ├── cat/
-//       │   ├── default.png
+//       │   ├── icon.png       ← Shop-Icon (quadratisch, freigestellt)
+//       │   ├── default.png    ← Pflicht-Fallback
 //       │   ├── sleep.png
 //       │   └── hungry.png   ← später einfach hinzufügen
 //       ├── dog/
+//       │   ├── icon.png
 //       │   ├── default.png
 //       │   └── sleep.png
 //       └── mouse/
+//           ├── icon.png
 //           ├── default.png
 //           └── sleep.png
 //
 // Cross-Game-Haustiere liegen beim jeweiligen Spiel:
 //
-//   games/snake/assets/pets/
+//   games/snake/assets/pets/snake/
+//   ├── icon.png
 //   ├── default.png
 //   └── sleep.png
 //
-// Das Haustier registriert seinen eigenen basePath.
+// Das Haustier registriert seinen eigenen basePath im Manifest.
 // Cozy Home kennt keine Pfade, nur das Haustier-Objekt.
 //
 // ────────────────────────────────────
-// NEUES HAUSTIER HINZUFÜGEN:
+// NEUES COZY-HOME-HAUSTIER HINZUFÜGEN:
 //   1. Eintrag in PET_DEFINITIONS anlegen
 //   2. basePath auf den eigenen Assets-Ordner zeigen lassen
-//   3. default.png dort ablegen (Pflicht)
+//   3. default.png und icon.png dort ablegen (Pflicht)
 //   4. Weitere Zustände als <state>.png ergänzen (optional)
 //   → Kein weiterer Code nötig
+//
+// NEUES CROSS-GAME-HAUSTIER HINZUFÜGEN:
+//   1. pets-Array im Manifest des Spiels befüllen (vollständige Definition)
+//   2. Assets unter games/<spiel>/assets/pets/<id>/ ablegen
+//   3. collectCrossGamePets() wird beim Start automatisch aufgerufen
+//   → Kein Code in Cozy Home nötig
 // ====================================
 
 
@@ -140,6 +150,98 @@ function petImgTag(petId, state, cssClass, altText) {
     const cls      = cssClass || "";
     return `<img src="${src}" alt="${alt}" class="${cls}" `
          + `onerror="this.onerror=null;this.src='${fallback}'">`;
+}
+
+
+// ────────────────────────────────────
+// ICON-HELPER
+// Lädt icon.png aus dem Asset-Ordner des Haustieres.
+// Existiert kein icon.png, fällt automatisch auf default.png zurück.
+// Verwendung: Haustierliste (links) und Haustiershop – NICHT das große Zimmer-Bild.
+// ────────────────────────────────────
+
+function getPetIconSrc(petId) {
+    const def = PET_DEFINITIONS[petId];
+    if (!def) return "";
+    return def.assets.basePath + "icon.png";
+}
+
+function petIconTag(petId, cssClass, altText) {
+    const src      = getPetIconSrc(petId);
+    const fallback = getPetImageFallback(petId);
+    const alt      = altText  || petId;
+    const cls      = cssClass || "";
+    return `<img src="${src}" alt="${alt}" class="${cls}" `
+         + `onerror="this.onerror=null;this.src='${fallback}'">`;
+}
+
+
+// ────────────────────────────────────
+// UNLOCK-PRÜFUNG
+//
+// Generisch – kein Spiel hardcodiert.
+// Jede unlock-Definition bringt type, target und value mit.
+// Neue Typen hier ergänzen; bestehende Logik bleibt unverändert.
+//
+// Rückgabe: true  → Bedingung erfüllt, Haustier kaufbar
+//           false → noch gesperrt
+// ────────────────────────────────────
+
+function checkUnlock(unlock) {
+    if (!unlock) return true; // kein unlock → immer frei
+
+    const scores = DB.get('gameHighscores', {});
+
+    switch (unlock.type) {
+
+        case "highscore": {
+            // Unterstützt altes Format (Zahl) und neues (Objekt mit .best)
+            const raw = scores[unlock.target];
+            const best = typeof raw === 'number' ? raw : (raw?.best ?? 0);
+            return best >= unlock.value;
+        }
+
+        case "gamesPlayed": {
+            const raw = scores[unlock.target];
+            const total = typeof raw === 'object' ? (raw?.totalGames ?? 0) : 0;
+            return total >= unlock.value;
+        }
+
+        // Weitere Typen hier ergänzen:
+        // case "achievement":  return DB.get('achievements', {})[unlock.target] === true;
+        // case "questCompleted": ...
+
+        default:
+            console.warn(`checkUnlock: unbekannter Typ "${unlock.type}"`);
+            return false;
+    }
+}
+
+
+// ────────────────────────────────────
+// CROSS-GAME-HAUSTIERE EINSAMMELN
+//
+// Liest window.GameHub.registry nach dem Start aller Manifeste durch.
+// Jedes Spiel, das ein `pets`-Array besitzt, wird berücksichtigt.
+// Die Einträge werden in PET_DEFINITIONS gemergt.
+//
+// Aufruf: einmalig in cozy-home.js mount() nach initGames().
+// ────────────────────────────────────
+
+function collectCrossGamePets() {
+    const registry = window.GameHub?.registry;
+    if (!registry) return;
+
+    Object.values(registry).forEach(game => {
+        if (!Array.isArray(game.pets)) return;
+
+        game.pets.forEach(petDef => {
+            if (!petDef.id) return;
+            // Nur einmalig mergen – bereits vorhandene Einträge nicht überschreiben
+            if (PET_DEFINITIONS[petDef.id]) return;
+            PET_DEFINITIONS[petDef.id] = petDef;
+        });
+    });
 }
 
 
