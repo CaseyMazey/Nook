@@ -530,16 +530,27 @@
         return (prefMap && prefMap[key]) || "neutral";
     }
 
-    // Berechnet Vorlieben-Modifier für Happiness.
-    // Rückgabe: { hungerBonus, happinessBonus, happinessPenalty }
-    function getPrefEffect(level, baseHunger) {
-        switch (level) {
-            case "love":    return { hunger: baseHunger + 10, happinessDelta: +12 };
-            case "like":    return { hunger: baseHunger,      happinessDelta: +5  };
-            case "neutral": return { hunger: baseHunger,      happinessDelta:  0  };
-            case "dislike": return { hunger: baseHunger - 5,  happinessDelta: -8  };
-            default:        return { hunger: baseHunger,      happinessDelta:  0  };
-        }
+    // ====================================
+    // PREFERENCE_LEVELS
+    //
+    // Zentrale Balance-Registry für alle Vorlieben-Reaktionen.
+    // Neuen Level ergänzen = ein Eintrag hier, kein weiterer Code nötig.
+    //
+    // hungerDelta      → Bonus/Malus auf hungerRestore des Futters
+    // happinessDelta   → Direkte Happiness-Änderung
+    // ====================================
+
+    const PREFERENCE_LEVELS = {
+        love:    { hungerDelta:  +10, happinessDelta: +12 },
+        like:    { hungerDelta:    0, happinessDelta:  +5 },
+        neutral: { hungerDelta:    0, happinessDelta:   0 },
+        dislike: { hungerDelta:   -5, happinessDelta:  -8 }
+    };
+
+    // Liest einen Eintrag aus PREFERENCE_LEVELS.
+    // Unbekannte Level fallen auf "neutral" zurück.
+    function getPrefLevel(level) {
+        return PREFERENCE_LEVELS[level] || PREFERENCE_LEVELS.neutral;
     }
 
     // Markiert ein Item als entdeckt (food oder toy).
@@ -628,12 +639,11 @@
         const pet   = getActivePet();
         const pers  = getPersonality(pet);
         const level = getPreferenceLevel(pet.foodPrefs, foodKey);
-        const eff   = getPrefEffect(level, food.hungerRestore);
-
-        const hungerGain = Math.max(0, eff.hunger) + (pers.id === "glutton" ? 5 : 0);
+        const pref       = getPrefLevel(level);
+        const hungerGain = Math.max(0, food.hungerRestore + pref.hungerDelta) + (pers.id === "glutton" ? 5 : 0);
         pet.hunger    = clamp(pet.hunger    + hungerGain);
         pet.energy    = clamp(pet.energy    + food.energyRestore);
-        pet.happiness = clamp(pet.happiness + eff.happinessDelta);
+        pet.happiness = clamp(pet.happiness + pref.happinessDelta);
 
         // Vorliebe entdecken
         markDiscovered(pet, "food", foodKey);
@@ -657,8 +667,8 @@
         const toyInInv = toy && (save.inventory[toy.key] || 0) > 0;
         const level    = toyInInv ? getPreferenceLevel(pet.toyPrefs, toyKey) : "neutral";
         const toyBase  = toyInInv ? (def.playHappinessBase + toy.happinessBonus) : def.playHappinessBase;
-        const eff      = getPrefEffect(level, 0);  // Hunger irrelevant für Spielzeug
-        const happGain = pers.applyPlay(toyBase) + eff.happinessDelta;
+        const pref     = getPrefLevel(level);
+        const happGain = pers.applyPlay(toyBase) + pref.happinessDelta;
 
         pet.happiness = clamp(pet.happiness + happGain);
         pet.energy    = clamp(pet.energy - cost - (toy?.energyCost || 0));
@@ -1054,12 +1064,13 @@
               ${availFood.map(f => {
                 const level     = getPreferenceLevel(pet.foodPrefs, f.key);
                 const known     = pet.discovered?.food?.[f.key];
-                const eff       = getPrefEffect(level, f.hungerRestore);
+                const pref      = getPrefLevel(level);
+                const effHunger = Math.max(0, f.hungerRestore + pref.hungerDelta);
                 const levelEmoji = known
                   ? (level === 'love' ? '❤️' : level === 'like' ? '🙂' : level === 'dislike' ? '🙁' : '😐')
                   : '';
                 const subLabel  = known
-                  ? `+${Math.max(0,eff.hunger)}🍖 ${eff.happinessDelta > 0 ? '+'+eff.happinessDelta+'❤️' : eff.happinessDelta < 0 ? eff.happinessDelta+'❤️' : ''}`
+                  ? `+${effHunger}🍖 ${pref.happinessDelta > 0 ? '+'+pref.happinessDelta+'❤️' : pref.happinessDelta < 0 ? pref.happinessDelta+'❤️' : ''}`
                   : '?';
                 return '<button class="ch-dropdown-item" data-feed="' + f.key + '">'
                      + '<span class="ch-dd-emoji">' + f.emoji + '</span>'
@@ -1084,7 +1095,7 @@
                 const levelEmoji = known
                   ? (level === 'love' ? '❤️' : level === 'like' ? '🙂' : level === 'dislike' ? '🙁' : '😐')
                   : '';
-                const toyHappBonus = pers.applyPlay(def.playHappinessBase + t.happinessBonus) + getPrefEffect(level, 0).happinessDelta;
+                const toyHappBonus = pers.applyPlay(def.playHappinessBase + t.happinessBonus) + getPrefLevel(level).happinessDelta;
                 const subLabel   = known ? '+' + toyHappBonus + '❤️' : '?';
                 return '<button class="ch-dropdown-item" data-play="' + t.key + '">'
                      + '<span class="ch-dd-emoji">' + t.emoji + '</span>'
