@@ -919,15 +919,27 @@
       <!-- CALENDAR -->
       <section id="view-calendar" class="view">
 
-        <div id="cal-header">
+        <div id="cal-top-row">
           <div id="cal-header-left">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <h1 class="view-title" id="cal-title">—</h1>
+            <div style="display:flex;align-items:center;gap:8px;">
               <div class="cal-season-tag"><span id="cal-season-icon">☀️</span><span id="cal-season-label">—</span></div>
               <button class="icon-btn" id="cal-settings-btn" title="Bundesland für Feiertage">⚙</button>
             </div>
-            <h1 class="view-title" id="cal-title">—</h1>
             <p id="cal-season-sentence">—</p>
           </div>
+
+          <div id="cal-nav-col">
+            <div class="cal-nav-row">
+              <button class="btn-primary" id="cal-add-event-btn">+ Termin</button>
+              <button class="week-btn" id="cal-prev">‹</button>
+              <button class="week-btn" id="cal-next">›</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="cal-banner-row">
+          <div id="cal-banner" class="cal-banner"></div>
 
           <div id="cal-info-card" class="panel">
             <div class="cal-info-row">
@@ -956,15 +968,8 @@
           </div>
         </div>
 
-        <div id="cal-banner" class="cal-banner"></div>
-
         <div id="cal-body">
           <div id="cal-main">
-            <div class="cal-nav-row">
-              <button class="btn-primary" id="cal-add-event-btn">+ Termin</button>
-              <button class="week-btn" id="cal-prev">‹</button>
-              <button class="week-btn" id="cal-next">›</button>
-            </div>
             <div class="dash-content">
               <div id="calendar-grid"></div>
             </div>
@@ -980,10 +985,7 @@
               <div id="cal-goals-list" class="cal-side-body"></div>
             </div>
             <div class="panel cal-side-card hidden" id="cal-card-birthdays">
-              <div class="panel-header">
-                <span class="panel-label">Geburtstage</span>
-                <button class="cal-birthdays-manage-btn" id="cal-birthdays-manage-btn" title="Geburtstage verwalten">✎</button>
-              </div>
+              <div class="panel-header"><span class="panel-label">Geburtstage</span><button class="cal-birthdays-manage-btn" id="cal-birthdays-manage-btn" title="Geburtstage verwalten">✎</button></div>
               <div id="cal-birthdays-list" class="cal-side-body"></div>
             </div>
             <div class="panel cal-side-card hidden" id="cal-card-holidays">

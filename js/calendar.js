@@ -1059,6 +1059,16 @@ const SEASON_DEFS = [
   ]}},
 ];
 
+// Mapping Unter-Saison → grobe Saison-Gruppe (für Banner-Klasse + data-season,
+// da spätere Illustrationen vermutlich pro Jahreszeit geladen werden, nicht
+// pro Unter-Saison — Unter-Saisons bleiben nur für Label/Satz-Rotation relevant).
+const SEASON_GROUP_MAP = {
+  'winter': 'winter',
+  'spring-early': 'spring', 'spring-late': 'spring',
+  'summer-high': 'summer',  'summer-late': 'summer',
+  'autumn-early': 'autumn', 'autumn-late': 'autumn',
+};
+
 function seasonMatch(date, def) {
   const [fm, fd] = def.from, [tm, td] = def.to;
   const y = date.getFullYear();
@@ -1128,7 +1138,9 @@ function renderCalSeasonHeader() {
   iconEl.textContent = info.icon;
   labelEl.textContent = info.label;
   sentEl.textContent = info.sentence;
-  bannerEl.className = 'cal-banner cal-banner-' + info.css;
+  const seasonGroup = SEASON_GROUP_MAP[info.css] || 'summer';
+  bannerEl.className = 'cal-banner cal-banner-' + seasonGroup;
+  bannerEl.dataset.season = seasonGroup;
 }
 
 // ── Info-Karte: Wetter (Cache aus today.js), Mond, Saison-Countdown ──
