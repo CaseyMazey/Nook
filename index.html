@@ -921,7 +921,10 @@
 
         <div id="cal-header">
           <div id="cal-header-left">
-            <div class="cal-season-tag"><span id="cal-season-icon">☀️</span><span id="cal-season-label">—</span></div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+              <div class="cal-season-tag"><span id="cal-season-icon">☀️</span><span id="cal-season-label">—</span></div>
+              <button class="icon-btn" id="cal-settings-btn" title="Bundesland für Feiertage">⚙</button>
+            </div>
             <h1 class="view-title" id="cal-title">—</h1>
             <p id="cal-season-sentence">—</p>
           </div>
@@ -1398,6 +1401,37 @@
       <div class="modal-actions">
         <button class="btn-ghost" id="birthday-modal-done">Fertig</button>
         <button class="btn-primary" id="birthday-add-btn">+ Hinzufügen</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="calendar-settings-modal-overlay" class="modal-backdrop hidden">
+    <div class="modal-box" style="width:360px;">
+      <div class="modal-head"><span>Kalender-Einstellungen</span><button class="modal-x" id="calendar-settings-modal-close">✕</button></div>
+      <div class="modal-row">
+        <label>Bundesland (für Feiertage)</label>
+        <select class="modal-select" id="calendar-bundesland-select">
+          <option value="">— nicht ausgewählt —</option>
+          <option value="BW">Baden-Württemberg</option>
+          <option value="BY">Bayern</option>
+          <option value="BE">Berlin</option>
+          <option value="BB">Brandenburg</option>
+          <option value="HB">Bremen</option>
+          <option value="HH">Hamburg</option>
+          <option value="HE">Hessen</option>
+          <option value="MV">Mecklenburg-Vorpommern</option>
+          <option value="NI">Niedersachsen</option>
+          <option value="NW">Nordrhein-Westfalen</option>
+          <option value="RP">Rheinland-Pfalz</option>
+          <option value="SL">Saarland</option>
+          <option value="SN">Sachsen</option>
+          <option value="ST">Sachsen-Anhalt</option>
+          <option value="SH">Schleswig-Holstein</option>
+          <option value="TH">Thüringen</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-primary" id="calendar-settings-modal-done">Fertig</button>
       </div>
     </div>
   </div>

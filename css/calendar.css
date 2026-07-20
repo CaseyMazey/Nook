@@ -535,3 +535,28 @@
 }
 .cal-birthday-manage-row:last-child { border-bottom: none; }
 .cal-birthday-manage-info { font-size: 13px; color: var(--text-2); }
+
+/* =============================================================
+   PHASE 3 — FEIERTAGE
+============================================================= */
+.cal-day.is-holiday { background: color-mix(in srgb, var(--surface) 92%, #c0834a 8%); }
+[data-theme="dark"] .cal-day.is-holiday { background: color-mix(in srgb, var(--surface) 90%, #c0834a 10%); }
+.cal-day.is-holiday.is-today { background: var(--surface); }
+
+.cal-holiday-pill {
+  font-size: 10.5px;
+  padding: 2px 6px;
+  border-radius: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: rgba(192,131,74,0.15);
+  color: #8a5c30;
+  border-left: 2px solid #c0834a;
+}
+[data-theme="dark"] .cal-holiday-pill { color: #d9a866; }
+
+#cal-settings-btn {
+  width: 24px; height: 24px;
+  font-size: 12px;
+}

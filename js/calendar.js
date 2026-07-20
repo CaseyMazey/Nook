@@ -741,9 +741,11 @@ function renderCalendar() {
       const dayTasks        = getTasksForCalendarDay(date);
 
       const el = document.createElement('div');
+      const holiday = (typeof holidayForDate === 'function') ? holidayForDate(date) : null;
       el.className = 'cal-day'
         + (otherMonth  ? ' other-month' : '')
         + (isToday(date) ? ' is-today'   : '')
+        + (holiday       ? ' is-holiday' : '')
         + (date.getDay() === 0 || date.getDay() === 6 ? ' weekend' : '');
       el.style.cursor = 'pointer';
 
@@ -754,6 +756,15 @@ function renderCalendar() {
 
       const items = document.createElement('div'); items.className = 'cal-items';
       let shown = 0;
+
+      if (holiday) {
+        const hPill = document.createElement('div');
+        hPill.className = 'cal-holiday-pill';
+        hPill.textContent = holiday.label;
+        hPill.title = holiday.label;
+        items.appendChild(hPill);
+      }
+
 
       // Single-day events first, then multi-day ranges
       const singleEvs = dayEventEntries.filter(e => !e.isRange);
@@ -1238,9 +1249,9 @@ function renderCalStatsCard() {
   });
 }
 
-// ── Sidebar: Platzhalter-Karten (Feiertage/Ziele — Phase 3–4) ──
+// ── Sidebar: Platzhalter-Karten (Ziele — Phase 4) ──
 function renderCalPlaceholderCards() {
-  ['cal-card-goals', 'cal-card-holidays'].forEach(id => {
+  ['cal-card-goals'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.add('hidden');
   });
@@ -1252,9 +1263,144 @@ function renderCalendarSidebar() {
   renderCalInfoCard();
   renderCalCountdownCard();
   renderCalBirthdaysCard();
+  renderCalHolidaysCard();
   renderCalStatsCard();
   renderCalPlaceholderCards();
 }
+
+// =============================================================
+// =============================================================
+// MONATSPLANER — PHASE 3: FEIERTAGE NACH BUNDESLAND
+// Vollständig offline berechnet (Gauß'sche Osterformel + feste
+// Bundesland-Zuordnung) — keine externe API, keine hartcodierten
+// Jahreslisten. Einstellung wird dauerhaft gespeichert, damit
+// Personal Hub von mehreren Personen in unterschiedlichen
+// Bundesländern genutzt werden kann.
+// =============================================================
+// =============================================================
+
+const BUNDESLAENDER = {
+  BW: 'Baden-Württemberg', BY: 'Bayern', BE: 'Berlin', BB: 'Brandenburg',
+  HB: 'Bremen', HH: 'Hamburg', HE: 'Hessen', MV: 'Mecklenburg-Vorpommern',
+  NI: 'Niedersachsen', NW: 'Nordrhein-Westfalen', RP: 'Rheinland-Pfalz',
+  SL: 'Saarland', SN: 'Sachsen', ST: 'Sachsen-Anhalt', SH: 'Schleswig-Holstein',
+  TH: 'Thüringen'
+};
+
+let calendarSettings = DB.get('calendarSettings', { bundesland: null });
+function saveCalendarSettings(){ DB.set('calendarSettings', calendarSettings); }
+
+// ── Gauß'sche Osterformel (Ostersonntag, offline berechnet) ──
+function getEasterSunday(year) {
+  const k  = Math.floor(year / 100);
+  const m  = 15 + Math.floor((3*k + 3) / 4) - Math.floor((8*k + 13) / 25);
+  const s  = 2 - Math.floor((3*k + 3) / 4);
+  const a  = year % 19;
+  const d  = (19*a + m) % 30;
+  const r  = Math.floor((d + Math.floor(a/11)) / 29); // Epakten-Korrekturfaktor r ∈ {0,1}
+  const og = 21 + d - r;
+  const sz = 7 - (year + Math.floor(year/4) + s) % 7;
+  const oe = 7 - (og - sz) % 7;
+  const os = og + oe;
+  return os <= 31 ? new Date(year, 2, os) : new Date(year, 3, os - 31);
+}
+
+function addDays(date, n) { const d = new Date(date); d.setDate(d.getDate() + n); return d; }
+
+// Buß- und Bettag: Mittwoch vor dem 23. November
+function busUndBettag(year) {
+  let d = new Date(year, 10, 22);
+  while (d.getDay() !== 3) d.setDate(d.getDate() - 1);
+  return d;
+}
+
+// ── Feiertagsliste für ein Jahr + Bundesland ─────────────────
+// bl = Kürzel aus BUNDESLAENDER oder null (dann nur bundesweite Feiertage)
+function getHolidaysForYear(year, bl) {
+  const easter = getEasterSunday(year);
+  const list = [];
+  const add = (date, label) => list.push({ date, label });
+
+  // Bundesweit
+  add(new Date(year,0,1),    'Neujahr');
+  add(addDays(easter,-2),    'Karfreitag');
+  add(addDays(easter,1),     'Ostermontag');
+  add(new Date(year,4,1),    'Tag der Arbeit');
+  add(addDays(easter,39),    'Christi Himmelfahrt');
+  add(addDays(easter,50),    'Pfingstmontag');
+  add(new Date(year,9,3),    'Tag der Deutschen Einheit');
+  add(new Date(year,11,25),  '1. Weihnachtstag');
+  add(new Date(year,11,26),  '2. Weihnachtstag');
+
+  // Bundesland-abhängig
+  if (['BW','BY','ST'].includes(bl))                                 add(new Date(year,0,6),  'Heilige Drei Könige');
+  if (['BE','MV'].includes(bl))                                      add(new Date(year,2,8),  'Internationaler Frauentag');
+  if (['BW','BY','HE','NW','RP','SL'].includes(bl))                  add(addDays(easter,60),  'Fronleichnam');
+  if (['BY','SL'].includes(bl))                                      add(new Date(year,7,15), 'Mariä Himmelfahrt');
+  if (bl === 'TH')                                                   add(new Date(year,8,20), 'Weltkindertag');
+  if (['BB','MV','SN','ST','TH','HB','HH','NI','SH'].includes(bl))   add(new Date(year,9,31), 'Reformationstag');
+  if (['BW','BY','NW','RP','SL'].includes(bl))                       add(new Date(year,10,1), 'Allerheiligen');
+  if (bl === 'SN')                                                   add(busUndBettag(year),  'Buß- und Bettag');
+
+  // Besondere Tage (kein gesetzlicher Feiertag, aber verbreitet notiert)
+  add(new Date(year,11,24), 'Heiligabend');
+  add(new Date(year,11,31), 'Silvester');
+
+  return list;
+}
+
+function holidayForDate(date) {
+  const list = getHolidaysForYear(date.getFullYear(), calendarSettings.bundesland);
+  return list.find(h =>
+    h.date.getFullYear() === date.getFullYear() &&
+    h.date.getMonth()    === date.getMonth() &&
+    h.date.getDate()     === date.getDate()
+  ) || null;
+}
+
+// ── Sidebar-Karte: Feiertage im aktuell angezeigten Monat ────
+function renderCalHolidaysCard() {
+  const card = document.getElementById('cal-card-holidays');
+  const list = document.getElementById('cal-holidays-list');
+  if (!card || !list) return;
+  list.innerHTML = '';
+
+  const year = calDate.getFullYear(), month = calDate.getMonth();
+  const holidays = getHolidaysForYear(year, calendarSettings.bundesland)
+    .filter(h => h.date.getMonth() === month)
+    .sort((a, b) => a.date - b.date);
+
+  if (holidays.length === 0) { card.classList.add('hidden'); return; }
+  card.classList.remove('hidden');
+
+  holidays.forEach(h => {
+    const row = document.createElement('div'); row.className = 'cal-side-row';
+    const name = document.createElement('span'); name.className = 'cal-side-row-title'; name.textContent = h.label;
+    const badge = document.createElement('span'); badge.className = 'cal-side-row-badge';
+    badge.textContent = h.date.toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit' });
+    row.append(name, badge); list.appendChild(row);
+  });
+}
+
+// ── Einstellungs-Modal: Bundesland auswählen ─────────────────
+document.getElementById('cal-settings-btn')?.addEventListener('click', () => {
+  const sel = document.getElementById('calendar-bundesland-select');
+  if (sel) sel.value = calendarSettings.bundesland || '';
+  document.getElementById('calendar-settings-modal-overlay')?.classList.remove('hidden');
+});
+function closeCalSettingsModal() {
+  document.getElementById('calendar-settings-modal-overlay')?.classList.add('hidden');
+}
+document.getElementById('calendar-settings-modal-close')?.addEventListener('click', closeCalSettingsModal);
+document.getElementById('calendar-settings-modal-done')?.addEventListener('click', closeCalSettingsModal);
+document.getElementById('calendar-settings-modal-overlay')?.addEventListener('click', e => {
+  if (e.target === document.getElementById('calendar-settings-modal-overlay')) closeCalSettingsModal();
+});
+document.getElementById('calendar-bundesland-select')?.addEventListener('change', e => {
+  calendarSettings.bundesland = e.target.value || null;
+  saveCalendarSettings();
+  renderCalendar();
+});
 
 // =============================================================
 // =============================================================
