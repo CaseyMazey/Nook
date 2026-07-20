@@ -1238,9 +1238,9 @@ function renderCalStatsCard() {
   });
 }
 
-// ── Sidebar: Platzhalter-Karten (Geburtstage/Feiertage/Ziele — Phase 2–4) ──
+// ── Sidebar: Platzhalter-Karten (Feiertage/Ziele — Phase 3–4) ──
 function renderCalPlaceholderCards() {
-  ['cal-card-birthdays', 'cal-card-goals', 'cal-card-holidays'].forEach(id => {
+  ['cal-card-goals', 'cal-card-holidays'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.add('hidden');
   });
@@ -1251,6 +1251,151 @@ function renderCalendarSidebar() {
   renderCalSeasonHeader();
   renderCalInfoCard();
   renderCalCountdownCard();
+  renderCalBirthdaysCard();
   renderCalStatsCard();
   renderCalPlaceholderCards();
 }
+
+// =============================================================
+// =============================================================
+// MONATSPLANER — PHASE 2: GEBURTSTAGSVERWALTUNG
+// Eigenes Datenmodell, komplett getrennt von `events`. Jeder
+// Geburtstag erscheint automatisch jedes Jahr erneut — es gibt
+// keine Kopien pro Jahr. Verwaltung über eigenes Modal
+// (Button im Karten-Header der Geburtstage-Karte).
+// =============================================================
+// =============================================================
+
+let birthdays = DB.get('birthdays', []);
+function saveBirthdays(){ DB.set('birthdays', birthdays); }
+
+const BIRTHDAY_ICONS = ['🎂', '🎈'];
+
+// Alter, das die Person im angegebenen Jahr an ihrem Geburtstag erreicht.
+// null, wenn kein Geburtsjahr hinterlegt wurde (optionales Feld).
+function birthdayAgeInYear(b, year) {
+  if (!b.year) return null;
+  return year - b.year;
+}
+
+// ── Sidebar-Karte: Geburtstage im aktuell angezeigten Monat ──
+function renderCalBirthdaysCard() {
+  const card = document.getElementById('cal-card-birthdays');
+  const list = document.getElementById('cal-birthdays-list');
+  if (!card || !list) return;
+  list.innerHTML = '';
+
+  const month = calDate.getMonth() + 1;
+  const year  = calDate.getFullYear();
+  const entries = birthdays
+    .filter(b => b.month === month)
+    .sort((a, b) => a.day - b.day);
+
+  if (entries.length === 0) { card.classList.add('hidden'); return; }
+  card.classList.remove('hidden');
+
+  entries.forEach((b, i) => {
+    const item = document.createElement('div'); item.className = 'cal-birthday-item';
+
+    const dateEl = document.createElement('div'); dateEl.className = 'cal-birthday-date';
+    dateEl.textContent = String(b.day).padStart(2, '0') + '.' + String(b.month).padStart(2, '0') + '.';
+
+    const nameEl = document.createElement('div'); nameEl.className = 'cal-birthday-name';
+    nameEl.textContent = b.name + ' ' + BIRTHDAY_ICONS[i % BIRTHDAY_ICONS.length];
+
+    item.append(dateEl, nameEl);
+
+    const age = birthdayAgeInYear(b, year);
+    if (age !== null && age >= 0) {
+      const ageEl = document.createElement('div'); ageEl.className = 'cal-birthday-age';
+      ageEl.textContent = `wird ${age} Jahre`;
+      item.appendChild(ageEl);
+    }
+
+    list.appendChild(item);
+  });
+}
+
+// ── Verwaltungs-Modal: Liste + Hinzufügen/Löschen ──
+function renderBirthdayManageList() {
+  const list = document.getElementById('birthday-manage-list');
+  if (!list) return;
+  list.innerHTML = '';
+
+  if (birthdays.length === 0) {
+    const p = document.createElement('p'); p.className = 'modal-hint';
+    p.textContent = 'Noch keine Geburtstage eingetragen.';
+    list.appendChild(p);
+    return;
+  }
+
+  const sorted = [...birthdays].sort((a, b) => (a.month - b.month) || (a.day - b.day));
+  sorted.forEach(b => {
+    const row = document.createElement('div'); row.className = 'cal-birthday-manage-row';
+
+    const info = document.createElement('span'); info.className = 'cal-birthday-manage-info';
+    const dateStr = String(b.day).padStart(2, '0') + '.' + String(b.month).padStart(2, '0') + '.' + (b.year ? ' ' + b.year : '');
+    info.textContent = `${dateStr} — ${b.name}`;
+
+    const del = document.createElement('button'); del.className = 'task-delete'; del.textContent = '✕';
+    del.title = 'Geburtstag löschen';
+    del.addEventListener('click', () => {
+      birthdays = birthdays.filter(x => x.id !== b.id);
+      saveBirthdays();
+      renderBirthdayManageList();
+      renderCalBirthdaysCard();
+    });
+
+    row.append(info, del);
+    list.appendChild(row);
+  });
+}
+
+function clearBirthdayForm() {
+  ['birthday-name-input', 'birthday-day-input', 'birthday-month-input', 'birthday-year-input'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+}
+
+function openBirthdayModal() {
+  renderBirthdayManageList();
+  document.getElementById('birthday-modal-overlay')?.classList.remove('hidden');
+}
+function closeBirthdayModal() {
+  document.getElementById('birthday-modal-overlay')?.classList.add('hidden');
+  clearBirthdayForm();
+}
+
+document.getElementById('cal-birthdays-manage-btn')?.addEventListener('click', openBirthdayModal);
+document.getElementById('birthday-modal-close')?.addEventListener('click', closeBirthdayModal);
+document.getElementById('birthday-modal-done')?.addEventListener('click', closeBirthdayModal);
+document.getElementById('birthday-modal-overlay')?.addEventListener('click', e => {
+  if (e.target === document.getElementById('birthday-modal-overlay')) closeBirthdayModal();
+});
+
+document.getElementById('birthday-add-btn')?.addEventListener('click', () => {
+  const nameEl  = document.getElementById('birthday-name-input');
+  const dayEl   = document.getElementById('birthday-day-input');
+  const monthEl = document.getElementById('birthday-month-input');
+  const yearEl  = document.getElementById('birthday-year-input');
+
+  const name  = nameEl.value.trim();
+  const day   = parseInt(dayEl.value, 10);
+  const month = parseInt(monthEl.value, 10);
+  const yearRaw = yearEl.value.trim();
+  const year  = yearRaw ? parseInt(yearRaw, 10) : null;
+
+  if (!name || !day || !month || day < 1 || day > 31 || month < 1 || month > 12) return;
+  if (year !== null && (year < 1900 || year > new Date().getFullYear())) return;
+
+  birthdays.push({ id: crypto.randomUUID(), name, day, month, year });
+  saveBirthdays();
+  clearBirthdayForm();
+  renderBirthdayManageList();
+  renderCalBirthdaysCard();
+});
+
+document.getElementById('birthday-name-input')?.addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('birthday-add-btn').click();
+});
