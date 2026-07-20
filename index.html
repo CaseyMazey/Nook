@@ -1199,11 +1199,71 @@
       <div class="modal-row"><label>Startdatum</label><input type="date" class="modal-date" id="event-modal-date-input"/></div>
       <div class="modal-row"><label>Enddatum <span style="font-size:11px;color:var(--text-3);font-weight:400;">(optional — für Zeiträume)</span></label><input type="date" class="modal-date" id="event-modal-enddate-input"/></div>
       <div class="modal-row" id="event-modal-time-row"><label>Uhrzeit (optional)</label><input type="time" class="modal-time" id="event-modal-time"/></div>
+      <div class="modal-row">
+        <label>Farbe</label>
+        <div class="event-color-row">
+          <input type="color" id="event-modal-color" class="event-color-input" value="#6b7f58">
+          <button type="button" class="btn-ghost event-color-reset" id="event-modal-color-reset">Standardfarbe</button>
+        </div>
+      </div>
+      <div class="modal-row" id="event-modal-recur-row">
+        <label>Wiederholung</label>
+        <select class="modal-select" id="event-modal-recur-select">
+          <option value="none">Nie</option>
+          <option value="daily">Täglich</option>
+          <option value="weekly">Wöchentlich</option>
+          <option value="monthly">Monatlich</option>
+          <option value="yearly">Jährlich</option>
+          <option value="custom">Benutzerdefiniert…</option>
+        </select>
+        <div class="modal-hint" id="event-modal-recur-locked-hint" style="display:none;">Bei „Nur diesen Termin" kann das Wiederholungsmuster nicht geändert werden — nur Titel, Uhrzeit, Notizen und Farbe.</div>
+      </div>
+      <div class="modal-row hidden" id="event-modal-custom-recur">
+        <label>Benutzerdefinierte Wiederholung</label>
+        <div class="recur-interval-row">
+          <span>Alle</span>
+          <input type="number" id="recur-interval-input" class="modal-input recur-interval-input" min="1" value="1">
+          <select id="recur-unit-select" class="modal-select recur-unit-select">
+            <option value="daily">Tage</option>
+            <option value="weekly">Wochen</option>
+            <option value="monthly">Monate</option>
+            <option value="yearly">Jahre</option>
+          </select>
+        </div>
+        <div class="recur-weekday-row hidden" id="recur-weekday-row">
+          <button type="button" class="recur-wd-btn" data-wd="0">Mo</button>
+          <button type="button" class="recur-wd-btn" data-wd="1">Di</button>
+          <button type="button" class="recur-wd-btn" data-wd="2">Mi</button>
+          <button type="button" class="recur-wd-btn" data-wd="3">Do</button>
+          <button type="button" class="recur-wd-btn" data-wd="4">Fr</button>
+          <button type="button" class="recur-wd-btn" data-wd="5">Sa</button>
+          <button type="button" class="recur-wd-btn" data-wd="6">So</button>
+        </div>
+        <div class="recur-end-group">
+          <label class="recur-end-option"><input type="radio" name="recur-end" value="never" checked> Nie</label>
+          <label class="recur-end-option"><input type="radio" name="recur-end" value="until"> Am <input type="date" id="recur-end-until" class="modal-date recur-end-date"></label>
+          <label class="recur-end-option"><input type="radio" name="recur-end" value="count"> Nach <input type="number" id="recur-end-count" class="modal-input recur-end-count-input" min="1" value="10"> Terminen</label>
+        </div>
+      </div>
       <div class="modal-row modal-row-inline">
         <div><div class="settings-row-title">Als Countdown anzeigen</div><div class="settings-row-sub">Wird in der Sidebar angezeigt</div></div>
         <label class="toggle"><input type="checkbox" id="event-modal-countdown"/><span class="toggle-slider"></span></label>
       </div>
       <div class="modal-actions"><button id="event-modal-cancel" class="btn-ghost">Abbrechen</button><button id="event-modal-save" class="btn-primary">Speichern</button></div>
+    </div>
+  </div>
+
+  <!-- Wiederholungs-Umfang Modal (Bearbeiten/Löschen von Serienterminen) -->
+  <div id="recur-scope-modal-overlay" class="modal-backdrop hidden">
+    <div class="modal-box" style="width:400px;">
+      <div class="modal-head"><span id="recur-scope-modal-title">Wiederholenden Termin bearbeiten</span><button class="modal-x" id="recur-scope-modal-close">✕</button></div>
+      <p class="modal-hint">Dieser Termin ist Teil einer Terminserie. Was möchtest du ändern?</p>
+      <div class="recur-scope-options">
+        <button class="recur-scope-btn" id="recur-scope-this">Nur diesen Termin</button>
+        <button class="recur-scope-btn" id="recur-scope-following">Diesen und alle zukünftigen Termine</button>
+        <button class="recur-scope-btn" id="recur-scope-all">Gesamte Terminserie</button>
+      </div>
+      <div class="modal-actions"><button id="recur-scope-cancel" class="btn-ghost">Abbrechen</button></div>
     </div>
   </div>
  

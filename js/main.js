@@ -76,6 +76,11 @@ const state = {
 let tasks            = DB.get('tasks', []);
 let notes            = DB.get('notes', { 'exam-notes': [], 'class-questions': [], 'terms': [] });
 let events           = DB.get('events', {});
+// Terminserien (wiederkehrende Termine) — getrennt von den Einzelterminen in `events`,
+// damit Wiederholungen nicht als tausende Einzeleinträge dupliziert werden müssen.
+// Struktur pro Serie siehe calendar.js (Abschnitt "RECURRING EVENTS — Series Engine").
+let eventSeries       = DB.get('eventSeries', []);
+function saveEventSeries(){ DB.set('eventSeries', eventSeries); }
 let quicknote        = DB.get('quicknote', '');
 let berichtsheft     = DB.get('berichtsheft', { betrieb: '', schule: '' });
 let blocks           = DB.get('blocks', DEFAULT_BLOCKS);

@@ -379,7 +379,7 @@ function buildMiniCal(refDate) {
   const monthNames = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
   const dayNames   = ['Mo','Di','Mi','Do','Fr','Sa','So'];
 
-  // Build set of days that have any event (single or range)
+  // Build set of days that have any event (single or range or recurring)
   const eventDays    = new Set(); // days with single events
   const rangeDays    = new Set(); // days inside a multi-day range
   const rangeStart   = new Set();
@@ -408,6 +408,15 @@ function buildMiniCal(refDate) {
           cur.setDate(cur.getDate() + 1);
         }
       });
+    });
+  }
+
+  // Wiederkehrende Vorkommen dieses Monats ebenfalls als Punkt markieren
+  if (typeof getSeriesOccurrencesInRange === 'function') {
+    const gridStart = new Date(year, month, 1);
+    const gridEnd   = new Date(year, month + 1, 0);
+    getSeriesOccurrencesInRange(gridStart, gridEnd).forEach(({ date: d }) => {
+      if (d.getFullYear() === year && d.getMonth() === month) eventDays.add(d.getDate());
     });
   }
 
@@ -450,7 +459,7 @@ function buildMiniCal(refDate) {
     cells += `<div class="mini-cal-cell other-month"><span>${d}</span></div>`;
   }
 
-  // Upcoming events list (next 14 days) — includes multi-day starts
+  // Upcoming events list (next 14 days) — includes multi-day starts + recurring
   let upcomingHtml = '';
   const upcoming = [];
   const seenIds  = new Set();
@@ -470,6 +479,14 @@ function buildMiniCal(refDate) {
         upcoming.push({ title: ev.title, date: d, dateStr: `${startStr} – ${endStr}`, type: ev.countdown ? 'prio-1' : 'range-ev', isRange: true });
       }
     });
+    // Wiederkehrende Vorkommen an diesem Tag
+    if (typeof getSeriesOccurrencesInRange === 'function') {
+      getSeriesOccurrencesInRange(d, d).forEach(({ event: ev }) => {
+        if (seenIds.has(ev.id)) return;
+        seenIds.add(ev.id);
+        upcoming.push({ title: '↻ ' + ev.title, date: d, dateStr: d.toLocaleDateString('de-DE', { day: 'numeric', month: 'long' }), type: 'prio-ev', isRange: false });
+      });
+    }
   }
 
   if (upcoming.length > 0) {

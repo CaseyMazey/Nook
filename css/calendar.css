@@ -188,3 +188,76 @@
 .cal-task-dot[data-prio="1"] { background: var(--prio-1); }
 .cal-task-dot[data-prio="2"] { background: var(--prio-2); }
 .cal-task-dot[data-prio="3"] { background: var(--prio-3); }
+
+/* =============================================================
+   INDIVIDUELLE TERMINFARBEN — Color Picker im Termin-Modal
+============================================================= */
+.event-color-row { display: flex; align-items: center; gap: 10px; }
+.event-color-input {
+  width: 44px; height: 32px; padding: 2px;
+  border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  cursor: pointer; background: var(--surface);
+}
+.event-color-input::-webkit-color-swatch-wrapper { padding: 0; }
+.event-color-input::-webkit-color-swatch { border: none; border-radius: 4px; }
+.event-color-reset { font-size: 12px; padding: 6px 12px; }
+
+/* Farb-Punkt vor Termintitel im Tages-Modal */
+.cal-day-ev-color-dot {
+  display: inline-block;
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  margin-right: 7px;
+  flex-shrink: 0;
+}
+
+/* =============================================================
+   WIEDERHOLENDE TERMINE — Recurrence UI im Termin-Modal
+============================================================= */
+#event-modal-recur-locked-hint {
+  font-size: 11.5px;
+  color: var(--text-3);
+  margin-top: 6px;
+  line-height: 1.5;
+}
+
+.recur-interval-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.recur-interval-row span { font-size: 13px; color: var(--text-2); flex-shrink: 0; }
+.recur-interval-input { width: 64px; flex: none; }
+.recur-unit-select { flex: 1; }
+
+.recur-weekday-row { display: flex; gap: 5px; margin-bottom: 12px; flex-wrap: wrap; }
+.recur-wd-btn {
+  width: 36px; height: 32px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 12px; font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.recur-wd-btn:hover { background: var(--accent-soft); color: var(--text); }
+.recur-wd-btn.active { background: var(--sage); color: #F8F5EE; border-color: var(--sage); font-weight: 600; }
+
+.recur-end-group { display: flex; flex-direction: column; gap: 8px; }
+.recur-end-option { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-2); cursor: pointer; }
+.recur-end-option input[type="radio"] { accent-color: var(--sage); flex-shrink: 0; }
+.recur-end-date, .recur-end-count-input { width: 150px; padding: 6px 10px; font-size: 13px; }
+
+/* =============================================================
+   WIEDERHOLUNGS-UMFANG MODAL (Bearbeiten/Löschen von Serien)
+============================================================= */
+.recur-scope-options { display: flex; flex-direction: column; gap: 8px; margin: 6px 0 4px; }
+.recur-scope-btn {
+  width: 100%; text-align: left;
+  padding: 12px 14px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13.5px; font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.recur-scope-btn:hover { background: var(--sage-bg); border-color: var(--sage); color: var(--sage-dark); }
