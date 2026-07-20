@@ -238,21 +238,8 @@ function renderGamesHub(view) {
               </div>
             </div>
 
-            <!-- PET -->
-            <div class="games-side-card">
-              <div class="pet-header">
-                <span>Dein Pet</span>
-                <span class="pet-mood">Glücklich 😊</span>
-              </div>
-              <img src="assets/games/pet.png" class="pet-room-image">
-              <div class="pet-progress"><div class="pet-progress-fill"></div></div>
-              <div class="pet-actions">
-                <button>🤍</button>
-                <button>🍚</button>
-                <button>🎮</button>
-                <button>💤</button>
-              </div>
-            </div>
+            <!-- PET (wird dynamisch befüllt wenn Cozy Home installiert ist) -->
+            <div id="games-pet-card-slot"></div>
 
             <!-- DAILY -->
             <div class="games-side-card">
@@ -303,6 +290,106 @@ function renderGamesHub(view) {
   `;
 
   renderLibraryGrid();
+  initPetCard();
+}
+
+// =========================
+// PET-KARTE (Live-Fernsteuerung für Cozy Home)
+// =========================
+//
+// Zeigt das aktive Haustier aus Cozy Home an.
+// Nur sichtbar wenn Cozy Home installiert ist.
+// Verwendet ausschließlich window.cozyHome – keine eigene Logik.
+
+function initPetCard() {
+  const slot = document.getElementById('games-pet-card-slot');
+  if (!slot) return;
+
+  // Cozy Home (noch) nicht geladen → Slot leer lassen, kein Fehler
+  if (!window.cozyHome) {
+    // Warten bis cozyHome verfügbar ist (Manifest lädt async)
+    const waitInterval = setInterval(() => {
+      if (window.cozyHome) {
+        clearInterval(waitInterval);
+        initPetCard();
+      }
+    }, 300);
+    return;
+  }
+
+  renderPetCard(slot);
+
+  // Live-Updates: immer wenn Cozy Home einen Zustand speichert
+  window.cozyHome.onUpdate(() => renderPetCard(slot));
+}
+
+function renderPetCard(slot) {
+  const api = window.cozyHome;
+  if (!api) return;
+
+  const snap = api.getSnapshot();
+
+  // Kein aktives Haustier → Karte ausblenden
+  if (!snap) {
+    slot.innerHTML = '';
+    return;
+  }
+
+  const { pet, def, pers, mood, env, imgState, wellbeing, inventory } = snap;
+
+  const petSrc      = getPetImageSrc(pet.species, imgState);
+  const petFallback = getPetImageFallback(pet.species);
+  const hasKibble   = (inventory.kibble || 0) > 0;
+  const canPlay     = pet.energy >= 10; // PLAY_ENERGY_COST Basis
+
+  slot.innerHTML = `
+    <div class="games-side-card games-pet-card">
+      <div class="gpc-header">
+        <span class="gpc-title">Dein Pet</span>
+        <span class="gpc-mood">${mood}</span>
+      </div>
+
+      <!-- Zimmer (mit Jahreszeit + Tageszeit wie in Cozy Home) -->
+      <div class="gpc-room ${env.timeOfDay.cssClass}">
+        <img class="gpc-room-season" src="${env.seasonBgSrc}" alt="${env.season.name}">
+        <img class="gpc-room-bg" src="games/cozy-home/assets/backgrounds/room.png" alt="Zimmer">
+        ${env.weatherOverlaySrc
+          ? `<img class="gpc-room-weather" src="${env.weatherOverlaySrc}" alt="${env.weather.name}">`
+          : ''}
+        <img class="gpc-pet-img"
+             src="${petSrc}"
+             alt="${pet.name}"
+             onerror="this.onerror=null;this.src='${petFallback}'">
+      </div>
+
+      <!-- Wohlbefinden-Balken: (Hunger + Energie + Happiness) / 3 -->
+      <div class="gpc-wellbeing-row">
+        <span class="gpc-wellbeing-label">${pet.name}</span>
+        <span class="gpc-wellbeing-val">${wellbeing}%</span>
+      </div>
+      <div class="gpc-bar"><div class="gpc-bar-fill" style="width:${wellbeing}%"></div></div>
+
+      <!-- Aktionen -->
+      <div class="gpc-actions">
+        <button class="gpc-btn" data-action="pet" title="Streicheln">❤️</button>
+        <button class="gpc-btn ${hasKibble ? '' : 'disabled'}" data-action="feed" title="${hasKibble ? 'Füttern (Trockenfutter)' : 'Kein Trockenfutter'}">🍽️</button>
+        <button class="gpc-btn ${canPlay ? '' : 'disabled'}" data-action="play" title="${canPlay ? 'Spielen' : 'Zu wenig Energie'}">🎮</button>
+        <button class="gpc-btn" data-action="sleep" title="Schlafen">💤</button>
+      </div>
+    </div>
+  `;
+
+  // Event-Listener – rufen ausschließlich Cozy-Home-Funktionen auf
+  slot.querySelectorAll('.gpc-btn:not(.disabled)').forEach(btn => {
+    btn.onclick = () => {
+      switch (btn.dataset.action) {
+        case 'pet':   api.petPet();          break;
+        case 'feed':  api.feedPet('kibble'); break;
+        case 'play':  api.playPet(null);     break;
+        case 'sleep': api.sleepPet();        break;
+      }
+    };
+  });
 }
 
 // =========================

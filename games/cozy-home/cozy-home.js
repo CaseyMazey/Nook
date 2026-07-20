@@ -439,6 +439,10 @@
 
     function saveData() {
         localStorage.setItem(SAVE_KEY, JSON.stringify(save));
+        // Externe Listener benachrichtigen (z.B. Game-Hub Pet-Karte)
+        if (typeof window.cozyHome?._onUpdate === 'function') {
+            window.cozyHome._onUpdate();
+        }
     }
 
     // ====================================
@@ -1354,6 +1358,55 @@
         stopTickTimer();
         if (root) { root.innerHTML = ""; root = null; }
     }
+
+    // ====================================
+    // ÖFFENTLICHE API – window.cozyHome
+    //
+    // Erlaubt anderen Modulen (z.B. Games Hub), Daten zu lesen und
+    // Aktionen auszuführen, ohne eigene Logik zu implementieren.
+    //
+    // Nutzung:
+    //   window.cozyHome.petPet()
+    //   window.cozyHome.feedPet("kibble")
+    //   window.cozyHome.playPet(null)
+    //   window.cozyHome.sleepPet()
+    //   window.cozyHome.getSnapshot()  → { pet, def, mood, env, wellbeing, inventory }
+    //   window.cozyHome.onUpdate(fn)   → fn wird nach jeder Zustandsänderung aufgerufen
+    // ====================================
+
+    window.cozyHome = {
+        // Aktionen – exakt dieselben Funktionen wie in Cozy Home selbst
+        petPet,
+        feedPet,
+        playPet,
+        sleepPet,
+
+        // Snapshot aller für die Pet-Karte relevanten Daten
+        getSnapshot() {
+            const pet  = getActivePet();
+            const def  = pet ? getActiveDef() : null;
+            const pers = pet ? getPersonality(pet) : null;
+            if (!pet || !def) return null;
+            const wellbeing = Math.round((pet.hunger + pet.energy + pet.happiness) / 3);
+            return {
+                pet,
+                def,
+                pers,
+                mood:      getMood(pet),
+                env:       getEnvironment(),
+                imgState:  getPetImageState(pet),
+                wellbeing,
+                inventory: save?.inventory || {}
+            };
+        },
+
+        // Listener registrieren – wird nach jeder Zustandsänderung aufgerufen
+        onUpdate(fn) {
+            this._onUpdate = fn;
+        },
+
+        _onUpdate: null
+    };
 
     window.registerGame({
         id: "cozy-home",
