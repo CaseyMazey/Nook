@@ -812,6 +812,9 @@ function renderCalendar() {
       grid.appendChild(el);
     });
   }
+
+  // ── Phase 1: Monatsplaner-Sidebar + Header aktualisieren ────
+  if (typeof renderCalendarSidebar === 'function') renderCalendarSidebar();
 }
 
 document.getElementById('cal-prev').addEventListener('click', () => { calDate.setMonth(calDate.getMonth()-1); renderCalendar(); });
@@ -992,3 +995,262 @@ document.getElementById('countdown-modal-close').addEventListener('click', close
 document.getElementById('countdown-modal-overlay').addEventListener('click', e => {
   if (e.target === document.getElementById('countdown-modal-overlay')) closeCountdownModal();
 });
+
+// =============================================================
+// =============================================================
+// MONATSPLANER — PHASE 1: GRUNDGERÜST
+// Saisonaler Header, Banner, Info-Karte (Wetter/Mond/Saison),
+// responsive Sidebar mit Countdown- und Statistik-Karte.
+// Geburtstage/Feiertage/Monatsziele: Struktur vorbereitet,
+// bleiben bis Phase 2–4 ausgeblendet (keine Daten vorhanden).
+// =============================================================
+// =============================================================
+
+// ── Saison-Definitionen (astronomisch angenähert) ───────────
+const SEASON_DEFS = [
+  { from:[12,21], to:[3,19], sub:{ label:'Winter', icon:'❄️', css:'winter', sentences:[
+    'Schnee liegt über dem Land, drinnen ist es gemütlich warm.',
+    'Kalte Tage, klare Nächte — Zeit für heißen Tee.',
+    'Die Welt ruht unter einer weißen Decke.'
+  ]}},
+  { from:[3,20], to:[4,19], sub:{ label:'Frühlingsanfang', icon:'🌱', css:'spring-early', sentences:[
+    'Die ersten Blumen blühen und die Tage werden länger.',
+    'Zartes Grün erobert langsam die Wiesen zurück.',
+    'Die Natur erwacht aus dem Winterschlaf.'
+  ]}},
+  { from:[4,20], to:[6,20], sub:{ label:'Später Frühling', icon:'🌸', css:'spring-late', sentences:[
+    'Blühende Wiesen und laue Abende kündigen den Sommer an.',
+    'Alles blüht in vollen Farben.',
+    'Lange Tage, warme Luft — der Sommer ist nah.'
+  ]}},
+  { from:[6,21], to:[8,22], sub:{ label:'Hochsommer', icon:'☀️', css:'summer-high', sentences:[
+    'Lange Tage, warme Abende und neue Möglichkeiten.',
+    'Warmes Sonnenlicht lädt zum Draußensein ein.',
+    'Zeit für Badeseen und laue Sommernächte.'
+  ]}},
+  { from:[8,23], to:[9,22], sub:{ label:'Spätsommer', icon:'🌻', css:'summer-late', sentences:[
+    'Die Sonne steht schon etwas tiefer, die Ernte beginnt.',
+    'Noch warm, aber der Herbst kündigt sich leise an.',
+    'Goldenes Licht über reifen Feldern.'
+  ]}},
+  { from:[9,23], to:[10,31], sub:{ label:'Herbstanfang', icon:'🍂', css:'autumn-early', sentences:[
+    'Die Blätter verfärben sich langsam.',
+    'Kühle Morgen, bunte Wälder.',
+    'Die Luft riecht nach Herbst.'
+  ]}},
+  { from:[11,1], to:[12,20], sub:{ label:'Spätherbst', icon:'🌫️', css:'autumn-late', sentences:[
+    'Nebel liegt über den Feldern, die Bäume werden kahl.',
+    'Die letzten Blätter fallen.',
+    'Kurze Tage, frühe Dämmerung.'
+  ]}},
+];
+
+function seasonMatch(date, def) {
+  const [fm, fd] = def.from, [tm, td] = def.to;
+  const y = date.getFullYear();
+  let start, end;
+  if (fm > tm) { // Winter: wraps Jahreswechsel
+    if (date.getMonth()+1 >= fm) { start = new Date(y, fm-1, fd); end = new Date(y+1, tm-1, td, 23,59,59); }
+    else                          { start = new Date(y-1, fm-1, fd); end = new Date(y, tm-1, td, 23,59,59); }
+  } else {
+    start = new Date(y, fm-1, fd); end = new Date(y, tm-1, td, 23,59,59);
+  }
+  return date >= start && date <= end;
+}
+
+function getSeasonInfo(date) {
+  const idx = SEASON_DEFS.findIndex(d => seasonMatch(date, d));
+  const def = SEASON_DEFS[idx >= 0 ? idx : 0];
+  const sub = def.sub;
+  const sentence = sub.sentences[date.getDate() % sub.sentences.length];
+
+  const nextDef = SEASON_DEFS[(Math.max(idx,0)+1) % SEASON_DEFS.length];
+  const y = date.getFullYear();
+  let nextStart = new Date(y, nextDef.from[0]-1, nextDef.from[1]);
+  if (nextStart <= date) nextStart = new Date(y+1, nextDef.from[0]-1, nextDef.from[1]);
+  const daysUntil = Math.ceil((nextStart - date) / 86400000);
+
+  return {
+    label: sub.label, icon: sub.icon, css: sub.css, sentence,
+    nextLabel: nextDef.sub.label, nextIcon: nextDef.sub.icon, daysUntil
+  };
+}
+
+// ── Mondphase (astronomische Näherungsformel, offline) ──────
+const MOON_REF_MS   = Date.UTC(2000,0,6,18,14,0);
+const SYNODIC_MONTH = 29.530588853;
+const MOON_PHASES = [
+  { max:0.033, label:'Neumond',            icon:'🌑' },
+  { max:0.25,  label:'Zunehmende Sichel',  icon:'🌒' },
+  { max:0.283, label:'Erstes Viertel',     icon:'🌓' },
+  { max:0.467, label:'Zunehmender Mond',   icon:'🌔' },
+  { max:0.533, label:'Vollmond',           icon:'🌕' },
+  { max:0.717, label:'Abnehmender Mond',   icon:'🌖' },
+  { max:0.75,  label:'Letztes Viertel',    icon:'🌗' },
+  { max:0.967, label:'Abnehmende Sichel',  icon:'🌘' },
+  { max:1.001, label:'Neumond',            icon:'🌑' },
+];
+
+function getMoonPhase(date) {
+  const days = (date.getTime() - MOON_REF_MS) / 86400000;
+  let phase = (days % SYNODIC_MONTH) / SYNODIC_MONTH;
+  if (phase < 0) phase += 1;
+  const illum = Math.round((1 - Math.cos(2*Math.PI*phase)) / 2 * 100);
+  const p = MOON_PHASES.find(p => phase <= p.max) || MOON_PHASES[0];
+  return { label: p.label, icon: p.icon, illum };
+}
+
+// ── Header: Saison-Tag, Titel-Zeile, Satz, Banner ────────────
+function renderCalSeasonHeader() {
+  const midMonth = new Date(calDate.getFullYear(), calDate.getMonth(), 15);
+  const info = getSeasonInfo(midMonth);
+
+  const iconEl = document.getElementById('cal-season-icon');
+  const labelEl = document.getElementById('cal-season-label');
+  const sentEl = document.getElementById('cal-season-sentence');
+  const bannerEl = document.getElementById('cal-banner');
+  if (!iconEl) return; // Sidebar-Markup noch nicht vorhanden
+
+  iconEl.textContent = info.icon;
+  labelEl.textContent = info.label;
+  sentEl.textContent = info.sentence;
+  bannerEl.className = 'cal-banner cal-banner-' + info.css;
+}
+
+// ── Info-Karte: Wetter (Cache aus today.js), Mond, Saison-Countdown ──
+function renderCalWeatherRow() {
+  const iconEl = document.getElementById('cal-weather-icon');
+  const tempEl = document.getElementById('cal-weather-temp');
+  const descEl = document.getElementById('cal-weather-desc');
+  if (!tempEl) return;
+
+  const saved = (typeof DB !== 'undefined') ? DB.get('weatherData', null) : null;
+  if (saved && saved.svgCode) {
+    iconEl.innerHTML = saved.svgCode;
+    tempEl.textContent = saved.temp;
+    descEl.textContent = saved.desc;
+  } else {
+    iconEl.innerHTML = (typeof WEATHER_SVGS !== 'undefined') ? WEATHER_SVGS.unknown : '';
+    tempEl.textContent = '—';
+    descEl.textContent = 'Wetter momentan nicht verfügbar.';
+  }
+}
+
+function renderCalMoonRow(date) {
+  const iconEl = document.getElementById('cal-moon-icon');
+  const phaseEl = document.getElementById('cal-moon-phase');
+  const illumEl = document.getElementById('cal-moon-illum');
+  if (!phaseEl) return;
+  const m = getMoonPhase(date);
+  iconEl.textContent = m.icon;
+  phaseEl.textContent = m.label;
+  illumEl.textContent = m.illum + ' % beleuchtet';
+}
+
+function renderCalSeasonInfoRow(date) {
+  const iconEl = document.getElementById('cal-season-info-icon');
+  const mainEl = document.getElementById('cal-season-info-main');
+  const subEl  = document.getElementById('cal-season-info-sub');
+  if (!mainEl) return;
+  const info = getSeasonInfo(date);
+  iconEl.textContent = info.nextIcon;
+  mainEl.textContent = info.nextLabel;
+  subEl.textContent  = info.daysUntil <= 0 ? 'heute' : `in ${info.daysUntil} Tagen`;
+}
+
+function renderCalInfoCard() {
+  const now = new Date();
+  renderCalWeatherRow();
+  renderCalMoonRow(now);
+  renderCalSeasonInfoRow(now);
+}
+
+// ── Sidebar: Countdown-Karte (nutzt bestehende countdownVisible-Daten) ──
+function renderCalCountdownCard() {
+  const card = document.getElementById('cal-card-countdowns');
+  const list = document.getElementById('cal-countdown-list');
+  if (!card || !list) return;
+  list.innerHTML = '';
+
+  const now = new Date(); now.setHours(0,0,0,0);
+  const items = [];
+  Object.entries(events).forEach(([key, dayEvs]) => {
+    (dayEvs || []).forEach(ev => {
+      if (!ev.countdown || countdownVisible[ev.id] !== true) return;
+      const refKey = ev.endDate || key;
+      const evDate = parseLocalDate(refKey); evDate.setHours(0,0,0,0);
+      const days = Math.ceil((evDate - now) / 86400000);
+      if (days >= 0) items.push({ title: ev.title, days });
+    });
+  });
+
+  if (items.length === 0) { card.classList.add('hidden'); return; }
+  card.classList.remove('hidden');
+
+  items.sort((a,b) => a.days - b.days).forEach(it => {
+    const row = document.createElement('div'); row.className = 'cal-side-row';
+    const name = document.createElement('span'); name.className = 'cal-side-row-title'; name.textContent = it.title;
+    const badge = document.createElement('span'); badge.className = 'cal-side-row-badge';
+    badge.textContent = it.days === 0 ? 'Heute' : it.days === 1 ? 'Morgen' : `${it.days} Tage`;
+    row.append(name, badge); list.appendChild(row);
+  });
+}
+
+// ── Sidebar: Monatsstatistik-Karte (vollständig automatisch berechnet) ──
+function renderCalStatsCard() {
+  const card = document.getElementById('cal-card-stats');
+  const list = document.getElementById('cal-stats-list');
+  if (!card || !list) return;
+  list.innerHTML = '';
+
+  const year = calDate.getFullYear(), month = calDate.getMonth();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+
+  const eventIds = new Set();
+  const taskIds = new Set();
+  const doneTaskIds = new Set();
+  let activeDays = 0;
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = new Date(year, month, d);
+    const dayEvs = getEventsForDay(date);
+    const dayTasks = (typeof getTasksForCalendarDay === 'function') ? getTasksForCalendarDay(date) : [];
+    if (dayEvs.length || dayTasks.length) activeDays++;
+    dayEvs.forEach(({ ev }) => eventIds.add(ev.id));
+    dayTasks.forEach(t => { taskIds.add(t.id); if (t.done) doneTaskIds.add(t.id); });
+  }
+
+  if (eventIds.size === 0 && taskIds.size === 0) { card.classList.add('hidden'); return; }
+  card.classList.remove('hidden');
+
+  const avgPerWeek = (eventIds.size / (daysInMonth / 7)).toFixed(1);
+  const rows = [
+    ['📅 Termine', eventIds.size],
+    ['✓ Erledigte Aufgaben', `${doneTaskIds.size} / ${taskIds.size}`],
+    ['🔥 Aktive Tage', activeDays],
+    ['Ø Termine / Woche', avgPerWeek],
+  ];
+  rows.forEach(([label, val]) => {
+    const row = document.createElement('div'); row.className = 'cal-side-row';
+    const l = document.createElement('span'); l.className = 'cal-side-row-title'; l.textContent = label;
+    const v = document.createElement('span'); v.className = 'cal-side-row-badge'; v.textContent = val;
+    row.append(l, v); list.appendChild(row);
+  });
+}
+
+// ── Sidebar: Platzhalter-Karten (Geburtstage/Feiertage/Ziele — Phase 2–4) ──
+function renderCalPlaceholderCards() {
+  ['cal-card-birthdays', 'cal-card-goals', 'cal-card-holidays'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('hidden');
+  });
+}
+
+// ── Master-Funktion: wird am Ende von renderCalendar() aufgerufen ──
+function renderCalendarSidebar() {
+  renderCalSeasonHeader();
+  renderCalInfoCard();
+  renderCalCountdownCard();
+  renderCalStatsCard();
+  renderCalPlaceholderCards();
+}

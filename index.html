@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="css/main.css" />
   <link rel="stylesheet" href="css/budget.css" />
   <link rel="stylesheet" href="css/calendar.css" />
+  <link rel="stylesheet" href="css/calendar-monthplanner.css" />
   <link rel="stylesheet" href="css/flashcards.css" />
   <link rel="stylesheet" href="css/games.css" />
   <link rel="stylesheet" href="css/guides.css" />
@@ -918,17 +919,79 @@
  
       <!-- CALENDAR -->
       <section id="view-calendar" class="view">
-        <div class="view-header">
-          <h1 class="view-title" id="cal-title">—</h1>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <button class="btn-primary" id="cal-add-event-btn">+ Termin</button>
-            <button class="week-btn" id="cal-prev">‹</button>
-            <button class="week-btn" id="cal-next">›</button>
+
+        <div id="cal-header">
+          <div id="cal-header-left">
+            <div class="cal-season-tag"><span id="cal-season-icon">☀️</span><span id="cal-season-label">—</span></div>
+            <h1 class="view-title" id="cal-title">—</h1>
+            <p id="cal-season-sentence">—</p>
+          </div>
+
+          <div id="cal-info-card" class="panel">
+            <div class="cal-info-row">
+              <div class="cal-info-icon"><div id="cal-weather-icon"></div></div>
+              <div class="cal-info-text">
+                <div class="cal-info-main" id="cal-weather-temp">—</div>
+                <div class="cal-info-sub" id="cal-weather-desc">—</div>
+              </div>
+            </div>
+            <div class="cal-info-divider"></div>
+            <div class="cal-info-row">
+              <div class="cal-info-icon" id="cal-moon-icon">🌙</div>
+              <div class="cal-info-text">
+                <div class="cal-info-main" id="cal-moon-phase">—</div>
+                <div class="cal-info-sub" id="cal-moon-illum">—</div>
+              </div>
+            </div>
+            <div class="cal-info-divider"></div>
+            <div class="cal-info-row">
+              <div class="cal-info-icon" id="cal-season-info-icon">🌼</div>
+              <div class="cal-info-text">
+                <div class="cal-info-main" id="cal-season-info-main">—</div>
+                <div class="cal-info-sub" id="cal-season-info-sub">—</div>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="dash-content">
-          <div id="calendar-grid"></div>
+
+        <div id="cal-banner" class="cal-banner"></div>
+
+        <div id="cal-body">
+          <div id="cal-main">
+            <div class="cal-nav-row">
+              <button class="btn-primary" id="cal-add-event-btn">+ Termin</button>
+              <button class="week-btn" id="cal-prev">‹</button>
+              <button class="week-btn" id="cal-next">›</button>
+            </div>
+            <div class="dash-content">
+              <div id="calendar-grid"></div>
+            </div>
+          </div>
+
+          <aside id="cal-sidebar">
+            <div class="panel cal-side-card hidden" id="cal-card-countdowns">
+              <div class="panel-header"><span class="panel-label">Countdowns</span></div>
+              <div id="cal-countdown-list" class="cal-side-body"></div>
+            </div>
+            <div class="panel cal-side-card hidden" id="cal-card-goals">
+              <div class="panel-header"><span class="panel-label">Monatsziele</span><span id="cal-goals-progress" class="cal-side-count"></span></div>
+              <div id="cal-goals-list" class="cal-side-body"></div>
+            </div>
+            <div class="panel cal-side-card hidden" id="cal-card-birthdays">
+              <div class="panel-header"><span class="panel-label">Geburtstage</span></div>
+              <div id="cal-birthdays-list" class="cal-side-body"></div>
+            </div>
+            <div class="panel cal-side-card hidden" id="cal-card-holidays">
+              <div class="panel-header"><span class="panel-label">Feiertage</span></div>
+              <div id="cal-holidays-list" class="cal-side-body"></div>
+            </div>
+            <div class="panel cal-side-card hidden" id="cal-card-stats">
+              <div class="panel-header"><span class="panel-label">Monatsstatistik</span></div>
+              <div id="cal-stats-list" class="cal-side-body"></div>
+            </div>
+          </aside>
         </div>
+
       </section>
  
       <!-- BUDGET -->
