@@ -507,6 +507,12 @@
   margin-top: 1px;
 }
 
+.cal-side-empty-hint {
+  font-size: 12px;
+  color: var(--text-3);
+  padding: 4px 0 6px;
+}
+
 .cal-birthdays-manage-btn {
   width: 22px; height: 22px;
   border-radius: 50%;
@@ -560,3 +566,125 @@
   width: 24px; height: 24px;
   font-size: 12px;
 }
+
+/* =============================================================
+   PHASE 4 — MONATSZIELE
+============================================================= */
+.cal-goal-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+.cal-goal-row:last-child { border-bottom: none; }
+.cal-goal-checkbox {
+  accent-color: var(--sage);
+  width: 15px; height: 15px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.cal-goal-text {
+  font-size: 12.5px;
+  color: var(--text-2);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cal-goal-text--done { text-decoration: line-through; color: var(--text-3); }
+
+.cal-goal-add-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+.cal-goal-add-input {
+  flex: 1;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 5px 8px;
+  font-size: 12px;
+  background: var(--bg);
+  color: var(--text);
+  outline: none;
+  transition: border-color var(--transition);
+}
+.cal-goal-add-input:focus { border-color: var(--sage); background: var(--surface); }
+.cal-goal-add-btn {
+  width: 26px; height: 26px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+}
+.cal-goal-add-btn:hover { background: var(--sage); color: #F8F5EE; border-color: var(--sage); }
+
+
+/* =============================================================
+   PHASE 5 — DEKORATION & FEINSCHLIFF
+   Rein dekorativ, keine Interaktion (pointer-events: none),
+   keine Animation an den Deko-Elementen selbst.
+============================================================= */
+
+#cal-main { position: relative; }
+#cal-main::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: -18px;
+  width: 22px;
+  height: min(420px, 92%);
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%20400%22%20width%3D%2224%22%20height%3D%22400%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M12%200%20C4%2030%2C20%2060%2C12%2090%20C4%20120%2C20%20150%2C12%20180%20C4%20210%2C20%20240%2C12%20270%20C4%20300%2C20%20330%2C12%20360%20C7%20375%2C17%20390%2C12%20400%22%20stroke%3D%22%236b7f58%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20opacity%3D%220.4%22/%3E%3Cg%20fill%3D%22%2396a47e%22%20opacity%3D%220.45%22%3E%3Cellipse%20cx%3D%225%22%20cy%3D%2228%22%20rx%3D%227%22%20ry%3D%223.8%22%20transform%3D%22rotate%28-28%205%2028%29%22/%3E%3Cellipse%20cx%3D%2219%22%20cy%3D%2268%22%20rx%3D%227%22%20ry%3D%223.8%22%20transform%3D%22rotate%2825%2019%2068%29%22/%3E%3Cellipse%20cx%3D%225%22%20cy%3D%22118%22%20rx%3D%226.5%22%20ry%3D%223.5%22%20transform%3D%22rotate%28-22%205%20118%29%22/%3E%3Cellipse%20cx%3D%2219%22%20cy%3D%22158%22%20rx%3D%227%22%20ry%3D%223.8%22%20transform%3D%22rotate%2828%2019%20158%29%22/%3E%3Cellipse%20cx%3D%225%22%20cy%3D%22208%22%20rx%3D%226.5%22%20ry%3D%223.5%22%20transform%3D%22rotate%28-20%205%20208%29%22/%3E%3Cellipse%20cx%3D%2219%22%20cy%3D%22248%22%20rx%3D%227%22%20ry%3D%223.8%22%20transform%3D%22rotate%2825%2019%20248%29%22/%3E%3Cellipse%20cx%3D%225%22%20cy%3D%22298%22%20rx%3D%226.5%22%20ry%3D%223.5%22%20transform%3D%22rotate%28-18%205%20298%29%22/%3E%3Cellipse%20cx%3D%2217%22%20cy%3D%22340%22%20rx%3D%226%22%20ry%3D%223.3%22%20transform%3D%22rotate%2820%2017%20340%29%22/%3E%3Cellipse%20cx%3D%228%22%20cy%3D%22378%22%20rx%3D%225.5%22%20ry%3D%223%22%20transform%3D%22rotate%28-15%208%20378%29%22/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-size: contain;
+  pointer-events: none;
+  z-index: 0;
+}
+[data-theme="dark"] #cal-main::before {
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%20400%22%20width%3D%2224%22%20height%3D%22400%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M12%200%20C4%2030%2C20%2060%2C12%2090%20C4%20120%2C20%20150%2C12%20180%20C4%20210%2C20%20240%2C12%20270%20C4%20300%2C20%20330%2C12%20360%20C7%20375%2C17%20390%2C12%20400%22%20stroke%3D%22%23728460%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20opacity%3D%220.22%22/%3E%3Cg%20fill%3D%22%238a9c78%22%20opacity%3D%220.25%22%3E%3Cellipse%20cx%3D%225%22%20cy%3D%2228%22%20rx%3D%227%22%20ry%3D%223.8%22%20transform%3D%22rotate%28-28%205%2028%29%22/%3E%3Cellipse%20cx%3D%2219%22%20cy%3D%2268%22%20rx%3D%227%22%20ry%3D%223.8%22%20transform%3D%22rotate%2825%2019%2068%29%22/%3E%3Cellipse%20cx%3D%225%22%20cy%3D%22118%22%20rx%3D%226.5%22%20ry%3D%223.5%22%20transform%3D%22rotate%28-22%205%20118%29%22/%3E%3Cellipse%20cx%3D%2219%22%20cy%3D%22158%22%20rx%3D%227%22%20ry%3D%223.8%22%20transform%3D%22rotate%2828%2019%20158%29%22/%3E%3Cellipse%20cx%3D%225%22%20cy%3D%22208%22%20rx%3D%226.5%22%20ry%3D%223.5%22%20transform%3D%22rotate%28-20%205%20208%29%22/%3E%3Cellipse%20cx%3D%2219%22%20cy%3D%22248%22%20rx%3D%227%22%20ry%3D%223.8%22%20transform%3D%22rotate%2825%2019%20248%29%22/%3E%3Cellipse%20cx%3D%225%22%20cy%3D%22298%22%20rx%3D%226.5%22%20ry%3D%223.5%22%20transform%3D%22rotate%28-18%205%20298%29%22/%3E%3Cellipse%20cx%3D%2217%22%20cy%3D%22340%22%20rx%3D%226%22%20ry%3D%223.3%22%20transform%3D%22rotate%2820%2017%20340%29%22/%3E%3Cellipse%20cx%3D%228%22%20cy%3D%22378%22%20rx%3D%225.5%22%20ry%3D%223%22%20transform%3D%22rotate%28-15%208%20378%29%22/%3E%3C/g%3E%3C/svg%3E");
+}
+
+#cal-sidebar::after {
+  content: '';
+  display: block;
+  width: 64px;
+  height: 66px;
+  margin: 6px auto 0;
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2072%2074%22%20width%3D%2272%22%20height%3D%2274%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M23%2048h26l-3.2%2017.5a3%203%200%200%201-3%202.5H29.2a3%203%200%200%201-3-2.5L23%2048Z%22%20fill%3D%22%23eae5da%22%20stroke%3D%22%2378644180%22%20stroke-width%3D%221.2%22/%3E%3Cpath%20d%3D%22M21%2048h30%22%20stroke%3D%22%2378644180%22%20stroke-width%3D%221.2%22/%3E%3Cpath%20d%3D%22M36%2048c-13-6-15-24-5-34%202%2012%204%2022%205%2034Z%22%20fill%3D%22%2396a47e%22%20opacity%3D%220.55%22/%3E%3Cpath%20d%3D%22M36%2048c13-8%2015-26%205-36%20-1%2013-3%2024-5%2036Z%22%20fill%3D%22%236b7f58%22%20opacity%3D%220.5%22/%3E%3Cpath%20d%3D%22M36%2048c-5-14%203-16%200-28%22%20stroke%3D%22%2350623e%22%20stroke-width%3D%221.3%22%20opacity%3D%220.5%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-size: contain;
+  opacity: 0.9;
+  pointer-events: none;
+  flex-shrink: 0;
+}
+[data-theme="dark"] #cal-sidebar::after {
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2072%2074%22%20width%3D%2272%22%20height%3D%2274%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M23%2048h26l-3.2%2017.5a3%203%200%200%201-3%202.5H29.2a3%203%200%200%201-3-2.5L23%2048Z%22%20fill%3D%22%23322e24%22%20stroke%3D%22%23f0dcb426%22%20stroke-width%3D%221.2%22/%3E%3Cpath%20d%3D%22M21%2048h30%22%20stroke%3D%22%23f0dcb426%22%20stroke-width%3D%221.2%22/%3E%3Cpath%20d%3D%22M36%2048c-13-6-15-24-5-34%202%2012%204%2022%205%2034Z%22%20fill%3D%22%238a9c78%22%20opacity%3D%220.4%22/%3E%3Cpath%20d%3D%22M36%2048c13-8%2015-26%205-36%20-1%2013-3%2024-5%2036Z%22%20fill%3D%22%23728460%22%20opacity%3D%220.35%22/%3E%3Cpath%20d%3D%22M36%2048c-5-14%203-16%200-28%22%20stroke%3D%22%235a6a4a%22%20stroke-width%3D%221.3%22%20opacity%3D%220.35%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22/%3E%3C/svg%3E");
+}
+
+@media (max-width: 1180px) {
+  #cal-main::before { display: none; }
+}
+@media (max-width: 860px) {
+  #cal-sidebar::after { display: none; }
+}
+
+/* -- Weiche Hover-Effekte auf den Sidebar-Zeilen -- */
+.cal-side-row, .cal-goal-row, .cal-birthday-item {
+  border-radius: 6px;
+  transition: background var(--transition);
+}
+.cal-side-row:hover, .cal-goal-row:hover, .cal-birthday-item:hover {
+  background: var(--accent-soft);
+}
+
+/* -- Fluessiger Uebergang beim Monatswechsel -- */
+@keyframes calGridFade {
+  from { opacity: 0; transform: translateY(3px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+#calendar-grid.cal-fade { animation: calGridFade 220ms ease; }

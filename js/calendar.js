@@ -696,6 +696,9 @@ let calDate = new Date();
 function renderCalendar() {
   const grid = document.getElementById('calendar-grid');
   grid.innerHTML = '';
+  grid.classList.remove('cal-fade');
+  void grid.offsetWidth; // Reflow erzwingen, damit die Animation bei jedem Aufruf neu startet
+  grid.classList.add('cal-fade');
   const year  = calDate.getFullYear();
   const month = calDate.getMonth();
   document.getElementById('cal-title').textContent =
@@ -1249,23 +1252,93 @@ function renderCalStatsCard() {
   });
 }
 
-// ── Sidebar: Platzhalter-Karten (Ziele — Phase 4) ──
-function renderCalPlaceholderCards() {
-  ['cal-card-goals'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.classList.add('hidden');
-  });
-}
-
-// ── Master-Funktion: wird am Ende von renderCalendar() aufgerufen ──
+// ── Sidebar: Master-Funktion — wird am Ende von renderCalendar() aufgerufen ──
 function renderCalendarSidebar() {
   renderCalSeasonHeader();
   renderCalInfoCard();
   renderCalCountdownCard();
   renderCalBirthdaysCard();
   renderCalHolidaysCard();
+  renderCalGoalsCard();
   renderCalStatsCard();
-  renderCalPlaceholderCards();
+}
+
+// =============================================================
+// =============================================================
+// MONATSPLANER — PHASE 4: MONATSZIELE
+// Kleine Checkliste pro Kalendermonat. Manuell gepflegt (kann
+// später automatisch aus Projekten befüllt werden). Wird im
+// Gegensatz zu den anderen Karten immer angezeigt, da sie die
+// einzige Stelle ist, an der Ziele überhaupt angelegt werden.
+// =============================================================
+// =============================================================
+
+let monthlyGoals = DB.get('monthlyGoals', {});
+function saveMonthlyGoals(){ DB.set('monthlyGoals', monthlyGoals); }
+
+function monthKeyFor(date) {
+  return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0');
+}
+function getGoalsForMonth(key) {
+  if (!monthlyGoals[key]) monthlyGoals[key] = [];
+  return monthlyGoals[key];
+}
+
+function renderCalGoalsCard() {
+  const card     = document.getElementById('cal-card-goals');
+  const list     = document.getElementById('cal-goals-list');
+  const progress = document.getElementById('cal-goals-progress');
+  if (!card || !list) return;
+  list.innerHTML = '';
+  card.classList.remove('hidden');
+
+  const key   = monthKeyFor(calDate);
+  const goals = getGoalsForMonth(key);
+
+  goals.forEach(g => {
+    const row = document.createElement('div'); row.className = 'cal-goal-row';
+
+    const cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.className = 'cal-goal-checkbox'; cb.checked = g.done;
+    cb.addEventListener('change', () => { g.done = cb.checked; saveMonthlyGoals(); renderCalGoalsCard(); });
+
+    const label = document.createElement('span');
+    label.className = 'cal-goal-text' + (g.done ? ' cal-goal-text--done' : '');
+    label.textContent = g.text;
+
+    const del = document.createElement('button'); del.className = 'task-delete'; del.textContent = '✕';
+    del.title = 'Ziel löschen';
+    del.addEventListener('click', () => {
+      monthlyGoals[key] = goals.filter(x => x.id !== g.id);
+      saveMonthlyGoals();
+      renderCalGoalsCard();
+    });
+
+    row.append(cb, label, del);
+    list.appendChild(row);
+  });
+
+  // ── Zeile zum Hinzufügen eines neuen Ziels ──
+  const addRow = document.createElement('div'); addRow.className = 'cal-goal-add-row';
+  const input  = document.createElement('input');
+  input.type = 'text'; input.className = 'cal-goal-add-input'; input.placeholder = 'Neues Ziel …';
+  const addBtn = document.createElement('button'); addBtn.className = 'cal-goal-add-btn'; addBtn.textContent = '+';
+
+  function addGoal() {
+    const text = input.value.trim();
+    if (!text) return;
+    goals.push({ id: crypto.randomUUID(), text, done: false });
+    saveMonthlyGoals();
+    renderCalGoalsCard();
+  }
+  addBtn.addEventListener('click', addGoal);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') addGoal(); });
+
+  addRow.append(input, addBtn);
+  list.appendChild(addRow);
+
+  const doneCount = goals.filter(g => g.done).length;
+  progress.textContent = goals.length ? `${doneCount} / ${goals.length} erledigt` : '';
 }
 
 // =============================================================
@@ -1425,11 +1498,15 @@ function birthdayAgeInYear(b, year) {
 }
 
 // ── Sidebar-Karte: Geburtstage im aktuell angezeigten Monat ──
+// Wird immer angezeigt (nicht nur bei vorhandenen Einträgen), da der
+// Verwalten-Button im Karten-Header sitzt — bei versteckter Karte gäbe
+// es sonst keinen Weg, den allerersten Geburtstag einzutragen.
 function renderCalBirthdaysCard() {
   const card = document.getElementById('cal-card-birthdays');
   const list = document.getElementById('cal-birthdays-list');
   if (!card || !list) return;
   list.innerHTML = '';
+  card.classList.remove('hidden');
 
   const month = calDate.getMonth() + 1;
   const year  = calDate.getFullYear();
@@ -1437,8 +1514,12 @@ function renderCalBirthdaysCard() {
     .filter(b => b.month === month)
     .sort((a, b) => a.day - b.day);
 
-  if (entries.length === 0) { card.classList.add('hidden'); return; }
-  card.classList.remove('hidden');
+  if (entries.length === 0) {
+    const p = document.createElement('p'); p.className = 'cal-side-empty-hint';
+    p.textContent = 'Keine Geburtstage in diesem Monat.';
+    list.appendChild(p);
+    return;
+  }
 
   entries.forEach((b, i) => {
     const item = document.createElement('div'); item.className = 'cal-birthday-item';
