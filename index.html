@@ -401,6 +401,10 @@
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1.5" fill="currentColor"/><rect x="9" y="2" width="5" height="5" rx="1.5" fill="currentColor" opacity=".4"/><rect x="2" y="9" width="5" height="5" rx="1.5" fill="currentColor" opacity=".4"/><rect x="9" y="9" width="5" height="5" rx="1.5" fill="currentColor" opacity=".4"/></svg>
           Heute
         </button></li>
+        <li><button class="nav-btn" data-view="calendar">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" stroke-width="1.5" fill="none" opacity=".6"/><path d="M5 2v2M11 2v2M2 7h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Kalender
+        </button></li>
         <li><button class="nav-btn" data-view="projects">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="12" rx="1.5" stroke="currentColor" stroke-width="1.4" fill="none" opacity=".7"/><rect x="9" y="2" width="5" height="7" rx="1.5" stroke="currentColor" stroke-width="1.4" fill="none" opacity=".7"/><rect x="9" y="11" width="5" height="3" rx="1" fill="currentColor" opacity=".4"/></svg>
           Projekte
@@ -412,10 +416,6 @@
         <li><button class="nav-btn" data-view="guides">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="9" rx="2" stroke="currentColor" stroke-width="1.5" fill="none" opacity=".7"/><path d="M5 7h6M5 9.5h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
           Anleitungen
-        </button></li>
-        <li><button class="nav-btn" data-view="calendar">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" stroke-width="1.5" fill="none" opacity=".6"/><path d="M5 2v2M11 2v2M2 7h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-          Kalender
         </button></li>
         <li><button class="nav-btn" data-view="budget">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5" fill="none" opacity=".6"/><path d="M8 5v6M6 6.5h3a1 1 0 0 1 0 2H7a1 1 0 0 0 0 2h3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
@@ -924,10 +924,7 @@
             <div id="cal-hero" class="cal-hero cal-hero-summer" data-season="summer">
               <div id="cal-hero-text">
                 <h1 class="view-title" id="cal-title">—</h1>
-                <div style="display:flex;align-items:center;gap:8px;">
-                  <div class="cal-season-tag"><span id="cal-season-icon">☀️</span><span id="cal-season-label">—</span></div>
-                  <button class="icon-btn" id="cal-settings-btn" title="Bundesland für Feiertage">⚙</button>
-                </div>
+                <div class="cal-season-tag"><span id="cal-season-label">—</span><span id="cal-season-icon">☀️</span></div>
                 <p id="cal-season-sentence">—</p>
               </div>
 
@@ -969,6 +966,7 @@
               <button class="btn-primary" id="cal-add-event-btn">+ Termin</button>
               <button class="week-btn" id="cal-prev">‹</button>
               <button class="week-btn" id="cal-next">›</button>
+              <button class="icon-btn" id="cal-settings-btn" title="Bundesland für Feiertage">⚙</button>
             </div>
 
             <aside id="cal-sidebar" class="dash-content">

@@ -312,7 +312,7 @@ ul { list-style: none; }
 /* =============================================================
    MAIN + VIEWS
 ============================================================= */
-#main { overflow-y: scroll; min-height: 100vh; scrollbar-gutter: stable; }
+#main { overflow-y: auto; min-height: 100vh; scrollbar-gutter: stable; }
 
 .view {
   display: none;
