@@ -1410,8 +1410,9 @@
   </div>
 
   <div id="calendar-settings-modal-overlay" class="modal-backdrop hidden">
-    <div class="modal-box" style="width:360px;">
+    <div class="modal-box" style="width:380px;">
       <div class="modal-head"><span>Kalender-Einstellungen</span><button class="modal-x" id="calendar-settings-modal-close">✕</button></div>
+
       <div class="modal-row">
         <label>Bundesland (für Feiertage)</label>
         <select class="modal-select" id="calendar-bundesland-select">
@@ -1434,6 +1435,36 @@
           <option value="TH">Thüringen</option>
         </select>
       </div>
+
+      <div class="cal-settings-section-label">Anzeige</div>
+      <div class="cal-settings-toggle-row">
+        <span>Feiertage anzeigen</span>
+        <label class="toggle"><input type="checkbox" id="cal-setting-show-holidays"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="cal-settings-toggle-row">
+        <span>Geburtstage anzeigen</span>
+        <label class="toggle"><input type="checkbox" id="cal-setting-show-birthdays"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="cal-settings-toggle-row">
+        <span>Aufgaben anzeigen</span>
+        <label class="toggle"><input type="checkbox" id="cal-setting-show-tasks"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="cal-settings-toggle-row">
+        <span>Abgeschlossene Aufgaben anzeigen</span>
+        <label class="toggle"><input type="checkbox" id="cal-setting-show-done-tasks"><span class="toggle-slider"></span></label>
+      </div>
+
+      <div class="cal-settings-section-label">Erinnerungen</div>
+      <div class="modal-row">
+        <label>Geburtstage vorher ankündigen</label>
+        <select class="modal-select" id="calendar-birthday-reminder-select">
+          <option value="0">Aus</option>
+          <option value="1">1 Tag vorher</option>
+          <option value="3">3 Tage vorher</option>
+          <option value="7">7 Tage vorher</option>
+        </select>
+      </div>
+
       <div class="modal-actions">
         <button class="btn-primary" id="calendar-settings-modal-done">Fertig</button>
       </div>

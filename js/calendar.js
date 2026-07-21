@@ -728,16 +728,6 @@ function renderCalendar() {
   for (let d = 1; d <= remainder; d++)
     allDays.push({ date: new Date(year, month+1, d), otherMonth: true });
 
-  // Immer exakt 6 Wochen (42 Zellen) anzeigen — unabhängig davon, ob der
-  // Monat mit dem Wochenlayout eigentlich schon nach 4 oder 5 Wochen fertig
-  // wäre. So bleibt die Kalenderkarte in jedem Monat exakt gleich hoch.
-  while (allDays.length < 42) {
-    const lastDate = allDays[allDays.length - 1].date;
-    const nextDate = new Date(lastDate);
-    nextDate.setDate(nextDate.getDate() + 1);
-    allDays.push({ date: nextDate, otherMonth: true });
-  }
-
   // ── Render weeks ───────────────────────────────────────────
   for (let i = 0; i < allDays.length; i += 7) {
     const week = allDays.slice(i, i+7);
@@ -751,10 +741,13 @@ function renderCalendar() {
 
       // All events visible on this day (single + multi-day + recurring)
       const dayEventEntries = getEventsForDay(dateTime);
-      const dayTasks        = getTasksForCalendarDay(date);
+      let   dayTasks         = calendarSettings.showTasks ? getTasksForCalendarDay(date) : [];
+      if (!calendarSettings.showDoneTasks) dayTasks = dayTasks.filter(t => !t.done);
 
       const el = document.createElement('div');
-      const holiday = (typeof holidayForDate === 'function') ? holidayForDate(date) : null;
+      const holiday = (calendarSettings.showHolidays && typeof holidayForDate === 'function') ? holidayForDate(date) : null;
+      const dayBirthdays         = calendarSettings.showBirthdays ? getBirthdaysForDate(dateTime) : [];
+      const dayBirthdayReminders = calendarSettings.showBirthdays ? getBirthdayRemindersForDate(dateTime) : [];
       el.className = 'cal-day'
         + (otherMonth  ? ' other-month' : '')
         + (isToday(date) ? ' is-today'   : '')
@@ -777,6 +770,25 @@ function renderCalendar() {
         hPill.title = holiday.label;
         items.appendChild(hPill);
       }
+
+      dayBirthdays.forEach(b => {
+        if (shown >= 3) return; shown++;
+        const pill = document.createElement('div');
+        pill.className = 'cal-birthday-cal-pill';
+        pill.textContent = '🎂 ' + b.name;
+        pill.title = b.name + ' hat Geburtstag';
+        items.appendChild(pill);
+      });
+
+      dayBirthdayReminders.forEach(b => {
+        if (shown >= 3) return; shown++;
+        const pill = document.createElement('div');
+        pill.className = 'cal-birthday-cal-pill cal-birthday-reminder-pill';
+        const when = b.daysAhead === 1 ? 'morgen' : `in ${b.daysAhead} Tagen`;
+        pill.textContent = `🎂 Geburtstag von ${b.name} ${when}`;
+        pill.title = pill.textContent;
+        items.appendChild(pill);
+      });
 
 
       // Single-day events first, then multi-day ranges
@@ -824,7 +836,7 @@ function renderCalendar() {
         items.appendChild(pill);
       });
 
-      const totalAll = dayEventEntries.length + dayTasks.length;
+      const totalAll = dayEventEntries.length + dayTasks.length + dayBirthdays.length + dayBirthdayReminders.length;
       if (totalAll > shown) {
         const more = document.createElement('div'); more.className = 'cal-more';
         more.textContent = `+${totalAll - shown} weitere`;
@@ -859,9 +871,9 @@ function openCalDayModal(key, date) {
 
   const dateTime = new Date(date); dateTime.setHours(0,0,0,0);
   const dayEventEntries = getEventsForDay(dateTime);
-  const dayTasks  = getTasksForCalendarDay(date);
+  const dayTasks  = calendarSettings.showTasks ? getTasksForCalendarDay(date) : [];
   const openTasks = dayTasks.filter(t => !t.done);
-  const doneTasks = dayTasks.filter(t =>  t.done);
+  const doneTasks = calendarSettings.showDoneTasks ? dayTasks.filter(t => t.done) : [];
 
   if (dayEventEntries.length === 0 && dayTasks.length === 0) {
     const p = document.createElement('p'); p.className = 'modal-hint';
@@ -1257,7 +1269,7 @@ function renderCalStatsCard() {
   for (let d = 1; d <= daysInMonth; d++) {
     const date = new Date(year, month, d);
     const dayEvs = getEventsForDay(date);
-    const dayTasks = (typeof getTasksForCalendarDay === 'function') ? getTasksForCalendarDay(date) : [];
+    const dayTasks = (calendarSettings.showTasks && typeof getTasksForCalendarDay === 'function') ? getTasksForCalendarDay(date) : [];
     dayEvs.forEach(({ ev }) => eventIds.add(ev.id));
     dayTasks.forEach(t => { taskIds.add(t.id); if (t.done) doneTaskIds.add(t.id); });
     // Nur bereits vergangene Tage (inkl. heute) zählen als "aktiv" —
@@ -1394,7 +1406,19 @@ const BUNDESLAENDER = {
   TH: 'Thüringen'
 };
 
-let calendarSettings = DB.get('calendarSettings', { bundesland: null });
+// Defaults für alle Kalender-Einstellungen. Object.assign über bereits
+// gespeicherte Werte darüber = migrationssicher: bestehende Nutzer, die
+// bisher nur {bundesland} gespeichert hatten, bekommen die neuen Felder
+// automatisch mit sinnvollen Standardwerten ergänzt, ohne Datenverlust.
+const DEFAULT_CALENDAR_SETTINGS = {
+  bundesland: null,
+  showHolidays: true,
+  showBirthdays: true,
+  showTasks: true,
+  showDoneTasks: false,
+  birthdayReminderDays: 0, // 0 = aus, sonst 1/3/7
+};
+let calendarSettings = Object.assign({}, DEFAULT_CALENDAR_SETTINGS, DB.get('calendarSettings', {}));
 function saveCalendarSettings(){ DB.set('calendarSettings', calendarSettings); }
 
 // ── Gauß'sche Osterformel (Ostersonntag, offline berechnet) ──
@@ -1472,6 +1496,8 @@ function renderCalHolidaysCard() {
   if (!card || !list) return;
   list.innerHTML = '';
 
+  if (!calendarSettings.showHolidays) { card.classList.add('hidden'); return; }
+
   const year = calDate.getFullYear(), month = calDate.getMonth();
   const holidays = getHolidaysForYear(year, calendarSettings.bundesland)
     .filter(h => h.date.getMonth() === month)
@@ -1493,6 +1519,18 @@ function renderCalHolidaysCard() {
 document.getElementById('cal-settings-btn')?.addEventListener('click', () => {
   const sel = document.getElementById('calendar-bundesland-select');
   if (sel) sel.value = calendarSettings.bundesland || '';
+
+  const showHolidaysEl  = document.getElementById('cal-setting-show-holidays');
+  const showBirthdaysEl = document.getElementById('cal-setting-show-birthdays');
+  const showTasksEl     = document.getElementById('cal-setting-show-tasks');
+  const showDoneTasksEl = document.getElementById('cal-setting-show-done-tasks');
+  const reminderEl      = document.getElementById('calendar-birthday-reminder-select');
+  if (showHolidaysEl)  showHolidaysEl.checked  = calendarSettings.showHolidays;
+  if (showBirthdaysEl) showBirthdaysEl.checked = calendarSettings.showBirthdays;
+  if (showTasksEl)     showTasksEl.checked     = calendarSettings.showTasks;
+  if (showDoneTasksEl) showDoneTasksEl.checked = calendarSettings.showDoneTasks;
+  if (reminderEl)       reminderEl.value       = String(calendarSettings.birthdayReminderDays);
+
   document.getElementById('calendar-settings-modal-overlay')?.classList.remove('hidden');
 });
 function closeCalSettingsModal() {
@@ -1505,6 +1543,35 @@ document.getElementById('calendar-settings-modal-overlay')?.addEventListener('cl
 });
 document.getElementById('calendar-bundesland-select')?.addEventListener('change', e => {
   calendarSettings.bundesland = e.target.value || null;
+  saveCalendarSettings();
+  renderCalendar();
+});
+
+// ── Anzeige-Schalter ──────────────────────────────────────────
+document.getElementById('cal-setting-show-holidays')?.addEventListener('change', e => {
+  calendarSettings.showHolidays = e.target.checked;
+  saveCalendarSettings();
+  renderCalendar();
+});
+document.getElementById('cal-setting-show-birthdays')?.addEventListener('change', e => {
+  calendarSettings.showBirthdays = e.target.checked;
+  saveCalendarSettings();
+  renderCalendar();
+});
+document.getElementById('cal-setting-show-tasks')?.addEventListener('change', e => {
+  calendarSettings.showTasks = e.target.checked;
+  saveCalendarSettings();
+  renderCalendar();
+});
+document.getElementById('cal-setting-show-done-tasks')?.addEventListener('change', e => {
+  calendarSettings.showDoneTasks = e.target.checked;
+  saveCalendarSettings();
+  renderCalendar();
+});
+
+// ── Erinnerungen ──────────────────────────────────────────────
+document.getElementById('calendar-birthday-reminder-select')?.addEventListener('change', e => {
+  calendarSettings.birthdayReminderDays = parseInt(e.target.value, 10) || 0;
   saveCalendarSettings();
   renderCalendar();
 });
@@ -1531,15 +1598,41 @@ function birthdayAgeInYear(b, year) {
   return year - b.year;
 }
 
+// Geburtstage, die exakt auf ein gegebenes Datum fallen (Tag+Monat,
+// jahresunabhängig — wiederholt sich automatisch jedes Jahr).
+function getBirthdaysForDate(date) {
+  const day = date.getDate(), month = date.getMonth() + 1;
+  return birthdays.filter(b => b.day === day && b.month === month);
+}
+
+// Geburtstags-Vorankündigungen für ein gegebenes Datum: prüft, ob ein
+// Geburtstag genau `birthdayReminderDays` Tage später liegt. Nutzt
+// dieselbe tag/monat-Logik wie oben, daher funktioniert der Jahreswechsel
+// (z.B. 30.12. + 3 Tage -> 02.01.) automatisch korrekt.
+function getBirthdayRemindersForDate(date) {
+  const n = calendarSettings.birthdayReminderDays;
+  if (!n) return [];
+  const target = new Date(date); target.setDate(target.getDate() + n);
+  const day = target.getDate(), month = target.getMonth() + 1;
+  return birthdays
+    .filter(b => b.day === day && b.month === month)
+    .map(b => ({ ...b, daysAhead: n }));
+}
+
 // ── Sidebar-Karte: Geburtstage im aktuell angezeigten Monat ──
 // Wird immer angezeigt (nicht nur bei vorhandenen Einträgen), da der
 // Verwalten-Button im Karten-Header sitzt — bei versteckter Karte gäbe
-// es sonst keinen Weg, den allerersten Geburtstag einzutragen.
+// es sonst keinen Weg, den allerersten Geburtstag einzutragen. Ausnahme:
+// die explizite "Geburtstage anzeigen"-Einstellung blendet sie komplett
+// aus, das ist bewusste Nutzerentscheidung (Einstellungen bleiben über
+// den Zahnrad-Button separat erreichbar).
 function renderCalBirthdaysCard() {
   const card = document.getElementById('cal-card-birthdays');
   const list = document.getElementById('cal-birthdays-list');
   if (!card || !list) return;
   list.innerHTML = '';
+
+  if (!calendarSettings.showBirthdays) { card.classList.add('hidden'); return; }
   card.classList.remove('hidden');
 
   const month = calDate.getMonth() + 1;

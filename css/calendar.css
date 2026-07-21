@@ -291,7 +291,7 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  min-height: 190px;
+  height: 215px;
   padding: 22px 28px;
   margin-bottom: 16px;
   border-radius: var(--radius-lg);
@@ -301,6 +301,7 @@
   background-size: cover;
   background-position: center;
   animation: fadeIn var(--transition-slow) ease;
+  flex-shrink: 0;
 }
 
 /* Weicher, mehrstufiger Aufhell-Verlauf links — damit der Text
@@ -314,24 +315,24 @@
   inset: -1px;
   border-radius: inherit;
   background: linear-gradient(100deg,
-    color-mix(in srgb, var(--surface) 92%, transparent) 0%,
-    color-mix(in srgb, var(--surface) 78%, transparent) 18%,
-    color-mix(in srgb, var(--surface) 50%, transparent) 34%,
-    color-mix(in srgb, var(--surface) 22%, transparent) 52%,
-    color-mix(in srgb, var(--surface) 6%, transparent) 68%,
-    transparent 82%
+    color-mix(in srgb, var(--surface) 90%, transparent) 0%,
+    color-mix(in srgb, var(--surface) 72%, transparent) 20%,
+    color-mix(in srgb, var(--surface) 46%, transparent) 38%,
+    color-mix(in srgb, var(--surface) 24%, transparent) 55%,
+    color-mix(in srgb, var(--surface) 12%, transparent) 75%,
+    color-mix(in srgb, var(--surface) 8%, transparent) 100%
   );
   pointer-events: none;
   z-index: 0;
 }
 [data-theme="dark"] .cal-hero::before {
   background: linear-gradient(100deg,
-    color-mix(in srgb, var(--bg) 92%, transparent) 0%,
-    color-mix(in srgb, var(--bg) 78%, transparent) 18%,
-    color-mix(in srgb, var(--bg) 50%, transparent) 34%,
-    color-mix(in srgb, var(--bg) 22%, transparent) 52%,
-    color-mix(in srgb, var(--bg) 6%, transparent) 68%,
-    transparent 82%
+    color-mix(in srgb, var(--bg) 90%, transparent) 0%,
+    color-mix(in srgb, var(--bg) 72%, transparent) 20%,
+    color-mix(in srgb, var(--bg) 46%, transparent) 38%,
+    color-mix(in srgb, var(--bg) 24%, transparent) 55%,
+    color-mix(in srgb, var(--bg) 12%, transparent) 75%,
+    color-mix(in srgb, var(--bg) 8%, transparent) 100%
   );
 }
 
@@ -462,9 +463,6 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
-  position: sticky;
-  top: 20px;
-  max-height: calc(100vh - 40px);
 }
 
 #cal-sidebar-col .cal-nav-row {
@@ -488,15 +486,7 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border-strong) transparent;
 }
-#cal-sidebar::-webkit-scrollbar { width: 6px; }
-#cal-sidebar::-webkit-scrollbar-track { background: transparent; }
-#cal-sidebar::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
 
 .cal-side-card { animation: fadeIn var(--transition-slow) ease; }
 .cal-side-card.hidden { display: none; }
@@ -548,11 +538,9 @@
 
 @media (max-width: 860px) {
   #cal-body { grid-template-columns: 1fr; }
-  .cal-hero { min-height: 0; }
+  .cal-hero { height: auto; min-height: 190px; }
   #cal-hero-text { max-width: 100%; }
   #cal-info-card { position: static; width: 100%; margin-top: 14px; }
-  #cal-sidebar-col { position: static; max-height: none; }
-  #cal-sidebar { overflow-y: visible; }
 }
 
 /* =============================================================
@@ -648,6 +636,36 @@
 }
 [data-theme="dark"] .cal-holiday-pill { color: #d9a866; }
 
+/* =============================================================
+   PHASE 6 — GEBURTSTAGE IM KALENDER + ERINNERUNGEN
+   Eigene, freundliche Farbgebung (Rosé), abgegrenzt von Feiertagen
+   (Amber), Terminen (Salbei) und Aufgaben (Prio-Farben).
+============================================================= */
+.cal-birthday-cal-pill {
+  min-width: 0;
+  font-size: 10.5px;
+  padding: 2px 6px;
+  border-radius: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: rgba(196,80,122,0.14);
+  color: #a8447a;
+  border-left: 2px solid #c4507a;
+}
+[data-theme="dark"] .cal-birthday-cal-pill { color: #e08fb3; }
+
+/* Erinnerungs-Pill: dieselbe Farbfamilie, aber deutlich dezenter —
+   auf den ersten Blick erkennbar als Vorankündigung, nicht als der
+   eigentliche Geburtstag. */
+.cal-birthday-reminder-pill {
+  background: rgba(196,80,122,0.06);
+  color: #b87196;
+  border-left-color: rgba(196,80,122,0.45);
+  font-style: italic;
+}
+[data-theme="dark"] .cal-birthday-reminder-pill { color: #c9a0b7; }
+
 #cal-settings-btn {
   width: 24px; height: 24px;
   font-size: 12px;
@@ -709,6 +727,30 @@
   transition: background var(--transition), color var(--transition), border-color var(--transition);
 }
 .cal-goal-add-btn:hover { background: var(--sage); color: #F8F5EE; border-color: var(--sage); }
+
+/* =============================================================
+   EINSTELLUNGS-MODAL — Anzeige-Schalter & Erinnerungen
+============================================================= */
+.cal-settings-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-3);
+  margin: 18px 0 8px;
+}
+.cal-settings-section-label:first-of-type { margin-top: 4px; }
+
+.cal-settings-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.cal-settings-toggle-row:last-of-type { border-bottom: none; }
+.cal-settings-toggle-row span { font-size: 13px; color: var(--text-2); }
 
 /* =============================================================
    MONATSSTATISTIK — 3 gleich große Kacheln statt Zeilenliste
