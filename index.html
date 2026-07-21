@@ -919,84 +919,88 @@
       <!-- CALENDAR -->
       <section id="view-calendar" class="view">
 
-        <div id="cal-top-row">
-          <div id="cal-header-left">
-            <h1 class="view-title" id="cal-title">—</h1>
-            <div style="display:flex;align-items:center;gap:8px;">
-              <div class="cal-season-tag"><span id="cal-season-icon">☀️</span><span id="cal-season-label">—</span></div>
-              <button class="icon-btn" id="cal-settings-btn" title="Bundesland für Feiertage">⚙</button>
-            </div>
-            <p id="cal-season-sentence">—</p>
-          </div>
-
-          <div id="cal-nav-col">
-            <div class="cal-nav-row">
-              <button class="btn-primary" id="cal-add-event-btn">+ Termin</button>
-              <button class="week-btn" id="cal-prev">‹</button>
-              <button class="week-btn" id="cal-next">›</button>
-            </div>
-          </div>
-        </div>
-
-        <div id="cal-banner-row">
-          <div id="cal-banner" class="cal-banner"></div>
-
-          <div id="cal-info-card" class="panel">
-            <div class="cal-info-row">
-              <div class="cal-info-icon"><div id="cal-weather-icon"></div></div>
-              <div class="cal-info-text">
-                <div class="cal-info-main" id="cal-weather-temp">—</div>
-                <div class="cal-info-sub" id="cal-weather-desc">—</div>
-              </div>
-            </div>
-            <div class="cal-info-divider"></div>
-            <div class="cal-info-row">
-              <div class="cal-info-icon" id="cal-moon-icon">🌙</div>
-              <div class="cal-info-text">
-                <div class="cal-info-main" id="cal-moon-phase">—</div>
-                <div class="cal-info-sub" id="cal-moon-illum">—</div>
-              </div>
-            </div>
-            <div class="cal-info-divider"></div>
-            <div class="cal-info-row">
-              <div class="cal-info-icon" id="cal-season-info-icon">🌼</div>
-              <div class="cal-info-text">
-                <div class="cal-info-main" id="cal-season-info-main">—</div>
-                <div class="cal-info-sub" id="cal-season-info-sub">—</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <div id="cal-body">
           <div id="cal-main">
+            <div id="cal-hero" class="cal-hero cal-hero-summer" data-season="summer">
+              <div id="cal-hero-text">
+                <h1 class="view-title" id="cal-title">—</h1>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div class="cal-season-tag"><span id="cal-season-icon">☀️</span><span id="cal-season-label">—</span></div>
+                  <button class="icon-btn" id="cal-settings-btn" title="Bundesland für Feiertage">⚙</button>
+                </div>
+                <p id="cal-season-sentence">—</p>
+              </div>
+
+              <div id="cal-info-card" class="panel">
+                <div class="cal-info-row">
+                  <div class="cal-info-icon"><div id="cal-weather-icon"></div></div>
+                  <div class="cal-info-text">
+                    <div class="cal-info-main" id="cal-weather-temp">—</div>
+                    <div class="cal-info-sub" id="cal-weather-desc">—</div>
+                  </div>
+                </div>
+                <div class="cal-info-divider"></div>
+                <div class="cal-info-row">
+                  <div class="cal-info-icon" id="cal-moon-icon">🌙</div>
+                  <div class="cal-info-text">
+                    <div class="cal-info-main" id="cal-moon-phase">—</div>
+                    <div class="cal-info-sub" id="cal-moon-illum">—</div>
+                  </div>
+                </div>
+                <div class="cal-info-divider"></div>
+                <div class="cal-info-row">
+                  <div class="cal-info-icon" id="cal-season-info-icon">🌼</div>
+                  <div class="cal-info-text">
+                    <div class="cal-info-main" id="cal-season-info-main">—</div>
+                    <div class="cal-info-sub" id="cal-season-info-sub">—</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div class="dash-content">
               <div id="calendar-grid"></div>
             </div>
           </div>
 
-          <aside id="cal-sidebar">
-            <div class="panel cal-side-card hidden" id="cal-card-countdowns">
-              <div class="panel-header"><span class="panel-label">Countdowns</span></div>
-              <div id="cal-countdown-list" class="cal-side-body"></div>
+
+          <div id="cal-sidebar-col">
+            <div class="cal-nav-row">
+              <button class="btn-primary" id="cal-add-event-btn">+ Termin</button>
+              <button class="week-btn" id="cal-prev">‹</button>
+              <button class="week-btn" id="cal-next">›</button>
             </div>
-            <div class="panel cal-side-card hidden" id="cal-card-goals">
-              <div class="panel-header"><span class="panel-label">Monatsziele</span><span id="cal-goals-progress" class="cal-side-count"></span></div>
-              <div id="cal-goals-list" class="cal-side-body"></div>
+
+            <aside id="cal-sidebar" class="dash-content">
+              <div class="cal-sidebar-heading">🌿 Diesen Monat</div>
+
+              <div class="panel cal-side-card hidden" id="cal-card-countdowns">
+                <div class="panel-header"><span class="panel-label">Countdowns</span></div>
+                <div id="cal-countdown-list" class="cal-side-body"></div>
+              </div>
+
+              <div class="panel cal-side-card hidden" id="cal-card-goals">
+                <div class="panel-header"><span class="panel-label">Monatsziele</span><span id="cal-goals-progress" class="cal-side-count"></span></div>
+                <div id="cal-goals-list" class="cal-side-body"></div>
+              </div>
+
+              <div class="panel cal-side-card hidden" id="cal-card-birthdays">
+                <div class="panel-header"><span class="panel-label">Geburtstage</span><button class="cal-birthdays-manage-btn" id="cal-birthdays-manage-btn" title="Geburtstage verwalten">✎</button></div>
+                <div id="cal-birthdays-list" class="cal-side-body"></div>
+              </div>
+
+              <div class="panel cal-side-card hidden" id="cal-card-holidays">
+                <div class="panel-header"><span class="panel-label">Feiertage</span></div>
+                <div id="cal-holidays-list" class="cal-side-body"></div>
+              </div>
+
+              <div class="panel cal-side-card hidden" id="cal-card-stats">
+                <div class="panel-header"><span class="panel-label">Monatsstatistik</span></div>
+                <div id="cal-stats-list" class="cal-side-body"></div>
+              </div>
+            </aside>
             </div>
-            <div class="panel cal-side-card hidden" id="cal-card-birthdays">
-              <div class="panel-header"><span class="panel-label">Geburtstage</span><button class="cal-birthdays-manage-btn" id="cal-birthdays-manage-btn" title="Geburtstage verwalten">✎</button></div>
-              <div id="cal-birthdays-list" class="cal-side-body"></div>
-            </div>
-            <div class="panel cal-side-card hidden" id="cal-card-holidays">
-              <div class="panel-header"><span class="panel-label">Feiertage</span></div>
-              <div id="cal-holidays-list" class="cal-side-body"></div>
-            </div>
-            <div class="panel cal-side-card hidden" id="cal-card-stats">
-              <div class="panel-header"><span class="panel-label">Monatsstatistik</span></div>
-              <div id="cal-stats-list" class="cal-side-body"></div>
-            </div>
-          </aside>
+          </div>
         </div>
 
       </section>

@@ -1132,15 +1132,17 @@ function renderCalSeasonHeader() {
   const iconEl = document.getElementById('cal-season-icon');
   const labelEl = document.getElementById('cal-season-label');
   const sentEl = document.getElementById('cal-season-sentence');
-  const bannerEl = document.getElementById('cal-banner');
+  const heroEl = document.getElementById('cal-hero');
   if (!iconEl) return; // Sidebar-Markup noch nicht vorhanden
 
   iconEl.textContent = info.icon;
   labelEl.textContent = info.label;
   sentEl.textContent = info.sentence;
   const seasonGroup = SEASON_GROUP_MAP[info.css] || 'summer';
-  bannerEl.className = 'cal-banner cal-banner-' + seasonGroup;
-  bannerEl.dataset.season = seasonGroup;
+  if (heroEl) {
+    heroEl.className = 'cal-hero cal-hero-' + seasonGroup;
+    heroEl.dataset.season = seasonGroup;
+  }
 }
 
 // ── Info-Karte: Wetter (Cache aus today.js), Mond, Saison-Countdown ──
@@ -1536,18 +1538,18 @@ function renderCalBirthdaysCard() {
   entries.forEach((b, i) => {
     const item = document.createElement('div'); item.className = 'cal-birthday-item';
 
-    const dateEl = document.createElement('div'); dateEl.className = 'cal-birthday-date';
+    const dateEl = document.createElement('span'); dateEl.className = 'cal-birthday-date';
     dateEl.textContent = String(b.day).padStart(2, '0') + '.' + String(b.month).padStart(2, '0') + '.';
 
-    const nameEl = document.createElement('div'); nameEl.className = 'cal-birthday-name';
+    const nameEl = document.createElement('span'); nameEl.className = 'cal-birthday-name';
     nameEl.textContent = b.name + ' ' + BIRTHDAY_ICONS[i % BIRTHDAY_ICONS.length];
 
     item.append(dateEl, nameEl);
 
     const age = birthdayAgeInYear(b, year);
     if (age !== null && age >= 0) {
-      const ageEl = document.createElement('div'); ageEl.className = 'cal-birthday-age';
-      ageEl.textContent = `wird ${age} Jahre`;
+      const ageEl = document.createElement('span'); ageEl.className = 'cal-birthday-age';
+      ageEl.textContent = `wird ${age}`;
       item.appendChild(ageEl);
     }
 
