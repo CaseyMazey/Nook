@@ -728,6 +728,16 @@ function renderCalendar() {
   for (let d = 1; d <= remainder; d++)
     allDays.push({ date: new Date(year, month+1, d), otherMonth: true });
 
+  // Immer exakt 6 Wochen (42 Zellen) anzeigen — unabhängig davon, ob der
+  // Monat mit dem Wochenlayout eigentlich schon nach 4 oder 5 Wochen fertig
+  // wäre. So bleibt die Kalenderkarte in jedem Monat exakt gleich hoch.
+  while (allDays.length < 42) {
+    const lastDate = allDays[allDays.length - 1].date;
+    const nextDate = new Date(lastDate);
+    nextDate.setDate(nextDate.getDate() + 1);
+    allDays.push({ date: nextDate, otherMonth: true });
+  }
+
   // ── Render weeks ───────────────────────────────────────────
   for (let i = 0; i < allDays.length; i += 7) {
     const week = allDays.slice(i, i+7);
@@ -1020,83 +1030,88 @@ document.getElementById('countdown-modal-overlay').addEventListener('click', e =
 // =============================================================
 // =============================================================
 
-// ── Saison-Definitionen (astronomisch angenähert) ───────────
-const SEASON_DEFS = [
-  { from:[12,21], to:[3,19], sub:{ label:'Winter', icon:'❄️', css:'winter', sentences:[
-    'Schnee liegt über dem Land, drinnen ist es gemütlich warm.',
-    'Kalte Tage, klare Nächte — Zeit für heißen Tee.',
+// ── Saison-Definitionen — einfache Monats-Zuordnung (meteorologisch/
+// gefühlt statt astronomisch exakt), damit z.B. der Dezember bereits
+// als Winter gilt statt noch als Herbst. Schlüssel = Kalendermonat (1–12).
+// css-Feld ist direkt die grobe Saison-Gruppe (spring/summer/autumn/winter),
+// die 1:1 für Banner-Klasse und data-season verwendet wird.
+const SEASON_DEFS = {
+  12: { label: 'Frühwinter', icon: '❄️', css: 'winter', sentences: [
+    'Der erste Schnee kündigt sich an, drinnen wird es gemütlich.',
+    'Kerzenlicht und kalte Abende — die Adventszeit beginnt.',
+    'Die Tage werden kürzer, die Lichter heller.'
+  ]},
+  1: { label: 'Hochwinter', icon: '❄️', css: 'winter', sentences: [
+    'Ein neues Jahr beginnt, still liegt der Schnee.',
+    'Klare, kalte Tage — Zeit für heißen Tee.',
     'Die Welt ruht unter einer weißen Decke.'
-  ]}},
-  { from:[3,20], to:[4,19], sub:{ label:'Frühlingsanfang', icon:'🌱', css:'spring-early', sentences:[
+  ]},
+  2: { label: 'Spätwinter', icon: '❄️', css: 'winter', sentences: [
+    'Der Winter neigt sich langsam dem Ende zu.',
+    'Erste Sonnenstrahlen kämpfen sich durch die Kälte.',
+    'Bald ist es geschafft — der Frühling naht.'
+  ]},
+  3: { label: 'Frühlingsanfang', icon: '🌱', css: 'spring', sentences: [
     'Die ersten Blumen blühen und die Tage werden länger.',
     'Zartes Grün erobert langsam die Wiesen zurück.',
     'Die Natur erwacht aus dem Winterschlaf.'
-  ]}},
-  { from:[4,20], to:[6,20], sub:{ label:'Später Frühling', icon:'🌸', css:'spring-late', sentences:[
-    'Blühende Wiesen und laue Abende kündigen den Sommer an.',
+  ]},
+  4: { label: 'Frühling', icon: '🌸', css: 'spring', sentences: [
     'Alles blüht in vollen Farben.',
-    'Lange Tage, warme Luft — der Sommer ist nah.'
-  ]}},
-  { from:[6,21], to:[8,22], sub:{ label:'Hochsommer', icon:'☀️', css:'summer-high', sentences:[
+    'Aprilwetter und junges Grün überall.',
+    'Die Luft duftet nach Neuanfang.'
+  ]},
+  5: { label: 'Spätfrühling', icon: '🌸', css: 'spring', sentences: [
+    'Blühende Wiesen und laue Abende kündigen den Sommer an.',
+    'Lange Tage, warme Luft — der Sommer ist nah.',
+    'Der Mai zeigt sich von seiner schönsten Seite.'
+  ]},
+  6: { label: 'Frühsommer', icon: '☀️', css: 'summer', sentences: [
     'Lange Tage, warme Abende und neue Möglichkeiten.',
+    'Der Sommer beginnt — Zeit für leichte Abende draußen.',
+    'Warmes Licht bis spät in den Abend.'
+  ]},
+  7: { label: 'Hochsommer', icon: '☀️', css: 'summer', sentences: [
     'Warmes Sonnenlicht lädt zum Draußensein ein.',
-    'Zeit für Badeseen und laue Sommernächte.'
-  ]}},
-  { from:[8,23], to:[9,22], sub:{ label:'Spätsommer', icon:'🌻', css:'summer-late', sentences:[
+    'Zeit für Badeseen und laue Sommernächte.',
+    'Die heißeste Zeit des Jahres ist da.'
+  ]},
+  8: { label: 'Spätsommer', icon: '🌻', css: 'summer', sentences: [
     'Die Sonne steht schon etwas tiefer, die Ernte beginnt.',
     'Noch warm, aber der Herbst kündigt sich leise an.',
     'Goldenes Licht über reifen Feldern.'
-  ]}},
-  { from:[9,23], to:[10,31], sub:{ label:'Herbstanfang', icon:'🍂', css:'autumn-early', sentences:[
+  ]},
+  9: { label: 'Frühherbst', icon: '🍂', css: 'autumn', sentences: [
     'Die Blätter verfärben sich langsam.',
-    'Kühle Morgen, bunte Wälder.',
+    'Kühle Morgen, milde Nachmittage.',
     'Die Luft riecht nach Herbst.'
-  ]}},
-  { from:[11,1], to:[12,20], sub:{ label:'Spätherbst', icon:'🌫️', css:'autumn-late', sentences:[
+  ]},
+  10: { label: 'Goldener Herbst', icon: '🍂', css: 'autumn', sentences: [
+    'Bunte Wälder und goldenes Licht.',
+    'Der Herbst zeigt sich von seiner schönsten Seite.',
+    'Kürbisse, Kastanien und warme Farben überall.'
+  ]},
+  11: { label: 'Spätherbst', icon: '🌫️', css: 'autumn', sentences: [
     'Nebel liegt über den Feldern, die Bäume werden kahl.',
     'Die letzten Blätter fallen.',
     'Kurze Tage, frühe Dämmerung.'
-  ]}},
-];
-
-// Mapping Unter-Saison → grobe Saison-Gruppe (für Banner-Klasse + data-season,
-// da spätere Illustrationen vermutlich pro Jahreszeit geladen werden, nicht
-// pro Unter-Saison — Unter-Saisons bleiben nur für Label/Satz-Rotation relevant).
-const SEASON_GROUP_MAP = {
-  'winter': 'winter',
-  'spring-early': 'spring', 'spring-late': 'spring',
-  'summer-high': 'summer',  'summer-late': 'summer',
-  'autumn-early': 'autumn', 'autumn-late': 'autumn',
+  ]},
 };
 
-function seasonMatch(date, def) {
-  const [fm, fd] = def.from, [tm, td] = def.to;
-  const y = date.getFullYear();
-  let start, end;
-  if (fm > tm) { // Winter: wraps Jahreswechsel
-    if (date.getMonth()+1 >= fm) { start = new Date(y, fm-1, fd); end = new Date(y+1, tm-1, td, 23,59,59); }
-    else                          { start = new Date(y-1, fm-1, fd); end = new Date(y, tm-1, td, 23,59,59); }
-  } else {
-    start = new Date(y, fm-1, fd); end = new Date(y, tm-1, td, 23,59,59);
-  }
-  return date >= start && date <= end;
-}
-
+// Saison für ein Datum bestimmen — ausschließlich anhand des Kalendermonats.
 function getSeasonInfo(date) {
-  const idx = SEASON_DEFS.findIndex(d => seasonMatch(date, d));
-  const def = SEASON_DEFS[idx >= 0 ? idx : 0];
-  const sub = def.sub;
+  const month = date.getMonth() + 1; // 1–12
+  const sub = SEASON_DEFS[month];
   const sentence = sub.sentences[date.getDate() % sub.sentences.length];
 
-  const nextDef = SEASON_DEFS[(Math.max(idx,0)+1) % SEASON_DEFS.length];
-  const y = date.getFullYear();
-  let nextStart = new Date(y, nextDef.from[0]-1, nextDef.from[1]);
-  if (nextStart <= date) nextStart = new Date(y+1, nextDef.from[0]-1, nextDef.from[1]);
-  const daysUntil = Math.ceil((nextStart - date) / 86400000);
+  // Nächster Monat (JS rollt Dezember→Januar automatisch ins Folgejahr).
+  const nextMonthDate = new Date(date.getFullYear(), date.getMonth() + 1, 1);
+  const nextSub = SEASON_DEFS[nextMonthDate.getMonth() + 1];
+  const daysUntil = Math.ceil((nextMonthDate - date) / 86400000);
 
   return {
     label: sub.label, icon: sub.icon, css: sub.css, sentence,
-    nextLabel: nextDef.sub.label, nextIcon: nextDef.sub.icon, daysUntil
+    nextLabel: nextSub.label, nextIcon: nextSub.icon, daysUntil
   };
 }
 
@@ -1138,10 +1153,9 @@ function renderCalSeasonHeader() {
   iconEl.textContent = info.icon;
   labelEl.textContent = info.label;
   sentEl.textContent = info.sentence;
-  const seasonGroup = SEASON_GROUP_MAP[info.css] || 'summer';
   if (heroEl) {
-    heroEl.className = 'cal-hero cal-hero-' + seasonGroup;
-    heroEl.dataset.season = seasonGroup;
+    heroEl.className = 'cal-hero cal-hero-' + info.css;
+    heroEl.dataset.season = info.css;
   }
 }
 
@@ -1233,6 +1247,7 @@ function renderCalStatsCard() {
 
   const year = calDate.getFullYear(), month = calDate.getMonth();
   const daysInMonth = new Date(year, month+1, 0).getDate();
+  const today = new Date(); today.setHours(0,0,0,0);
 
   const eventIds = new Set();
   const taskIds = new Set();
@@ -1243,27 +1258,32 @@ function renderCalStatsCard() {
     const date = new Date(year, month, d);
     const dayEvs = getEventsForDay(date);
     const dayTasks = (typeof getTasksForCalendarDay === 'function') ? getTasksForCalendarDay(date) : [];
-    if (dayEvs.length || dayTasks.length) activeDays++;
     dayEvs.forEach(({ ev }) => eventIds.add(ev.id));
     dayTasks.forEach(t => { taskIds.add(t.id); if (t.done) doneTaskIds.add(t.id); });
+    // Nur bereits vergangene Tage (inkl. heute) zählen als "aktiv" —
+    // zukünftige Termine im selben Monat wurden noch nicht erlebt.
+    if (date <= today && (dayEvs.length || dayTasks.length)) activeDays++;
   }
 
   if (eventIds.size === 0 && taskIds.size === 0) { card.classList.add('hidden'); return; }
   card.classList.remove('hidden');
 
-  const avgPerWeek = (eventIds.size / (daysInMonth / 7)).toFixed(1);
-  const rows = [
-    ['📅 Termine', eventIds.size],
-    ['✓ Erledigte Aufgaben', `${doneTaskIds.size} / ${taskIds.size}`],
-    ['🔥 Aktive Tage', activeDays],
-    ['Ø Termine / Woche', avgPerWeek],
+  const tiles = [
+    ['📅', eventIds.size, 'Termine'],
+    ['✔', doneTaskIds.size, 'Aufgaben'],
+    ['🔥', activeDays, 'Tage aktiv'],
   ];
-  rows.forEach(([label, val]) => {
-    const row = document.createElement('div'); row.className = 'cal-side-row';
-    const l = document.createElement('span'); l.className = 'cal-side-row-title'; l.textContent = label;
-    const v = document.createElement('span'); v.className = 'cal-side-row-badge'; v.textContent = val;
-    row.append(l, v); list.appendChild(row);
+
+  const grid = document.createElement('div'); grid.className = 'cal-stats-grid';
+  tiles.forEach(([icon, value, label]) => {
+    const tile = document.createElement('div'); tile.className = 'cal-stats-tile';
+    const iconEl = document.createElement('div'); iconEl.className = 'cal-stats-tile-icon'; iconEl.textContent = icon;
+    const valueEl = document.createElement('div'); valueEl.className = 'cal-stats-tile-value'; valueEl.textContent = value;
+    const labelEl = document.createElement('div'); labelEl.className = 'cal-stats-tile-label'; labelEl.textContent = label;
+    tile.append(iconEl, valueEl, labelEl);
+    grid.appendChild(tile);
   });
+  list.appendChild(grid);
 }
 
 // ── Sidebar: Master-Funktion — wird am Ende von renderCalendar() aufgerufen ──

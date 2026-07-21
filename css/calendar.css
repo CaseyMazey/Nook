@@ -291,9 +291,9 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  min-height: 230px;
-  padding: 28px 30px;
-  margin-bottom: 20px;
+  min-height: 190px;
+  padding: 22px 28px;
+  margin-bottom: 16px;
   border-radius: var(--radius-lg);
   border: 1px solid var(--border);
   box-shadow: var(--shadow-sm);
@@ -305,11 +305,14 @@
 
 /* Weicher, mehrstufiger Aufhell-Verlauf links — damit der Text
    auf jedem beliebigen saisonalen Foto lesbar bleibt, ohne dass
-   das Bild selbst dafür vorbereitet werden muss. Kein harter Rand. */
+   das Bild selbst dafür vorbereitet werden muss. Kein harter Rand.
+   inset:-1px + border-radius:inherit verhindern einen hauchdünnen,
+   nicht aufgehellten Rand durch Rundungs-/Antialiasing-Kanten. */
 .cal-hero::before {
   content: '';
   position: absolute;
-  inset: 0;
+  inset: -1px;
+  border-radius: inherit;
   background: linear-gradient(100deg,
     color-mix(in srgb, var(--surface) 92%, transparent) 0%,
     color-mix(in srgb, var(--surface) 78%, transparent) 18%,
@@ -706,6 +709,41 @@
   transition: background var(--transition), color var(--transition), border-color var(--transition);
 }
 .cal-goal-add-btn:hover { background: var(--sage); color: #F8F5EE; border-color: var(--sage); }
+
+/* =============================================================
+   MONATSSTATISTIK — 3 gleich große Kacheln statt Zeilenliste
+============================================================= */
+.cal-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.cal-stats-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 14px 6px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+.cal-stats-tile-icon { font-size: 16px; line-height: 1; }
+.cal-stats-tile-value {
+  font-family: var(--mono);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.1;
+}
+.cal-stats-tile-label {
+  font-size: 10px;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
 
 /* -- Weiche Hover-Effekte auf den Sidebar-Zeilen -- */
 .cal-side-row, .cal-goal-row, .cal-birthday-item {
