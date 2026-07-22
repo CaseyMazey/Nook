@@ -7,7 +7,27 @@ function renderSettings(){
   document.getElementById('setting-darkmode').checked = darkMode;
   renderBlockSettings();
   renderWeatherSettings();
+  renderColorSettings();
   if (typeof renderPositivitySettings === 'function') renderPositivitySettings();
+}
+
+// =========================
+// PERSÖNLICHE FARBEN VERWALTEN
+// Nutzt die geteilte renderColorLibrary() aus hub-utils.js — hier mit
+// deletable:true, im Gegensatz zu allen Farbwählern in Modalen (Karten,
+// Guides, Kalender), die weiterhin nur zum Auswählen/Speichern dienen.
+// =========================
+
+function renderColorSettings(){
+  const lib   = document.getElementById('settings-color-library');
+  const empty = document.getElementById('settings-color-empty');
+  if (!lib) return;
+  empty.style.display = hubUserColors.length ? 'none' : 'block';
+  renderColorLibrary('settings-color-library', {
+    deletable: true,
+    onSelect: () => {}, // Auswahl hat in der Verwaltung keine Wirkung, nur Löschen
+    onDelete: () => { empty.style.display = hubUserColors.length ? 'none' : 'block'; }
+  });
 }
 
 function renderWeatherSettings() {

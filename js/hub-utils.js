@@ -38,11 +38,15 @@ function hexToGradient(hex) {
  *   selected {string}   aktuell gewählte Hex-Farbe (für aktive Markierung)
  *   onSelect {function} wird mit (hex) aufgerufen, wenn eine Swatch geklickt wird
  *   gradient {boolean}  Verlauf statt flacher Farbe (default: true)
+ *   deletable {boolean} zeigt das "✕"-Entfernen-Icon auf jeder Swatch (default: false).
+ *                       Nur die zentrale Farbverwaltung in den Einstellungen setzt dies auf true —
+ *                       normale Picker (Karten, Guides, Kalender) dienen nur zum Auswählen/Speichern.
  */
 function renderColorLibrary(containerId, opts = {}) {
   const lib = document.getElementById(containerId);
   if (!lib) return;
   const useGradient = opts.gradient !== false;
+  const deletable = opts.deletable === true;
   lib.innerHTML = '';
   hubUserColors.forEach(hex => {
     const btn = document.createElement('button');
@@ -52,17 +56,20 @@ function renderColorLibrary(containerId, opts = {}) {
     btn.title = hex;
     btn.addEventListener('click', () => opts.onSelect && opts.onSelect(hex));
 
-    const del = document.createElement('span');
-    del.className = 'hub-color-del';
-    del.textContent = '✕';
-    del.title = 'Entfernen';
-    del.addEventListener('click', e => {
-      e.stopPropagation();
-      hubUserColors = hubUserColors.filter(c => c !== hex);
-      saveHubUserColors();
-      renderColorLibrary(containerId, opts);
-    });
-    btn.appendChild(del);
+    if (deletable) {
+      const del = document.createElement('span');
+      del.className = 'hub-color-del';
+      del.textContent = '✕';
+      del.title = 'Entfernen';
+      del.addEventListener('click', e => {
+        e.stopPropagation();
+        hubUserColors = hubUserColors.filter(c => c !== hex);
+        saveHubUserColors();
+        renderColorLibrary(containerId, opts);
+        if (opts.onDelete) opts.onDelete();
+      });
+      btn.appendChild(del);
+    }
     lib.appendChild(btn);
   });
 }

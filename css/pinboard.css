@@ -1,0 +1,133 @@
+/* =============================================================
+   PINBOARD.CSS — Tab: Pinnwand
+   Ausgelagertes Kartensystem (früher Teil von today.css).
+   Styling unverändert übernommen — nur der Ort hat sich geändert.
+============================================================= */
+
+#view-pinboard { padding: 28px 32px 52px; }
+
+/* ═══════════════════════════════════════════════════════════
+   SCHREIBTISCH — 3 feste, unabhängige Spalten (Masonry-Prinzip)
+   Jede Spalte ist eine eigene vertikale Liste, keine gemeinsame
+   Grid-Zeilenhöhe → unterschiedlich hohe Karten ohne Lücken.
+═══════════════════════════════════════════════════════════ */
+#today-desk { display: flex; align-items: flex-start; gap: 10px; }
+.desk-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+
+#today-add-tile-row { display: flex; justify-content: flex-start; padding-top: 2px; }
+
+@media (max-width: 980px) {
+  #today-desk { flex-wrap: wrap; }
+  .desk-col { flex: 1 1 calc(50% - 5px); min-width: 220px; }
+}
+@media (max-width: 640px) {
+  #today-desk { flex-direction: column; }
+  .desk-col { flex: 1 1 auto; width: 100%; }
+}
+
+/* ── Karte — Basis ────────────────────────────────────────── */
+/* Eine einzige berechnete Kontrastfarbe (--card-fg, JS) vererbt sich an alle Kindelemente */
+.desk-card { min-height: 90px; position: relative; display: flex; flex-direction: column; box-sizing: border-box; color: var(--card-fg, var(--text)); }
+.desk-card-header { cursor: default; border-bottom-color: var(--card-border, var(--border)); }
+.desk-card-title { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; color: inherit; opacity: 0.85; display: flex; align-items: center; gap: 5px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.desk-card-actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+.desk-card-body { flex: 1 1 auto; overflow-y: auto; min-height: 0; }
+
+/* Bearbeiten-Button — ton-in-ton, nur bei Hover sichtbar (ersetzt Hover-X) */
+.desk-edit-btn {
+  background: none; border: none; box-shadow: none; color: inherit; opacity: 0;
+  width: auto; height: auto; border-radius: 0; padding: 0 2px; font-size: 13px;
+  transition: opacity 150ms;
+}
+.desk-card:hover .desk-edit-btn { opacity: 0.55; }
+.desk-edit-btn:hover { opacity: 1 !important; background: none; }
+
+/* Freitext-Karten (Standard / Angepinnt / Wichtig / Zitat) */
+.desk-textarea { width: 100%; height: 100%; border: none; outline: none; resize: none; padding: 14px 16px; font-size: 13px; color: inherit; background: transparent; min-height: 90px; line-height: 1.75; box-sizing: border-box; font-family: var(--font); }
+
+/* Angepinnt — kleine Pinnadel steht bereits im Titel (JS), Karte bleibt oben in der Spalte (Sortierung) */
+
+/* Wichtig — größerer Titel, kräftigere Betonung */
+.desk-card--important .desk-card-title { font-size: 14.5px; font-weight: 700; }
+.desk-card--important { box-shadow: var(--shadow-sm); }
+
+/* Zitat — große, reduzierte Typografie, zentriert */
+.desk-card--quote .desk-textarea { font-family: var(--font); font-size: 17px; font-style: italic; text-align: center; line-height: 1.55; padding: 22px 20px; display: flex; align-items: center; }
+
+/* Code — Textarea bekommt maximalen Platz, Copy-Button dezent im Codeblock, nur bei Hover sichtbar */
+.desk-card--code .desk-card-body { position: relative; background: var(--surface-2); }
+[data-theme="dark"] .desk-card--code .desk-card-body { background: #1e1b17; }
+.desk-card--code .desk-textarea { font-family: var(--mono); font-size: 12.5px; line-height: 1.7; padding: 14px 16px; white-space: pre; overflow-wrap: normal; overflow-x: auto; }
+.desk-code-copy {
+  position: absolute; top: 8px; right: 8px; width: 26px; height: 26px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 6px; border: 1px solid var(--border-strong); background: var(--surface);
+  color: var(--text-2); opacity: 0; transition: opacity 150ms, background 150ms, color 150ms;
+  cursor: pointer; z-index: 2;
+}
+.desk-card--code .desk-card-body:hover .desk-code-copy,
+.desk-code-copy:focus-visible { opacity: 1; }
+.desk-code-copy:hover { background: var(--accent-soft); color: var(--text); }
+.desk-code-copy svg { width: 13px; height: 13px; }
+
+/* Berichtsheft — zwei feste Textfelder, bleibt aber Teil des Karten-Systems (Spalte/Höhe/Farbe/Resize) */
+.desk-berichtsheft-grid { display: flex; flex-direction: column; height: 100%; }
+.desk-bericht-col { display: flex; flex-direction: column; flex: 1; min-height: 60px; }
+.desk-bericht-col:not(:last-child) { border-bottom: 1px solid rgba(0,0,0,0.08); }
+.desk-bericht-col-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); padding: 10px 16px 4px; flex-shrink: 0; }
+.desk-bericht-col textarea { width: 100%; height: 100%; border: none; outline: none; resize: none; padding: 4px 16px 14px; font-size: 13px; color: inherit; background: transparent; min-height: 50px; line-height: 1.75; box-sizing: border-box; font-family: var(--font); }
+
+/* Resize-Handle — unten, zieht die Kartenhöhe frei */
+.desk-resize-handle {
+  flex-shrink: 0; height: 12px; cursor: ns-resize; display: flex; align-items: center; justify-content: center;
+  touch-action: none;
+}
+.desk-resize-handle::after { content: ''; width: 28px; height: 3px; border-radius: 99px; background: rgba(0,0,0,0.16); transition: background 150ms; }
+[data-theme="dark"] .desk-resize-handle::after { background: rgba(255,255,255,0.16); }
+.desk-resize-handle:hover::after, .desk-resize-handle.resizing::after { background: rgba(0,0,0,0.32); }
+[data-theme="dark"] .desk-resize-handle:hover::after, [data-theme="dark"] .desk-resize-handle.resizing::after { background: rgba(255,255,255,0.32); }
+
+/* ── Checklisten ──────────────────────────────────────────── */
+.checklist { padding: 6px 0; }
+.checklist-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 16px; font-size: 13px; color: var(--text); transition: background var(--transition); }
+.checklist-item:hover { background: var(--surface-3); }
+.checklist-item input[type="checkbox"] { width: 15px; height: 15px; accent-color: var(--sage); cursor: pointer; flex-shrink: 0; }
+.checklist-item span { flex: 1; }
+.checklist-item.done span { color: var(--text-3); text-decoration: line-through; }
+.checklist-item .note-del { opacity: 0; }
+.checklist-item:hover .note-del { opacity: 1; }
+
+/* ── Paper Checkbox — kreisförmig, ton-in-ton ────────────── */
+.paper-cb-wrap { flex-shrink: 0; width: 17px; height: 17px; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; margin-top: 1px; transition: opacity 120ms; }
+.paper-cb-wrap:hover { opacity: 0.7; }
+.paper-cb, .paper-cb--done { display: flex; align-items: center; justify-content: center; line-height: 1; }
+
+/* ── Ton-in-Ton Icon-Buttons im Kartenkopf (+, Auge, ...) ──── */
+/* Kein Kreis, kein Border, kein Hintergrund — nur das Symbol */
+.today-tile .panel-header .icon-btn {
+  background: none;
+  border: none;
+  box-shadow: none;
+  color: inherit;
+  opacity: 0.55;
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  padding: 0 2px;
+  font-size: 16px;
+  font-weight: 300;
+  line-height: 1;
+}
+.today-tile .panel-header .icon-btn:hover {
+  background: none;
+  opacity: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   COZY SCROLLBARS — für Kartenkörper (gleiches Muster wie today.css)
+═══════════════════════════════════════════════════════════ */
+.today-tile *::-webkit-scrollbar { width: 5px; height: 5px; }
+.today-tile *::-webkit-scrollbar-track { background: transparent; border-radius: 99px; }
+.today-tile *::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 99px; }
+.today-tile *::-webkit-scrollbar-thumb:hover { background: var(--text-3); }
+.today-tile * { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }

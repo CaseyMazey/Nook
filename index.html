@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="css/projects.css" />
   <link rel="stylesheet" href="css/project-tree.css" />
   <link rel="stylesheet" href="css/today.css" />
+  <link rel="stylesheet" href="css/pinboard.css" />
   <link rel="stylesheet" href="css/settings.css" />
   <link rel="stylesheet" href="css/positivity.css" />
   <link rel="stylesheet" href="css/national_day.css" />
@@ -401,6 +402,10 @@
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1.5" fill="currentColor"/><rect x="9" y="2" width="5" height="5" rx="1.5" fill="currentColor" opacity=".4"/><rect x="2" y="9" width="5" height="5" rx="1.5" fill="currentColor" opacity=".4"/><rect x="9" y="9" width="5" height="5" rx="1.5" fill="currentColor" opacity=".4"/></svg>
           Heute
         </button></li>
+        <li><button class="nav-btn" data-view="pinboard">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v3.5M5.5 5.5h5l1 3.5h-7.5l1-3.5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" fill="none" opacity=".7"/><path d="M8 9v5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          Pinnwand
+        </button></li>
         <li><button class="nav-btn" data-view="calendar">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" stroke-width="1.5" fill="none" opacity=".6"/><path d="M5 2v2M11 2v2M2 7h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
           Kalender
@@ -506,18 +511,6 @@
               <div id="task-empty" class="empty-state">Noch keine Aufgaben diese Woche.</div>
             </div>
  
-            <!-- Schreibtisch — 3 feste, unabhängige Spalten (Masonry), Karten komplett per JS gerendert -->
-            <div id="today-desk">
-              <div class="desk-col" id="desk-col-0"></div>
-              <div class="desk-col" id="desk-col-1"></div>
-              <div class="desk-col" id="desk-col-2"></div>
-            </div>
-
-            <!-- + Karte -->
-            <div id="today-add-tile-row">
-              <button class="btn-ghost" id="add-tile-btn">+ Karte hinzufügen</button>
-            </div>
- 
           </div><!-- /today-main -->
  
           <!-- RECHTE SIDEBAR -->
@@ -534,6 +527,26 @@
  
         </div><!-- /today-layout -->
  
+      </section>
+ 
+      <!-- PINNWAND -->
+      <section id="view-pinboard" class="view">
+        <div class="view-header"><h1 class="view-title">Pinnwand</h1></div>
+        <div class="dash-content">
+
+          <!-- Schreibtisch — 3 feste, unabhängige Spalten (Masonry), Karten komplett per JS gerendert -->
+          <div id="today-desk">
+            <div class="desk-col" id="desk-col-0"></div>
+            <div class="desk-col" id="desk-col-1"></div>
+            <div class="desk-col" id="desk-col-2"></div>
+          </div>
+
+          <!-- + Karte -->
+          <div id="today-add-tile-row">
+            <button class="btn-ghost" id="add-tile-btn">+ Karte hinzufügen</button>
+          </div>
+
+        </div><!-- /dash-content -->
       </section>
  
       <!-- PROJEKTE -->
@@ -1174,7 +1187,17 @@
               <div class="panel-header"><span class="panel-label">Positivity</span><span class="positivity-total-badge" id="positivity-total-count"></span></div>
               <div id="positivity-category-list"></div>
             </div>
- 
+
+            <div class="panel settings-panel">
+              <div class="panel-header"><span class="panel-label">Persönliche Farben verwalten</span></div>
+              <div class="settings-row" style="border-bottom:none;">
+                <div><div class="settings-row-title">Gespeicherte Farben</div><div class="settings-row-sub">Beim Überfahren einer Farbe erscheint ✕ zum Entfernen</div></div>
+              </div>
+              <div style="padding:0 18px 16px;">
+                <div id="settings-color-library" class="hub-color-library"></div>
+                <div id="settings-color-empty" class="empty-state" style="display:none;padding:6px 0 0;">Noch keine Farben gespeichert.</div>
+              </div>
+            </div>
  
           </div>
  
@@ -1966,6 +1989,7 @@
   <script src="js/hub-utils.js"></script>
   <script src="js/calendar.js"></script>
   <script src="js/today.js"></script>
+  <script src="js/pinboard.js"></script>
   <script src="js/flashcards.js"></script>
   <script src="js/guides.js"></script>
   <script src="js/budget.js"></script>
