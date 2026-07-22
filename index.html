@@ -506,74 +506,16 @@
               <div id="task-empty" class="empty-state">Noch keine Aufgaben diese Woche.</div>
             </div>
  
-            <!-- Untere Kacheln -->
-            <div id="today-tiles-grid">
- 
-              <div class="panel today-tile">
-                <div class="panel-header">
-                  <span class="panel-label">Wichtiges</span>
-                  <button class="icon-btn add-note-btn" data-key="exam-notes">+</button>
-                </div>
-                <ul class="note-list" id="note-list-exam"></ul>
-              </div>
- 
-              <div class="panel today-tile" id="panel-todo">
-                <div class="panel-header">
-                  <span class="panel-label">To Do</span>
-                  <button class="icon-btn" id="add-todo-btn">+</button>
-                </div>
-                <ul class="checklist" id="todo-list"></ul>
-              </div>
- 
-              <div class="panel today-tile" id="panel-berichtsheft">
-                <div class="panel-header">
-                  <span class="panel-label">Berichtsheft</span>
-                  <span class="save-hint" id="bericht-saved">gespeichert</span>
-                </div>
-                <div id="berichtsheft-grid">
-                  <div class="bericht-col">
-                    <div class="bericht-col-label">Betrieb</div>
-                    <textarea id="bericht-betrieb" placeholder="Was habe ich heute im Betrieb gemacht?"></textarea>
-                  </div>
-                  <div class="bericht-col">
-                    <div class="bericht-col-label">Schule</div>
-                    <textarea id="bericht-schule" placeholder="Was haben wir heute in der Schule behandelt?"></textarea>
-                  </div>
-                </div>
-              </div>
- 
-              <div class="panel today-tile">
-                <div class="panel-header">
-                  <span class="panel-label">Fragen für den Unterricht</span>
-                  <button class="icon-btn add-note-btn" data-key="class-questions">+</button>
-                </div>
-                <ul class="note-list" id="note-list-questions"></ul>
-              </div>
- 
-              <div class="panel today-tile" id="panel-shopping">
-                <div class="panel-header">
-                  <span class="panel-label">Einkaufsliste</span>
-                  <button class="icon-btn" id="add-shopping-btn">+</button>
-                </div>
-                <ul class="checklist" id="shopping-list"></ul>
-              </div>
- 
-              <div class="panel today-tile">
-                <div class="panel-header">
-                  <span class="panel-label">Begriffe &amp; Definitionen</span>
-                  <button class="icon-btn add-note-btn" data-key="terms">+</button>
-                </div>
-                <ul class="note-list" id="note-list-terms"></ul>
-              </div>
- 
-              <!-- Custom Tiles werden per JS angehängt -->
-              <div id="custom-tiles"></div>
- 
-            </div><!-- /today-tiles-grid -->
- 
-            <!-- + Kachel -->
+            <!-- Schreibtisch — 3 feste, unabhängige Spalten (Masonry), Karten komplett per JS gerendert -->
+            <div id="today-desk">
+              <div class="desk-col" id="desk-col-0"></div>
+              <div class="desk-col" id="desk-col-1"></div>
+              <div class="desk-col" id="desk-col-2"></div>
+            </div>
+
+            <!-- + Karte -->
             <div id="today-add-tile-row">
-              <button class="btn-ghost" id="add-tile-btn">+ Kachel hinzufügen</button>
+              <button class="btn-ghost" id="add-tile-btn">+ Karte hinzufügen</button>
             </div>
  
           </div><!-- /today-main -->
@@ -1358,7 +1300,7 @@
   <!-- Custom Tile Modal -->
   <div id="tile-modal-overlay" class="modal-backdrop hidden">
     <div class="modal-box" style="width:460px;">
-      <div class="modal-head"><span>Neue Karte</span><button class="modal-x" id="tile-modal-close">✕</button></div>
+      <div class="modal-head"><span id="tile-modal-head-title">Neue Karte</span><button class="modal-x" id="tile-modal-close">✕</button></div>
       <div class="modal-row"><label>Titel</label><input type="text" class="modal-input" id="tile-modal-title" placeholder="z.B. Links, Einkaufsliste..."/></div>
       <div class="modal-row">
         <label>Farbe</label>
@@ -1397,10 +1339,6 @@
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="3.5" width="2" height="2" rx=".5" fill="currentColor"/><rect x="2" y="6.5" width="2" height="2" rx=".5" fill="currentColor"/><rect x="2" y="9.5" width="2" height="2" rx=".5" fill="currentColor"/><path d="M6 4.5h6M6 7.5h6M6 10.5h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
             Checkliste
           </button>
-          <button class="tile-type-btn" data-style="note">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2.5" y="2.5" width="9" height="9" rx="1" stroke="currentColor" stroke-width="1.2"/><path d="M4.5 1.5h5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-            Notizzettel
-          </button>
           <button class="tile-type-btn" data-style="quote">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 5.5c0-1.4 1-2 2-2v1.1c-.5 0-1 .3-1 .9h1v2H3v-2zm5 0c0-1.4 1-2 2-2v1.1c-.5 0-1 .3-1 .9h1v2H8v-2z" fill="currentColor"/></svg>
             Zitat
@@ -1408,7 +1346,19 @@
         </div>
         <div class="tile-type-desc" id="tile-type-desc">Freies Textfeld, wie die Schnellnotiz.</div>
       </div>
-      <div class="modal-actions"><button id="tile-modal-cancel" class="btn-ghost">Abbrechen</button><button id="tile-modal-save" class="btn-primary">Erstellen</button></div>
+      <div class="modal-row">
+        <label>Spalte</label>
+        <div style="display:flex;gap:6px;" id="tile-modal-column-picker">
+          <button type="button" class="toggle-select-btn active" data-col="0">Links</button>
+          <button type="button" class="toggle-select-btn" data-col="1">Mitte</button>
+          <button type="button" class="toggle-select-btn" data-col="2">Rechts</button>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button id="tile-modal-delete-btn" class="btn-ghost" style="color:var(--prio-1);border-color:var(--prio-1);margin-right:auto;display:none;">Karte löschen</button>
+        <button id="tile-modal-cancel" class="btn-ghost">Abbrechen</button>
+        <button id="tile-modal-save" class="btn-primary">Erstellen</button>
+      </div>
     </div>
   </div>
  

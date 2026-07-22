@@ -97,7 +97,7 @@ document.getElementById('weather-city-input')?.addEventListener('change', e => {
 
 const BACKUP_KEYS = [
   'tasks','notes','events','quicknote','berichtsheft','examDate','blocks',
-  'countdownVisible','darkMode','customTiles','subjects',
+  'countdownVisible','darkMode','customTiles','deskCards','subjects',
   'budgetRecurring','budgetOnetime','budgetGoals','kontostand',
   'clockEnabled','clockType','collapsedGroups','currentDate','gameHighscores',
   'userName'

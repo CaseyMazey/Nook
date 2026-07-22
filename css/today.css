@@ -31,7 +31,6 @@
 #today-main { display: flex; flex-direction: column; gap: 14px; min-width: 0; background: var(--dash-bg); border: 1px solid var(--dash-border); border-radius: var(--radius-xl); box-shadow: var(--dash-shadow); padding: 20px 18px 20px; }
 /* Sidebar: feste Breite, kein flex-shrink */
 #today-right { display: flex; flex-direction: column; gap: 12px; position: sticky; top: 24px; width: 314px; }
-#custom-tiles { display: contents; }
 
 /* ═══════════════════════════════════════════════════════════
    BLOCKS SECTION
@@ -68,58 +67,87 @@
 #task-list { flex: 1; padding: 4px 0; }
 
 /* ═══════════════════════════════════════════════════════════
-   TILES GRID — 3 columns
+   SCHREIBTISCH — 3 feste, unabhängige Spalten (Masonry-Prinzip)
+   Jede Spalte ist eine eigene vertikale Liste, keine gemeinsame
+   Grid-Zeilenhöhe → unterschiedlich hohe Karten ohne Lücken.
 ═══════════════════════════════════════════════════════════ */
-#today-tiles-grid { display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-flow: dense; gap: 10px; align-items: start; }
-/* Alle today-tiles exakt gleich breit — kein Inhalt verursacht Unterschiede */
-#today-tiles-grid > .panel.today-tile { length: 100%; min-length: 0; box-sizing: border-box; }
-
-/* Kacheln brauchen overflow: visible damit SVGs rausragen können */
-.today-tile { min-height: 150px; position: relative; overflow: visible !important; }
-
-/* Built-in tile colors */
-#today-tiles-grid > .panel.today-tile:nth-child(1) { background: #A3B18A; border-color: rgba(0,0,0,0.10); }
-#today-tiles-grid > .panel.today-tile:nth-child(1) .panel-header { border-bottom-color: rgba(0,0,0,0.10); }
-#today-tiles-grid > .panel.today-tile:nth-child(1) .panel-label { color: #2A3020; }
-#today-tiles-grid > .panel.today-tile:nth-child(1) .note-item { color: #2A3020; }
-#today-tiles-grid > .panel.today-tile:nth-child(1) .note-item:hover { background: rgba(0,0,0,0.07); }
-#today-tiles-grid > .panel.today-tile:nth-child(1) .note-del { color: rgba(42,48,32,0.5); }
-
-#today-tiles-grid > .panel.today-tile:nth-child(2) { background: #EBE4D4; border-color: rgba(0,0,0,0.08); }
-#today-tiles-grid > .panel.today-tile:nth-child(2) .panel-header { border-bottom-color: rgba(0,0,0,0.08); }
-#today-tiles-grid > .panel.today-tile:nth-child(2) .panel-label { color: #3D3626; }
-
-#today-tiles-grid > .panel.today-tile:nth-child(3) { background: #C0AC99; border-color: rgba(0,0,0,0.10); }
-#today-tiles-grid > .panel.today-tile:nth-child(3) .panel-header { border-bottom-color: rgba(0,0,0,0.10); }
-#today-tiles-grid > .panel.today-tile:nth-child(3) .panel-label { color: #2E2217; }
-
-[data-theme="dark"] #today-tiles-grid > .panel.today-tile:nth-child(1) { background: #3A4030; border-color: rgba(255,255,255,0.07); }
-[data-theme="dark"] #today-tiles-grid > .panel.today-tile:nth-child(2) { background: #2E2C26; border-color: rgba(255,255,255,0.06); }
-[data-theme="dark"] #today-tiles-grid > .panel.today-tile:nth-child(3) { background: #3A3028; border-color: rgba(255,255,255,0.07); }
-
-/* KEINE hardcodierten ::before / ::after Dekorationen mehr */
-/* Alle Dekorationen nur noch per JS-SVG wenn vom User gewählt */
-
-#panel-berichtsheft { position: relative; }
+#today-desk { display: flex; align-items: flex-start; gap: 10px; }
+.desk-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
 
 #today-add-tile-row { display: flex; justify-content: flex-start; padding-top: 2px; }
 
-/* ── Berichtsheft ─────────────────────────────────────────── */
-#berichtsheft-grid { display: flex; flex-direction: column; }
-.bericht-col { display: flex; flex-direction: column; }
-.bericht-col:not(:last-child) { border-bottom: 1px solid var(--border); }
-.bericht-col-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); padding: 10px 16px 4px; }
-.bericht-col textarea { width: 100%; border: none; outline: none; resize: none; padding: 4px 16px 14px; font-size: 13px; color: var(--text); background: transparent; min-height: 80px; line-height: 1.75; }
+@media (max-width: 980px) {
+  #today-desk { flex-wrap: wrap; }
+  .desk-col { flex: 1 1 calc(50% - 5px); min-width: 220px; }
+}
+@media (max-width: 640px) {
+  #today-desk { flex-direction: column; }
+  .desk-col { flex: 1 1 auto; width: 100%; }
+}
 
-/* ── Notes + Checklists ───────────────────────────────────── */
-.note-list { padding: 6px 0; }
-.note-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 16px; font-size: 13px; color: var(--text); transition: background var(--transition); }
-.note-item:hover { background: var(--surface-3); }
-.note-item span { flex: 1; line-height: 1.55; }
-.note-del { color: var(--text-3); font-size: 12px; opacity: 0; transition: opacity var(--transition); flex-shrink: 0; }
-.note-item:hover .note-del { opacity: 1; }
-.note-del:hover { color: var(--prio-1); }
+/* ── Karte — Basis ────────────────────────────────────────── */
+/* Eine einzige berechnete Kontrastfarbe (--card-fg, JS) vererbt sich an alle Kindelemente */
+.desk-card { min-height: 90px; position: relative; display: flex; flex-direction: column; box-sizing: border-box; color: var(--card-fg, var(--text)); }
+.desk-card-header { cursor: default; border-bottom-color: var(--card-border, var(--border)); }
+.desk-card-title { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; color: inherit; opacity: 0.85; display: flex; align-items: center; gap: 5px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.desk-card-actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+.desk-card-body { flex: 1 1 auto; overflow-y: auto; min-height: 0; }
 
+/* Bearbeiten-Button — ton-in-ton, nur bei Hover sichtbar (ersetzt Hover-X) */
+.desk-edit-btn {
+  background: none; border: none; box-shadow: none; color: inherit; opacity: 0;
+  width: auto; height: auto; border-radius: 0; padding: 0 2px; font-size: 13px;
+  transition: opacity 150ms;
+}
+.desk-card:hover .desk-edit-btn { opacity: 0.55; }
+.desk-edit-btn:hover { opacity: 1 !important; background: none; }
+
+/* Freitext-Karten (Standard / Angepinnt / Wichtig / Zitat) */
+.desk-textarea { width: 100%; height: 100%; border: none; outline: none; resize: none; padding: 14px 16px; font-size: 13px; color: inherit; background: transparent; min-height: 90px; line-height: 1.75; box-sizing: border-box; font-family: var(--font); }
+
+/* Angepinnt — kleine Pinnadel steht bereits im Titel (JS), Karte bleibt oben in der Spalte (Sortierung) */
+
+/* Wichtig — größerer Titel, kräftigere Betonung */
+.desk-card--important .desk-card-title { font-size: 14.5px; font-weight: 700; }
+.desk-card--important { box-shadow: var(--shadow-sm); }
+
+/* Zitat — große, reduzierte Typografie, zentriert */
+.desk-card--quote .desk-textarea { font-family: var(--font); font-size: 17px; font-style: italic; text-align: center; line-height: 1.55; padding: 22px 20px; display: flex; align-items: center; }
+
+/* Code — Textarea bekommt maximalen Platz, Copy-Button dezent im Codeblock, nur bei Hover sichtbar */
+.desk-card--code .desk-card-body { position: relative; background: var(--surface-2); }
+[data-theme="dark"] .desk-card--code .desk-card-body { background: #1e1b17; }
+.desk-card--code .desk-textarea { font-family: var(--mono); font-size: 12.5px; line-height: 1.7; padding: 14px 16px; white-space: pre; overflow-wrap: normal; overflow-x: auto; }
+.desk-code-copy {
+  position: absolute; top: 8px; right: 8px; width: 26px; height: 26px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 6px; border: 1px solid var(--border-strong); background: var(--surface);
+  color: var(--text-2); opacity: 0; transition: opacity 150ms, background 150ms, color 150ms;
+  cursor: pointer; z-index: 2;
+}
+.desk-card--code .desk-card-body:hover .desk-code-copy,
+.desk-code-copy:focus-visible { opacity: 1; }
+.desk-code-copy:hover { background: var(--accent-soft); color: var(--text); }
+.desk-code-copy svg { width: 13px; height: 13px; }
+
+/* Berichtsheft — zwei feste Textfelder, bleibt aber Teil des Karten-Systems (Spalte/Höhe/Farbe/Resize) */
+.desk-berichtsheft-grid { display: flex; flex-direction: column; height: 100%; }
+.desk-bericht-col { display: flex; flex-direction: column; flex: 1; min-height: 60px; }
+.desk-bericht-col:not(:last-child) { border-bottom: 1px solid rgba(0,0,0,0.08); }
+.desk-bericht-col-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); padding: 10px 16px 4px; flex-shrink: 0; }
+.desk-bericht-col textarea { width: 100%; height: 100%; border: none; outline: none; resize: none; padding: 4px 16px 14px; font-size: 13px; color: inherit; background: transparent; min-height: 50px; line-height: 1.75; box-sizing: border-box; font-family: var(--font); }
+
+/* Resize-Handle — unten, zieht die Kartenhöhe frei */
+.desk-resize-handle {
+  flex-shrink: 0; height: 12px; cursor: ns-resize; display: flex; align-items: center; justify-content: center;
+  touch-action: none;
+}
+.desk-resize-handle::after { content: ''; width: 28px; height: 3px; border-radius: 99px; background: rgba(0,0,0,0.16); transition: background 150ms; }
+[data-theme="dark"] .desk-resize-handle::after { background: rgba(255,255,255,0.16); }
+.desk-resize-handle:hover::after, .desk-resize-handle.resizing::after { background: rgba(0,0,0,0.32); }
+[data-theme="dark"] .desk-resize-handle:hover::after, [data-theme="dark"] .desk-resize-handle.resizing::after { background: rgba(255,255,255,0.32); }
+
+/* ── Checklisten ──────────────────────────────────────────── */
 .checklist { padding: 6px 0; }
 .checklist-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 16px; font-size: 13px; color: var(--text); transition: background var(--transition); }
 .checklist-item:hover { background: var(--surface-3); }
@@ -133,8 +161,6 @@
 .paper-cb-wrap { flex-shrink: 0; width: 17px; height: 17px; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; margin-top: 1px; transition: opacity 120ms; }
 .paper-cb-wrap:hover { opacity: 0.7; }
 .paper-cb, .paper-cb--done { display: flex; align-items: center; justify-content: center; line-height: 1; }
-
-.custom-tile-textarea { width: 100%; border: none; outline: none; resize: none; padding: 14px 16px; font-size: 13px; color: var(--text); background: transparent; min-height: 100px; line-height: 1.75; }
 
 /* ═══════════════════════════════════════════════════════════
    EINHEITLICHE COZY SCROLLBARS
@@ -277,102 +303,8 @@
 }
 .nd-item.nd-open .nd-desc { max-height: 120px; opacity: 1; }
 
-/* ═══════════════════════════════════════════════════════════
-   KACHEL-DESIGNER — Floating Popup (außerhalb Kachelclipping)
-═══════════════════════════════════════════════════════════ */
-
-/* Pinsel-Button */
-.tile-design-btn {
-  position: absolute;
-  bottom: 8px;
-  right: 8px;
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
-  border: 1px solid rgba(0,0,0,0.14);
-  background: rgba(255,255,255,0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 150ms, background 150ms;
-  z-index: 10;
-  padding: 0;
-  flex-shrink: 0;
-}
-.today-tile:hover .tile-design-btn { opacity: 1; }
-.tile-design-btn:hover { background: rgba(255,255,255,0.7); border-color: rgba(0,0,0,0.22); }
-.tile-design-btn svg { width: 13px; height: 13px; display: block; }
-
-/* Floating Designer-Popup — fixed im viewport, nie abgeschnitten */
-.tile-designer-popup {
-  position: fixed;
-  background: var(--surface);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 12px 36px rgba(0,0,0,0.20);
-  padding: 14px 16px;
-  z-index: 9999;
-  min-width: 220px;
-  display: none;
-}
-.tile-designer-popup.open { display: block; }
-
-.tile-designer-section-label { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-3); margin-bottom: 7px; margin-top: 10px; }
-.tile-designer-section-label:first-child { margin-top: 0; }
-
-/* Farbe läuft jetzt hub-weit über .hub-color-* (siehe main.css) */
-
-/* ── SVG Dekoration — nur noch Washi-Tape (Notizzettel-Stil) ──────────── */
-.tile-deco-svg { position: absolute; pointer-events: none; z-index: 20; }
-.tile-deco-svg.deco-tape { top: -18px; left: 50%; transform: translateX(-50%); }
-
-/* ═══════════════════════════════════════════════════════════
-   SCHREIBTISCH — Karten-Stile
-═══════════════════════════════════════════════════════════ */
-
-/* Größen (per ↔ / ↕ Buttons im Karten-Header umschaltbar) */
-.tile-size-wide { grid-column: span 2; }
-.tile-size-tall { grid-row: span 2; }
-
-.tile-size-btn {
-  font-size: 12px; opacity: 0.4; transition: opacity 120ms;
-  background: none; border: none; padding: 0 3px; cursor: pointer; color: inherit;
-}
-.tile-size-btn:hover, .tile-size-btn.active { opacity: 1; }
-
-.tile-style-icon { margin-right: 5px; vertical-align: -1px; opacity: 0.75; }
-.tile-style-label { display: flex; align-items: center; }
-
-/* Angepinnt: dezenter Rahmen-Akzent statt Positionswechsel im Markup
-   (die Sortierung selbst passiert in renderCustomTiles) */
-.tile-style-pinned { box-shadow: 0 0 0 1.5px rgba(0,0,0,0.10) inset; }
-
-/* Wichtig: größerer, fetterer Titel für sofortige Aufmerksamkeit */
-.tile-style-important .panel-label { font-size: 15px; font-weight: 700; }
-
-/* Code: editierbarer Codeblock im Guides-Look (Klassen aus guides.css geteilt) */
-.tile-code-block { margin: 0; border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
-.tile-code-textarea {
-  width: 100%; min-height: 110px; border: none; outline: none; resize: vertical;
-  padding: 14px 16px; font-family: var(--mono); font-size: 12.5px; line-height: 1.7;
-  color: var(--text); background: transparent;
-}
-
-/* Zitat: kein Header, großer zentrierter Text, minimalistisch */
-.tile-style-quote { display: flex; align-items: center; justify-content: center; padding: 26px 22px; min-height: 130px; }
-.tile-quote-textarea {
-  width: 100%; border: none; outline: none; resize: none; background: transparent;
-  text-align: center; font-family: var(--font); font-size: 18px; font-weight: 600;
-  line-height: 1.5; letter-spacing: -0.2px;
-}
-.tile-quote-actions { position: absolute; top: 8px; right: 8px; }
-
-/* Notizzettel: Washi-Tape kommt automatisch, sonst identisch zu Standard */
-
-/* ── Ton-in-Ton +Buttons auf Today-Kacheln ────────────────── */
-/* Kein Kreis, kein Border, kein Hintergrund — nur das + Zeichen */
+/* ── Ton-in-Ton Icon-Buttons im Kartenkopf (+, Auge, ...) ──── */
+/* Kein Kreis, kein Border, kein Hintergrund — nur das Symbol */
 .today-tile .panel-header .icon-btn {
   background: none;
   border: none;
@@ -390,11 +322,6 @@
 .today-tile .panel-header .icon-btn:hover {
   background: none;
   opacity: 1;
-}
-#custom-tiles .today-tile .panel-header .icon-btn {
-  background: none;
-  border: none;
-  opacity: 0.55;
 }
 
 /* =========================
