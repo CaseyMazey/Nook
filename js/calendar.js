@@ -19,6 +19,22 @@
 
 const DEFAULT_EVENT_COLOR = '#6b7f58';
 
+// =========================
+// ZENTRALE COUNTDOWN-BERECHNUNG
+// =========================
+// Einzige Stelle im gesamten Projekt, die "Tage bis X" berechnet.
+// Wird von today.js (Navbar-Countdown), calendar.js (Sidebar-Countdown,
+// Countdown-Modal, Countdown-Cleanup) und zukünftigen Widgets genutzt,
+// damit für denselben Termin überall garantiert derselbe Wert erscheint.
+// Referenzdatum für einen Countdown ist immer das START-Datum eines
+// Termins (auch bei mehrtägigen Terminen) — "Tage bis Beginn", nicht
+// "Tage bis Ende".
+function getDaysUntil(date) {
+  const now = new Date(); now.setHours(0, 0, 0, 0);
+  const target = new Date(date); target.setHours(0, 0, 0, 0);
+  return Math.ceil((target - now) / 86400000);
+}
+
 function saveEvents(){ DB.set('events', events); }
 let eventModalTarget = null;
 let eventModalEditCtx = null; // null | { scope:'occurrence'|'following'|'series', series, occDate? }
@@ -224,7 +240,7 @@ function getEventStatusLabel(ev, date) {
   if (!ev.endDate) return null;
   const now   = new Date(); now.setHours(0,0,0,0);
   const end   = parseLocalDate(ev.endDate); end.setHours(0,0,0,0);
-  const daysLeft = Math.ceil((end - now) / 86400000);
+  const daysLeft = getDaysUntil(end);
   if (daysLeft < 0)  return null;
   if (daysLeft === 0) return 'Endet heute';
   if (daysLeft === 1) return 'Endet morgen';
@@ -237,17 +253,15 @@ function getEventStatusLabel(ev, date) {
 // COUNTDOWN CLEANUP beim Laden
 // =========================
 (function cleanupExpiredCountdowns() {
-  const now = new Date(); now.setHours(0,0,0,0);
   let changed = false;
   const validCountdownIds = new Set();
 
   Object.entries(events).forEach(([key, dayEvs]) => {
     dayEvs.forEach(ev => {
       if (!ev.countdown) return;
-      // For multi-day: use endDate; for single: use key
-      const refKey = ev.endDate || key;
-      const evDate = parseLocalDate(refKey); evDate.setHours(0,0,0,0);
-      const daysLeft = Math.ceil((evDate - now) / 86400000);
+      // Countdown zählt immer bis zum Start-Datum (auch bei mehrtägigen Terminen)
+      const evDate = parseLocalDate(key);
+      const daysLeft = getDaysUntil(evDate);
       if (daysLeft >= 0) { validCountdownIds.add(ev.id); }
       else { ev.countdown = false; changed = true; }
     });
@@ -987,15 +1001,13 @@ function closeCountdownModal() { document.getElementById('countdown-modal-overla
 
 function renderCountdownList() {
   const list = document.getElementById('countdown-list'); list.innerHTML = '';
-  const now = new Date(); now.setHours(0,0,0,0);
   const allC = [];
 
   Object.entries(events).forEach(([key, dayEvs]) => {
     dayEvs.forEach(ev => {
       if (!ev.countdown) return;
-      const refKey  = ev.endDate || key;
-      const evDate  = parseLocalDate(refKey); evDate.setHours(0,0,0,0);
-      const daysLeft = Math.ceil((evDate - now) / 86400000);
+      const evDate = parseLocalDate(key);
+      const daysLeft = getDaysUntil(evDate);
       if (daysLeft >= 0) allC.push({ id: ev.id, title: ev.title, daysLeft });
     });
   });
@@ -1226,14 +1238,12 @@ function renderCalCountdownCard() {
   if (!card || !list) return;
   list.innerHTML = '';
 
-  const now = new Date(); now.setHours(0,0,0,0);
   const items = [];
   Object.entries(events).forEach(([key, dayEvs]) => {
     (dayEvs || []).forEach(ev => {
       if (!ev.countdown || countdownVisible[ev.id] !== true) return;
-      const refKey = ev.endDate || key;
-      const evDate = parseLocalDate(refKey); evDate.setHours(0,0,0,0);
-      const days = Math.ceil((evDate - now) / 86400000);
+      const evDate = parseLocalDate(key);
+      const days = getDaysUntil(evDate);
       if (days >= 0) items.push({ title: ev.title, days });
     });
   });
