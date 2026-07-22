@@ -348,8 +348,13 @@ document.getElementById('recur-unit-select').addEventListener('change', updateRe
 document.querySelectorAll('.recur-wd-btn').forEach(btn => {
   btn.addEventListener('click', () => btn.classList.toggle('active'));
 });
+// Geteiltes Farb-Picker-Widget aus hub-utils.js (gleiche Bibliothek wie Guides)
+const eventColorWidget = initColorPickerWidget(
+  { pickerId: 'event-modal-color', previewId: 'event-modal-color-preview', addBtnId: 'event-modal-color-add-btn', libraryId: 'event-modal-color-library' },
+  { initial: DEFAULT_EVENT_COLOR }
+);
 document.getElementById('event-modal-color-reset').addEventListener('click', () => {
-  document.getElementById('event-modal-color').value = DEFAULT_EVENT_COLOR;
+  eventColorWidget.setValue(DEFAULT_EVENT_COLOR);
 });
 
 // =========================
@@ -396,7 +401,7 @@ function openEventModal(key, day, existingEvent = null, editCtx = null) {
   document.getElementById('event-modal-notes').value         = dataSrc.notes || '';
   document.getElementById('event-modal-time').value          = dataSrc.time || '';
   document.getElementById('event-modal-countdown').checked   = existingEvent?.countdown || false;
-  document.getElementById('event-modal-color').value         = dataSrc.color || DEFAULT_EVENT_COLOR;
+  eventColorWidget.setValue(dataSrc.color || DEFAULT_EVENT_COLOR);
 
   // ── Recurrence UI je nach Bearbeitungsmodus ──
   const recurSelect     = document.getElementById('event-modal-recur-select');

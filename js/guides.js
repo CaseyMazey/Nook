@@ -83,7 +83,6 @@ function renderMarkdown(raw, guideId = null, categoryId = null, featuredBlockId 
   let _blockIndex = 0;
   html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
     const blockId  = guideId ? _rawBlockIds[_blockIndex++] : null;
-    const idAttr   = blockId ? `id="${blockId}"` : '';
     const bookmarked = guideId ? isBookmarked(guideId, blockId) : false;
     const bmIcon = bookmarked
       ? `<svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M4 2.5A1.5 1.5 0 0 1 5.5 1h5A1.5 1.5 0 0 1 12 2.5V14l-4-2.4L4 14V2.5Z"/></svg>`
@@ -95,9 +94,9 @@ function renderMarkdown(raw, guideId = null, categoryId = null, featuredBlockId 
     const featBtn  = (guideId && categoryId)
       ? `<button class="guide-feature-btn ${featured ? 'active' : ''}" onclick="handleFeatureClick(this,'${categoryId}','${guideId}','${blockId}')" title="${featured ? 'Als Bibliothek-Snippet entfernen' : 'Als Bibliothek-Snippet verwenden'}">${featured ? '★' : '☆'}</button>`
       : '';
-    const langLabel = `<span class="guide-code-lang">${lang || 'code'}</span>`;
-    const blockClass = 'guide-code-block' + (bookmarked ? ' bookmarked' : '');
-    return `<div class="${blockClass}" ${idAttr}><div class="guide-code-header">${langLabel}<div class="guide-code-header-right">${featBtn}${bmBtn}<button class="guide-copy-btn" onclick="copyCode(this)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="5" y="5" width="9" height="9" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M3 11V3a2 2 0 0 1 2-2h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> Copy</button></div></div><pre class="guide-code-pre"><code>${code.trimEnd()}</code></pre></div>`;
+    // Codeblock-HTML kommt aus hub-utils.js (renderCodeBlock) — hub-weit geteilt,
+    // damit z.B. der Schreibtisch-Kartenstil "Code" später dieselbe Darstellung nutzt.
+    return renderCodeBlock(code, lang, { blockId, bookmarked, bookmarkBtnHtml: bmBtn, featureBtnHtml: featBtn });
   });
 
   // Inline code `...`
@@ -174,17 +173,6 @@ window.handleBookmarkClick = function(btn, guideId, blockId) {
   const block = btn.closest('.guide-code-block');
   if (block) block.classList.toggle('bookmarked', active);
   renderSidebarBookmarks(guideId);
-};
-
-// Copy code button handler (global so onclick works)
-window.copyCode = function(btn) {
-  const code = btn.closest('.guide-code-block').querySelector('code').textContent;
-  navigator.clipboard.writeText(code).then(() => {
-    const orig = btn.innerHTML;
-    btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Kopiert!`;
-    btn.style.color = 'var(--budget-income)';
-    setTimeout(() => { btn.innerHTML = orig; btn.style.color = ''; }, 1800);
-  });
 };
 
 // Featured snippet click handler (global so onclick works)
@@ -287,41 +275,28 @@ function importGuideFromMd(categoryId) {
 // ── Library helpers ───────────────────────────────────────
 
 const GUIDE_BOOK_COLORS = 6; // legacy pastel count (css: .guide-book-0 .. .guide-book-5)
-// Palette used when converting legacy index to hex for the color picker preview
-const GUIDE_PALETTE_HEX = ['#C9D6BC','#ECDFCB','#DAD3EA','#F2E6AE','#E2DED4','#E4CBE6'];
-
-// Persistent user color library (array of hex strings)
-let guideUserColors = DB.get('guideUserColors', []);
-function saveUserColors() { DB.set('guideUserColors', guideUserColors); }
+// Farbpalette + Nutzerbibliothek + hexToGradient() kommen jetzt hub-weit aus
+// hub-utils.js (HUB_PALETTE_HEX, hubUserColors), damit Kalender & künftige
+// Tabs dieselbe Farbverwaltung nutzen können.
 
 // Returns a hex string for a book regardless of whether coverColor is a legacy
 // index (number 0-5) or a modern hex string.
 function getCatHex(cat, idx) {
   if (typeof cat.coverColor === 'string' && /^#/.test(cat.coverColor)) return cat.coverColor;
   const legacyIdx = (typeof cat.coverColor === 'number') ? cat.coverColor : idx;
-  return GUIDE_PALETTE_HEX[legacyIdx % GUIDE_BOOK_COLORS];
+  return HUB_PALETTE_HEX[legacyIdx % GUIDE_BOOK_COLORS];
 }
 
 // Applies the correct color class or inline style to a book element.
 function applyBookColor(el, cat, idx) {
   for (let i = 0; i < GUIDE_BOOK_COLORS; i++) el.classList.remove('guide-book-' + i);
   if (typeof cat.coverColor === 'string' && /^#/.test(cat.coverColor)) {
-    el.style.background = hexToBookGradient(cat.coverColor);
+    el.style.background = hexToGradient(cat.coverColor);
   } else {
     const legacyIdx = (typeof cat.coverColor === 'number') ? cat.coverColor : idx;
     el.classList.add('guide-book-' + (legacyIdx % GUIDE_BOOK_COLORS));
     el.style.background = '';
   }
-}
-
-// Darken a hex color by factor (0..1) for the gradient end-stop
-function hexDarken(hex, factor) {
-  let r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
-  r = Math.round(r * (1 - factor)); g = Math.round(g * (1 - factor)); b = Math.round(b * (1 - factor));
-  return '#' + [r,g,b].map(v => v.toString(16).padStart(2,'0')).join('');
-}
-function hexToBookGradient(hex) {
-  return 'linear-gradient(160deg, ' + hex + ' 0%, ' + hexDarken(hex, 0.12) + ' 100%)';
 }
 
 function fmtDate(iso) {
@@ -1044,49 +1019,16 @@ function setGuideModalTab(tab) {
 
 // ── Category Modal ────────────────────────────────────────
 
-let selectedCatColor = GUIDE_PALETTE_HEX[0]; // hex string
+// Widget-Instanz wird beim ersten initGuides() erzeugt (siehe unten),
+// selectedCatColor bleibt als schlanker Zugriffspunkt für den Save-Handler.
+let guideColorWidget = null;
+let selectedCatColor = HUB_PALETTE_HEX[0]; // hex string
 
 function openGuideCatModal() {
-  selectedCatColor = GUIDE_PALETTE_HEX[0];
   document.getElementById('guide-cat-name-input').value = '';
-  syncColorPicker(selectedCatColor);
+  if (guideColorWidget) guideColorWidget.setValue(HUB_PALETTE_HEX[0]);
   document.getElementById('guide-cat-modal-overlay').classList.remove('hidden');
   setTimeout(() => document.getElementById('guide-cat-name-input').focus(), 50);
-}
-
-// Sync the color picker UI to a given hex value
-function syncColorPicker(hex) {
-  selectedCatColor = hex;
-  const picker = document.getElementById('guide-color-picker');
-  if (picker) picker.value = hex;
-  const preview = document.getElementById('guide-color-preview');
-  if (preview) { preview.style.background = hexToBookGradient(hex); }
-  renderUserColorLibrary();
-}
-
-function renderUserColorLibrary() {
-  const lib = document.getElementById('guide-color-library');
-  if (!lib) return;
-  lib.innerHTML = '';
-  guideUserColors.forEach(hex => {
-    const btn = document.createElement('button');
-    btn.className = 'guide-usercolor-swatch' + (hex === selectedCatColor ? ' active' : '');
-    btn.style.background = hexToBookGradient(hex);
-    btn.title = hex;
-    btn.addEventListener('click', () => syncColorPicker(hex));
-    const del = document.createElement('span');
-    del.className = 'guide-usercolor-del';
-    del.textContent = '✕';
-    del.title = 'Entfernen';
-    del.addEventListener('click', e => {
-      e.stopPropagation();
-      guideUserColors = guideUserColors.filter(c => c !== hex);
-      saveUserColors();
-      renderUserColorLibrary();
-    });
-    btn.appendChild(del);
-    lib.appendChild(btn);
-  });
 }
 
 function closeGuideCatModal() {
@@ -1106,24 +1048,11 @@ function initGuides() {
   const guideView = document.getElementById('view-guides');
   if (guideView) { void guideView.offsetHeight; }
 
-  // Category modal: color picker
-  const colorPicker = document.getElementById('guide-color-picker');
-  if (colorPicker) {
-    colorPicker.addEventListener('input', () => syncColorPicker(colorPicker.value));
-    colorPicker.addEventListener('change', () => syncColorPicker(colorPicker.value));
-  }
-
-  // Save color to library
-  const colorAddBtn = document.getElementById('guide-color-add-btn');
-  if (colorAddBtn) {
-    colorAddBtn.addEventListener('click', () => {
-      const hex = selectedCatColor;
-      if (!hex || guideUserColors.includes(hex)) return;
-      guideUserColors.push(hex);
-      saveUserColors();
-      renderUserColorLibrary();
-    });
-  }
+  // Category modal: geteiltes Farb-Picker-Widget aus hub-utils.js
+  guideColorWidget = initColorPickerWidget(
+    { pickerId: 'guide-color-picker', previewId: 'guide-color-preview', addBtnId: 'guide-color-add-btn', libraryId: 'guide-color-library' },
+    { initial: HUB_PALETTE_HEX[0], onChange: hex => { selectedCatColor = hex; } }
+  );
 
   // Category modal: close
   document.getElementById('guide-cat-modal-close').addEventListener('click', closeGuideCatModal);

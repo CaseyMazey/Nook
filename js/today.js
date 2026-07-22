@@ -853,70 +853,37 @@ document.querySelectorAll('.add-note-btn').forEach(btn => {
 
 // =========================
 // KACHEL-DESIGNER
-// Farbe + Dekoration per Kachel, persistiert in tileDesigns{}
+// Farbe per Kachel, persistiert in tileDesigns{}.
+// Die frühere Dekoration (Tape/Klammer/Ecke) ist entfallen — Washi-Tape
+// gibt es jetzt nur noch automatisch beim Karten-Stil "Notizzettel" (siehe unten).
+// Farbwahl läuft über die hub-weite Bibliothek aus hub-utils.js.
 // =========================
-
-const TILE_DESIGN_COLORS = ['#A3B18A', '#EBE4D4', '#C0AC99'];
-const TILE_DESIGN_DECOS  = ['none', 'tape', 'clip', 'corner'];
 
 let tileDesigns = DB.get('tileDesigns', {});
 
 function saveTileDesigns() { DB.set('tileDesigns', tileDesigns); }
 
 function getTileDesign(id) {
-  return tileDesigns[id] || { color: null, deco: 'none' };
+  return tileDesigns[id] || { color: null };
 }
 
-/* SVG-Dekorationen — hochwertig, farbadaptiv, ragen über Kartenrand */
+/* Washi-Tape-SVG — einzige verbliebene Dekoration, exklusiv für den
+   Karten-Stil "Notizzettel" (siehe renderCustomTiles). */
 function buildTapeSVG(bg) {
-  // Großes Washi-Tape: ragt nach oben, leicht gedreht, halbtransparent, Papierstruktur
   return `<svg class="tile-deco-svg deco-tape" width="80" height="36" viewBox="0 0 80 36" fill="none" xmlns="http://www.w3.org/2000/svg" style="transform:rotate(-3deg)">
     <defs>
       <filter id="tape-shadow" x="-10%" y="-10%" width="120%" height="130%">
         <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="rgba(0,0,0,0.18)"/>
       </filter>
     </defs>
-    <!-- Tape-Körper: leicht unregelmäßige Kanten via Pfad -->
     <path d="M2 8 Q0 8 0 10 L0 28 Q0 30 2 30 L78 30 Q80 30 80 28 L80 10 Q80 8 78 8 Z"
       fill="${bg}" fill-opacity="0.52" filter="url(#tape-shadow)"/>
-    <!-- Weißer Glanzstreifen oben -->
     <rect x="0" y="8" width="80" height="5" rx="1" fill="white" fill-opacity="0.20"/>
-    <!-- Papierstruktur-Linien -->
     <line x1="0" y1="14" x2="80" y2="14" stroke="white" stroke-opacity="0.14" stroke-width="1"/>
     <line x1="0" y1="20" x2="80" y2="20" stroke="white" stroke-opacity="0.10" stroke-width="0.7"/>
     <line x1="0" y1="26" x2="80" y2="26" stroke="white" stroke-opacity="0.08" stroke-width="0.7"/>
-    <!-- Rand unten dezent dunkler -->
     <path d="M2 28 Q0 30 2 30 L78 30 Q80 30 80 28" stroke="rgba(0,0,0,0.08)" stroke-width="0.5" fill="none"/>
   </svg>`;
-}
-
-function buildClipSVG(bg) {
-  // Einfache Büroklammer — eine einzelne Linie mit leichtem Bogen, ragt über Kartenrand
-  const c = bg === '#A3B18A' ? 'rgba(50,70,35,0.48)'
-           : bg === '#C0AC99' ? 'rgba(75,50,30,0.43)'
-           : 'rgba(65,55,40,0.40)';
-  return `<svg class="tile-deco-svg deco-clip" width="14" height="32" viewBox="0 0 14 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M7 0 C7 0 13 4 13 10 C13 16 13 22 13 28" stroke="${c}" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-  </svg>`;
-}
-
-function buildCornerOverlay(bg) {
-  // Farbadaptiver Gradient — passender dunklerer Ton zur Kachelfarbe, nur oben rechts, halb so groß
-  let color;
-  if (bg === '#A3B18A')      color = '50,70,35';   // grün
-  else if (bg === '#C0AC99') color = '75,50,30';   // braun
-  else                       color = '65,55,40';   // beige/default
-  return `<div class="tile-deco-corner-gradient" style="background: radial-gradient(circle at top right, rgba(${color},0.28) 0%, rgba(${color},0.12) 40%, rgba(${color},0.03) 70%, transparent 85%);" aria-hidden="true"></div>`;
-}
-
-function applyTileDecoration(el, design) {
-  el.querySelectorAll('.tile-deco-svg, .tile-deco-corner-gradient').forEach(d => d.remove());
-  const bg = design.color || el.style.background || '#EBE4D4';
-  switch (design.deco) {
-    case 'tape':   el.insertAdjacentHTML('beforeend', buildTapeSVG(bg));       break;
-    case 'clip':   el.insertAdjacentHTML('beforeend', buildClipSVG(bg));       break;
-    case 'corner': el.insertAdjacentHTML('beforeend', buildCornerOverlay(bg));   break;
-  }
 }
 
 // Globales Floating-Popup (einmalig erstellt, wird repositioniert)
@@ -932,48 +899,35 @@ function getOrCreateDesignerPopup() {
 }
 
 function openTileDesigner(el, id, currentDesign) {
-  // Alle anderen schließen
   const popup = getOrCreateDesignerPopup();
   popup.classList.remove('open');
 
-  // Inhalt aufbauen
   popup.innerHTML = `
     <div class="tile-designer-section-label">Farbe</div>
-    <div class="tile-color-row">
-      ${TILE_DESIGN_COLORS.map(c =>
-        `<button class="tile-color-swatch${currentDesign.color === c ? ' active' : ''}" data-color="${c}" style="background:${c}" title="${c}"></button>`
-      ).join('')}
-    </div>
-    <div class="tile-designer-section-label">Dekoration</div>
-    <div class="tile-deco-row">
-      ${[['none','Kein Extra'],['tape','Washi-Tape'],['clip','Büroklammer'],['corner','Abgeknickte Ecke']].map(([val,label]) =>
-        `<label class="tile-deco-option${(currentDesign.deco||'none') === val ? ' selected' : ''}">
-          <input type="radio" name="deco-${id}" value="${val}"${(currentDesign.deco||'none') === val ? ' checked' : ''}> ${label}
-        </label>`
-      ).join('')}
+    <div class="hub-color-picker-wrap">
+      <div class="hub-color-picker-row">
+        <input type="color" id="tile-designer-color" value="${currentDesign.color || HUB_PALETTE_HEX[0]}" class="hub-color-input">
+        <div id="tile-designer-color-preview" class="hub-color-preview"></div>
+        <button type="button" class="hub-color-add-btn" id="tile-designer-color-add-btn" title="Farbe zur Bibliothek hinzufügen">+</button>
+      </div>
+      <div class="hub-color-library-wrap">
+        <span class="hub-color-library-label">Meine Farben</span>
+        <div id="tile-designer-color-library" class="hub-color-library"></div>
+      </div>
     </div>`;
 
-  // Farbe wählen
-  popup.querySelectorAll('.tile-color-swatch').forEach(sw => {
-    sw.addEventListener('click', e => {
-      e.stopPropagation();
-      const color = sw.dataset.color;
-      tileDesigns[id] = { ...getTileDesign(id), color };
-      saveTileDesigns();
-      applyDesignToTile(el, id);
-      popup.querySelectorAll('.tile-color-swatch').forEach(s => s.classList.toggle('active', s.dataset.color === color));
-    });
-  });
-
-  popup.querySelectorAll('input[type="radio"]').forEach(radio => {
-    radio.addEventListener('change', e => {
-      e.stopPropagation();
-      tileDesigns[id] = { ...getTileDesign(id), deco: radio.value };
-      saveTileDesigns();
-      applyDesignToTile(el, id);
-      popup.querySelectorAll('.tile-deco-option').forEach(o => o.classList.toggle('selected', o.querySelector('input').value === radio.value));
-    });
-  });
+  initColorPickerWidget(
+    { pickerId: 'tile-designer-color', previewId: 'tile-designer-color-preview', addBtnId: 'tile-designer-color-add-btn', libraryId: 'tile-designer-color-library' },
+    {
+      initial: currentDesign.color || HUB_PALETTE_HEX[0],
+      gradient: false,
+      onChange: hex => {
+        tileDesigns[id] = { ...getTileDesign(id), color: hex };
+        saveTileDesigns();
+        applyDesignToTile(el, id);
+      }
+    }
+  );
 
   popup.addEventListener('click', e => e.stopPropagation());
 
@@ -984,7 +938,7 @@ function openTileDesigner(el, id, currentDesign) {
   if (btn) {
     const btnRect = btn.getBoundingClientRect();
     const popupW  = 220;
-    const popupH  = 200; // Schätzwert
+    const popupH  = 160; // Schätzwert
 
     let left = btnRect.right - popupW;
     let top  = btnRect.top - popupH - 8;
@@ -1019,7 +973,6 @@ function applyDesignToTile(el, id) {
     const textCol = tileTextColor(design.color);
     el.querySelectorAll('.panel-label, .note-item, .checklist-item span, .bericht-col-label').forEach(t => t.style.color = textCol);
   }
-  applyTileDecoration(el, design);
 }
 
 function addDesignBtnToTile(el, id) {
@@ -1058,15 +1011,34 @@ function initBuiltinTileDesigners() {
 
 // =========================
 
-// Tile-Farbpalette (3 Töne, zufällig bei Erstellung zugewiesen)
-const TILE_COLORS = ['#A3B18A', '#EBE4D4', '#C0AC99'];
+// =========================
+// SCHREIBTISCH — Karten-Stile
+// Jede Karte hat einen Stil, der Layout UND Funktion bestimmt.
+// Datenmodell pro Karte in customTiles[]:
+//   { id, title, style, color, content, code, codeLang, items[], wide, tall }
+// =========================
 
-// Ensure every existing tile has a saved color (one-time migration)
-(function ensureTileColors() {
+const TILE_STYLES = {
+  standard:  { label: 'Standard',    desc: 'Freies Textfeld, wie die Schnellnotiz.' },
+  pinned:    { label: 'Angepinnt',   desc: 'Bleibt immer ganz oben, freies Textfeld.' },
+  important: { label: 'Wichtig',     desc: 'Fällt sofort auf, freies Textfeld.' },
+  code:      { label: 'Code',        desc: 'Für Code-Snippets und Terminalbefehle.' },
+  checklist: { label: 'Checkliste',  desc: 'Kästchen zum Abhaken.' },
+  note:      { label: 'Notizzettel', desc: 'Gemütlich, mit Washi-Tape.' },
+  quote:     { label: 'Zitat',       desc: 'Ein einzelner, großer Satz.' },
+};
+
+// Migration: alte Kacheln (type: 'note'|'list', feste 3-Ton-Farbe) bekommen
+// einen Stil + bleiben farblich unangetastet.
+(function migrateCustomTiles() {
   let changed = false;
   customTiles.forEach(tile => {
+    if (!tile.style) {
+      tile.style = tile.type === 'list' ? 'checklist' : 'standard';
+      changed = true;
+    }
     if (!tile.color) {
-      tile.color = TILE_COLORS[Math.floor(Math.random() * TILE_COLORS.length)];
+      tile.color = HUB_PALETTE_HEX[Math.floor(Math.random() * HUB_PALETTE_HEX.length)];
       changed = true;
     }
   });
@@ -1075,29 +1047,54 @@ const TILE_COLORS = ['#A3B18A', '#EBE4D4', '#C0AC99'];
 
 function saveCustomTiles() { DB.set('customTiles', customTiles); }
 
-// Pick text color based on tile background
+// Lesbare Textfarbe für eine beliebige Hex-Hintergrundfarbe (Helligkeits-Kontrast)
 function tileTextColor(hex) {
-  if (hex === '#A3B18A') return '#2A3020';
-  if (hex === '#C0AC99') return '#2E2217';
-  return '#3D3626'; // #EBE4D4
+  if (!hex || hex[0] !== '#' || hex.length < 7) return '#3D3626';
+  const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.5 ? '#3D3626' : '#F5F1E6';
 }
 
 function renderCustomTiles() {
   const container = document.getElementById('custom-tiles');
   container.innerHTML = '';
-  customTiles.forEach(tile => {
-    const panel  = document.createElement('div'); panel.className = 'panel today-tile';
-    const bg = tile.color || TILE_COLORS[0];
+
+  // Nur für die Anzeige sortieren (angepinnte Karten zuerst) — die gespeicherte
+  // Reihenfolge in customTiles[] bleibt unverändert.
+  const sorted = [...customTiles].sort((a, b) => (b.style === 'pinned') - (a.style === 'pinned'));
+
+  sorted.forEach(tile => {
+    const style = TILE_STYLES[tile.style] ? tile.style : 'standard';
+    const panel  = document.createElement('div');
+    panel.className = 'panel today-tile tile-style-' + style +
+      (tile.wide ? ' tile-size-wide' : '') + (tile.tall ? ' tile-size-tall' : '');
+    const bg = tile.color || HUB_PALETTE_HEX[0];
     panel.style.background = bg;
     panel.style.borderColor = 'rgba(0,0,0,0.10)';
     const textCol = tileTextColor(bg);
 
     const header = document.createElement('div'); header.className = 'panel-header';
     header.style.borderBottomColor = 'rgba(0,0,0,0.09)';
-    const label  = document.createElement('span'); label.className = 'panel-label';
-    label.textContent = tile.title; label.style.color = textCol;
-    const right  = document.createElement('div'); right.style.cssText = 'display:flex;gap:6px;align-items:center;';
-    if (tile.type === 'list') {
+
+    const label = document.createElement('span'); label.className = 'panel-label tile-style-label';
+    if (style === 'pinned')    label.innerHTML = '<svg class="tile-style-icon" width="12" height="12" viewBox="0 0 14 14" fill="currentColor"><path d="M7 1.5l1.2 3 3.3.4-2.4 2.3.6 3.3L7 9l-2.7 1.5.6-3.3-2.4-2.3 3.3-.4L7 1.5z"/></svg>';
+    if (style === 'important') label.innerHTML = '<svg class="tile-style-icon" width="12" height="12" viewBox="0 0 14 14" fill="currentColor"><path d="M7 1.5l1.2 3 3.3.4-2.4 2.3.6 3.3L7 9l-2.7 1.5.6-3.3-2.4-2.3 3.3-.4L7 1.5z"/></svg>';
+    label.append(document.createTextNode(tile.title));
+    label.style.color = textCol;
+
+    const right = document.createElement('div'); right.style.cssText = 'display:flex;gap:4px;align-items:center;';
+
+    // Größen-Umschalter (↔ Breiter / ↕ Höher)
+    const wideBtn = document.createElement('button'); wideBtn.className = 'icon-btn tile-size-btn' + (tile.wide ? ' active' : '');
+    wideBtn.title = 'Breiter'; wideBtn.innerHTML = '↔';
+    wideBtn.addEventListener('click', () => { tile.wide = !tile.wide; saveCustomTiles(); renderCustomTiles(); });
+    right.appendChild(wideBtn);
+    const tallBtn = document.createElement('button'); tallBtn.className = 'icon-btn tile-size-btn' + (tile.tall ? ' active' : '');
+    tallBtn.title = 'Höher'; tallBtn.innerHTML = '↕';
+    tallBtn.addEventListener('click', () => { tile.tall = !tile.tall; saveCustomTiles(); renderCustomTiles(); });
+    right.appendChild(tallBtn);
+
+    if (style === 'checklist') {
       const addBtn = document.createElement('button'); addBtn.className = 'icon-btn'; addBtn.textContent = '+';
       addBtn.addEventListener('click', () => {
         noteModalKey = '__custom__' + tile.id;
@@ -1108,30 +1105,28 @@ function renderCustomTiles() {
       });
       right.appendChild(addBtn);
     }
+
     const delBtn = document.createElement('button'); delBtn.className = 'icon-btn'; delBtn.textContent = '✕';
     delBtn.style.opacity = '0';
     panel.addEventListener('mouseenter', () => delBtn.style.opacity = '1');
     panel.addEventListener('mouseleave', () => delBtn.style.opacity = '0');
     delBtn.addEventListener('click', () => { customTiles = customTiles.filter(t => t.id !== tile.id); saveCustomTiles(); renderCustomTiles(); });
     right.appendChild(delBtn);
-    header.append(label, right); panel.appendChild(header);
-    if (tile.type === 'note') {
-      const ta = document.createElement('textarea');
-      ta.className = 'custom-tile-textarea'; ta.value = tile.content || ''; ta.placeholder = 'Notizen...';
-      ta.style.color = textCol;
-      ta.addEventListener('input', () => { tile.content = ta.value; saveCustomTiles(); });
-      panel.appendChild(ta);
-    } else {
+
+    header.append(label, right);
+    if (style !== 'quote') panel.appendChild(header); // Zitat kommt bewusst ohne Header aus (siehe unten)
+
+    // ── Inhalt je nach Stil ──
+    if (style === 'checklist') {
       if (tile.items && tile.items.length > 0 && typeof tile.items[0] === 'string') {
         tile.items = tile.items.map(s => ({ id: crypto.randomUUID(), text: s, done: false }));
         saveCustomTiles();
       }
-      const tileBg = tile.color || TILE_COLORS[0];
       const ul = document.createElement('ul'); ul.className = 'checklist';
       (tile.items || []).forEach((item, idx) => {
         const li = document.createElement('li'); li.className = 'checklist-item' + (item.done ? ' done' : '');
         li.style.color = textCol;
-        const cbWrap = makePaperCbElement(item.done, tileBg, () => {
+        const cbWrap = makePaperCbElement(item.done, bg, () => {
           item.done = !item.done; saveCustomTiles(); renderCustomTiles();
         });
         const span = document.createElement('span'); span.textContent = item.text || item;
@@ -1144,28 +1139,81 @@ function renderCustomTiles() {
         ul.appendChild(empty);
       }
       panel.appendChild(ul);
+
+    } else if (style === 'code') {
+      const wrap = document.createElement('div'); wrap.className = 'guide-code-block tile-code-block';
+      const codeHeader = document.createElement('div'); codeHeader.className = 'guide-code-header';
+      const langLabel = document.createElement('span'); langLabel.className = 'guide-code-lang'; langLabel.textContent = tile.codeLang || 'code';
+      const copyBtn = document.createElement('button'); copyBtn.className = 'guide-copy-btn'; copyBtn.textContent = 'Copy';
+      copyBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(ta.value).then(() => {
+          const orig = copyBtn.textContent; copyBtn.textContent = 'Kopiert!';
+          setTimeout(() => { copyBtn.textContent = orig; }, 1500);
+        });
+      });
+      codeHeader.append(langLabel, copyBtn);
+      const ta = document.createElement('textarea');
+      ta.className = 'tile-code-textarea'; ta.value = tile.code || ''; ta.placeholder = '$ Code hier eingeben...'; ta.spellcheck = false;
+      ta.addEventListener('input', () => { tile.code = ta.value; saveCustomTiles(); });
+      wrap.append(codeHeader, ta);
+      panel.appendChild(wrap);
+
+    } else if (style === 'quote') {
+      const q = document.createElement('textarea');
+      q.className = 'tile-quote-textarea'; q.value = tile.content || ''; q.placeholder = 'Ein inspirierender Satz...';
+      q.style.color = textCol;
+      q.addEventListener('input', () => { tile.content = q.value; saveCustomTiles(); });
+      // Quote-Karten zeigen Löschen/Größe dezent in der Ecke statt vollem Header
+      panel.appendChild(q);
+      right.classList.add('tile-quote-actions');
+      panel.appendChild(right);
+
+    } else {
+      // standard / pinned / important / note — freies Textfeld
+      const ta = document.createElement('textarea');
+      ta.className = 'custom-tile-textarea'; ta.value = tile.content || ''; ta.placeholder = 'Notizen...';
+      ta.style.color = textCol;
+      ta.addEventListener('input', () => { tile.content = ta.value; saveCustomTiles(); });
+      panel.appendChild(ta);
     }
+
     container.appendChild(panel);
-    // Designer-Button für Custom-Kachel
+
+    // Notizzettel-Stil: automatisches Washi-Tape (einzige verbliebene Dekoration)
+    if (style === 'note') panel.insertAdjacentHTML('beforeend', buildTapeSVG(bg));
+
+    // Designer-Button für Farbe (volle hub-weite Bibliothek)
     addDesignBtnToTile(panel, tile.id);
   });
 }
 
-let selectedTileType = 'note';
+// ── Neue-Karte-Modal ──
+let selectedTileStyle = 'standard';
+let tileModalColorWidget = null;
+
+function initTileModalColorWidget() {
+  if (tileModalColorWidget) return;
+  tileModalColorWidget = initColorPickerWidget(
+    { pickerId: 'tile-modal-color', previewId: 'tile-modal-color-preview', addBtnId: 'tile-modal-color-add-btn', libraryId: 'tile-modal-color-library' },
+    { initial: HUB_PALETTE_HEX[0] }
+  );
+}
+
 document.getElementById('add-tile-btn').addEventListener('click', () => {
+  initTileModalColorWidget();
   document.getElementById('tile-modal-title').value = '';
-  selectedTileType = 'note';
-  document.querySelectorAll('.tile-type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === 'note'));
-  document.getElementById('tile-type-desc').textContent = 'Freies Textfeld, wie die Schnellnotiz.';
+  selectedTileStyle = 'standard';
+  tileModalColorWidget.setValue(HUB_PALETTE_HEX[Math.floor(Math.random() * HUB_PALETTE_HEX.length)]);
+  document.querySelectorAll('.tile-type-btn').forEach(b => b.classList.toggle('active', b.dataset.style === 'standard'));
+  document.getElementById('tile-type-desc').textContent = TILE_STYLES.standard.desc;
   document.getElementById('tile-modal-overlay').classList.remove('hidden');
   setTimeout(() => document.getElementById('tile-modal-title').focus(), 50);
 });
 document.querySelectorAll('.tile-type-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    selectedTileType = btn.dataset.type;
+    selectedTileStyle = btn.dataset.style;
     document.querySelectorAll('.tile-type-btn').forEach(b => b.classList.toggle('active', b === btn));
-    document.getElementById('tile-type-desc').textContent =
-      selectedTileType === 'note' ? 'Freies Textfeld, wie die Schnellnotiz.' : 'Checkliste mit Kästchen zum Abhaken.';
+    document.getElementById('tile-type-desc').textContent = TILE_STYLES[selectedTileStyle].desc;
   });
 });
 document.getElementById('tile-modal-close').addEventListener('click', () => document.getElementById('tile-modal-overlay').classList.add('hidden'));
@@ -1173,8 +1221,8 @@ document.getElementById('tile-modal-cancel').addEventListener('click', () => doc
 document.getElementById('tile-modal-overlay').addEventListener('click', e => { if (e.target === document.getElementById('tile-modal-overlay')) document.getElementById('tile-modal-overlay').classList.add('hidden'); });
 document.getElementById('tile-modal-save').addEventListener('click', () => {
   const title = document.getElementById('tile-modal-title').value.trim(); if (!title) return;
-  const tileColor = TILE_COLORS[Math.floor(Math.random() * TILE_COLORS.length)];
-  const tile = { id: crypto.randomUUID(), title, type: selectedTileType, content: '', items: [], color: tileColor };
+  const color = tileModalColorWidget ? tileModalColorWidget.getValue() : HUB_PALETTE_HEX[0];
+  const tile = { id: crypto.randomUUID(), title, style: selectedTileStyle, color, content: '', code: '', codeLang: '', items: [] };
   customTiles.push(tile); saveCustomTiles();
   document.getElementById('tile-modal-overlay').classList.add('hidden');
   renderCustomTiles();

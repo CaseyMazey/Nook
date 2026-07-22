@@ -197,16 +197,9 @@
 
 /* =============================================================
    INDIVIDUELLE TERMINFARBEN — Color Picker im Termin-Modal
+   Picker selbst: siehe .hub-color-* in main.css (hub-weit geteilt)
 ============================================================= */
-.event-color-row { display: flex; align-items: center; gap: 10px; }
-.event-color-input {
-  width: 44px; height: 32px; padding: 2px;
-  border: 1.5px solid var(--border); border-radius: var(--radius-sm);
-  cursor: pointer; background: var(--surface);
-}
-.event-color-input::-webkit-color-swatch-wrapper { padding: 0; }
-.event-color-input::-webkit-color-swatch { border: none; border-radius: 4px; }
-.event-color-reset { font-size: 12px; padding: 6px 12px; }
+.event-color-reset { font-size: 12px; padding: 6px 12px; flex-shrink: 0; }
 
 /* Farb-Punkt vor Termintitel im Tages-Modal */
 .cal-day-ev-color-dot {

@@ -70,7 +70,7 @@
 /* ═══════════════════════════════════════════════════════════
    TILES GRID — 3 columns
 ═══════════════════════════════════════════════════════════ */
-#today-tiles-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; align-items: start; }
+#today-tiles-grid { display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-flow: dense; gap: 10px; align-items: start; }
 /* Alle today-tiles exakt gleich breit — kein Inhalt verursacht Unterschiede */
 #today-tiles-grid > .panel.today-tile { length: 100%; min-length: 0; box-sizing: border-box; }
 
@@ -322,35 +322,54 @@
 .tile-designer-section-label { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-3); margin-bottom: 7px; margin-top: 10px; }
 .tile-designer-section-label:first-child { margin-top: 0; }
 
-.tile-color-row { display: flex; gap: 7px; margin-bottom: 2px; }
-.tile-color-swatch { width: 28px; height: 28px; border-radius: 7px; border: 2.5px solid transparent; cursor: pointer; outline: none; transition: border-color 120ms, transform 100ms; }
-.tile-color-swatch:hover { transform: scale(1.08); }
-.tile-color-swatch.active { border-color: var(--text); }
+/* Farbe läuft jetzt hub-weit über .hub-color-* (siehe main.css) */
 
-.tile-deco-row { display: flex; flex-direction: column; gap: 3px; }
-.tile-deco-option { display: flex; align-items: center; gap: 8px; padding: 4px 6px; border-radius: 5px; cursor: pointer; font-size: 12px; color: var(--text-2); transition: background 120ms; user-select: none; }
-.tile-deco-option:hover { background: var(--accent-soft); color: var(--text); }
-.tile-deco-option.selected { color: var(--text); font-weight: 600; background: var(--accent-soft); }
-.tile-deco-option input[type="radio"] { accent-color: var(--sage); flex-shrink: 0; }
-
-/* ── SVG Dekoration-Overlays ──────────────────────────────── */
+/* ── SVG Dekoration — nur noch Washi-Tape (Notizzettel-Stil) ──────────── */
 .tile-deco-svg { position: absolute; pointer-events: none; z-index: 20; }
-/* Tape: zentriert über der Oberkante */
 .tile-deco-svg.deco-tape { top: -18px; left: 50%; transform: translateX(-50%); }
-/* Büroklammer: oben links, 2-3px über Kartenrand */
-.tile-deco-svg.deco-clip { top: -3px; left: 18px; }
 
-/* Abgeknickte Ecke — Gradient nur strikt oben rechts, halb so groß wie vorher */
-.tile-deco-corner-gradient {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 36px;
-  height: 36px;
-  border-top-right-radius: inherit;
-  pointer-events: none;
-  z-index: 3;
+/* ═══════════════════════════════════════════════════════════
+   SCHREIBTISCH — Karten-Stile
+═══════════════════════════════════════════════════════════ */
+
+/* Größen (per ↔ / ↕ Buttons im Karten-Header umschaltbar) */
+.tile-size-wide { grid-column: span 2; }
+.tile-size-tall { grid-row: span 2; }
+
+.tile-size-btn {
+  font-size: 12px; opacity: 0.4; transition: opacity 120ms;
+  background: none; border: none; padding: 0 3px; cursor: pointer; color: inherit;
 }
+.tile-size-btn:hover, .tile-size-btn.active { opacity: 1; }
+
+.tile-style-icon { margin-right: 5px; vertical-align: -1px; opacity: 0.75; }
+.tile-style-label { display: flex; align-items: center; }
+
+/* Angepinnt: dezenter Rahmen-Akzent statt Positionswechsel im Markup
+   (die Sortierung selbst passiert in renderCustomTiles) */
+.tile-style-pinned { box-shadow: 0 0 0 1.5px rgba(0,0,0,0.10) inset; }
+
+/* Wichtig: größerer, fetterer Titel für sofortige Aufmerksamkeit */
+.tile-style-important .panel-label { font-size: 15px; font-weight: 700; }
+
+/* Code: editierbarer Codeblock im Guides-Look (Klassen aus guides.css geteilt) */
+.tile-code-block { margin: 0; border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
+.tile-code-textarea {
+  width: 100%; min-height: 110px; border: none; outline: none; resize: vertical;
+  padding: 14px 16px; font-family: var(--mono); font-size: 12.5px; line-height: 1.7;
+  color: var(--text); background: transparent;
+}
+
+/* Zitat: kein Header, großer zentrierter Text, minimalistisch */
+.tile-style-quote { display: flex; align-items: center; justify-content: center; padding: 26px 22px; min-height: 130px; }
+.tile-quote-textarea {
+  width: 100%; border: none; outline: none; resize: none; background: transparent;
+  text-align: center; font-family: var(--font); font-size: 18px; font-weight: 600;
+  line-height: 1.5; letter-spacing: -0.2px;
+}
+.tile-quote-actions { position: absolute; top: 8px; right: 8px; }
+
+/* Notizzettel: Washi-Tape kommt automatisch, sonst identisch zu Standard */
 
 /* ── Ton-in-Ton +Buttons auf Today-Kacheln ────────────────── */
 /* Kein Kreis, kein Border, kein Hintergrund — nur das + Zeichen */
