@@ -7,9 +7,8 @@
 // berichtsheft), die nur noch als einmalige Migrationsquelle dienen.
 // =========================
 
-// deskCards war in today.js zuvor ohne eigene Deklaration im globalen Scope
-// unterwegs — hier bekommt es einen sauberen, eigenen Besitzer.
-let deskCards = DB.get('deskCards', null);
+// deskCards, notes, generalTodos, berichtsheft, shoppingList und customTiles
+// sind globaler State aus main.js — hier nur mitbenutzt, nicht neu deklariert.
 
 const DESK_STYLE_DESC = {
   standard:  'Freies Textfeld, wie die Schnellnotiz.',

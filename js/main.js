@@ -91,8 +91,8 @@ let customTiles      = DB.get('customTiles', []);
 let generalTodos     = DB.get('generalTodos', []);
 let shoppingList     = DB.get('shoppingList', []);
 // Schreibtisch-Karten (vereinheitlichtes Karten-System, ersetzt customTiles/generalTodos/
-// shoppingList/notes/berichtsheft als Render-Grundlage — siehe today.js "SCHREIBTISCH").
-// null = noch nicht migriert (einmalige Migration beim ersten Laden in today.js).
+// shoppingList/notes/berichtsheft als Render-Grundlage — siehe pinboard.js).
+// null = noch nicht migriert (einmalige Migration beim ersten Laden in pinboard.js).
 let deskCards         = DB.get('deskCards', null);
 let subjects         = DB.get('subjects', []);
 let clockEnabled     = DB.get('clockEnabled', false);
@@ -250,7 +250,8 @@ document.querySelectorAll('.nav-btn').forEach(btn=>{
 });
 
 function renderView(name) {
-  if(name==='today')     { renderBlocks(); renderTasks(); renderDesk(); refreshTodayTextareas(); }
+  if(name==='today')     { renderBlocks(); renderTasks(); refreshTodayTextareas(); }
+  if(name==='pinboard')  { renderDesk(); }
   if(name==='flashcards'){ renderSubjectList(); }
   if(name==='guides')    { initGuides(); }
   if(name==='calendar')  { renderCalendar(); }
