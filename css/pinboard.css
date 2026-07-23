@@ -89,10 +89,10 @@
 
 /* ── Checklisten ──────────────────────────────────────────── */
 .checklist { padding: 6px 0; }
-.checklist-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 16px; font-size: 13px; color: var(--text); transition: background var(--transition); }
+.checklist-item { display: flex; align-items: flex-start; gap: 8px; padding: 8px 16px; font-size: 13px; color: var(--text); transition: background var(--transition); }
 .checklist-item:hover { background: var(--surface-3); }
 .checklist-item input[type="checkbox"] { width: 15px; height: 15px; accent-color: var(--sage); cursor: pointer; flex-shrink: 0; }
-.checklist-item span { flex: 1; }
+.checklist-item .checklist-text { flex: 1; min-width: 0; }
 .checklist-item.done span { color: var(--text-3); text-decoration: line-through; }
 .checklist-item .note-del { opacity: 0; }
 .checklist-item:hover .note-del { opacity: 1; }

@@ -88,6 +88,7 @@ let countdownVisible = DB.get('countdownVisible', {});
 let darkMode         = DB.get('darkMode', false);
 let colors           = DB.get('colors', DEFAULT_COLORS);
 let customTiles      = DB.get('customTiles', []);
+let deskCards        = DB.get('deskCards', null);
 let generalTodos     = DB.get('generalTodos', []);
 let shoppingList     = DB.get('shoppingList', []);
 let subjects         = DB.get('subjects', []);
@@ -246,7 +247,8 @@ document.querySelectorAll('.nav-btn').forEach(btn=>{
 });
 
 function renderView(name) {
-  if(name==='today')     { renderBlocks(); renderTasks(); renderNotes(); renderCustomTiles(); refreshTodayTextareas(); }
+  if(name==='today')     { renderBlocks(); renderTasks(); refreshTodayTextareas(); }
+  if(name==='pinboard')  { renderDesk(); }
   if(name==='flashcards'){ renderSubjectList(); }
   if(name==='guides')    { initGuides(); }
   if(name==='calendar')  { renderCalendar(); }

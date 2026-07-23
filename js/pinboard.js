@@ -160,7 +160,7 @@ function buildDeskCardBody(body, card) {
         const cbWrap = makePaperCbElement(item.done, card.color, () => {
           item.done = !item.done; saveDeskCards(); renderDesk();
         });
-        const span = document.createElement('span'); span.textContent = item.text;
+        const span = document.createElement('span'); span.className = 'checklist-text'; span.textContent = item.text;
         const del = document.createElement('button'); del.className = 'note-del'; del.textContent = '✕';
         del.addEventListener('click', () => { card.items = card.items.filter(i => i !== item); saveDeskCards(); renderDesk(); });
         li.append(cbWrap, span, del); ul.appendChild(li);
