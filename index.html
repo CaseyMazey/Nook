@@ -472,24 +472,6 @@
       <!-- TODAY -->
       <section id="view-today" class="view active">
  
-        <!-- Greeting Header -->
-        <div id="today-header">
-          <div id="today-greeting-block">
-            <h1 id="today-greeting" class="today-greeting">—</h1>
-            <div id="today-subtitle" class="today-subtitle">—</div>
-          </div>
-          <div id="today-header-right">
-            <div id="today-weather" class="today-weather">
-              <div class="weather-icon"></div>
-              <div class="weather-info">
-                <div class="weather-temp" id="weather-temp">—</div>
-                <div class="weather-desc" id="weather-desc">—</div>
-              </div>
-            </div>
-            <div id="clock-sidebar-panel"></div>
-          </div>
-        </div>
- 
         <!-- hidden clock-widget: bleibt für JS-Kompatibilität (startClock/stopClock) -->
         <div id="clock-widget" style="display:none;"></div>
  
@@ -498,6 +480,21 @@
  
           <!-- HAUPTBEREICH -->
           <div id="today-main">
+ 
+            <!-- Begrüßung + Wetter (Header des Hauptbereichs) -->
+            <div id="today-main-header">
+              <div id="today-greeting-block">
+                <h1 id="today-greeting" class="today-greeting">—</h1>
+                <div id="today-subtitle" class="today-subtitle">—</div>
+              </div>
+              <div id="today-weather" class="today-weather">
+                <div class="weather-icon"></div>
+                <div class="weather-info">
+                  <div class="weather-temp" id="weather-temp">—</div>
+                  <div class="weather-desc" id="weather-desc">—</div>
+                </div>
+              </div>
+            </div>
  
             <!-- Unterrichtsblöcke -->
             <div id="today-blocks-section">
@@ -526,6 +523,7 @@
  
           <!-- RECHTE SIDEBAR -->
           <div id="today-right">
+            <div id="clock-sidebar-panel"></div>
             <div class="panel" id="panel-quicknote">
               <div class="panel-header">
                 <span class="panel-label">Schnellnotiz</span>

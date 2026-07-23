@@ -347,7 +347,7 @@ function renderSidebarClock() {
   const dateStr = now.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
   panel.innerHTML = `
-    <div class="clock-analog">${buildAnalogSVG(now, 72)}</div>
+    <div class="clock-analog">${buildAnalogSVG(now, 96)}</div>
     <div class="clock-sidebar-right">
       <div class="clock-sidebar-time">${hh}:${mm}</div>
       <div class="clock-sidebar-weekday">${weekday}</div>

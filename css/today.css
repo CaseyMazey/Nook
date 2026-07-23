@@ -6,14 +6,15 @@
 #view-today .view-header { display: none; }
 
 /* ═══════════════════════════════════════════════════════════
-   GREETING HEADER
+   HAUPTBEREICH-HEADER (Begrüßung + Wetter)
+   Sitzt als erste Zeile in #today-main, damit die rechte Kante
+   der Wetterkarte exakt mit der rechten Kante von blocks-row/
+   panel-tasks abschließt.
 ═══════════════════════════════════════════════════════════ */
-#today-header { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 22px; }
+#today-main-header { display: flex; align-items: center; justify-content: space-between; gap: 24px; }
 #today-greeting-block {}
-#today-header-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 
 .today-weather { display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 12px 18px; box-shadow: var(--shadow-sm); flex-shrink: 0; }
-#today-header-clock { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 12px 18px; box-shadow: var(--shadow-sm); flex-shrink: 0; font-family: var(--mono); font-size: 18px; font-weight: 500; color: var(--text); letter-spacing: 1px; }
 
 .today-greeting { font-family: var(--font); font-size: 32px; font-weight: 700; letter-spacing: -0.8px; color: var(--text); line-height: 1.1; margin-bottom: 6px; }
 .today-subtitle { font-size: 12.5px; color: var(--text-3); font-family: var(--mono); letter-spacing: 0.01em; }
@@ -87,13 +88,13 @@
 /* ═══════════════════════════════════════════════════════════
    RIGHT SIDEBAR
 ═══════════════════════════════════════════════════════════ */
-#clock-sidebar-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px 20px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 20px; width: 100%; box-sizing: border-box; }
+#clock-sidebar-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 22px 24px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 22px; width: 100%; box-sizing: border-box; }
 
 .clock-analog { flex-shrink: 0; }
 .clock-sidebar-right { display: flex; flex-direction: column; gap: 1px; flex: 1; }
-.clock-sidebar-time { font-family: var(--mono); font-size: 22px; font-weight: 400; letter-spacing: 3px; color: var(--text); line-height: 1.1; }
-.clock-sidebar-weekday { font-size: 11px; font-weight: 600; color: var(--text-2); margin-top: 5px; }
-.clock-sidebar-date { font-size: 10px; color: var(--text-3); font-family: var(--mono); margin-top: 2px; }
+.clock-sidebar-time { font-family: var(--mono); font-size: 30px; font-weight: 400; letter-spacing: 3px; color: var(--text); line-height: 1.1; }
+.clock-sidebar-weekday { font-size: 13px; font-weight: 600; color: var(--text-2); margin-top: 7px; }
+.clock-sidebar-date { font-size: 11.5px; color: var(--text-3); font-family: var(--mono); margin-top: 3px; }
 
 /* ── Schnellnotiz ─────────────────────────────────────────── */
 #panel-quicknote { background: #F9F5DC; border: 1px solid rgba(175,155,55,0.22); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-sm); }
