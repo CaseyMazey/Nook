@@ -314,6 +314,10 @@ function openDeskCardModal(cardId) {
 
   deskColorWidget.setValue(card ? (card.color || HUB_PALETTE_HEX[0]) : HUB_PALETTE_HEX[0]);
 
+  const orderRow = document.getElementById('tile-modal-order-row');
+  if (card) { orderRow.style.display = ''; updateDeskMoveButtons(card); }
+  else { orderRow.style.display = 'none'; }
+
   document.getElementById('tile-modal-overlay').classList.remove('hidden');
   setTimeout(() => document.getElementById('tile-modal-title').focus(), 50);
 }
@@ -336,6 +340,45 @@ document.querySelectorAll('#tile-modal-column-picker .toggle-select-btn').forEac
     selectedDeskColumn = Number(btn.dataset.col);
     document.querySelectorAll('#tile-modal-column-picker .toggle-select-btn').forEach(b => b.classList.toggle('active', b === btn));
   });
+});
+
+// ---- Karte um eine Position innerhalb ihres Segments (angepinnt/normal) verschieben ----
+function moveDeskCard(id, dir) {
+  const card = deskCards.find(c => c.id === id);
+  if (!card) return;
+  const isPinned = card.style === 'pinned';
+  const segment = sortedDeskCards(card.column).filter(c => (c.style === 'pinned') === isPinned);
+  const idx = segment.findIndex(c => c.id === id);
+  const swapIdx = idx + dir;
+  if (swapIdx < 0 || swapIdx >= segment.length) return;
+  const other = segment[swapIdx];
+  const tmp = card.order || 0;
+  card.order = other.order || 0;
+  other.order = tmp;
+  saveDeskCards();
+  renderDesk();
+}
+
+// ---- Pfeile im Bearbeiten-Dialog an der aktuellen Position (de)aktivieren ----
+function updateDeskMoveButtons(card) {
+  const isPinned = card.style === 'pinned';
+  const segment = sortedDeskCards(card.column).filter(c => (c.style === 'pinned') === isPinned);
+  const idx = segment.findIndex(c => c.id === card.id);
+  document.getElementById('tile-modal-move-up').disabled = idx <= 0;
+  document.getElementById('tile-modal-move-down').disabled = idx >= segment.length - 1;
+}
+
+document.getElementById('tile-modal-move-up').addEventListener('click', () => {
+  if (!editingDeskCardId) return;
+  moveDeskCard(editingDeskCardId, -1);
+  const card = deskCards.find(c => c.id === editingDeskCardId);
+  if (card) updateDeskMoveButtons(card);
+});
+document.getElementById('tile-modal-move-down').addEventListener('click', () => {
+  if (!editingDeskCardId) return;
+  moveDeskCard(editingDeskCardId, 1);
+  const card = deskCards.find(c => c.id === editingDeskCardId);
+  if (card) updateDeskMoveButtons(card);
 });
 
 function nextDeskOrder(col) {

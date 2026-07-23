@@ -291,6 +291,7 @@ ul { list-style: none; }
   transition: background var(--transition), color var(--transition);
 }
 .icon-btn:hover { background: var(--accent-soft); color: var(--text); }
+.icon-btn:disabled { opacity: 0.3; cursor: default; pointer-events: none; }
 
 /* =========================
    PANEL
