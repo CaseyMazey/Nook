@@ -344,7 +344,7 @@ ul { list-style: none; }
 
 .view {
   display: none;
-  padding: 28px 32px 52px;
+  padding: 28px 32px 16px;
   animation: fadeIn 200ms ease;
 }
 .view.active { display: block; }

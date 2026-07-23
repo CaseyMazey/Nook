@@ -3,7 +3,7 @@
 ========================================== */
 
 #view-games {
-  padding: 28px;
+  padding: 28px 28px 16px;
   background: var(--bg);
   min-height: 100vh;
 }

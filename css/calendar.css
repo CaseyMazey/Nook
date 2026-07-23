@@ -273,21 +273,6 @@
 #view-calendar .dash-content { margin: 0; }
 
 /* =============================================================
-   SCROLL-FIX — kein unnötiger Scrollbalken bei voll sichtbarem Monat
-   Global gilt: .view padding-bottom 52px + .dash-content
-   padding-bottom 28px = 80px Leerraum am Seitenende (main.css).
-   Bei den meisten Tabs unsichtbar, da deren Inhalt länger als der
-   Viewport ist. Der Kalender ist jedoch bewusst auf eine
-   Bildschirmhöhe kalibriert (feste Hero-Höhe + Mindest-Zeilenhöhen),
-   wodurch dieser globale Leerraum den Gesamtinhalt knapp über 100vh
-   schiebt und #main (main.css, overflow-y:scroll) einen
-   Scrollbalken für nichts erzeugt. Nur hier reduziert, alle anderen
-   Tabs bleiben unverändert.
-============================================================= */
-#view-calendar { padding-bottom: 16px; }
-#view-calendar .dash-content { padding-bottom: 14px; }
-
-/* =============================================================
    HERO — eine einzige Komponente: saisonales Hintergrundbild,
    darauf als Ebenen Monat/Jahr, Saison-Badge, Beschreibungstext
    und die schwebende Wetterkarte. Kein separater Banner-Container.
