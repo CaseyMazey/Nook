@@ -63,6 +63,18 @@
    TASCHENRECHNER
 ========================= */
 
+.calc-expression {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text-3);
+  text-align: right;
+  min-height: 16px;
+  padding: 0 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .calc-display {
   background: var(--bg);
   border: 1px solid var(--border);
@@ -121,6 +133,52 @@
 
 .calc-key--zero { grid-column: span 2; }
 
+.calc-history {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.calc-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.calc-history-item {
+  text-align: right;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: var(--text-2);
+  background: var(--surface-2);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 7px 10px;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+.calc-history-item:hover { background: var(--accent-soft); }
+
+.calc-history-empty {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-3);
+  padding: 8px 0;
+}
+
+.calc-history-clear {
+  align-self: center;
+  font-size: 11.5px;
+  color: var(--text-3);
+  padding: 4px 8px;
+  transition: color var(--transition);
+}
+.calc-history-clear:hover { color: var(--text-2); }
+
 /* =========================
    FOCUS TIMER
 ========================= */
@@ -131,6 +189,76 @@
   max-width: 220px;
   margin: 4px auto 0;
   aspect-ratio: 1 / 1;
+}
+
+.timer-complete-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  padding: 28px 12px;
+  background: var(--sage-bg);
+  border: 1px solid var(--sage-border);
+  border-radius: var(--radius);
+}
+
+.timer-complete-icon { font-size: 32px; line-height: 1; }
+.timer-complete-title { font-size: 15px; font-weight: 600; color: var(--text); }
+.timer-complete-sub { font-size: 13px; color: var(--text-2); }
+.timer-complete-btn { margin-top: 8px; }
+
+.tool-toggle-row {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+
+.timer-history {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.timer-history-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 12.5px;
+  color: var(--text-2);
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+.timer-history-title {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
+  margin-bottom: 2px;
+}
+
+.timer-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 130px;
+  overflow-y: auto;
+}
+.timer-history-item {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--text-3);
+  padding: 3px 4px;
+}
+.timer-history-empty {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-3);
+  padding: 6px 0;
 }
 
 .timer-ring {
@@ -328,6 +456,126 @@
 }
 
 /* =========================
+   GETEILT: MODUS-SCHALTER
+   Segmented-Button-Gruppe für "einer von N Modi" — genutzt vom
+   Focus Timer (Fokus/Kurze Pause/Lange Pause) und vom
+   Datenübertragungsraten-Rechner (Zeit/Geschwindigkeit/Datenmenge).
+========================= */
+
+.tool-mode-group {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.tool-mode-btn {
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border-strong);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-2);
+  background: var(--surface-2);
+  cursor: pointer;
+  font-family: var(--font);
+  transition: border-color var(--transition), color var(--transition), background var(--transition);
+}
+.tool-mode-btn:hover { border-color: var(--sage); color: var(--sage-dark); background: var(--sage-bg); }
+.tool-mode-btn.active { background: var(--sage-bg); color: var(--sage-dark); border-color: var(--sage); font-weight: 600; }
+
+/* =========================
+   DATENÜBERTRAGUNGSRATEN-RECHNER
+========================= */
+
+.tool-card--wide { grid-column: 1 / -1; }
+
+.dr-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.dr-fields .conv-row.hidden { display: none; }
+
+.dr-unit-select { width: 108px; }
+
+.dr-result {
+  background: var(--sage-bg);
+  border: 1px solid var(--sage-border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dr-result-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dr-result-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--sage-dark);
+}
+
+.dr-copy-btn { width: 26px; height: 26px; font-size: 13px; }
+
+.dr-result-value {
+  font-family: var(--mono);
+  font-size: 26px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.dr-result-sub {
+  font-size: 12px;
+  color: var(--text-3);
+  min-height: 16px;
+}
+
+.dr-result-unit {
+  width: 140px;
+  margin-top: 4px;
+}
+
+.dr-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+
+.dr-step-line {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--text-2);
+}
+
+.dr-hints {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+
+.dr-hints-title {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
+  margin-bottom: 2px;
+}
+
+/* =========================
    RESPONSIVE
 ========================= */
 
@@ -339,4 +587,8 @@
 @media (max-width: 700px) {
   .tools-grid { grid-template-columns: 1fr; }
   .tool-card:first-child { grid-column: auto; }
+}
+
+@media (max-width: 620px) {
+  .dr-fields { grid-template-columns: 1fr; }
 }
