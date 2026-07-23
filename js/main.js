@@ -90,10 +90,6 @@ let colors           = DB.get('colors', DEFAULT_COLORS);
 let customTiles      = DB.get('customTiles', []);
 let generalTodos     = DB.get('generalTodos', []);
 let shoppingList     = DB.get('shoppingList', []);
-// Schreibtisch-Karten (vereinheitlichtes Karten-System, ersetzt customTiles/generalTodos/
-// shoppingList/notes/berichtsheft als Render-Grundlage — siehe pinboard.js).
-// null = noch nicht migriert (einmalige Migration beim ersten Laden in pinboard.js).
-let deskCards         = DB.get('deskCards', null);
 let subjects         = DB.get('subjects', []);
 let clockEnabled     = DB.get('clockEnabled', false);
 let clockType        = DB.get('clockType', 'digital');
@@ -250,13 +246,13 @@ document.querySelectorAll('.nav-btn').forEach(btn=>{
 });
 
 function renderView(name) {
-  if(name==='today')     { renderBlocks(); renderTasks(); refreshTodayTextareas(); }
-  if(name==='pinboard')  { renderDesk(); }
+  if(name==='today')     { renderBlocks(); renderTasks(); renderNotes(); renderCustomTiles(); refreshTodayTextareas(); }
   if(name==='flashcards'){ renderSubjectList(); }
   if(name==='guides')    { initGuides(); }
   if(name==='calendar')  { renderCalendar(); }
   if(name==='budget')    { renderBudget(); }
   if(name==='games')     { initGames(); }
+  if(name==='tools')     { initTools(); }
   if(name==='settings')  { renderSettings(); }
   if(name==='projects')  { renderProjects(); }
 }

@@ -1,0 +1,342 @@
+/* ==========================================
+   TOOLS
+   Kleiner Werkzeugkasten: Taschenrechner, Focus Timer, Converter.
+   Nutzt ausschließlich bestehende Design-Tokens (main.css) — keine
+   neuen Farben, gleiche Radien/Schatten/Abstände wie der Rest von Nook.
+========================================== */
+
+.tools-subtitle {
+  font-size: 13px;
+  color: var(--text-3);
+  margin-top: 4px;
+}
+
+.tools-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+/* =========================
+   GENERISCHE WERKZEUG-KARTE
+========================= */
+
+.tool-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.tool-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tool-card-icon {
+  font-size: 17px;
+  line-height: 1;
+}
+
+.tool-card-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.tool-card-body {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 1;
+}
+
+/* =========================
+   TASCHENRECHNER
+========================= */
+
+.calc-display {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 18px 16px;
+  text-align: right;
+  font-family: var(--mono);
+  font-size: 32px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.calc-keys {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.calc-key {
+  padding: 14px 0;
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  font-weight: 500;
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: background var(--transition), box-shadow var(--transition);
+  font-family: var(--font);
+}
+.calc-key:hover { background: var(--accent-soft); }
+.calc-key:active { box-shadow: inset 0 1px 4px rgba(0,0,0,0.12); }
+
+.calc-key--fn {
+  background: var(--surface-3);
+  color: var(--text-2);
+}
+.calc-key--fn:hover { background: var(--accent-soft); }
+
+.calc-key--op {
+  background: var(--sage-bg);
+  color: var(--sage-dark);
+  border-color: var(--sage-border);
+}
+.calc-key--op:hover { background: var(--sage-border); }
+.calc-key--op.active { background: var(--sage); color: #F8F5EE; }
+
+.calc-key--eq {
+  background: var(--sage);
+  color: #F8F5EE;
+  border-color: var(--sage);
+}
+.calc-key--eq:hover { background: var(--sage-dark); }
+
+.calc-key--zero { grid-column: span 2; }
+
+/* =========================
+   FOCUS TIMER
+========================= */
+
+.timer-ring-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 220px;
+  margin: 4px auto 0;
+  aspect-ratio: 1 / 1;
+}
+
+.timer-ring {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.timer-ring-bg {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 10;
+}
+
+.timer-ring-fg {
+  fill: none;
+  stroke: var(--sage);
+  stroke-width: 10;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 900ms linear, stroke var(--transition);
+}
+
+.timer-ring-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.timer-time {
+  font-family: var(--mono);
+  font-size: 34px;
+  font-weight: 500;
+  color: var(--text);
+  letter-spacing: -0.5px;
+}
+
+.timer-mode-pill {
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sage-dark);
+  background: var(--sage-bg);
+  padding: 4px 12px;
+  border-radius: 999px;
+}
+
+.timer-sessions {
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--text-3);
+  background: var(--surface-2);
+  border-radius: 999px;
+  padding: 5px 12px;
+  margin: 2px auto 0;
+  width: fit-content;
+}
+
+.timer-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.timer-start-btn { min-width: 120px; text-align: center; }
+
+.tool-settings-toggle {
+  align-self: center;
+  font-size: 12px;
+  color: var(--text-3);
+  padding: 4px 8px;
+  transition: color var(--transition);
+}
+.tool-settings-toggle:hover { color: var(--text-2); }
+
+.timer-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.timer-settings.hidden { display: none; }
+
+.timer-settings label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+
+.timer-settings input {
+  width: 64px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  font-size: 13px;
+  background: var(--bg);
+  color: var(--text);
+  text-align: center;
+  outline: none;
+}
+.timer-settings input:focus {
+  border-color: var(--sage);
+  box-shadow: 0 0 0 3px var(--sage-bg);
+}
+
+/* =========================
+   CONVERTER
+========================= */
+
+.conv-category-select {
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 9px 12px;
+  font-size: 13px;
+  background: var(--bg);
+  color: var(--text);
+  outline: none;
+  font-family: var(--font);
+  cursor: pointer;
+}
+.conv-category-select:focus {
+  border-color: var(--sage);
+  box-shadow: 0 0 0 3px var(--sage-bg);
+}
+
+.conv-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.conv-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
+}
+
+.conv-input-group {
+  display: flex;
+  gap: 8px;
+}
+
+.conv-input-group .modal-input { flex: 1; min-width: 0; }
+
+.conv-unit-select {
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 0 10px;
+  font-size: 13px;
+  background: var(--bg);
+  color: var(--text);
+  outline: none;
+  font-family: var(--font);
+  cursor: pointer;
+  flex-shrink: 0;
+  width: 84px;
+}
+
+.conv-swap-btn {
+  align-self: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: background var(--transition), color var(--transition), transform var(--transition);
+}
+.conv-swap-btn:hover { background: var(--accent-soft); color: var(--text); }
+.conv-swap-btn:active { transform: rotate(180deg); }
+
+.conv-example {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-3);
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  padding: 9px 10px;
+  font-family: var(--mono);
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 1180px) {
+  .tools-grid { grid-template-columns: 1fr 1fr; }
+  .tool-card:first-child { grid-column: 1 / -1; }
+}
+
+@media (max-width: 700px) {
+  .tools-grid { grid-template-columns: 1fr; }
+  .tool-card:first-child { grid-column: auto; }
+}
