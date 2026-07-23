@@ -542,7 +542,10 @@
  
       <!-- PINNWAND -->
       <section id="view-pinboard" class="view">
-        <div class="view-header"><h1 class="view-title">Pinnwand</h1></div>
+        <div class="view-header">
+          <h1 class="view-title">Pinnwand</h1>
+          <button class="btn-ghost" id="add-tile-btn">+ Karte hinzufügen</button>
+        </div>
         <div class="dash-content">
 
           <!-- Schreibtisch — 3 feste, unabhängige Spalten (Masonry), Karten komplett per JS gerendert -->
@@ -550,11 +553,6 @@
             <div class="desk-col" id="desk-col-0"></div>
             <div class="desk-col" id="desk-col-1"></div>
             <div class="desk-col" id="desk-col-2"></div>
-          </div>
-
-          <!-- + Karte -->
-          <div id="today-add-tile-row">
-            <button class="btn-ghost" id="add-tile-btn">+ Karte hinzufügen</button>
           </div>
 
         </div><!-- /dash-content -->

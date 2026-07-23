@@ -831,15 +831,21 @@ function renderCalendar() {
       rangeEvs.forEach(({ ev, isStart, isEnd }) => {
         if (shown >= 3) return; shown++;
         const pill = document.createElement('div');
-        const spanClass = isStart && isEnd ? 'cal-span-single'
-                        : isStart          ? 'cal-span-start'
-                        : isEnd            ? 'cal-span-end'
+        // Rundung richtet sich nach dem Abschnitt innerhalb dieser Kalenderzeile
+        // (Montag–Sonntag), nicht nach dem tatsächlichen Termin-Start/-Ende —
+        // so wird jeder Zeilenabschnitt zu einer vollständig abgerundeten Pille.
+        const dow      = (date.getDay() + 6) % 7; // 0 = Montag … 6 = Sonntag
+        const rowStart = isStart || dow === 0;
+        const rowEnd   = isEnd   || dow === 6;
+        const spanClass = rowStart && rowEnd ? 'cal-span-single'
+                        : rowStart          ? 'cal-span-start'
+                        : rowEnd            ? 'cal-span-end'
                         :                    'cal-span-mid';
         pill.className = `cal-event-pill cal-span ${spanClass}` + (ev.countdown ? ' countdown-pill' : '');
         if (ev.color) {
           pill.style.background = hexToRgba(ev.color, 0.22);
           pill.style.color = ev.color;
-          if (isStart) pill.style.borderLeftColor = ev.color;
+          if (rowStart) pill.style.borderLeftColor = ev.color;
         }
         pill.textContent = isStart ? ev.title : (isEnd ? '↳ Ende' : '');
         pill.title = ev.title + (ev.notes ? ' — ' + ev.notes : '');

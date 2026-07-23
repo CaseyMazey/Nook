@@ -384,6 +384,7 @@ function buildMiniCal(refDate) {
   const rangeDays    = new Set(); // days inside a multi-day range
   const rangeStart   = new Set();
   const rangeEnd     = new Set();
+  const dayColors    = new Map(); // day -> tatsächliche Termin-Farbe (erster gefundener Termin gewinnt)
 
   if (typeof events !== 'undefined') {
     Object.entries(events).forEach(([key, dayEvs]) => {
@@ -391,7 +392,10 @@ function buildMiniCal(refDate) {
         if (!ev.endDate) {
           // Single-day
           const d = parseLocalDate(key);
-          if (d.getFullYear() === year && d.getMonth() === month) eventDays.add(d.getDate());
+          if (d.getFullYear() === year && d.getMonth() === month) {
+            eventDays.add(d.getDate());
+            if (!dayColors.has(d.getDate())) dayColors.set(d.getDate(), ev.color || DEFAULT_EVENT_COLOR);
+          }
           return;
         }
         // Multi-day: mark all days in range
@@ -402,6 +406,7 @@ function buildMiniCal(refDate) {
           if (cur.getFullYear() === year && cur.getMonth() === month) {
             const d = cur.getDate();
             rangeDays.add(d);
+            if (!dayColors.has(d)) dayColors.set(d, ev.color || DEFAULT_EVENT_COLOR);
             if (cur.getTime() === start.getTime()) rangeStart.add(d);
             if (cur.getTime() === end.getTime())   rangeEnd.add(d);
           }
@@ -415,8 +420,11 @@ function buildMiniCal(refDate) {
   if (typeof getSeriesOccurrencesInRange === 'function') {
     const gridStart = new Date(year, month, 1);
     const gridEnd   = new Date(year, month + 1, 0);
-    getSeriesOccurrencesInRange(gridStart, gridEnd).forEach(({ date: d }) => {
-      if (d.getFullYear() === year && d.getMonth() === month) eventDays.add(d.getDate());
+    getSeriesOccurrencesInRange(gridStart, gridEnd).forEach(({ date: d, event: ev }) => {
+      if (d.getFullYear() === year && d.getMonth() === month) {
+        eventDays.add(d.getDate());
+        if (!dayColors.has(d.getDate())) dayColors.set(d.getDate(), ev.color || DEFAULT_EVENT_COLOR);
+      }
     });
   }
 
@@ -450,7 +458,14 @@ function buildMiniCal(refDate) {
       isRE ? 'range-end'   : '',
     ].filter(Boolean).join(' ');
 
-    cells += `<div class="${cls}" data-date="${key}" data-day="${d}"><span>${d}</span><span class="mini-cal-dot"></span></div>`;
+    // Farbiger Punkt/Hintergrund zeigt die tatsächliche Terminfarbe; bei "heute" bleibt die kontrastreiche Standardfarbe erhalten
+    const dotColor   = (hasE && !isT) ? dayColors.get(d) : null;
+    const rangeColor = (isR  && !isT) ? dayColors.get(d) : null;
+    const dotStyle   = dotColor   ? ` style="background:${dotColor}"` : '';
+    const cellStyle  = rangeColor ? ` style="background:${hexToRgba(rangeColor, (isRS || isRE) ? 0.22 : 0.14)}"` : '';
+    const numStyle   = rangeColor ? ` style="color:${rangeColor}"` : '';
+
+    cells += `<div class="${cls}" data-date="${key}" data-day="${d}"${cellStyle}><span${numStyle}>${d}</span><span class="mini-cal-dot"${dotStyle}></span></div>`;
   }
 
   const total     = startDow + daysInMonth;
@@ -470,13 +485,14 @@ function buildMiniCal(refDate) {
     (events[key] || []).forEach(ev => {
       if (seenIds.has(ev.id)) return;
       seenIds.add(ev.id);
+      const evColor = ev.color || DEFAULT_EVENT_COLOR;
       if (!ev.endDate) {
-        upcoming.push({ title: ev.title, date: d, dateStr: d.toLocaleDateString('de-DE', { day: 'numeric', month: 'long' }), type: ev.countdown ? 'prio-1' : 'prio-ev', isRange: false });
+        upcoming.push({ title: ev.title, date: d, dateStr: d.toLocaleDateString('de-DE', { day: 'numeric', month: 'long' }), color: evColor, isRange: false });
       } else {
         const end = parseLocalDate(ev.endDate);
         const startStr = parseLocalDate(ev.startDate || key).toLocaleDateString('de-DE',{day:'numeric',month:'short'});
         const endStr   = end.toLocaleDateString('de-DE', {day:'numeric', month:'short'});
-        upcoming.push({ title: ev.title, date: d, dateStr: `${startStr} – ${endStr}`, type: ev.countdown ? 'prio-1' : 'range-ev', isRange: true });
+        upcoming.push({ title: ev.title, date: d, dateStr: `${startStr} – ${endStr}`, color: evColor, isRange: true });
       }
     });
     // Wiederkehrende Vorkommen an diesem Tag
@@ -484,7 +500,7 @@ function buildMiniCal(refDate) {
       getSeriesOccurrencesInRange(d, d).forEach(({ event: ev }) => {
         if (seenIds.has(ev.id)) return;
         seenIds.add(ev.id);
-        upcoming.push({ title: '↻ ' + ev.title, date: d, dateStr: d.toLocaleDateString('de-DE', { day: 'numeric', month: 'long' }), type: 'prio-ev', isRange: false });
+        upcoming.push({ title: '↻ ' + ev.title, date: d, dateStr: d.toLocaleDateString('de-DE', { day: 'numeric', month: 'long' }), color: ev.color || DEFAULT_EVENT_COLOR, isRange: false });
       });
     }
   }
@@ -493,7 +509,7 @@ function buildMiniCal(refDate) {
     upcomingHtml = `<div id="mini-cal-events">${
       upcoming.slice(0,5).map(e =>
         `<div class="mini-cal-event-row" data-date="${dateKey(e.date)}" style="cursor:pointer;">
-          <span class="mini-cal-event-dot ${e.type}"></span>
+          <span class="mini-cal-event-dot${e.isRange ? ' range-ev' : ''}" style="background:${e.color}"></span>
           <span class="mini-cal-event-title">${e.title}</span>
           <span class="mini-cal-event-date">${e.dateStr}</span>
         </div>`
