@@ -211,6 +211,89 @@ function initTools() {
           </div>
         </div>
 
+        <div class="tool-card tool-card--wide" id="tool-notenmanager">
+          <div class="tool-card-header">
+            <span class="tool-card-icon">🎓</span>
+            <span class="tool-card-title">Notenmanager</span>
+            <button class="btn-ghost noten-header-btn" id="noten-add-year-btn">+ Ausbildungsjahr</button>
+          </div>
+          <div class="tool-card-body">
+            <div class="noten-years-list" id="noten-years-list"></div>
+            <div class="noten-empty hidden" id="noten-empty">Noch keine Ausbildungsjahre angelegt. Lege dein erstes mit „+ Ausbildungsjahr" an.</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Notenmanager: Ausbildungsjahr anlegen/umbenennen -->
+      <div id="noten-year-modal-overlay" class="modal-backdrop hidden">
+        <div class="modal-box" style="width:400px;">
+          <div class="modal-head"><span id="noten-year-modal-title">Neues Ausbildungsjahr</span><button class="modal-x" id="noten-year-modal-close">&#10005;</button></div>
+          <div class="modal-row"><label>Bezeichnung</label><input type="text" class="modal-input" id="noten-year-name" placeholder="z.B. 1. Ausbildungsjahr" autocomplete="off"/></div>
+          <div class="modal-actions"><button id="noten-year-cancel" class="btn-ghost">Abbrechen</button><button id="noten-year-save" class="btn-primary">Speichern</button></div>
+        </div>
+      </div>
+
+      <!-- Notenmanager: Fach anlegen/umbenennen -->
+      <div id="noten-subject-modal-overlay" class="modal-backdrop hidden">
+        <div class="modal-box" style="width:400px;">
+          <div class="modal-head"><span id="noten-subject-modal-title">Neues Fach</span><button class="modal-x" id="noten-subject-modal-close">&#10005;</button></div>
+          <div class="modal-row"><label>Fachname</label><input type="text" class="modal-input" id="noten-subject-name" placeholder="z.B. LF1" autocomplete="off"/></div>
+          <div class="modal-actions"><button id="noten-subject-cancel" class="btn-ghost">Abbrechen</button><button id="noten-subject-save" class="btn-primary">Speichern</button></div>
+        </div>
+      </div>
+
+      <!-- Notenmanager: Kategorien verwalten -->
+      <div id="noten-category-modal-overlay" class="modal-backdrop hidden">
+        <div class="modal-box" style="width:440px;">
+          <div class="modal-head"><span>Kategorien verwalten</span><button class="modal-x" id="noten-category-modal-close">&#10005;</button></div>
+          <p class="modal-hint">Jede Kategorie hat eine Standardgewichtung, die neuen Leistungen automatisch zugewiesen wird.</p>
+          <div class="noten-category-rows" id="noten-category-rows"></div>
+          <button class="btn-ghost noten-header-btn" id="noten-category-add-btn" style="align-self:flex-start;">+ Kategorie</button>
+          <div class="modal-actions"><button id="noten-category-done-btn" class="btn-primary">Fertig</button></div>
+        </div>
+      </div>
+
+      <!-- Notenmanager: Leistung anlegen/bearbeiten -->
+      <div id="noten-entry-modal-overlay" class="modal-backdrop hidden" style="z-index:300;">
+        <div class="modal-box" style="width:400px;">
+          <div class="modal-head"><span id="noten-entry-modal-title">Neue Leistung</span><button class="modal-x" id="noten-entry-modal-close">&#10005;</button></div>
+          <div class="modal-row"><label>Datum</label><input type="date" class="modal-date" id="noten-entry-date"/></div>
+          <div class="modal-row"><label>Kategorie</label><select class="modal-select" id="noten-entry-category"></select></div>
+          <div class="modal-row"><label>Note (leer = ausstehend)</label><input type="number" class="modal-input" id="noten-entry-grade" placeholder="z.B. 2,3" step="0.1" min="1" max="6"/></div>
+          <div class="modal-row"><label>Gewichtung</label><input type="number" class="modal-input" id="noten-entry-weight" step="0.5" min="0.5"/></div>
+          <div class="modal-actions"><button id="noten-entry-cancel" class="btn-ghost">Abbrechen</button><button id="noten-entry-save" class="btn-primary">Speichern</button></div>
+        </div>
+      </div>
+
+      <!-- Notenmanager: Fach-Detailansicht -->
+      <div id="noten-subject-detail-overlay" class="modal-backdrop hidden">
+        <div class="modal-box" style="width:520px;max-height:82vh;">
+          <div class="modal-head">
+            <span id="noten-detail-title">Fach</span>
+            <button class="modal-x" id="noten-detail-close">&#10005;</button>
+          </div>
+          <div class="noten-detail-header">
+            <span class="noten-detail-avg" id="noten-detail-avg">–</span>
+            <div class="noten-detail-actions">
+              <button class="btn-ghost" id="noten-detail-rename-btn">✎ Umbenennen</button>
+              <button class="btn-ghost" id="noten-detail-delete-btn">🗑 Löschen</button>
+            </div>
+          </div>
+          <div class="noten-entry-list" id="noten-detail-entries"></div>
+          <div class="modal-actions" style="justify-content:flex-start;">
+            <button class="btn-primary" id="noten-detail-add-entry-btn">+ Leistung hinzufügen</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notenmanager: Löschbestätigung -->
+      <div id="noten-confirm-overlay" class="modal-backdrop hidden" style="z-index:300;">
+        <div class="modal-box" style="width:380px;">
+          <div class="modal-head"><span id="noten-confirm-title">Löschen</span><button class="modal-x" id="noten-confirm-close">&#10005;</button></div>
+          <p class="modal-hint" id="noten-confirm-message"></p>
+          <div class="modal-actions"><button id="noten-confirm-cancel" class="btn-ghost">Abbrechen</button><button id="noten-confirm-ok" class="btn-primary">Löschen</button></div>
+        </div>
       </div>
     </div>
   `;
@@ -219,6 +302,7 @@ function initTools() {
   initFocusTimer();
   initConverter();
   initDataRateCalculator();
+  initNotenmanager();
 }
 window.initTools = initTools;
 
@@ -1238,4 +1322,539 @@ function drCopyResult() {
     btn.textContent = '✓';
     setTimeout(() => { btn.textContent = original; }, 1200);
   }).catch(() => {});
+}
+
+// =========================================================
+// 5) NOTENMANAGER
+// Verwaltungssystem für Schul-/Ausbildungsnoten, unterhalb des
+// Datenübertragungsraten-Rechners. Struktur: Ausbildungsjahre
+// (Accordion, offener Zustand persistent) → Fächer (Karten) →
+// Leistungen (Datum, Kategorie, Note, Gewichtung). Kategorien sind
+// pro Ausbildungsjahr frei verwaltbar, jede mit einer Standard-
+// gewichtung, die neuen Leistungen automatisch zugewiesen wird.
+// Alles wird flach in localStorage gehalten (DB), analog zu Budget/
+// Projekte: separate Sammlungen statt eines verschachtelten Objekts.
+// =========================================================
+
+let notenYears      = DB.get('notenYears', []);       // [{id,name}]
+let notenSubjects   = DB.get('notenSubjects', []);     // [{id,yearId,name}]
+let notenCategories = DB.get('notenCategories', []);   // [{id,yearId,name,weight}]
+let notenEntries    = DB.get('notenEntries', []);      // [{id,subjectId,date,categoryId,grade,weight}]
+let notenOpenYears  = DB.get('notenOpenYears', {});    // {yearId: bool}
+
+const NOTEN_DEFAULT_CATEGORIES = [
+  { name: 'Test',          weight: 1 },
+  { name: 'Klassenarbeit', weight: 2 },
+  { name: 'Mündlich',      weight: 1 },
+  { name: 'Prüfung',       weight: 3 },
+  { name: 'Projekt',       weight: 1 },
+];
+
+// Kontext-Variablen für die aktuell geöffneten Modals
+let notenYearEditId      = null;
+let notenSubjectYearId   = null;
+let notenSubjectEditId   = null;
+let notenCategoryYearId  = null;
+let notenEntrySubjectId  = null;
+let notenEntryEditId     = null;
+let notenDetailSubjectId = null;
+let notenConfirmAction   = null;
+
+function saveNotenYears()      { DB.set('notenYears', notenYears); }
+function saveNotenSubjects()   { DB.set('notenSubjects', notenSubjects); }
+function saveNotenCategories() { DB.set('notenCategories', notenCategories); }
+function saveNotenEntries()    { DB.set('notenEntries', notenEntries); }
+function saveNotenOpenYears()  { DB.set('notenOpenYears', notenOpenYears); }
+
+function notenUid() {
+  return (typeof crypto !== 'undefined' && crypto.randomUUID)
+    ? crypto.randomUUID()
+    : 'id-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+}
+
+function notenEsc(str) {
+  return String(str).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+}
+
+function notenFormatGrade(n) {
+  return n.toFixed(2).replace('.', ',');
+}
+
+// =========================
+// HELPERS — Datenzugriff
+// =========================
+
+function notenYearSubjects(yearId)     { return notenSubjects.filter(s => s.yearId === yearId); }
+function notenYearCategories(yearId)   { return notenCategories.filter(c => c.yearId === yearId); }
+function notenCategoryById(catId)      { return notenCategories.find(c => c.id === catId); }
+function notenSubjectEntries(subjectId) {
+  return notenEntries.filter(e => e.subjectId === subjectId)
+    .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+}
+
+// Fachschnitt: gewichteter Durchschnitt aller Leistungen mit Note.
+// Ausstehende Leistungen (grade === null) fließen nicht ein.
+function notenSubjectAverage(subjectId) {
+  const graded = notenSubjectEntries(subjectId).filter(e => e.grade !== null && e.grade !== undefined);
+  if (!graded.length) return null;
+  let sumWeighted = 0, sumWeight = 0;
+  graded.forEach(e => {
+    const w = (typeof e.weight === 'number' && e.weight > 0) ? e.weight : 1;
+    sumWeighted += e.grade * w;
+    sumWeight   += w;
+  });
+  return sumWeight > 0 ? sumWeighted / sumWeight : null;
+}
+
+// Gesamtschnitt: einfacher Durchschnitt der Fachschnitte (nur Fächer mit mind. einer Note).
+function notenYearAverage(yearId) {
+  const avgs = notenYearSubjects(yearId).map(s => notenSubjectAverage(s.id)).filter(a => a !== null);
+  if (!avgs.length) return null;
+  return avgs.reduce((a, b) => a + b, 0) / avgs.length;
+}
+
+// =========================
+// INIT
+// =========================
+
+function initNotenmanager() {
+  renderNotenYears();
+  wireNotenEvents();
+}
+
+function wireNotenEvents() {
+  document.getElementById('noten-add-year-btn').addEventListener('click', () => openNotenYearModal(null));
+
+  // ── Jahres-Liste (Delegation: Toggle, Umbenennen, Löschen, + Fach, Kategorien, Fach öffnen) ──
+  document.getElementById('noten-years-list').addEventListener('click', e => {
+    const editBtn = e.target.closest('[data-noten-edit-year]');
+    if (editBtn) { openNotenYearModal(editBtn.dataset.notenEditYear); return; }
+
+    const delBtn = e.target.closest('[data-noten-delete-year]');
+    if (delBtn) { confirmDeleteNotenYear(delBtn.dataset.notenDeleteYear); return; }
+
+    const addSubBtn = e.target.closest('[data-noten-add-subject]');
+    if (addSubBtn) { openNotenSubjectModal(addSubBtn.dataset.notenAddSubject, null); return; }
+
+    const catBtn = e.target.closest('[data-noten-manage-cat]');
+    if (catBtn) { openNotenCategoryModal(catBtn.dataset.notenManageCat); return; }
+
+    const subjectCard = e.target.closest('[data-noten-open-subject]');
+    if (subjectCard) { openNotenSubjectDetail(subjectCard.dataset.notenOpenSubject); return; }
+
+    const header = e.target.closest('[data-noten-toggle-year]');
+    if (header) { toggleNotenYear(header.dataset.notenToggleYear); return; }
+  });
+
+  // ── Ausbildungsjahr-Modal ──
+  document.getElementById('noten-year-modal-close').addEventListener('click', closeNotenYearModal);
+  document.getElementById('noten-year-cancel').addEventListener('click', closeNotenYearModal);
+  document.getElementById('noten-year-modal-overlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('noten-year-modal-overlay')) closeNotenYearModal();
+  });
+  document.getElementById('noten-year-save').addEventListener('click', saveNotenYear);
+  document.getElementById('noten-year-name').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); saveNotenYear(); }
+  });
+
+  // ── Fach-Modal ──
+  document.getElementById('noten-subject-modal-close').addEventListener('click', closeNotenSubjectModal);
+  document.getElementById('noten-subject-cancel').addEventListener('click', closeNotenSubjectModal);
+  document.getElementById('noten-subject-modal-overlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('noten-subject-modal-overlay')) closeNotenSubjectModal();
+  });
+  document.getElementById('noten-subject-save').addEventListener('click', saveNotenSubject);
+  document.getElementById('noten-subject-name').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); saveNotenSubject(); }
+  });
+
+  // ── Kategorien-Modal ──
+  document.getElementById('noten-category-modal-close').addEventListener('click', closeNotenCategoryModal);
+  document.getElementById('noten-category-done-btn').addEventListener('click', closeNotenCategoryModal);
+  document.getElementById('noten-category-modal-overlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('noten-category-modal-overlay')) closeNotenCategoryModal();
+  });
+  document.getElementById('noten-category-add-btn').addEventListener('click', () => {
+    notenCategories.push({ id: notenUid(), yearId: notenCategoryYearId, name: 'Neue Kategorie', weight: 1 });
+    saveNotenCategories();
+    renderNotenCategoryRows();
+  });
+  document.getElementById('noten-category-rows').addEventListener('input', e => {
+    const catId = e.target.dataset.catId;
+    if (!catId) return;
+    const cat = notenCategoryById(catId);
+    if (!cat) return;
+    if (e.target.classList.contains('noten-cat-name'))   cat.name = e.target.value;
+    if (e.target.classList.contains('noten-cat-weight')) cat.weight = Math.max(0.5, parseFloat(e.target.value) || 1);
+    saveNotenCategories();
+  });
+  document.getElementById('noten-category-rows').addEventListener('click', e => {
+    const delBtn = e.target.closest('.noten-cat-delete');
+    if (!delBtn) return;
+    const cat = notenCategoryById(delBtn.dataset.catId);
+    if (!cat) return;
+    openNotenConfirm('Kategorie löschen', `Kategorie „${cat.name}" wirklich löschen? Bereits erfasste Leistungen behalten ihre Gewichtung.`, () => {
+      notenCategories = notenCategories.filter(c => c.id !== cat.id);
+      saveNotenCategories();
+      renderNotenCategoryRows();
+    });
+  });
+
+  // ── Leistung-Modal ──
+  document.getElementById('noten-entry-modal-close').addEventListener('click', closeNotenEntryModal);
+  document.getElementById('noten-entry-cancel').addEventListener('click', closeNotenEntryModal);
+  document.getElementById('noten-entry-modal-overlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('noten-entry-modal-overlay')) closeNotenEntryModal();
+  });
+  document.getElementById('noten-entry-category').addEventListener('change', e => {
+    const cat = notenCategoryById(e.target.value);
+    if (cat) document.getElementById('noten-entry-weight').value = cat.weight;
+  });
+  document.getElementById('noten-entry-save').addEventListener('click', saveNotenEntry);
+
+  // ── Fach-Detailansicht ──
+  document.getElementById('noten-detail-close').addEventListener('click', closeNotenSubjectDetail);
+  document.getElementById('noten-subject-detail-overlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('noten-subject-detail-overlay')) closeNotenSubjectDetail();
+  });
+  document.getElementById('noten-detail-rename-btn').addEventListener('click', () => {
+    const subject = notenSubjects.find(s => s.id === notenDetailSubjectId);
+    if (!subject) return;
+    document.getElementById('noten-subject-detail-overlay').classList.add('hidden');
+    openNotenSubjectModal(subject.yearId, subject.id);
+  });
+  document.getElementById('noten-detail-delete-btn').addEventListener('click', () => {
+    const subject = notenSubjects.find(s => s.id === notenDetailSubjectId);
+    if (!subject) return;
+    openNotenConfirm('Fach löschen', `„${subject.name}" inkl. aller erfassten Leistungen wirklich löschen?`, () => {
+      notenSubjects = notenSubjects.filter(s => s.id !== subject.id);
+      notenEntries  = notenEntries.filter(e => e.subjectId !== subject.id);
+      saveNotenSubjects(); saveNotenEntries();
+      closeNotenSubjectDetail();
+      renderNotenYears();
+    });
+  });
+  document.getElementById('noten-detail-add-entry-btn').addEventListener('click', () => {
+    openNotenEntryModal(notenDetailSubjectId, null);
+  });
+  document.getElementById('noten-detail-entries').addEventListener('click', e => {
+    const editBtn = e.target.closest('.noten-entry-edit');
+    if (editBtn) { openNotenEntryModal(notenDetailSubjectId, editBtn.dataset.entryId); return; }
+    const delBtn = e.target.closest('.noten-entry-delete');
+    if (delBtn) {
+      const entry = notenEntries.find(en => en.id === delBtn.dataset.entryId);
+      if (!entry) return;
+      openNotenConfirm('Leistung löschen', 'Diese Leistung wirklich löschen?', () => {
+        notenEntries = notenEntries.filter(en => en.id !== entry.id);
+        saveNotenEntries();
+        renderNotenSubjectDetail();
+        renderNotenYears();
+      });
+    }
+  });
+
+  // ── Generische Löschbestätigung ──
+  document.getElementById('noten-confirm-close').addEventListener('click', closeNotenConfirm);
+  document.getElementById('noten-confirm-cancel').addEventListener('click', closeNotenConfirm);
+  document.getElementById('noten-confirm-overlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('noten-confirm-overlay')) closeNotenConfirm();
+  });
+  document.getElementById('noten-confirm-ok').addEventListener('click', () => {
+    const action = notenConfirmAction;
+    closeNotenConfirm();
+    if (action) action();
+  });
+}
+
+// =========================
+// RENDERING — Ausbildungsjahre + Fächer
+// =========================
+
+function renderNotenYears() {
+  const container = document.getElementById('noten-years-list');
+  const emptyEl   = document.getElementById('noten-empty');
+  if (!container) return;
+
+  if (!notenYears.length) {
+    container.innerHTML = '';
+    emptyEl.classList.remove('hidden');
+    return;
+  }
+  emptyEl.classList.add('hidden');
+
+  container.innerHTML = notenYears.map(year => {
+    const isOpen   = !!notenOpenYears[year.id];
+    const subjects = notenYearSubjects(year.id);
+    const yearAvg  = notenYearAverage(year.id);
+
+    return `
+      <div class="noten-year-item">
+        <div class="noten-year-header" data-noten-toggle-year="${year.id}">
+          <span class="noten-year-chevron">${isOpen ? '▼' : '▶'}</span>
+          <span class="noten-year-name">${notenEsc(year.name)}</span>
+          <span class="noten-year-meta">${subjects.length} ${subjects.length === 1 ? 'Fach' : 'Fächer'}</span>
+          <span class="noten-year-avg">${yearAvg !== null ? 'Ø ' + notenFormatGrade(yearAvg) : '–'}</span>
+          <div class="noten-year-actions">
+            <button class="icon-btn" data-noten-edit-year="${year.id}" title="Umbenennen">✎</button>
+            <button class="icon-btn" data-noten-delete-year="${year.id}" title="Löschen">🗑</button>
+          </div>
+        </div>
+        <div class="noten-year-body ${isOpen ? '' : 'collapsed'}">
+          <div class="noten-subject-grid" id="noten-subject-grid-${year.id}">${notenRenderSubjectGrid(year.id)}</div>
+          <div class="noten-year-footer">
+            <button class="btn-ghost" data-noten-add-subject="${year.id}">+ Fach</button>
+            <button class="btn-ghost" data-noten-manage-cat="${year.id}">Kategorien verwalten</button>
+            <span class="noten-year-total">Gesamtschnitt: ${yearAvg !== null ? notenFormatGrade(yearAvg) : '–'}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function notenRenderSubjectGrid(yearId) {
+  const subjects = notenYearSubjects(yearId);
+  if (!subjects.length) return `<div class="noten-subject-empty">Noch keine Fächer.</div>`;
+  return subjects.map(s => {
+    const avg = notenSubjectAverage(s.id);
+    const pendingCount = notenSubjectEntries(s.id).filter(e => e.grade === null || e.grade === undefined).length;
+    return `
+      <button class="noten-subject-card" data-noten-open-subject="${s.id}">
+        <span class="noten-subject-name">${notenEsc(s.name)}</span>
+        <span class="noten-subject-avg">${avg !== null ? 'Ø ' + notenFormatGrade(avg) : '–'}</span>
+        ${pendingCount ? `<span class="noten-subject-pending">${pendingCount} ausstehend</span>` : ''}
+      </button>
+    `;
+  }).join('');
+}
+
+function toggleNotenYear(yearId) {
+  notenOpenYears[yearId] = !notenOpenYears[yearId];
+  saveNotenOpenYears();
+  renderNotenYears();
+}
+
+// =========================
+// AUSBILDUNGSJAHR — CRUD
+// =========================
+
+function openNotenYearModal(yearId) {
+  notenYearEditId = yearId || null;
+  const year = yearId ? notenYears.find(y => y.id === yearId) : null;
+  document.getElementById('noten-year-modal-title').textContent = year ? 'Ausbildungsjahr umbenennen' : 'Neues Ausbildungsjahr';
+  document.getElementById('noten-year-name').value = year ? year.name : '';
+  document.getElementById('noten-year-modal-overlay').classList.remove('hidden');
+  setTimeout(() => document.getElementById('noten-year-name').focus(), 50);
+}
+function closeNotenYearModal() {
+  document.getElementById('noten-year-modal-overlay').classList.add('hidden');
+}
+function saveNotenYear() {
+  const name = document.getElementById('noten-year-name').value.trim();
+  if (!name) return;
+
+  if (notenYearEditId) {
+    const year = notenYears.find(y => y.id === notenYearEditId);
+    if (year) year.name = name;
+  } else {
+    const id = notenUid();
+    notenYears.push({ id, name });
+    notenOpenYears[id] = true;
+    saveNotenOpenYears();
+    NOTEN_DEFAULT_CATEGORIES.forEach(c => notenCategories.push({ id: notenUid(), yearId: id, name: c.name, weight: c.weight }));
+    saveNotenCategories();
+  }
+  saveNotenYears();
+  closeNotenYearModal();
+  renderNotenYears();
+}
+function confirmDeleteNotenYear(yearId) {
+  const year = notenYears.find(y => y.id === yearId);
+  if (!year) return;
+  openNotenConfirm('Ausbildungsjahr löschen', `„${year.name}" inkl. aller Fächer, Kategorien und Noten wirklich löschen?`, () => {
+    const subjectIds = notenYearSubjects(yearId).map(s => s.id);
+    notenYears      = notenYears.filter(y => y.id !== yearId);
+    notenSubjects   = notenSubjects.filter(s => s.yearId !== yearId);
+    notenCategories = notenCategories.filter(c => c.yearId !== yearId);
+    notenEntries    = notenEntries.filter(e => !subjectIds.includes(e.subjectId));
+    delete notenOpenYears[yearId];
+    saveNotenYears(); saveNotenSubjects(); saveNotenCategories(); saveNotenEntries(); saveNotenOpenYears();
+    renderNotenYears();
+  });
+}
+
+// =========================
+// FACH — CRUD
+// =========================
+
+function openNotenSubjectModal(yearId, subjectId) {
+  notenSubjectYearId  = yearId;
+  notenSubjectEditId  = subjectId || null;
+  const subject = subjectId ? notenSubjects.find(s => s.id === subjectId) : null;
+  document.getElementById('noten-subject-modal-title').textContent = subject ? 'Fach umbenennen' : 'Neues Fach';
+  document.getElementById('noten-subject-name').value = subject ? subject.name : '';
+  document.getElementById('noten-subject-modal-overlay').classList.remove('hidden');
+  setTimeout(() => document.getElementById('noten-subject-name').focus(), 50);
+}
+function closeNotenSubjectModal() {
+  document.getElementById('noten-subject-modal-overlay').classList.add('hidden');
+}
+function saveNotenSubject() {
+  const name = document.getElementById('noten-subject-name').value.trim();
+  if (!name) return;
+
+  let subjectId = notenSubjectEditId;
+  if (subjectId) {
+    const subject = notenSubjects.find(s => s.id === subjectId);
+    if (subject) subject.name = name;
+  } else {
+    subjectId = notenUid();
+    notenSubjects.push({ id: subjectId, yearId: notenSubjectYearId, name });
+  }
+  saveNotenSubjects();
+  closeNotenSubjectModal();
+  renderNotenYears();
+
+  // Falls wir aus der Detailansicht kamen (Umbenennen), diese wieder anzeigen
+  if (notenDetailSubjectId === subjectId) {
+    renderNotenSubjectDetail();
+    document.getElementById('noten-subject-detail-overlay').classList.remove('hidden');
+  }
+}
+
+// =========================
+// KATEGORIEN — Verwaltung pro Ausbildungsjahr
+// =========================
+
+function openNotenCategoryModal(yearId) {
+  notenCategoryYearId = yearId;
+  renderNotenCategoryRows();
+  document.getElementById('noten-category-modal-overlay').classList.remove('hidden');
+}
+function closeNotenCategoryModal() {
+  document.getElementById('noten-category-modal-overlay').classList.add('hidden');
+  renderNotenYears();
+}
+function renderNotenCategoryRows() {
+  const rows = document.getElementById('noten-category-rows');
+  const cats = notenYearCategories(notenCategoryYearId);
+  rows.innerHTML = cats.length ? cats.map(c => `
+    <div class="noten-category-row">
+      <input type="text" class="modal-input noten-cat-name" value="${notenEsc(c.name)}" data-cat-id="${c.id}"/>
+      <input type="number" class="modal-input noten-cat-weight" value="${c.weight}" min="0.5" step="0.5" data-cat-id="${c.id}"/>
+      <button class="icon-btn noten-cat-delete" data-cat-id="${c.id}" title="Löschen">🗑</button>
+    </div>
+  `).join('') : `<div class="noten-empty-hint">Noch keine Kategorien.</div>`;
+}
+
+// =========================
+// LEISTUNGEN (Einträge) — CRUD
+// =========================
+
+function openNotenEntryModal(subjectId, entryId) {
+  notenEntrySubjectId = subjectId;
+  notenEntryEditId    = entryId || null;
+  const subject = notenSubjects.find(s => s.id === subjectId);
+  if (!subject) return;
+  const entry = entryId ? notenEntries.find(e => e.id === entryId) : null;
+  const cats  = notenYearCategories(subject.yearId);
+
+  document.getElementById('noten-entry-modal-title').textContent = entry ? 'Leistung bearbeiten' : 'Neue Leistung';
+
+  const catSelect = document.getElementById('noten-entry-category');
+  catSelect.innerHTML = cats.length
+    ? cats.map(c => `<option value="${c.id}">${notenEsc(c.name)}</option>`).join('')
+    : `<option value="">Keine Kategorien</option>`;
+
+  document.getElementById('noten-entry-date').value = entry ? entry.date : new Date().toISOString().slice(0, 10);
+
+  const initialCatId = entry ? entry.categoryId : (cats[0] ? cats[0].id : '');
+  catSelect.value = initialCatId;
+  const initialCat = notenCategoryById(initialCatId);
+
+  document.getElementById('noten-entry-grade').value  = (entry && entry.grade !== null && entry.grade !== undefined) ? entry.grade : '';
+  document.getElementById('noten-entry-weight').value = entry ? entry.weight : (initialCat ? initialCat.weight : 1);
+
+  document.getElementById('noten-entry-modal-overlay').classList.remove('hidden');
+  setTimeout(() => document.getElementById('noten-entry-grade').focus(), 50);
+}
+function closeNotenEntryModal() {
+  document.getElementById('noten-entry-modal-overlay').classList.add('hidden');
+}
+function saveNotenEntry() {
+  const date       = document.getElementById('noten-entry-date').value;
+  const categoryId = document.getElementById('noten-entry-category').value;
+  const gradeRaw   = document.getElementById('noten-entry-grade').value.trim();
+  const grade      = gradeRaw === '' ? null : Math.min(6, Math.max(1, parseFloat(gradeRaw.replace(',', '.'))));
+  const weight     = Math.max(0.5, parseFloat(document.getElementById('noten-entry-weight').value) || 1);
+
+  if (notenEntryEditId) {
+    const entry = notenEntries.find(e => e.id === notenEntryEditId);
+    if (entry) Object.assign(entry, { date, categoryId, grade, weight });
+  } else {
+    notenEntries.push({ id: notenUid(), subjectId: notenEntrySubjectId, date, categoryId, grade, weight });
+  }
+  saveNotenEntries();
+  closeNotenEntryModal();
+  renderNotenSubjectDetail();
+  renderNotenYears();
+}
+
+// =========================
+// FACH-DETAILANSICHT
+// =========================
+
+function openNotenSubjectDetail(subjectId) {
+  notenDetailSubjectId = subjectId;
+  renderNotenSubjectDetail();
+  document.getElementById('noten-subject-detail-overlay').classList.remove('hidden');
+}
+function closeNotenSubjectDetail() {
+  document.getElementById('noten-subject-detail-overlay').classList.add('hidden');
+  notenDetailSubjectId = null;
+}
+function renderNotenSubjectDetail() {
+  const subject = notenSubjects.find(s => s.id === notenDetailSubjectId);
+  if (!subject) { closeNotenSubjectDetail(); return; }
+
+  const avg = notenSubjectAverage(subject.id);
+  document.getElementById('noten-detail-title').textContent = subject.name;
+  document.getElementById('noten-detail-avg').textContent = avg !== null ? 'Ø ' + notenFormatGrade(avg) : 'Noch keine Note';
+
+  const entries = notenSubjectEntries(subject.id);
+  const list = document.getElementById('noten-detail-entries');
+  list.innerHTML = entries.length ? entries.map(e => {
+    const cat = notenCategoryById(e.categoryId);
+    const dateLabel = e.date ? new Date(e.date + 'T00:00:00').toLocaleDateString('de-DE') : '–';
+    const gradeLabel = (e.grade === null || e.grade === undefined)
+      ? `<span class="noten-badge-pending">Ausstehend</span>`
+      : notenFormatGrade(e.grade);
+    return `
+      <div class="noten-entry-row">
+        <span class="noten-entry-date">${dateLabel}</span>
+        <span class="noten-entry-cat">${cat ? notenEsc(cat.name) : '—'}</span>
+        <span class="noten-entry-grade">${gradeLabel}</span>
+        <span class="noten-entry-weight">×${e.weight ?? 1}</span>
+        <div class="noten-entry-actions">
+          <button class="icon-btn noten-entry-edit" data-entry-id="${e.id}" title="Bearbeiten">✎</button>
+          <button class="icon-btn noten-entry-delete" data-entry-id="${e.id}" title="Löschen">🗑</button>
+        </div>
+      </div>
+    `;
+  }).join('') : `<div class="noten-empty-hint">Noch keine Leistungen erfasst.</div>`;
+}
+
+// =========================
+// GENERISCHE LÖSCHBESTÄTIGUNG
+// =========================
+
+function openNotenConfirm(title, message, onConfirm) {
+  notenConfirmAction = onConfirm;
+  document.getElementById('noten-confirm-title').textContent = title;
+  document.getElementById('noten-confirm-message').textContent = message;
+  document.getElementById('noten-confirm-overlay').classList.remove('hidden');
+}
+function closeNotenConfirm() {
+  document.getElementById('noten-confirm-overlay').classList.add('hidden');
+  notenConfirmAction = null;
 }

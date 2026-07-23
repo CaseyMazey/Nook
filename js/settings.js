@@ -120,7 +120,8 @@ const BACKUP_KEYS = [
   'countdownVisible','darkMode','customTiles','deskCards','subjects',
   'budgetRecurring','budgetOnetime','budgetGoals','kontostand',
   'clockEnabled','clockType','collapsedGroups','currentDate','gameHighscores',
-  'userName'
+  'userName',
+  'notenYears','notenSubjects','notenCategories','notenEntries','notenOpenYears'
 ];
 
 document.getElementById('backup-export-btn').addEventListener('click', () => {
