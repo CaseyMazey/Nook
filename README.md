@@ -1,8 +1,8 @@
-# 🎓 Personal Hub
+# 🎓 Nook.
 
 Ein persönlicher Organisations-Hub für Ausbildung, Schule, Studium und Alltag.
 
-Der Personal Hub läuft komplett lokal im Browser und kombiniert Organisation, Lernen, Finanzen, Wissensmanagement und Produktivität in einer einzigen gemütlichen Oberfläche.
+Nook läuft komplett lokal im Browser und kombiniert Organisation, Lernen, Finanzen, Wissensmanagement und Produktivität in einer einzigen gemütlichen Oberfläche.
 
 Keine Installation. Kein Server. Keine Cloud-Pflicht.
 
@@ -18,13 +18,15 @@ Anschließend einfach `index.html` öffnen.
 # ✨ Highlights
 
 - 🏠 Persönliches Dashboard für den Alltag
+- 📌 Pinnwand mit freien Karten (Notizen, Checklisten, Code, Zitate u.v.m.)
 - 📅 Kalender mit Termin- und Countdownsystem
 - 💰 Budgetverwaltung mit Liquiditätsvorschau
 - 🌱 Finanzgarten zur Visualisierung von Sparzielen
 - 📚 Karteikarten mit Leitner-System und Lernstatistiken
 - 📝 Persönliches Markdown-Wiki
-- 📁 Projektverwaltung
-- 🎮 Modularer Spiele-Hub
+- 📁 Projektverwaltung mit Projektwald
+- 🎮 Modularer Spiele-Hub inkl. virtuellem Haustier-System
+- 🌟 Tägliche Positivity-Erinnerungen
 - 🌤 Wetterwidget mit Standortauswahl
 - 🎉 National-Day-Widget
 - 💾 Vollständig lokale Datenspeicherung
@@ -79,6 +81,15 @@ Beispiele:
 
 Per Klick kann die Beschreibung direkt ausgeklappt werden.
 
+### Positivity
+
+Zeigt täglich eine kurze, positive Erinnerung an.
+
+- Eigene Kategorien (z. B. „Things To Remember“, „Self Care“, „Motivation“, „Persönliches“)
+- Karten können favorisiert oder fest angepinnt werden (bleibt über Mitternacht hinweg bestehen)
+- Eigene Karten erstellen, exportieren und importieren
+- Automatischer Kartenwechsel bei Tageswechsel
+
 ### Countdown-System
 
 Persönliche Ereignisse mit Resttagen.
@@ -90,9 +101,26 @@ Beispiele:
 - Prüfungen
 - Geburtstage
 
-### Freie Kacheln
+---
 
-Eigene Notizkarten für:
+# 📌 Pinnwand
+
+Eigenständiger Bereich für freie Karten – früher Teil von „Heute“, jetzt ein eigener Tab mit mehr Platz.
+
+## Features
+
+- 3 unabhängige Spalten im Masonry-Prinzip (keine gemeinsame Zeilenhöhe)
+- Frei verschiebbare Kartenhöhe per Resize-Handle
+- Mehrere Kartentypen:
+  - **Standard** – freies Textfeld
+  - **Angepinnt** – bleibt immer oben in der Spalte
+  - **Wichtig** – auffälliger, größerer Titel
+  - **Code** – für Code und Terminalbefehle, mit Copy-Funktion
+  - **Checkliste** – Kästchen zum Abhaken mit Fortschrittsanzeige
+  - **Zitat** – ein einzelner, groß gesetzter Satz
+- Farbe, Spalte und Stil frei editierbar
+
+Ideal für:
 
 - To-Dos
 - Einkaufslisten
@@ -100,8 +128,6 @@ Eigene Notizkarten für:
 - Definitionen
 - Unterrichtsfragen
 - Eigene Kategorien
-
-Die Karten erhalten automatisch eine zufällige Cozy-Farbvariante und behalten diese dauerhaft.
 
 ---
 
@@ -277,19 +303,27 @@ Bereich für langfristige Planung.
 - Ideen
 - Langfristige Ziele
 
-🚧 Projektgarten noch in Bearbeitung
+## Projektwald (WIP)
+
+Zusätzlich zur klassischen Kartenansicht gibt es eine Waldansicht: Jedes Projekt wächst als eigener Baum, der mit dem Projektfortschritt größer wird. Zwischen Karten- und Waldansicht kann jederzeit umgeschaltet werden.
+
+Abgeschlossene bzw. inaktive Projekte lassen sich archivieren, ohne den Wald zu überladen.
 
 ---
 
 # 🎮 Spiele
 
-Kleiner lokaler Cozy-Game-Hub.
+Lokaler Cozy-Game-Hub mit modularer Plugin-Architektur.
 
-## Enthalten
+## Enthaltene Spiele
 
-- Snake
-- Memory
 - Tic-Tac-Toe
+- Memory
+- Snake
+- Neon Dodge (wip)
+- Flashcard Battle (wip)
+- Debug Hero (wip)
+- Cozy Home (virtuelles Haustier)
 
 ## Plugin-System
 
@@ -304,6 +338,40 @@ Jedes Spiel bringt mit:
 Highscores, Statistiken und das Zurücksetzen der eigenen Daten verwaltet jedes Spiel selbst. Weder `games.js` noch die Einstellungen kennen einzelne Spiele-IDs.
 
 > **Warum keine `games.json`?** Der Hub läuft direkt über `file://`, ohne Server. `fetch()`/`XMLHttpRequest` werden von Browsern für lokale Dateien blockiert – `<script src="...">` und `<link href="...">` aber nicht. Deshalb ist die Spieleliste eine kleine JS-Datei (`games-list.js`) statt einer JSON-Datei, und jedes Spiel registriert sich aktiv selbst, statt vom Hub eingelesen zu werden.
+
+## 🐾 Cozy Home — Virtuelles Haustier
+
+Ein eigenständiges Spiel im Games Hub, das gleichzeitig als spielübergreifendes Haustier-System dient.
+
+### Features
+
+- Mehrere Haustiere (Katze, Hund, Maus, …) mit individuellen Persönlichkeiten, Lieblingsessen und -aktivitäten
+- Bedürfnisse: Hunger, Energie, Zuneigung – verändern sich auch offline (Offline-Fortschritt)
+- Datengetriebenes Vorlieben-System: `FOOD_REGISTRY`, `TOY_REGISTRY` und `PREFERENCE_LEVELS` bestimmen, was ein Haustier mag – Vorlieben werden nach und nach „entdeckt“ und in den Aktions-Dropdowns angezeigt
+- Inventar & Shop: Futter und Spielzeug kaufen und verfüttern
+- Tagesaufgaben mit Coin-Belohnung
+- Zimmer-Szene mit Schichten für Jahreszeit, Tageszeit und Wetter (CSS-Filter statt Bild-Duplikate)
+- Gedanken-Sprechblasen je nach Zustand (hungrig, müde, einsam, zufrieden)
+
+### Spielübergreifendes Haustier-System
+
+Andere Spiele können eigene Haustiere beisteuern, ohne dass Cozy Home sie kennt:
+
+- Jedes Spiel definiert optionale Haustiere in seinem eigenen `manifest.js`
+- Cozy Home durchsucht `window.GameHub.registry` und führt fremde Haustiere automatisch in seine Haustier-Liste zusammen
+- Der Shop trennt automatisch zwischen Standard-Artikeln und spielübergreifenden Artikeln
+- Fremde Assets (Bilder etc.) bleiben immer im Ordner des jeweiligen Spiels – Cozy Home übernimmt oder verlinkt sie nur
+
+### Live-Pet-Karte im Games Hub
+
+In der Seitenleiste des Games Hub erscheint automatisch eine Live-Karte des aktiven Haustiers, sobald Cozy Home installiert ist:
+
+- Zeigt dasselbe Zimmer (Jahreszeit, Tageszeit, Wetter) wie in Cozy Home
+- Wohlbefinden-Anzeige (Mittelwert aus Hunger, Energie, Zuneigung)
+- Direkte Aktionen: Streicheln, Füttern, Spielen – ohne das Spiel öffnen zu müssen
+- Aktualisiert sich live über `window.cozyHome.onUpdate()`
+
+Cozy Home ist rein datengetrieben aufgebaut: neue Haustiere, Futter- oder Spielzeugarten erfordern ausschließlich neue Registry-Einträge, keine Codeänderungen.
 
 ## Eigenes Spiel hinzufügen
 
@@ -354,7 +422,7 @@ Highscores, Statistiken und das Zurücksetzen der eigenen Daten verwaltet jedes 
 5. Die ID in `games/games-list.js` eintragen:
 
    ```js
-   window.GAMES_LIST = ['ttt', 'memory', 'snake', 'meinspiel'];
+   window.GAMES_LIST = ['ttt', 'memory', 'snake', 'neon-dodge', 'flashcard-battle', 'debug-hero', 'cozy-home', 'meinspiel'];
    ```
 
 Das war's – `js/games.js` und `index.html` müssen dafür nicht angefasst werden.
@@ -383,6 +451,7 @@ Konfiguration des gesamten Hubs.
 
 - Unterrichtsblöcke
 - Wetterstandort
+- Positivity-Kategorien verwalten
 - Backup & Restore
 - Datenexport
 - Datenimport
@@ -395,17 +464,8 @@ Der Dark Mode kann direkt über das Symbol in der Navigation umgeschaltet werden
 
 # 🎨 Design
 
-Der Hub nutzt ein gemütliches, papierinspiriertes Design.
+Nook nutzt ein gemütliches, papierinspiriertes Design.
 
-## Farbpalette
-
-| Bereich | Farbe |
-|----------|----------|
-| Sage | `#D1D1C2` |
-| Wichtiges | `#F5EBDF` |
-| Fragen | `#D9D8CA` |
-| Berichtsheft | `#DED1C1` |
-| Schnellnotiz | `#F6E4BF` |
 
 ## Designziele
 
@@ -423,6 +483,8 @@ Inspiriert von:
 - Nintendo Switch UI
 - Animal Crossing
 - Digitale Notizbücher
+
+Die Design- und Architekturprinzipien Nooks sind zusätzlich im **Personal Hub Handbook** dokumentiert (Komponenten-Bibliothek, UX-Guidelines, Coding Standards).
 
 ---
 
@@ -442,18 +504,21 @@ Gespeichert werden unter anderem:
 - Karteikarten
 - Projekte
 - Anleitungen
+- Pinnwand-Karten
+- Positivity-Karten und -Kategorien
+- Spielstände (inkl. Cozy Home)
 - Einstellungen
 
 ---
 
 # 🚧 Aktueller Entwicklungsstand
 
-Der Hub befindet sich weiterhin in aktiver Entwicklung.
+Nook befindet sich weiterhin in aktiver Entwicklung.
 
 Geplante Erweiterungen:
 
-- Weitere Spiele-Plugins
-- Game-Hub Funktionalität ergänzen
+- Weitere Spiele-Plugins mit eigenen Cozy-Home-Haustieren (z. B. Snake)
 - Zusätzliche Finanzgarten-Pflanzen
 - Erweiterte Projektverwaltung
-- Fertigstellung des Projektwaldes
+- `inDevelopment`-Kartenstatus für Spiele in Arbeit
+- Aufräumen ungenutzter Altlasten in `style.css`
