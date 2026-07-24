@@ -121,7 +121,7 @@ const BACKUP_KEYS = [
   'budgetRecurring','budgetOnetime','budgetGoals','kontostand',
   'clockEnabled','clockType','collapsedGroups','currentDate','gameHighscores',
   'userName',
-  'notenYears','notenSubjects','notenCategories','notenEntries','notenOpenYears'
+  'notenYears','notenSubjects','notenCategories','notenEntries','notenOpenYears','notenReportCards'
 ];
 
 document.getElementById('backup-export-btn').addEventListener('click', () => {
