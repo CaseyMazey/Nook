@@ -35,6 +35,8 @@
 .tool-card-header {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  row-gap: 6px;
   gap: 10px;
   padding: 14px 18px;
   border-bottom: 1px solid var(--border);
@@ -516,15 +518,16 @@
 
 /* =========================
    DR: ERGEBNIS / LERNMODUS-LAYOUT
-   50/50-Aufteilung: kompaktes Ergebnis links, ausführlicher
-   Lernmodus rechts. Bei deaktiviertem Lernmodus nimmt das Ergebnis
-   die volle Breite ein (dr-layout--learn-off).
+   Bei aktivem Lernmodus: Ergebnis links ~1/3, Musterlösung rechts
+   ~2/3 — der Lernbereich bekommt bewusst den meisten Platz. Bei
+   deaktiviertem Lernmodus nimmt das Ergebnis die volle Breite ein
+   (dr-layout--learn-off), unverändert wie zuvor.
 ========================= */
 
 .dr-layout {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
+  grid-template-columns: 1fr 2fr;
+  gap: 16px;
   align-items: start;
 }
 
@@ -545,56 +548,296 @@
   min-width: 0;
 }
 
-.dr-learn-cards {
+/* =========================
+   DR: KONTEXTBEZOGENE FORMELSAMMLUNG
+   Nutzt den freien Platz unter der Ergebnis-Karte im Lernmodus.
+   Klappt an Ort und Stelle auf/zu — kein Modal. Der Panel-Inhalt
+   wird erst beim Öffnen gebaut und beim Schließen wieder geleert
+   (keine unnötige DOM-Arbeit, solange das Panel zu ist).
+========================= */
+
+.dr-formula-inline-btn {
+  width: 100%;
+  justify-content: center;
+}
+.dr-formula-inline-btn.active { background: var(--sage-bg); color: var(--sage-dark); border-color: var(--sage); }
+
+.dr-formula-inline-panel {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+/* =========================
+   FORMELSAMMLUNG — INHALT
+   Gemeinsam genutzt vom kontextbezogenen Panel und dem globalen
+   Modal. dr-formula-sheet-section nutzt dieselbe Karten-Optik wie
+   dr-learn-section (drSection-Helper) für ein einheitliches Bild.
+========================= */
+
+.dr-formula-sheet-section { background: var(--bg); }
+
+.dr-formula-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.dr-formula-table th {
+  text-align: left;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-3);
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--border);
+}
+.dr-formula-table td {
+  padding: 5px 6px;
+  color: var(--text-2);
+  font-family: var(--mono);
+  border-bottom: 1px solid var(--border);
+}
+.dr-formula-table tr:last-child td { border-bottom: none; }
+
+.dr-formula-note {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-2);
+}
+.dr-formula-note strong { color: var(--text); }
+
+.dr-formula-formula-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.dr-formula-formula {
+  font-family: var(--mono);
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  padding: 3px 9px;
+}
+.dr-formula-formula-desc { font-size: 11.5px; color: var(--text-3); }
+
+.dr-formula-placeholder {
+  text-align: center;
+  padding: 18px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.dr-formula-placeholder-icon { font-size: 22px; }
+.dr-formula-placeholder-title { font-size: 12.5px; color: var(--text-2); font-weight: 500; }
+.dr-formula-placeholder-list {
+  list-style: none;
+  padding: 0;
+  margin: 4px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+.dr-formula-placeholder-list li::before { content: '·'; margin-right: 6px; color: var(--border-strong); }
+
+/* =========================
+   FORMELSAMMLUNG — GLOBALES MODAL
+   Links Navigation über alle Module (auch noch nicht umgesetzte,
+   als Badge "bald" markiert), rechts der jeweilige Inhalt.
+========================= */
+
+.dr-formula-modal-body {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 14px;
+  min-height: 340px;
+  max-height: 60vh;
+}
+
+.dr-formula-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  overflow-y: auto;
+  border-right: 1px solid var(--border);
+  padding-right: 12px;
+}
+
+.dr-formula-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 9px;
+  border-radius: var(--radius-sm);
+  font-size: 12.5px;
+  color: var(--text-2);
+  text-align: left;
+  cursor: pointer;
+  font-family: var(--font);
+  transition: background var(--transition), color var(--transition);
+}
+.dr-formula-nav-item:hover { background: var(--accent-soft); color: var(--text); }
+.dr-formula-nav-item.active { background: var(--sage-bg); color: var(--sage-dark); font-weight: 600; }
+.dr-formula-nav-icon { flex-shrink: 0; font-size: 13px; }
+.dr-formula-nav-label { flex: 1; min-width: 0; }
+.dr-formula-nav-badge {
+  flex-shrink: 0;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-3);
+  background: var(--surface-2);
+  border-radius: 99px;
+  padding: 2px 6px;
+}
+
+.dr-formula-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.dr-formula-content-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.dr-formula-content-icon { font-size: 17px; }
+.dr-formula-content-title { font-size: 14.5px; font-weight: 700; color: var(--text); }
+
+.dr-formula-content-body {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.dr-learn-card {
+/* =========================
+   DR: LERNMODUS — MUSTERLÖSUNG
+   Berufsschul-Aufbau: Gegeben → Gesucht → Formel → Formel
+   umstellen → Einheiten umrechnen → Werte einsetzen → Berechnen
+   → Ergebnis. Jeder Abschnitt eine eigene "Karteikarte", jede
+   Umrechnungsstufe ein eigener Schritt mit eigener Warum-Box.
+========================= */
+
+.dr-learn-solution {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dr-learn-section {
   background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 10px 12px;
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
-.dr-learn-card-head {
+.dr-learn-section-head {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
 }
 
-.dr-learn-card-icon { font-size: 13px; line-height: 1; }
+.dr-learn-section-icon { font-size: 14px; line-height: 1; }
 
-.dr-learn-card-title {
-  font-size: 11.5px;
+.dr-learn-section-title {
+  font-size: 11px;
   font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
   color: var(--text-2);
 }
 
-.dr-learn-math {
+.dr-learn-section-body {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 2px 0;
+  gap: 8px;
 }
 
-.dr-learn-math-line {
+.dr-learn-section--given, .dr-learn-section--search { background: var(--bg); }
+
+.dr-learn-given-row, .dr-learn-search-line {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 13px;
+}
+
+.dr-learn-given-var, .dr-learn-search-var {
+  font-weight: 700;
+  color: var(--text);
+  min-width: 14px;
+}
+
+.dr-learn-given-eq, .dr-learn-search-eq { color: var(--text-3); }
+.dr-learn-given-val { color: var(--text-2); }
+
+.dr-learn-formula {
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  padding: 4px 0;
+}
+
+.dr-learn-rearrange-why {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--text-3);
+}
+.dr-learn-rearrange-why strong { color: var(--text-2); }
+
+.dr-learn-chain-block + .dr-learn-chain-block {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+}
+
+.dr-learn-chain-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+  margin-bottom: 6px;
+}
+
+.dr-learn-chain-step { padding: 6px 0; }
+.dr-learn-chain-step + .dr-learn-chain-step { border-top: 1px dotted var(--border); }
+
+.dr-learn-chain-eq {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
   font-family: var(--mono);
   font-size: 12.5px;
   color: var(--text);
   text-align: center;
 }
 
-.dr-learn-math-arrow {
-  font-size: 11px;
-  color: var(--text-3);
-  line-height: 1.3;
-}
+.dr-learn-chain-op { color: var(--text-3); font-size: 11.5px; flex-shrink: 0; }
+.dr-learn-chain-result { font-weight: 600; }
 
 .dr-learn-why {
   display: flex;
@@ -606,40 +849,73 @@
   background: var(--bg);
   border-radius: var(--radius-sm);
   padding: 7px 9px;
+  margin-top: 4px;
 }
 
 .dr-learn-why-icon { flex-shrink: 0; font-size: 12px; }
 .dr-learn-why strong { color: var(--text-2); }
 
-.dr-learn-card--result {
-  background: var(--sage-bg);
-  border-color: var(--sage-border);
+.dr-learn-arrow { text-align: center; font-size: 12px; color: var(--text-3); }
+
+.dr-learn-substitute-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
+
+.dr-learn-substitute-var {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.dr-learn-fraction {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.dr-learn-fraction-num, .dr-learn-fraction-den {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: var(--text);
+  padding: 0 4px;
+  white-space: nowrap;
+}
+
+.dr-learn-fraction-line {
+  width: 100%;
+  height: 1px;
+  background: var(--text-3);
+  margin: 2px 0;
+}
+
+.dr-learn-math-line {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: var(--text);
+  text-align: center;
+}
+
+.dr-learn-math-line--result { font-weight: 700; font-size: 14px; }
+
+.dr-learn-section--result { background: var(--sage-bg); border-color: var(--sage-border); }
 
 .dr-learn-result-value {
   font-family: var(--mono);
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 22px;
+  font-weight: 700;
   color: var(--sage-dark);
   text-align: center;
 }
 
 .dr-learn-result-sub {
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--text-3);
   text-align: center;
 }
-
-.dr-learn-info {
-  display: flex;
-  align-items: flex-start;
-  gap: 7px;
-  font-size: 11.5px;
-  line-height: 1.5;
-  color: var(--text-3);
-}
-
-.dr-learn-info-icon { flex-shrink: 0; font-size: 12px; }
 
 .dr-result {
   background: var(--sage-bg);
@@ -983,7 +1259,7 @@
   .tool-card:first-child { grid-column: auto; }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 860px) {
   .dr-layout { grid-template-columns: 1fr; }
 }
 
@@ -993,9 +1269,14 @@
 
 @media (max-width: 480px) {
   .dr-learn-switch-label { display: none; }
+  .dr-formula-global-btn-label { display: none; }
 }
 
 @media (max-width: 560px) {
+  .dr-formula-modal-body { grid-template-columns: 1fr; }
+  .dr-formula-nav { flex-direction: row; overflow-x: auto; border-right: none; border-bottom: 1px solid var(--border); padding-right: 0; padding-bottom: 10px; }
+  .dr-formula-nav-item { flex-shrink: 0; }
+
   .noten-year-meta { display: none; }
   .noten-entry-cat { display: none; }
   .noten-entry-row { gap: 8px; }
