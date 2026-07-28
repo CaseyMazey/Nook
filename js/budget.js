@@ -104,13 +104,19 @@ function setRecurringPaid(id, mk, val) { DB.set(recurringPaidKey(id, mk), val); 
 // jeder Änderung erneut aufgerufen, wie überall sonst in Nook).
 // =========================
 
+// Rundet exakt auf Cent — verhindert Fließkomma-Artefakte
+// (z.B. 268.29999999999995 oder Anzeige mit 3 statt 2 Nachkommastellen)
+function round2(v) {
+  return Math.round((v + Number.EPSILON) * 100) / 100;
+}
+
 // Bandbreite eines Postens: bei "variabel" varMin/varMax, sonst
 // fällt beides auf den festen Betrag zurück (sichere Defaults).
 function sparplanerRange(r) {
   if (r.certainty === 'variable') {
     const min = typeof r.varMin === 'number' ? r.varMin : r.amount;
     const max = typeof r.varMax === 'number' ? r.varMax : r.amount;
-    return { min: Math.min(min, max), max: Math.max(min, max), avg: (min + max) / 2 };
+    return { min: round2(Math.min(min, max)), max: round2(Math.max(min, max)), avg: round2((min + max) / 2) };
   }
   return { min: r.amount, max: r.amount, avg: r.amount };
 }
@@ -133,29 +139,48 @@ function sparplanerBuckets() {
   };
 }
 
-// Monatliche Sparrate für ein Szenario. "garant" nutzt nur feste
-// Posten (per Definition keine Sonderfälle); "real"/"opt" beziehen
-// zusätzlich variable Posten (Ø bzw. bester Fall) und anteilige
-// (durch 12 geteilte) Sonderfälle mit ein.
+// Monatliche Sparrate für ein Szenario.
+// WICHTIG: Sonderfälle (jährliche Posten) fließen bewusst NICHT in
+// die Sparrate ein — sie sind unregelmäßig und würden die Formel
+// verfälschen. Sie werden separat und transparent im Bereich
+// "Einnahmen & Ausgaben" ausgewiesen. Die Formel entspricht exakt:
+//   Garantiert   = Summe fester Posten
+//   Realistisch  = Garantiert + Ø(variable Posten)
+//   Optimistisch = Garantiert + Bestfall(variable Posten)
 function sparplanerScenarioRate(scenario) {
   const b = sparplanerBuckets();
   const sum = arr => arr.reduce((s, r) => s + r.amount, 0);
-  const fixedNet = sum(b.fixedIncome) - sum(b.fixedExpense);
+  const fixedNet = round2(sum(b.fixedIncome) - sum(b.fixedExpense));
 
   if (scenario === 'garant') return fixedNet;
 
-  const sonderNet = (sum(b.sonderIncome) - sum(b.sonderExpense)) / 12;
-
   if (scenario === 'real') {
-    const varNet = b.varIncome.reduce((s, r) => s + sparplanerRange(r).avg, 0)
-                 - b.varExpense.reduce((s, r) => s + sparplanerRange(r).avg, 0);
-    return fixedNet + varNet + sonderNet;
+    const varIncomeAvg  = round2(b.varIncome.reduce((s, r) => s + sparplanerRange(r).avg, 0));
+    const varExpenseAvg = round2(b.varExpense.reduce((s, r) => s + sparplanerRange(r).avg, 0));
+    return round2(fixedNet + varIncomeAvg - varExpenseAvg);
   }
 
   // Optimistisch: maximale variable Einnahmen, minimale variable Ausgaben
-  const varNet = b.varIncome.reduce((s, r) => s + sparplanerRange(r).max, 0)
-               - b.varExpense.reduce((s, r) => s + sparplanerRange(r).min, 0);
-  return fixedNet + varNet + sonderNet;
+  const varIncomeMax = round2(b.varIncome.reduce((s, r) => s + sparplanerRange(r).max, 0));
+  const varExpenseMin = round2(b.varExpense.reduce((s, r) => s + sparplanerRange(r).min, 0));
+  return round2(fixedNet + varIncomeMax - varExpenseMin);
+}
+
+// Liefert die einzelnen Bestandteile einer Szenario-Berechnung —
+// für die sichtbare "Rechenweg"-Anzeige, damit jeder Wert
+// nachvollziehbar bleibt.
+function sparplanerScenarioBreakdown(scenario) {
+  const b = sparplanerBuckets();
+  const sum = arr => arr.reduce((s, r) => s + r.amount, 0);
+  const fixedNet = round2(sum(b.fixedIncome) - sum(b.fixedExpense));
+  if (scenario === 'garant') return { fixedNet, varNet: 0, total: fixedNet };
+
+  const key = scenario === 'real' ? 'avg' : 'max';
+  const expKey = scenario === 'real' ? 'avg' : 'min';
+  const varIncome = round2(b.varIncome.reduce((s, r) => s + sparplanerRange(r)[key], 0));
+  const varExpense = round2(b.varExpense.reduce((s, r) => s + sparplanerRange(r)[expKey], 0));
+  const varNet = round2(varIncome - varExpense);
+  return { fixedNet, varNet, total: round2(fixedNet + varNet) };
 }
 
 function sparplanerAllRates() {
@@ -166,23 +191,51 @@ function sparplanerAllRates() {
   };
 }
 
-// ETA-Simulation: Sparziele werden strikt nach Priorität (= Reihenfolge
-// in budgetGoals) kaskadierend bedient — sobald Ziel N erreicht ist,
-// fließt der volle Sparbetrag automatisch in Ziel N+1. Da nichts
-// verloren geht, lässt sich die Monatszahl je Ziel geschlossen aus der
-// kumulierten Restsumme berechnen (kein Simulations-Loop nötig).
+// ETA-Simulation — arbeitet exakt nach dem vorgegebenen Algorithmus:
+// Jeden Monat kommt die volle Sparrate dazu und wird strikt nach
+// Priorität verteilt. Ein Ziel bekommt erst dann Geld, wenn alle
+// Ziele mit höherer Priorität vollständig finanziert sind. Bleibt in
+// einem Monat nach Erreichen eines Ziels noch Geld übrig, fließt der
+// Rest SOFORT (im selben Monat) ins nächste Ziel — kein Monat wird
+// verschenkt.
 function sparplanerETAs(monthlyRate) {
-  const needs = budgetGoals.map(g => Math.max(0, g.target - g.current));
-  let cumulative = 0;
+  const n = budgetGoals.length;
+  const remaining = budgetGoals.map(g => round2(Math.max(0, g.target - g.current)));
+  const results = new Array(n).fill(null);
+  const now = new Date(); now.setDate(1); now.setHours(0, 0, 0, 0);
+
+  // Bereits erreichte Ziele sofort markieren (kein Sparen nötig)
+  remaining.forEach((r, i) => { if (r <= 0.005) results[i] = { months: 0, date: new Date(now) }; });
+
+  const rate = round2(monthlyRate || 0);
+  if (rate <= 0) {
+    return budgetGoals.map((g, i) => results[i]
+      ? { goal: g, reached: true, months: 0, date: results[i].date }
+      : { goal: g, reached: false, months: Infinity, date: null });
+  }
+
+  const MAX_MONTHS = 1200; // Sicherheitsgrenze: 100 Jahre
+  let month = 0;
+  while (results.includes(null) && month < MAX_MONTHS) {
+    month++;
+    let pool = rate;
+    for (let i = 0; i < n && pool > 0.005; i++) {
+      if (remaining[i] <= 0.005) continue; // dieses Ziel ist schon voll finanziert
+      const take = Math.min(pool, remaining[i]);
+      remaining[i] = round2(remaining[i] - take);
+      pool = round2(pool - take);
+      if (remaining[i] <= 0.005 && results[i] === null) {
+        const d = new Date(now); d.setMonth(d.getMonth() + month);
+        results[i] = { months: month, date: d };
+      }
+      // Übrig gebliebener "pool" wandert in derselben Schleife (also
+      // demselben Monat) automatisch zum nächsten Ziel weiter.
+    }
+  }
+
   return budgetGoals.map((g, i) => {
-    cumulative += needs[i];
-    if (needs[i] <= 0.0001) return { goal: g, reached: true, months: 0, date: new Date() };
-    if (!monthlyRate || monthlyRate <= 0) return { goal: g, reached: false, months: Infinity, date: null };
-    const months = Math.ceil(cumulative / monthlyRate);
-    const date = new Date();
-    date.setDate(1);
-    date.setMonth(date.getMonth() + months);
-    return { goal: g, reached: false, months, date };
+    if (results[i]) return { goal: g, reached: results[i].months === 0, months: results[i].months, date: results[i].date };
+    return { goal: g, reached: false, months: Infinity, date: null }; // Sparrate reicht nicht innerhalb 100 Jahren
   });
 }
 
@@ -2124,7 +2177,8 @@ function renderSparplaner() {
 }
 
 function fmtEuro(v) {
-  return (v < 0 ? '-' : '') + Math.abs(v).toLocaleString('de-DE', { minimumFractionDigits: 2 }) + ' €';
+  const r = round2(v);
+  return (r < 0 ? '-' : '') + Math.abs(r).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
 }
 
 function renderSparplanScenarios(rates) {
@@ -2135,15 +2189,21 @@ function renderSparplanScenarios(rates) {
       ${['garant','real','opt'].map(key => {
         const m = SCENARIO_META[key];
         const active = key === sparplanerScenario;
+        const bd = sparplanerScenarioBreakdown(key);
+        const rechenweg = key === 'garant'
+          ? `${fmtEuro(bd.fixedNet)} fest`
+          : `${fmtEuro(bd.fixedNet)} fest ${bd.varNet >= 0 ? '+' : '−'} ${fmtEuro(Math.abs(bd.varNet))} ${key === 'real' ? 'Ø variabel' : 'Bestfall variabel'}`;
         return `
         <button class="sp-scen-card ${active ? 'active' : ''}" data-scen="${key}">
           <div class="sp-scen-eyebrow sp-scen-${key}">${m.icon} ${m.label}</div>
           <div class="sp-scen-desc">${m.desc}</div>
           <div class="sp-scen-value sp-scen-${key}">${fmtEuro(rates[key])}</div>
           <div class="sp-scen-sub">${rates[key] >= 0 ? 'verfügbar' : 'Unterdeckung'} / Monat</div>
+          <div class="sp-scen-formula">${rechenweg} = ${fmtEuro(rates[key])}</div>
         </button>`;
       }).join('')}
-    </div>`;
+    </div>
+    <div class="sp-source-note" style="margin:8px 0 0;">ℹ️ Sonderfälle (jährliche Posten) fließen bewusst nicht automatisch in die Sparrate ein — sie sind unregelmäßig. Du siehst sie separat unten bei "Einnahmen &amp; Ausgaben" und kannst sie beim Bearbeiten eines Postens optional einbeziehen.</div>`;
   el.querySelectorAll('.sp-scen-card').forEach(card => {
     card.addEventListener('click', () => {
       sparplanerScenario = card.dataset.scen;
@@ -2162,8 +2222,8 @@ function renderSparplanIncomeExpense() {
   function rowHtml(r) {
     const range = r.certainty === 'variable' ? sparplanerRange(r) : null;
     const right = range
-      ? `<span class="sp-row-range">${range.min.toLocaleString('de-DE')}–${range.max.toLocaleString('de-DE')} €</span><span class="sp-row-amt ${r.type}">Ø ${fmtEuro(range.avg)}</span>`
-      : `<span></span><span class="sp-row-amt ${r.type}">${r.type === 'income' ? '+' : '−'}${r.amount.toLocaleString('de-DE', { minimumFractionDigits: 2 })} €</span>`;
+      ? `<span class="sp-row-range">${range.min.toLocaleString('de-DE',{minimumFractionDigits:0,maximumFractionDigits:2})}–${range.max.toLocaleString('de-DE',{minimumFractionDigits:0,maximumFractionDigits:2})} €</span><span class="sp-row-amt ${r.type}">Ø ${fmtEuro(range.avg)}</span>`
+      : `<span></span><span class="sp-row-amt ${r.type}">${r.type === 'income' ? '+' : '−'}${fmtEuro(Math.abs(r.amount))}</span>`;
     return `<div class="sp-row"><span class="sp-row-name">${r.name}</span>${right}</div>`;
   }
 
@@ -2241,9 +2301,9 @@ function renderSparplanGoals(rates) {
           <button class="sp-order-btn" data-i="${i}" data-dir="1" ${i===budgetGoals.length-1?'disabled':''} title="Nach unten">▼</button>
         </div>
         <div class="sp-goal-name">
-          <div class="sp-goal-name-top">${emoji} ${g.name} <span class="sp-goal-target">${g.target.toLocaleString('de-DE',{minimumFractionDigits:2})} €</span></div>
+          <div class="sp-goal-name-top">${emoji} ${g.name} <span class="sp-goal-target">${fmtEuro(g.target)}</span></div>
           <div class="sp-goal-bar"><div class="sp-goal-fill" style="width:${pct}%"></div></div>
-          <div class="sp-goal-progress-txt">${g.current.toLocaleString('de-DE',{minimumFractionDigits:2})} € / ${g.target.toLocaleString('de-DE',{minimumFractionDigits:2})} €</div>
+          <div class="sp-goal-progress-txt">${fmtEuro(g.current)} / ${fmtEuro(g.target)}</div>
         </div>
         <div class="sp-goal-eta-block">
           <span class="g" title="Garantiert">${gEta.reached ? 'erreicht' : sparplanerFormatEtaDate(gEta.date)}</span>
@@ -2302,7 +2362,7 @@ function renderSparplanTimeline(activeRate) {
               <div class="sp-tl-month">${sparplanerFormatEtaDate(e.date)}</div>
               <div class="sp-tl-icon">${PLANT_EMOJIS[e.goal.plantType] || '🌱'}</div>
               <div class="sp-tl-goal">${e.goal.name}</div>
-              <div class="sp-tl-amt">${e.goal.target.toLocaleString('de-DE',{minimumFractionDigits:2})} € erreicht</div>
+              <div class="sp-tl-amt">${fmtEuro(e.goal.target)} erreicht</div>
             </div>
           </div>`).join('')}
       </div>
@@ -2437,6 +2497,21 @@ function updateRecurringSparplanFieldsVisibility() {
   document.getElementById('recurring-certainty-row').classList.toggle('hidden', recurringFreq !== 'monthly');
   document.getElementById('recurring-var-range-row').classList.toggle('hidden', recurringFreq !== 'monthly' || recurringCertainty !== 'variable');
   document.getElementById('recurring-sparplan-include-row').classList.toggle('hidden', recurringFreq !== 'yearly');
+
+  // Bei "Variabel" ist der Betrag immer der Durchschnitt aus Min/Max —
+  // manuelle Eingabe würde sonst von der Spanne abweichen können.
+  const amountField = document.getElementById('recurring-amount');
+  const isVariable = recurringFreq === 'monthly' && recurringCertainty === 'variable';
+  amountField.readOnly = isVariable;
+  amountField.classList.toggle('modal-input-readonly', isVariable);
+  if (isVariable) syncRecurringAmountFromRange();
+}
+
+function syncRecurringAmountFromRange() {
+  const min = parseFloat(document.getElementById('recurring-var-min').value);
+  const max = parseFloat(document.getElementById('recurring-var-max').value);
+  const avg = round2(((isNaN(min) ? 0 : min) + (isNaN(max) ? 0 : max)) / 2);
+  document.getElementById('recurring-amount').value = avg;
 }
 
 function openRecurringModal(entry = null) {
@@ -2519,6 +2594,11 @@ document.getElementById('add-recurring-btn').addEventListener('click', () => ope
     updateRecurringSparplanFieldsVisibility();
   });
 });
+['recurring-var-min','recurring-var-max'].forEach(id => {
+  document.getElementById(id).addEventListener('input', () => {
+    if (recurringCertainty === 'variable') syncRecurringAmountFromRange();
+  });
+});
 ['must','need','want'].forEach(p => {
   document.getElementById(`recurring-prio-${p}`).addEventListener('click', () => {
     recurringPriority = p;
@@ -2537,16 +2617,20 @@ document.getElementById('recurring-modal-overlay').addEventListener('click', e =
 document.getElementById('recurring-save').addEventListener('click', () => {
   const name = document.getElementById('recurring-name').value.trim();
   if (!name) return;
-  const amount = parseFloat(document.getElementById('recurring-amount').value) || 0;
 
   // Sparplaner-Zusatzfelder — nur relevant/gesetzt je nach Rhythmus
   const certainty = recurringFreq === 'monthly' ? recurringCertainty : 'fixed';
-  let varMin, varMax;
+  let varMin, varMax, amount;
   if (certainty === 'variable') {
     varMin = parseFloat(document.getElementById('recurring-var-min').value);
     varMax = parseFloat(document.getElementById('recurring-var-max').value);
-    if (isNaN(varMin)) varMin = amount;
-    if (isNaN(varMax)) varMax = amount;
+    if (isNaN(varMin)) varMin = 0;
+    if (isNaN(varMax)) varMax = 0;
+    // amount ist bei Variabel IMMER der Durchschnitt aus Min/Max —
+    // niemals ein separat eingegebener Wert (Quelle des früheren Bugs).
+    amount = round2((varMin + varMax) / 2);
+  } else {
+    amount = parseFloat(document.getElementById('recurring-amount').value) || 0;
   }
   const includeInSparplan = recurringFreq === 'yearly'
     ? document.getElementById('recurring-sparplan-include').checked

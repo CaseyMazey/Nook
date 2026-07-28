@@ -1365,3 +1365,21 @@
   .sp-goal-table-head, .sp-goal-row { grid-template-columns: 40px 1fr; }
   .sp-goal-eta-block, .sp-goal-compare { grid-column: 1 / -1; }
 }
+
+/* ── Rechenweg unter Szenario-Karten (Fix: Nachvollziehbarkeit) ── */
+.sp-scen-formula {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border-strong);
+  font-size: 10px;
+  font-family: var(--mono);
+  color: var(--text-3);
+  line-height: 1.5;
+}
+
+/* ── Readonly-Zustand für automatisch berechneten Betrag (Variabel) ── */
+.modal-input-readonly {
+  background: var(--surface-2);
+  color: var(--text-3);
+  cursor: not-allowed;
+}
