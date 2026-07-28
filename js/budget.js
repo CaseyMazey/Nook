@@ -8,6 +8,18 @@ let budgetGoals     = DB.get('budgetGoals', []);
 let budgetMonth     = new Date();
 
 // =========================
+// SPARPLANER — UI-Zustand
+// Reine Anzeige-/Interaktionseinstellungen. Alle Ein-/Ausgaben und
+// Sparziele bleiben in budgetRecurring / budgetGoals — keine
+// eigene Datenhaltung.
+// =========================
+let budgetActiveSubtab   = DB.get('budgetActiveSubtab', 'budget');       // 'budget' | 'sparplan'
+let sparplanerScenario   = DB.get('sparplanerScenario', 'real');         // 'garant' | 'real' | 'opt'
+let sparplanerSimRate    = null;                                         // Was-wäre-wenn-Override, nur zur Laufzeit (nicht persistiert)
+function saveSparplanerScenario(){ DB.set('sparplanerScenario', sparplanerScenario); }
+function saveBudgetActiveSubtab(){ DB.set('budgetActiveSubtab', budgetActiveSubtab); }
+
+// =========================
 // KONTOSTAND — einfaches direktes Modell
 // =========================
 // kontostand = exakt der manuell eingegebene Wert.
@@ -25,15 +37,24 @@ function saveBudgetGoals(){     DB.set('budgetGoals',     budgetGoals);     }
 
 // Migration: add missing fields to existing entries
 function migrateBudgetData() {
-  let changed = false;
+  let changed = false, goalsChanged = false;
   budgetRecurring.forEach(r => {
     if (!r.priority) { r.priority = 'need'; changed = true; }
+    // Additiv für den Sparplaner: Sicherheit (fest/variabel) + Sonderfall-Einbeziehung.
+    // Bestehende Einträge ohne diese Felder gelten als "fest" / "einbezogen" —
+    // dadurch bleibt jede bisherige Berechnung (Liquidität, Kontostand, ...) unverändert.
+    if (!r.certainty) { r.certainty = 'fixed'; changed = true; }
+    if (r.includeInSparplan === undefined) { r.includeInSparplan = true; changed = true; }
   });
   budgetOnetime.forEach(e => {
     if (!e.priority) { e.priority = 'need'; changed = true; }
     if (e.paid === undefined) { e.paid = false; changed = true; }
   });
+  budgetGoals.forEach(g => {
+    if (g.eta === undefined) { g.eta = null; goalsChanged = true; }
+  });
   if (changed) { saveBudgetRecurring(); saveBudgetOnetime(); }
+  if (goalsChanged) { saveBudgetGoals(); }
 }
 migrateBudgetData();
 
@@ -73,6 +94,113 @@ function priorityBadge(p) {
 function recurringPaidKey(id, mk) { return `rec_paid_${id}_${mk}`; }
 function isRecurringPaid(id, mk)   { return DB.get(recurringPaidKey(id, mk), false); }
 function setRecurringPaid(id, mk, val) { DB.set(recurringPaidKey(id, mk), val); }
+
+// =========================
+// SPARPLANER — BERECHNUNGEN
+// Arbeitet ausschließlich mit budgetRecurring / budgetGoals.
+// Keine Werte sind hardcodiert — alles wird aus den echten
+// Budget-Daten abgeleitet und aktualisiert sich automatisch,
+// sobald sich diese Daten ändern (renderSparplaner() wird nach
+// jeder Änderung erneut aufgerufen, wie überall sonst in Nook).
+// =========================
+
+// Bandbreite eines Postens: bei "variabel" varMin/varMax, sonst
+// fällt beides auf den festen Betrag zurück (sichere Defaults).
+function sparplanerRange(r) {
+  if (r.certainty === 'variable') {
+    const min = typeof r.varMin === 'number' ? r.varMin : r.amount;
+    const max = typeof r.varMax === 'number' ? r.varMax : r.amount;
+    return { min: Math.min(min, max), max: Math.max(min, max), avg: (min + max) / 2 };
+  }
+  return { min: r.amount, max: r.amount, avg: r.amount };
+}
+
+// Gruppiert die wiederkehrenden Posten für den Sparplaner:
+// monatliche Posten nach Sicherheit (fest/variabel), jährliche
+// Posten gelten als "Sonderfälle". Ausgeschlossene Posten
+// (includeInSparplan === false) werden komplett ignoriert.
+function sparplanerBuckets() {
+  const active = budgetRecurring.filter(r => r.includeInSparplan !== false);
+  const monthly = active.filter(r => r.freq === 'monthly');
+  const yearly  = active.filter(r => r.freq === 'yearly');
+  return {
+    fixedIncome:  monthly.filter(r => r.type === 'income'  && r.certainty !== 'variable'),
+    fixedExpense: monthly.filter(r => r.type === 'expense' && r.certainty !== 'variable'),
+    varIncome:    monthly.filter(r => r.type === 'income'  && r.certainty === 'variable'),
+    varExpense:   monthly.filter(r => r.type === 'expense' && r.certainty === 'variable'),
+    sonderIncome: yearly.filter(r => r.type === 'income'),
+    sonderExpense:yearly.filter(r => r.type === 'expense'),
+  };
+}
+
+// Monatliche Sparrate für ein Szenario. "garant" nutzt nur feste
+// Posten (per Definition keine Sonderfälle); "real"/"opt" beziehen
+// zusätzlich variable Posten (Ø bzw. bester Fall) und anteilige
+// (durch 12 geteilte) Sonderfälle mit ein.
+function sparplanerScenarioRate(scenario) {
+  const b = sparplanerBuckets();
+  const sum = arr => arr.reduce((s, r) => s + r.amount, 0);
+  const fixedNet = sum(b.fixedIncome) - sum(b.fixedExpense);
+
+  if (scenario === 'garant') return fixedNet;
+
+  const sonderNet = (sum(b.sonderIncome) - sum(b.sonderExpense)) / 12;
+
+  if (scenario === 'real') {
+    const varNet = b.varIncome.reduce((s, r) => s + sparplanerRange(r).avg, 0)
+                 - b.varExpense.reduce((s, r) => s + sparplanerRange(r).avg, 0);
+    return fixedNet + varNet + sonderNet;
+  }
+
+  // Optimistisch: maximale variable Einnahmen, minimale variable Ausgaben
+  const varNet = b.varIncome.reduce((s, r) => s + sparplanerRange(r).max, 0)
+               - b.varExpense.reduce((s, r) => s + sparplanerRange(r).min, 0);
+  return fixedNet + varNet + sonderNet;
+}
+
+function sparplanerAllRates() {
+  return {
+    garant: sparplanerScenarioRate('garant'),
+    real:   sparplanerScenarioRate('real'),
+    opt:    sparplanerScenarioRate('opt'),
+  };
+}
+
+// ETA-Simulation: Sparziele werden strikt nach Priorität (= Reihenfolge
+// in budgetGoals) kaskadierend bedient — sobald Ziel N erreicht ist,
+// fließt der volle Sparbetrag automatisch in Ziel N+1. Da nichts
+// verloren geht, lässt sich die Monatszahl je Ziel geschlossen aus der
+// kumulierten Restsumme berechnen (kein Simulations-Loop nötig).
+function sparplanerETAs(monthlyRate) {
+  const needs = budgetGoals.map(g => Math.max(0, g.target - g.current));
+  let cumulative = 0;
+  return budgetGoals.map((g, i) => {
+    cumulative += needs[i];
+    if (needs[i] <= 0.0001) return { goal: g, reached: true, months: 0, date: new Date() };
+    if (!monthlyRate || monthlyRate <= 0) return { goal: g, reached: false, months: Infinity, date: null };
+    const months = Math.ceil(cumulative / monthlyRate);
+    const date = new Date();
+    date.setDate(1);
+    date.setMonth(date.getMonth() + months);
+    return { goal: g, reached: false, months, date };
+  });
+}
+
+function sparplanerFormatEtaDate(date) {
+  if (!date) return '–';
+  return date.toLocaleDateString('de-DE', { month: 'short', year: 'numeric' });
+}
+
+// Vergleich der berechneten ETA mit dem vom Nutzer gesetzten Wunschtermin
+function sparplanerCompareEta(goal, computedDate) {
+  if (!goal.eta) return null;
+  const [y, m] = goal.eta.split('-').map(Number);
+  const wishDate = new Date(y, (m || 1) - 1, 1);
+  if (!computedDate) return { diffMonths: -Infinity };
+  const diffMonths = (wishDate.getFullYear() - computedDate.getFullYear()) * 12
+                    + (wishDate.getMonth() - computedDate.getMonth());
+  return { diffMonths };
+}
 
 // =========================
 // CENTRAL PROJECTION
@@ -311,6 +439,46 @@ function renderBudget() {
   renderFinanzgarten();
   initSummaryCardToggles();
   initCardInlineToggles();
+  initBudgetSubtabs();
+  renderSparplaner();
+}
+
+// =========================
+// BUDGET / SPARPLANER — SUB-TAB-UMSCHALTER
+// Wechselt nur den Inhalt innerhalb von #view-budget. Header,
+// Sidebar und die restliche Nook-Navigation bleiben unberührt.
+// =========================
+function setBudgetSubtab(tab) {
+  budgetActiveSubtab = tab;
+  saveBudgetActiveSubtab();
+  const showBudget = tab === 'budget';
+  document.getElementById('budget-panel-budget').classList.toggle('hidden', !showBudget);
+  document.getElementById('budget-panel-sparplan').classList.toggle('hidden', showBudget);
+  document.getElementById('budget-subtab-btn-budget').classList.toggle('active', showBudget);
+  document.getElementById('budget-subtab-btn-sparplan').classList.toggle('active', !showBudget);
+  if (!showBudget) renderSparplaner();
+}
+
+function initBudgetSubtabs() {
+  const btnB = document.getElementById('budget-subtab-btn-budget');
+  const btnS = document.getElementById('budget-subtab-btn-sparplan');
+  if (btnB && !btnB._subtabBound) {
+    btnB._subtabBound = true;
+    btnB.addEventListener('click', () => setBudgetSubtab('budget'));
+  }
+  if (btnS && !btnS._subtabBound) {
+    btnS._subtabBound = true;
+    btnS.addEventListener('click', () => setBudgetSubtab('sparplan'));
+  }
+  // Gespeicherten Zustand einmalig anwenden (ohne renderSparplaner erneut zu triggern)
+  if (!initBudgetSubtabs._applied) {
+    initBudgetSubtabs._applied = true;
+    const showBudget = budgetActiveSubtab !== 'sparplan';
+    document.getElementById('budget-panel-budget').classList.toggle('hidden', !showBudget);
+    document.getElementById('budget-panel-sparplan').classList.toggle('hidden', showBudget);
+    btnB.classList.toggle('active', showBudget);
+    btnS.classList.toggle('active', !showBudget);
+  }
 }
 
 function renderKontostandHeader() {
@@ -1910,7 +2078,7 @@ function renderBudgetGoals(){
       // If the active garden goal was deleted, clear the stored ID
       const activeId = DB.get('gardenActiveGoalId', null);
       if (activeId === goal.id) DB.set('gardenActiveGoalId', null);
-      saveBudgetGoals(); renderBudgetGoals(); renderFinanzgarten();
+      saveBudgetGoals(); renderBudgetGoals(); renderFinanzgarten(); renderSparplaner();
     });
     head.append(nm, del);
     const bar  = document.createElement('div'); bar.className = 'budget-goal-bar';
@@ -1929,6 +2097,302 @@ function renderBudgetGoals(){
     card.append(head, bar, info);
     container.appendChild(card);
   });
+}
+
+// =========================
+// SPARPLANER — RENDERING
+// =========================
+
+const SCENARIO_META = {
+  garant: { label: 'Garantiert', desc: 'Nur feste Einnahmen & Ausgaben',   icon: '🛡️' },
+  real:   { label: 'Realistisch', desc: '+ Ø variable Ein- & Ausgaben',    icon: '📊' },
+  opt:    { label: 'Optimistisch',desc: 'Beste Fälle ein- & Ausgaben',     icon: '⭐' },
+};
+
+function renderSparplaner() {
+  if (document.getElementById('budget-panel-sparplan')?.classList.contains('hidden')) return;
+
+  const rates = sparplanerAllRates();
+  const activeRate = sparplanerSimRate !== null ? sparplanerSimRate : rates[sparplanerScenario];
+
+  renderSparplanScenarios(rates);
+  renderSparplanIncomeExpense();
+  renderSparplanGoals(rates);
+  renderSparplanTimeline(activeRate);
+  renderSparplanSimulator(rates);
+  renderSparplanSummary(rates);
+}
+
+function fmtEuro(v) {
+  return (v < 0 ? '-' : '') + Math.abs(v).toLocaleString('de-DE', { minimumFractionDigits: 2 }) + ' €';
+}
+
+function renderSparplanScenarios(rates) {
+  const el = document.getElementById('sparplan-scenarios');
+  if (!el) return;
+  el.innerHTML = `
+    <div class="sp-scenarios-grid">
+      ${['garant','real','opt'].map(key => {
+        const m = SCENARIO_META[key];
+        const active = key === sparplanerScenario;
+        return `
+        <button class="sp-scen-card ${active ? 'active' : ''}" data-scen="${key}">
+          <div class="sp-scen-eyebrow sp-scen-${key}">${m.icon} ${m.label}</div>
+          <div class="sp-scen-desc">${m.desc}</div>
+          <div class="sp-scen-value sp-scen-${key}">${fmtEuro(rates[key])}</div>
+          <div class="sp-scen-sub">${rates[key] >= 0 ? 'verfügbar' : 'Unterdeckung'} / Monat</div>
+        </button>`;
+      }).join('')}
+    </div>`;
+  el.querySelectorAll('.sp-scen-card').forEach(card => {
+    card.addEventListener('click', () => {
+      sparplanerScenario = card.dataset.scen;
+      saveSparplanerScenario();
+      renderSparplaner();
+    });
+  });
+}
+
+function renderSparplanIncomeExpense() {
+  const el = document.getElementById('sparplan-income-expense');
+  if (!el) return;
+  const b = sparplanerBuckets();
+  const sum = arr => arr.reduce((s, r) => s + r.amount, 0);
+
+  function rowHtml(r) {
+    const range = r.certainty === 'variable' ? sparplanerRange(r) : null;
+    const right = range
+      ? `<span class="sp-row-range">${range.min.toLocaleString('de-DE')}–${range.max.toLocaleString('de-DE')} €</span><span class="sp-row-amt ${r.type}">Ø ${fmtEuro(range.avg)}</span>`
+      : `<span></span><span class="sp-row-amt ${r.type}">${r.type === 'income' ? '+' : '−'}${r.amount.toLocaleString('de-DE', { minimumFractionDigits: 2 })} €</span>`;
+    return `<div class="sp-row"><span class="sp-row-name">${r.name}</span>${right}</div>`;
+  }
+
+  function group(label, cls, entries, totalLabel, total) {
+    if (!entries.length) return '';
+    return `
+      <div class="sp-group">
+        <div class="sp-group-label ${cls}"><span class="dot"></span> ${label}</div>
+        ${entries.map(rowHtml).join('')}
+        <div class="sp-group-total"><span>${totalLabel}</span><span>${fmtEuro(total)}</span></div>
+      </div>`;
+  }
+
+  const fixedAll   = [...b.fixedIncome, ...b.fixedExpense];
+  const varAll     = [...b.varIncome, ...b.varExpense];
+  const sonderAll  = [...b.sonderIncome, ...b.sonderExpense];
+  const fixedNet   = sum(b.fixedIncome) - sum(b.fixedExpense);
+  const varNetAvg  = b.varIncome.reduce((s,r)=>s+sparplanerRange(r).avg,0) - b.varExpense.reduce((s,r)=>s+sparplanerRange(r).avg,0);
+  const sonderNet  = sum(b.sonderIncome) - sum(b.sonderExpense);
+
+  if (!fixedAll.length && !varAll.length && !sonderAll.length) {
+    el.innerHTML = '<div class="empty-state">Noch keine wiederkehrenden Posten im Budget-Tab angelegt.</div>';
+    return;
+  }
+
+  el.innerHTML =
+    group('Garantiert', 'garant', fixedAll, 'Summe garantiert', fixedNet) +
+    group('Variabel (Ø)', 'variabel', varAll, 'Saldo Ø', varNetAvg) +
+    group('Sonderfälle', 'sonder', sonderAll, 'Saldo / Jahr', sonderNet) +
+    `<div class="sp-source-note">↺ Einnahmen &amp; Ausgaben werden 1:1 aus dem Budget-Tab übernommen. Sicherheit (fest/variabel) und Einbeziehung von Sonderfällen lassen sich dort beim Bearbeiten eines Postens einstellen.</div>`;
+}
+
+function renderSparplanGoals(rates) {
+  const el = document.getElementById('sparplan-goals');
+  if (!el) return;
+  if (!budgetGoals.length) {
+    el.innerHTML = '<div class="empty-state">Noch keine Sparziele — leg oben eines an.</div>';
+    return;
+  }
+
+  const etaByScenario = {
+    garant: sparplanerETAs(rates.garant),
+    real:   sparplanerETAs(rates.real),
+    opt:    sparplanerETAs(rates.opt),
+  };
+
+  const rows = budgetGoals.map((g, i) => {
+    const pct = g.target > 0 ? Math.min(100, Math.round((g.current / g.target) * 100)) : 0;
+    const emoji = PLANT_EMOJIS[g.plantType] || '🌱';
+    const gEta = etaByScenario.garant[i], rEta = etaByScenario.real[i], oEta = etaByScenario.opt[i];
+
+    let compareHtml = '<span class="sp-goal-compare none">– keine ETA</span>';
+    if (g.eta) {
+      const cmp = sparplanerCompareEta(g, rEta.date);
+      if (!rEta.reached && cmp) {
+        if (cmp.diffMonths === -Infinity) {
+          compareHtml = `<span class="sp-goal-compare late">🔴 kein Sparbetrag verfügbar</span>`;
+        } else if (cmp.diffMonths > 0) {
+          compareHtml = `<span class="sp-goal-compare early">🟢 ${cmp.diffMonths} Mon. früher</span>`;
+        } else if (cmp.diffMonths < 0) {
+          compareHtml = `<span class="sp-goal-compare late">🔴 ${Math.abs(cmp.diffMonths)} Mon. später</span>`;
+        } else {
+          compareHtml = `<span class="sp-goal-compare early">🟢 genau im Plan</span>`;
+        }
+      } else if (rEta.reached) {
+        compareHtml = `<span class="sp-goal-compare early">🟢 bereits erreicht</span>`;
+      }
+    }
+
+    return `
+      <div class="sp-goal-row">
+        <div class="sp-goal-order">
+          <button class="sp-order-btn" data-i="${i}" data-dir="-1" ${i===0?'disabled':''} title="Nach oben">▲</button>
+          <span class="sp-goal-prio">${i + 1}</span>
+          <button class="sp-order-btn" data-i="${i}" data-dir="1" ${i===budgetGoals.length-1?'disabled':''} title="Nach unten">▼</button>
+        </div>
+        <div class="sp-goal-name">
+          <div class="sp-goal-name-top">${emoji} ${g.name} <span class="sp-goal-target">${g.target.toLocaleString('de-DE',{minimumFractionDigits:2})} €</span></div>
+          <div class="sp-goal-bar"><div class="sp-goal-fill" style="width:${pct}%"></div></div>
+          <div class="sp-goal-progress-txt">${g.current.toLocaleString('de-DE',{minimumFractionDigits:2})} € / ${g.target.toLocaleString('de-DE',{minimumFractionDigits:2})} €</div>
+        </div>
+        <div class="sp-goal-eta-block">
+          <span class="g" title="Garantiert">${gEta.reached ? 'erreicht' : sparplanerFormatEtaDate(gEta.date)}</span>
+          <span class="r" title="Realistisch">${rEta.reached ? 'erreicht' : sparplanerFormatEtaDate(rEta.date)}</span>
+          <span class="o" title="Optimistisch">${oEta.reached ? 'erreicht' : sparplanerFormatEtaDate(oEta.date)}</span>
+        </div>
+        ${compareHtml}
+      </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="sp-goal-table-head"><span></span><span>Ziel</span><span>Fortschritt</span><span>ETA (G/R/O)</span><span>Vergleich</span></div>
+    ${rows}
+    <div class="sp-source-note">↕ Priorität per ▲ ▼ ändern — sobald ein Ziel erreicht ist, fließt der volle Sparbetrag automatisch ins nächste. Wunschtermin (ETA) lässt sich beim Bearbeiten eines Ziels setzen.</div>`;
+
+  el.querySelectorAll('.sp-order-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const i = parseInt(btn.dataset.i, 10);
+      const dir = parseInt(btn.dataset.dir, 10);
+      const j = i + dir;
+      if (j < 0 || j >= budgetGoals.length) return;
+      [budgetGoals[i], budgetGoals[j]] = [budgetGoals[j], budgetGoals[i]];
+      saveBudgetGoals();
+      renderSparplaner();
+    });
+  });
+}
+
+function renderSparplanTimeline(activeRate) {
+  const titleEl = document.getElementById('sparplan-timeline-title');
+  const el = document.getElementById('sparplan-timeline');
+  if (!el) return;
+
+  const scenarioLabel = sparplanerSimRate !== null ? 'Simulation' : SCENARIO_META[sparplanerScenario].label;
+  if (titleEl) titleEl.innerHTML = `🧭 Zeitstrahl <span style="font-weight:400;color:var(--text-3)">— Szenario: ${scenarioLabel}</span>`;
+
+  if (!budgetGoals.length) {
+    el.innerHTML = '<div class="empty-state">Noch keine Sparziele vorhanden.</div>';
+    return;
+  }
+
+  const etas = sparplanerETAs(activeRate).filter(e => !e.reached && e.date);
+  if (!etas.length) {
+    el.innerHTML = '<div class="empty-state">Bei aktuellem Sparbetrag ist kein Ziel mehr offen oder die Sparrate reicht nicht aus.</div>';
+    return;
+  }
+  etas.sort((a, b) => a.date - b.date);
+
+  el.innerHTML = `
+    <div class="sp-timeline-wrap">
+      <div class="sp-timeline-track">
+        ${etas.map(e => `
+          <div class="sp-tl-stop">
+            <div class="sp-tl-dot"></div>
+            <div class="sp-tl-card">
+              <div class="sp-tl-month">${sparplanerFormatEtaDate(e.date)}</div>
+              <div class="sp-tl-icon">${PLANT_EMOJIS[e.goal.plantType] || '🌱'}</div>
+              <div class="sp-tl-goal">${e.goal.name}</div>
+              <div class="sp-tl-amt">${e.goal.target.toLocaleString('de-DE',{minimumFractionDigits:2})} € erreicht</div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+function renderSparplanSimulator(rates) {
+  const el = document.getElementById('sparplan-simulator');
+  if (!el) return;
+
+  const baseRate = rates[sparplanerScenario];
+  const current = sparplanerSimRate !== null ? sparplanerSimRate : baseRate;
+  const min = Math.min(0, Math.floor(baseRate - Math.abs(baseRate || 100)));
+  const max = Math.ceil(Math.abs(baseRate || 100) * 2) + Math.abs(baseRate || 100);
+
+  const topGoal = budgetGoals[0];
+  const simEtas = sparplanerETAs(current);
+  const topEtaHtml = topGoal
+    ? `<div class="sp-sim-hint">${PLANT_EMOJIS[topGoal.plantType] || '🌱'} ${topGoal.name} bei diesem Betrag: <b>${simEtas[0].reached ? 'bereits erreicht' : sparplanerFormatEtaDate(simEtas[0].date)}</b></div>`
+    : `<div class="sp-sim-hint">Noch keine Sparziele angelegt.</div>`;
+
+  el.innerHTML = `
+    <div class="sp-panel-title">🔮 Was-wäre-wenn?</div>
+    <div style="font-size:11.5px;color:var(--text-3);margin-top:2px;">Monatlicher Sparbetrag — alle Prognosen aktualisieren sich sofort</div>
+    <div class="sp-sim-value">${fmtEuro(current)}</div>
+    <input type="range" min="${min}" max="${max}" value="${current}" step="1" class="sp-sim-slider" id="sparplan-sim-slider">
+    <div class="sp-sim-labels"><span>${fmtEuro(min)}</span><span>${fmtEuro(baseRate)} ${SCENARIO_META[sparplanerScenario].label.toLowerCase()}</span><span>${fmtEuro(max)}</span></div>
+    ${topEtaHtml}
+    ${sparplanerSimRate !== null ? `<button class="sp-sim-reset" id="sparplan-sim-reset">Zurücksetzen</button>` : ''}
+  `;
+
+  const slider = document.getElementById('sparplan-sim-slider');
+  slider.addEventListener('input', () => {
+    sparplanerSimRate = parseFloat(slider.value);
+    renderSparplanTimeline(sparplanerSimRate);
+    renderSparplanSimulatorHintOnly();
+  });
+  slider.addEventListener('change', () => {
+    // Volles Re-Render nach Loslassen, damit Titel/Reset-Button konsistent sind
+    renderSparplaner();
+  });
+
+  const resetBtn = document.getElementById('sparplan-sim-reset');
+  if (resetBtn) resetBtn.addEventListener('click', () => { sparplanerSimRate = null; renderSparplaner(); });
+}
+
+// Leichtgewichtiges Update während des Sliders (kein volles Re-Render,
+// um unnötige DOM-Operationen bei jeder Mausbewegung zu vermeiden).
+function renderSparplanSimulatorHintOnly() {
+  const valueEl = document.querySelector('#sparplan-simulator .sp-sim-value');
+  const hintEl  = document.querySelector('#sparplan-simulator .sp-sim-hint');
+  if (valueEl) valueEl.textContent = fmtEuro(sparplanerSimRate);
+  if (hintEl && budgetGoals[0]) {
+    const e = sparplanerETAs(sparplanerSimRate)[0];
+    hintEl.innerHTML = `${PLANT_EMOJIS[budgetGoals[0].plantType] || '🌱'} ${budgetGoals[0].name} bei diesem Betrag: <b>${e.reached ? 'bereits erreicht' : sparplanerFormatEtaDate(e.date)}</b>`;
+  }
+}
+
+function renderSparplanSummary(rates) {
+  const el = document.getElementById('sparplan-tip-banner');
+  if (!el) return;
+
+  const bullets = [];
+  bullets.push(`Garantiert stehen dir ${fmtEuro(rates.garant)} / Monat sicher zur Verfügung, realistisch im Schnitt ${fmtEuro(rates.real)}.`);
+
+  const topGoal = budgetGoals[0];
+  if (topGoal) {
+    const rEta = sparplanerETAs(rates.real)[0];
+    if (rEta.reached) {
+      bullets.push(`Dein wichtigstes Ziel „${topGoal.name}“ ist bereits erreicht. 🎉`);
+    } else if (rEta.date) {
+      const cmp = sparplanerCompareEta(topGoal, rEta.date);
+      bullets.push(`„${topGoal.name}“ erreichst du im realistischen Szenario voraussichtlich ${sparplanerFormatEtaDate(rEta.date)}.`);
+      if (cmp && cmp.diffMonths !== -Infinity) {
+        if (cmp.diffMonths > 0) bullets.push(`🟢 Das ist etwa ${cmp.diffMonths} Monate früher als dein Wunschtermin.`);
+        else if (cmp.diffMonths < 0) bullets.push(`🔴 Nach aktueller Planung verfehlst du deinen Wunschtermin um ${Math.abs(cmp.diffMonths)} Monate.`);
+      }
+    } else {
+      bullets.push(`Bei der aktuellen Sparrate ist kein Zeitpunkt für „${topGoal.name}“ absehbar.`);
+    }
+  }
+
+  el.innerHTML = `
+    <div class="b-tip-left">
+      <div class="b-tip-icon">🌱</div>
+      <div>
+        <div class="b-tip-eyebrow">Zusammenfassung</div>
+        <div class="b-tip-text"><ul>${bullets.map(b => `<li>${b}</li>`).join('')}</ul></div>
+      </div>
+    </div>`;
 }
 
 // Month navigation
@@ -1962,10 +2426,18 @@ bindMonthNav();
 // RECURRING MODAL (create + edit)
 // =========================
 
-let recurringType     = 'income';
-let recurringFreq     = 'monthly';
-let recurringPriority = 'need';
-let recurringEditId   = null;
+let recurringType      = 'income';
+let recurringFreq      = 'monthly';
+let recurringPriority  = 'need';
+let recurringCertainty = 'fixed';
+let recurringEditId    = null;
+
+// Sichtbarkeit der Sparplaner-Zusatzfelder je nach Rhythmus/Sicherheit
+function updateRecurringSparplanFieldsVisibility() {
+  document.getElementById('recurring-certainty-row').classList.toggle('hidden', recurringFreq !== 'monthly');
+  document.getElementById('recurring-var-range-row').classList.toggle('hidden', recurringFreq !== 'monthly' || recurringCertainty !== 'variable');
+  document.getElementById('recurring-sparplan-include-row').classList.toggle('hidden', recurringFreq !== 'yearly');
+}
 
 function openRecurringModal(entry = null) {
   recurringEditId = entry ? entry.id : null;
@@ -1976,9 +2448,13 @@ function openRecurringModal(entry = null) {
   if (entry) {
     document.getElementById('recurring-name').value   = entry.name;
     document.getElementById('recurring-amount').value = entry.amount;
-    recurringType     = entry.type;
-    recurringFreq     = entry.freq;
-    recurringPriority = (entry.priority && entry.priority !== 'none') ? entry.priority : 'need';
+    recurringType      = entry.type;
+    recurringFreq       = entry.freq;
+    recurringPriority   = (entry.priority && entry.priority !== 'none') ? entry.priority : 'need';
+    recurringCertainty  = entry.certainty === 'variable' ? 'variable' : 'fixed';
+    document.getElementById('recurring-var-min').value = entry.varMin ?? '';
+    document.getElementById('recurring-var-max').value = entry.varMax ?? '';
+    document.getElementById('recurring-sparplan-include').checked = entry.includeInSparplan !== false;
     if (entry.freq === 'monthly') {
       document.getElementById('recurring-day').value        = entry.day || '';
       document.getElementById('recurring-date-day').value   = '';
@@ -1989,9 +2465,10 @@ function openRecurringModal(entry = null) {
       document.getElementById('recurring-date-month').value = entry.dateMonth || '';
     }
   } else {
-    ['recurring-name','recurring-amount','recurring-day','recurring-date-day','recurring-date-month']
+    ['recurring-name','recurring-amount','recurring-day','recurring-date-day','recurring-date-month','recurring-var-min','recurring-var-max']
       .forEach(id => document.getElementById(id).value = '');
-    recurringType = 'income'; recurringFreq = 'monthly'; recurringPriority = 'need';
+    recurringType = 'income'; recurringFreq = 'monthly'; recurringPriority = 'need'; recurringCertainty = 'fixed';
+    document.getElementById('recurring-sparplan-include').checked = true;
   }
 
   ['income','expense'].forEach(t =>
@@ -2000,12 +2477,15 @@ function openRecurringModal(entry = null) {
     document.getElementById(`recurring-freq-${f}`).classList.toggle('active', f === recurringFreq));
   ['must','need','want'].forEach(p =>
     document.getElementById(`recurring-prio-${p}`).classList.toggle('active', p === recurringPriority));
+  ['fixed','variable'].forEach(c =>
+    document.getElementById(`recurring-certainty-${c}`).classList.toggle('active', c === recurringCertainty));
 
   document.getElementById('recurring-day-row').classList.toggle('hidden',  recurringFreq !== 'monthly');
   document.getElementById('recurring-date-row').classList.toggle('hidden', recurringFreq !== 'yearly');
   // Priority row: always visible, but dimmed for income entries
   document.getElementById('recurring-prio-row').classList.remove('hidden');
   document.getElementById('recurring-prio-row').classList.toggle('budget-prio-row-dimmed', recurringType !== 'expense');
+  updateRecurringSparplanFieldsVisibility();
 
   document.getElementById('recurring-modal-overlay').classList.remove('hidden');
   setTimeout(() => document.getElementById('recurring-name').focus(), 50);
@@ -2028,6 +2508,15 @@ document.getElementById('add-recurring-btn').addEventListener('click', () => ope
       document.getElementById(`recurring-freq-${x}`).classList.toggle('active', x === f));
     document.getElementById('recurring-day-row').classList.toggle('hidden',  f !== 'monthly');
     document.getElementById('recurring-date-row').classList.toggle('hidden', f !== 'yearly');
+    updateRecurringSparplanFieldsVisibility();
+  });
+});
+['fixed','variable'].forEach(c => {
+  document.getElementById(`recurring-certainty-${c}`).addEventListener('click', () => {
+    recurringCertainty = c;
+    ['fixed','variable'].forEach(x =>
+      document.getElementById(`recurring-certainty-${x}`).classList.toggle('active', x === c));
+    updateRecurringSparplanFieldsVisibility();
   });
 });
 ['must','need','want'].forEach(p => {
@@ -2050,6 +2539,26 @@ document.getElementById('recurring-save').addEventListener('click', () => {
   if (!name) return;
   const amount = parseFloat(document.getElementById('recurring-amount').value) || 0;
 
+  // Sparplaner-Zusatzfelder — nur relevant/gesetzt je nach Rhythmus
+  const certainty = recurringFreq === 'monthly' ? recurringCertainty : 'fixed';
+  let varMin, varMax;
+  if (certainty === 'variable') {
+    varMin = parseFloat(document.getElementById('recurring-var-min').value);
+    varMax = parseFloat(document.getElementById('recurring-var-max').value);
+    if (isNaN(varMin)) varMin = amount;
+    if (isNaN(varMax)) varMax = amount;
+  }
+  const includeInSparplan = recurringFreq === 'yearly'
+    ? document.getElementById('recurring-sparplan-include').checked
+    : true;
+
+  function applySparplanFields(e) {
+    e.certainty = certainty;
+    if (certainty === 'variable') { e.varMin = varMin; e.varMax = varMax; }
+    else { delete e.varMin; delete e.varMax; }
+    e.includeInSparplan = includeInSparplan;
+  }
+
   if (recurringEditId) {
     const idx = budgetRecurring.findIndex(r => r.id === recurringEditId);
     if (idx !== -1) {
@@ -2067,6 +2576,7 @@ document.getElementById('recurring-save').addEventListener('click', () => {
         e.dateMonth = parseInt(document.getElementById('recurring-date-month').value) || 1;
         delete e.day;
       }
+      applySparplanFields(e);
     }
   } else {
     const entry = {
@@ -2080,6 +2590,7 @@ document.getElementById('recurring-save').addEventListener('click', () => {
       entry.dateDay   = parseInt(document.getElementById('recurring-date-day').value)   || 1;
       entry.dateMonth = parseInt(document.getElementById('recurring-date-month').value) || 1;
     }
+    applySparplanFields(entry);
     budgetRecurring.push(entry);
   }
 
@@ -2165,6 +2676,7 @@ document.getElementById('add-goal-btn').addEventListener('click', () => {
   document.getElementById('goal-name').value = '';
   document.getElementById('goal-target').value = '';
   document.getElementById('goal-current').value = '';
+  document.getElementById('goal-eta').value = '';
   // Reset plant selector to first option
   const firstRadio = document.querySelector('input[name="goal-plant"]');
   if (firstRadio) firstRadio.checked = true;
@@ -2184,11 +2696,13 @@ document.getElementById('goal-save').addEventListener('click', () => {
   const current   = parseFloat(document.getElementById('goal-current').value) || 0;
   const plantRadio = document.querySelector('input[name="goal-plant"]:checked');
   const plantType = plantRadio ? plantRadio.value : 'sunflower';
-  budgetGoals.push({ id: crypto.randomUUID(), name, target, current, plantType });
+  const etaVal = document.getElementById('goal-eta').value || null;
+  budgetGoals.push({ id: crypto.randomUUID(), name, target, current, plantType, eta: etaVal });
   saveBudgetGoals();
   document.getElementById('goal-modal-overlay').classList.add('hidden');
   renderBudgetGoals();
   renderFinanzgarten();
+  renderSparplaner();
 });
 
 let goalTxTarget = null, goalTxMode = 'deposit';
@@ -2215,6 +2729,7 @@ document.getElementById('goal-tx-save').addEventListener('click', () => {
   document.getElementById('goal-tx-modal-overlay').classList.add('hidden');
   renderBudgetGoals();
   renderFinanzgarten();
+  renderSparplaner();
   goalTxTarget = null;
 });
 
@@ -2275,9 +2790,10 @@ document.getElementById('finanzbaum-config-save').addEventListener('click', () =
 
 function bindSecondaryButtons() {
   const pairs = [
-    ['add-recurring-btn-2', 'add-recurring-btn'],
-    ['add-onetime-btn-2',   'add-onetime-btn'],
-    ['add-goal-btn-2',      'add-goal-btn'],
+    ['add-recurring-btn-2',   'add-recurring-btn'],
+    ['add-onetime-btn-2',     'add-onetime-btn'],
+    ['add-goal-btn-2',        'add-goal-btn'],
+    ['sparplan-add-goal-btn', 'add-goal-btn'],
   ];
   pairs.forEach(([srcId, targetId]) => {
     const srcEl    = document.getElementById(srcId);

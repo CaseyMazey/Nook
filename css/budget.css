@@ -967,7 +967,7 @@
 .budget-prio-btn.active[data-prio="want"] { background: var(--b-olive-soft); color: var(--b-olive); border-color: var(--b-olive); }
 
 /* ── Tip banner ───────────────────────────────────────────── */
-#budget-tip-banner {
+#budget-tip-banner, .b-tip-banner {
   background: var(--surface);
   border-radius: var(--b-radius);
   box-shadow: var(--b-shadow);
@@ -1217,3 +1217,151 @@
 }
 .b-card-arrow { font-size: 9px; color: var(--text-3); flex-shrink: 0; }
 .b-card-title { font-size: 13px; font-weight: 600; color: var(--text); }
+
+/* =============================================================
+   SPARPLANER — Sub-Tab innerhalb von #view-budget
+   Ausschließlich bestehende Tokens (main.css / budget.css oben).
+   Keine neuen Farben, keine hardcodierten Abstände.
+============================================================= */
+
+/* ── Sub-Tab-Umschalter (Budget ↔ Sparplaner) ─────────────── */
+.sp-subtab-switch {
+  display: inline-flex;
+  background: var(--surface-2);
+  border: 1.5px solid var(--border-strong);
+  border-radius: 99px;
+  padding: 3px;
+  gap: 2px;
+  margin-top: 10px;
+}
+.sp-subtab-btn {
+  padding: 6px 16px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-3);
+  transition: all var(--transition);
+}
+.sp-subtab-btn.active { background: var(--surface); color: var(--sage-dark); box-shadow: var(--shadow-xs); }
+.sp-subtab-btn:not(.active):hover { color: var(--text); }
+
+#budget-panel-budget, #budget-panel-sparplan { display: flex; flex-direction: column; gap: 0; }
+#budget-panel-sparplan { gap: 16px; }
+
+/* ── Szenario-Karten ───────────────────────────────────────── */
+.sp-scenarios-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.sp-scen-card {
+  border-radius: var(--b-radius);
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  padding: 16px 18px;
+  cursor: pointer;
+  transition: all var(--transition);
+  text-align: left;
+  box-shadow: var(--b-shadow);
+}
+.sp-scen-card:hover { box-shadow: var(--b-shadow-lg); transform: translateY(-1px); }
+.sp-scen-eyebrow { font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 10px; }
+.sp-scen-desc { font-size: 11.5px; color: var(--text-3); margin-bottom: 2px; }
+.sp-scen-value { font-family: var(--mono); font-size: 24px; font-weight: 700; line-height: 1.15; margin: 4px 0 2px; }
+.sp-scen-sub { font-size: 11px; color: var(--text-3); }
+
+.sp-scen-card .sp-scen-garant { color: var(--b-green); }
+.sp-scen-card .sp-scen-real   { color: var(--b-olive); }
+.sp-scen-card .sp-scen-opt    { color: var(--sage-dark); }
+.sp-scen-card[data-scen="garant"] { background: var(--b-green-soft); }
+.sp-scen-card[data-scen="real"]   { background: var(--b-olive-soft); }
+.sp-scen-card[data-scen="opt"]    { background: var(--sage-bg); }
+.sp-scen-card.active[data-scen="garant"] { border-color: var(--b-green-mid); }
+.sp-scen-card.active[data-scen="real"]   { border-color: var(--b-olive); }
+.sp-scen-card.active[data-scen="opt"]    { border-color: var(--sage); }
+
+/* ── Generisches Sparplaner-Panel (Karte) ─────────────────── */
+.sp-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--b-radius); box-shadow: var(--b-shadow); overflow: hidden; }
+.sp-panel-head { display: flex; align-items: center; justify-content: space-between; padding: 13px 16px 11px; border-bottom: 1px solid var(--border); }
+.sp-panel-title { font-size: 13px; font-weight: 600; color: var(--text); }
+.sp-add-btn { font-size: 11.5px; font-weight: 600; color: var(--sage-dark); background: var(--sage-bg); border: 1px solid var(--sage-border); border-radius: 99px; padding: 5px 12px; transition: all var(--transition); }
+.sp-add-btn:hover { background: var(--sage); color: var(--surface); }
+
+#sparplan-grid { display: grid; grid-template-columns: 1fr 1.35fr; gap: 16px; align-items: start; }
+@media (max-width: 1080px) { #sparplan-grid { grid-template-columns: 1fr; } }
+
+/* ── Einnahmen/Ausgaben-Gruppen ────────────────────────────── */
+.sp-group { padding: 10px 16px 4px; }
+.sp-group-label { display: flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); margin-bottom: 4px; padding-top: 6px; }
+.sp-group-label .dot { width: 7px; height: 7px; border-radius: 50%; }
+.sp-group-label.garant .dot   { background: var(--b-green-mid); }
+.sp-group-label.variabel .dot { background: var(--b-olive); }
+.sp-group-label.sonder .dot   { background: var(--text-3); }
+
+.sp-row { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 12.5px; }
+.sp-row:last-child { border-bottom: none; }
+.sp-row-name { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sp-row-amt { font-family: var(--mono); font-weight: 600; white-space: nowrap; }
+.sp-row-amt.income  { color: var(--budget-income); }
+.sp-row-amt.expense { color: var(--budget-expense); }
+.sp-row-range { font-family: var(--mono); font-size: 10.5px; color: var(--text-3); white-space: nowrap; }
+
+.sp-group-total { display: flex; justify-content: space-between; padding: 6px 0 10px; font-size: 11.5px; font-weight: 700; color: var(--text-2); }
+.sp-group-total span:last-child { font-family: var(--mono); }
+
+.sp-source-note { margin: 4px 16px 14px; padding: 9px 12px; background: var(--surface-2); border-radius: var(--radius-sm); font-size: 11px; color: var(--text-3); line-height: 1.6; }
+
+/* ── Sparziele & Prognose ──────────────────────────────────── */
+.sp-goal-table-head { display: grid; grid-template-columns: 56px 1.5fr 1fr auto; gap: 10px; padding: 8px 16px; font-size: 9.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); border-bottom: 1px solid var(--border); }
+.sp-goal-row { display: grid; grid-template-columns: 56px 1.5fr 1fr auto; gap: 10px; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+.sp-goal-row:last-child { border-bottom: none; }
+.sp-goal-row:hover { background: var(--surface-3); }
+
+.sp-goal-order { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.sp-order-btn { font-size: 9px; color: var(--text-3); line-height: 1; padding: 1px 4px; border-radius: 3px; transition: color var(--transition), background var(--transition); }
+.sp-order-btn:hover:not(:disabled) { color: var(--sage-dark); background: var(--sage-bg); }
+.sp-order-btn:disabled { opacity: .25; cursor: default; }
+.sp-goal-prio { font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--text-2); }
+
+.sp-goal-name { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.sp-goal-name-top { display: flex; align-items: center; gap: 7px; font-weight: 600; font-size: 13px; flex-wrap: wrap; }
+.sp-goal-target { font-weight: 400; color: var(--text-3); font-size: 11px; }
+.sp-goal-bar { height: 5px; background: var(--surface-3); border-radius: 99px; overflow: hidden; width: 100%; max-width: 170px; }
+.sp-goal-fill { height: 100%; background: var(--sage); border-radius: 99px; transition: width 500ms cubic-bezier(.4,0,.2,1); }
+.sp-goal-progress-txt { font-size: 10.5px; color: var(--text-3); font-family: var(--mono); }
+
+.sp-goal-eta-block { display: flex; flex-direction: column; gap: 2px; font-family: var(--mono); font-size: 11px; }
+.sp-goal-eta-block .g { color: var(--text-3); }
+.sp-goal-eta-block .r { color: var(--b-olive); font-weight: 700; }
+.sp-goal-eta-block .o { color: var(--sage-dark); }
+
+.sp-goal-compare { font-size: 11px; font-weight: 600; padding: 5px 9px; border-radius: 99px; white-space: nowrap; text-align: center; }
+.sp-goal-compare.early { background: var(--sage-bg); color: var(--sage-dark); }
+.sp-goal-compare.late  { background: var(--b-red-soft); color: var(--b-red); }
+.sp-goal-compare.none  { background: var(--surface-2); color: var(--text-3); }
+
+/* ── Zeitstrahl ────────────────────────────────────────────── */
+.sp-timeline-wrap { padding: 26px 30px 20px; overflow-x: auto; }
+.sp-timeline-track { position: relative; display: flex; justify-content: space-between; min-width: 560px; gap: 8px; }
+.sp-timeline-track::before { content: ''; position: absolute; top: 9px; left: 0; right: 0; height: 2px; background: var(--border-strong); }
+.sp-tl-stop { position: relative; display: flex; flex-direction: column; align-items: center; flex: 1; }
+.sp-tl-dot { width: 18px; height: 18px; border-radius: 50%; background: var(--surface); border: 2.5px solid var(--sage); z-index: 1; margin-bottom: 12px; }
+.sp-tl-card { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 14px; text-align: center; min-width: 108px; }
+.sp-tl-month { font-size: 10px; color: var(--text-3); font-family: var(--mono); margin-bottom: 4px; }
+.sp-tl-icon { font-size: 18px; margin-bottom: 2px; }
+.sp-tl-goal { font-size: 12px; font-weight: 600; color: var(--text); }
+.sp-tl-amt { font-size: 10.5px; color: var(--text-3); font-family: var(--mono); }
+
+/* ── Was-wäre-wenn + Zusammenfassung ───────────────────────── */
+#sparplan-bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 960px) { #sparplan-bottom-grid { grid-template-columns: 1fr; } }
+
+.sp-sim-panel { padding: 18px 20px 22px; }
+.sp-sim-value { font-family: var(--mono); font-size: 28px; font-weight: 700; color: var(--sage-dark); text-align: center; margin: 14px 0 6px; }
+.sp-sim-slider { width: 100%; accent-color: var(--sage); height: 5px; }
+.sp-sim-labels { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--text-3); font-family: var(--mono); margin-top: 6px; }
+.sp-sim-hint { margin-top: 14px; font-size: 11.5px; color: var(--text-3); text-align: center; }
+.sp-sim-reset { display: block; margin: 12px auto 0; font-size: 11px; font-weight: 600; color: var(--text-3); border: 1.5px solid var(--border-strong); border-radius: 99px; padding: 5px 14px; transition: all var(--transition); }
+.sp-sim-reset:hover { color: var(--sage-dark); border-color: var(--sage); background: var(--sage-bg); }
+
+@media (max-width: 720px) {
+  .sp-scenarios-grid { grid-template-columns: 1fr; }
+  .sp-goal-table-head, .sp-goal-row { grid-template-columns: 40px 1fr; }
+  .sp-goal-eta-block, .sp-goal-compare { grid-column: 1 / -1; }
+}

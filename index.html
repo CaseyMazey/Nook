@@ -973,6 +973,10 @@
             <div id="budget-title-block">
               <h1>Budget</h1>
               <p>Deine Übersicht. Deine Sicherheit.</p>
+              <div class="sp-subtab-switch" id="budget-subtab-switch">
+                <button class="sp-subtab-btn active" id="budget-subtab-btn-budget" data-subtab="budget">Budget</button>
+                <button class="sp-subtab-btn" id="budget-subtab-btn-sparplan" data-subtab="sparplan">Sparplaner</button>
+              </div>
             </div>
             <button id="budget-ks-header-btn" class="b-ks-header-pill" title="Kontostand anpassen">
               <span class="b-ks-pill-label">Kontostand</span>
@@ -997,6 +1001,9 @@
             </div>
           </div>
  
+          <!-- ── SUB-TAB: BUDGET (bestehender Inhalt, unverändert) ─── -->
+          <div id="budget-panel-budget">
+
           <!-- ── 3 COMPACT SUMMARY KARTEN ──────────────────── -->
           <div id="budget-main-cards">
  
@@ -1107,6 +1114,48 @@
             <button id="add-onetime-btn"></button>
             <button id="add-recurring-btn"></button>
           </div>
+
+          </div>
+          <!-- ── /SUB-TAB: BUDGET ─────────────────────────────── -->
+
+          <!-- ── SUB-TAB: SPARPLANER (alle Inhalte werden von
+               budget.js dynamisch aus den echten Budget-Daten
+               gerendert — keine statischen/hardcodierten Werte) ── -->
+          <div id="budget-panel-sparplan" class="hidden">
+
+            <div id="sparplan-scenarios"></div>
+
+            <div id="sparplan-grid">
+              <div class="sp-panel" id="sparplan-income-expense-panel">
+                <div class="sp-panel-head">
+                  <div class="sp-panel-title">💶 Einnahmen &amp; Ausgaben</div>
+                </div>
+                <div id="sparplan-income-expense"></div>
+              </div>
+
+              <div class="sp-panel" id="sparplan-goals-panel">
+                <div class="sp-panel-head">
+                  <div class="sp-panel-title">🎯 Sparziele &amp; Prognose</div>
+                  <button class="sp-add-btn" id="sparplan-add-goal-btn">+ Ziel</button>
+                </div>
+                <div id="sparplan-goals"></div>
+              </div>
+            </div>
+
+            <div class="sp-panel sp-timeline-panel">
+              <div class="sp-panel-head">
+                <div class="sp-panel-title" id="sparplan-timeline-title">🧭 Zeitstrahl</div>
+              </div>
+              <div id="sparplan-timeline"></div>
+            </div>
+
+            <div id="sparplan-bottom-grid">
+              <div class="sp-panel sp-sim-panel" id="sparplan-simulator"></div>
+              <div id="sparplan-tip-banner" class="b-tip-banner"></div>
+            </div>
+
+          </div>
+          <!-- ── /SUB-TAB: SPARPLANER ─────────────────────────── -->
  
           <!-- Legacy kontostand-edit-btn stub -->
           <div style="display:none;"><button id="kontostand-edit-btn"></button></div>
@@ -1677,6 +1726,27 @@
           <button class="budget-prio-btn" data-prio="want" id="recurring-prio-want">Möchte</button>
         </div>
       </div>
+      <div class="modal-row" id="recurring-certainty-row">
+        <label>Sicherheit <span style="font-size:11px;color:var(--text-3);font-weight:400;">(für den Sparplaner)</span></label>
+        <div style="display:flex;gap:6px;">
+          <button class="toggle-select-btn active" id="recurring-certainty-fixed">Fest</button>
+          <button class="toggle-select-btn" id="recurring-certainty-variable">Variabel</button>
+        </div>
+      </div>
+      <div class="modal-row hidden" id="recurring-var-range-row">
+        <label>Spanne (&#8364;) <span style="font-size:11px;color:var(--text-3);font-weight:400;">min – max</span></label>
+        <div style="display:flex;gap:8px;">
+          <input type="number" class="modal-input" id="recurring-var-min" placeholder="Min." step="0.01" min="0" style="width:100%;"/>
+          <input type="number" class="modal-input" id="recurring-var-max" placeholder="Max." step="0.01" min="0" style="width:100%;"/>
+        </div>
+      </div>
+      <div class="modal-row modal-row-inline hidden" id="recurring-sparplan-include-row">
+        <label>Als Sonderfall in Sparplaner einbeziehen</label>
+        <label class="toggle">
+          <input type="checkbox" id="recurring-sparplan-include" checked/>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
       <div class="modal-actions"><button id="recurring-cancel" class="btn-ghost">Abbrechen</button><button id="recurring-save" class="btn-primary">Speichern</button></div>
     </div>
   </div>
@@ -1713,6 +1783,7 @@
       <input type="text" class="modal-input" id="goal-name" placeholder="z.B. Urlaub, Laptop..." autocomplete="off"/>
       <div class="modal-row"><label>Zielbetrag (&#8364;)</label><input type="number" class="modal-input" id="goal-target" placeholder="500.00" step="0.01" min="0"/></div>
       <div class="modal-row"><label>Aktueller Betrag (&#8364;)</label><input type="number" class="modal-input" id="goal-current" placeholder="0.00" step="0.01" min="0"/></div>
+      <div class="modal-row"><label>Wunschtermin (ETA) <span style="font-size:11px;color:var(--text-3);font-weight:400;">optional — für den Sparplaner</span></label><input type="month" class="modal-input" id="goal-eta" style="max-width:160px;"/></div>
       <div class="modal-row">
         <label>Pflanze auswählen</label>
         <div class="goal-plant-selector" id="goal-plant-selector">
