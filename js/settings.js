@@ -114,25 +114,25 @@ document.getElementById('weather-city-input')?.addEventListener('change', e => {
 // =========================
 // BACKUP / RESTORE
 // =========================
-
-const BACKUP_KEYS = [
-  'tasks','notes','events','quicknote','berichtsheft','examDate','blocks',
-  'countdownVisible','darkMode','customTiles','deskCards','subjects',
-  'budgetRecurring','budgetOnetime','budgetGoals','kontostand',
-  'clockEnabled','clockType','collapsedGroups','currentDate','gameHighscores',
-  'userName',
-  'notenYears','notenSubjects','notenCategories','notenEntries','notenOpenYears','notenReportCards'
-];
+// Sichert automatisch ALLE localStorage-Keys statt einer manuell gepflegten
+// Liste — neue Features/Module (auch aus games/<id>/) landen dadurch ohne
+// zusätzlichen Eintrag hier automatisch mit im Backup.
+// Nur echte Cache-Daten, die sich beim nächsten Laden ohnehin neu aufbauen,
+// werden ausgeschlossen.
+const BACKUP_EXCLUDE_KEYS = ['weatherData'];
 
 document.getElementById('backup-export-btn').addEventListener('click', () => {
   const data = {};
-  BACKUP_KEYS.forEach(k => { const v = localStorage.getItem(k); if (v !== null) data[k] = JSON.parse(v); });
-  data.__version = 2;
+  Object.keys(localStorage).forEach(k => {
+    if (BACKUP_EXCLUDE_KEYS.includes(k)) return;
+    try { data[k] = JSON.parse(localStorage.getItem(k)); } catch { /* kein valides JSON — überspringen */ }
+  });
+  data.__version = 3;
   data.__exported = new Date().toISOString();
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
-  a.href = url; a.download = `schul-hub-backup-${new Date().toISOString().slice(0,10)}.json`;
+  a.href = url; a.download = `nook-backup-${new Date().toISOString().slice(0,10)}.json`;
   a.click(); URL.revokeObjectURL(url);
 });
 
@@ -147,7 +147,10 @@ document.getElementById('backup-file-input').addEventListener('change', e => {
     try {
       const data = JSON.parse(ev.target.result);
       if (!confirm('Alle aktuellen Daten werden mit dem Backup überschrieben. Fortfahren?')) return;
-      BACKUP_KEYS.forEach(k => { if (data[k] !== undefined) localStorage.setItem(k, JSON.stringify(data[k])); });
+      Object.keys(data).forEach(k => {
+        if (k === '__version' || k === '__exported') return;
+        localStorage.setItem(k, JSON.stringify(data[k]));
+      });
       alert('Backup erfolgreich wiederhergestellt. Die Seite wird neu geladen.');
       location.reload();
     } catch { alert('Ungültige Backup-Datei.'); }
