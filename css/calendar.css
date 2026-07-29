@@ -237,7 +237,7 @@
   transition: all var(--transition);
 }
 .recur-wd-btn:hover { background: var(--accent-soft); color: var(--text); }
-.recur-wd-btn.active { background: var(--sage); color: #F8F5EE; border-color: var(--sage); font-weight: 600; }
+.recur-wd-btn.active { background: var(--sage); color: var(--sage-fg); border-color: var(--sage); font-weight: 600; }
 
 .recur-end-group { display: flex; flex-direction: column; gap: 8px; }
 .recur-end-option { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-2); cursor: pointer; }
@@ -730,7 +730,7 @@
   flex-shrink: 0;
   transition: background var(--transition), color var(--transition), border-color var(--transition);
 }
-.cal-goal-add-btn:hover { background: var(--sage); color: #F8F5EE; border-color: var(--sage); }
+.cal-goal-add-btn:hover { background: var(--sage); color: var(--sage-fg); border-color: var(--sage); }
 
 /* =============================================================
    EINSTELLUNGS-MODAL — Anzeige-Schalter & Erinnerungen

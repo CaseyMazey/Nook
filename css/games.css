@@ -467,7 +467,7 @@
   border: none;
   font-size: 14px;
   font-weight: 500;
-  color: #F8F5EE;
+  color: var(--sage-fg);
   cursor: pointer;
   transition: background var(--transition), box-shadow var(--transition);
   box-shadow: 0 1px 4px rgba(50,40,20,0.14);

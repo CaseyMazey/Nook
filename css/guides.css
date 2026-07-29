@@ -432,7 +432,7 @@
 }
 .lib-view-btn + .lib-view-btn { border-left: 1px solid var(--border-strong); }
 .lib-view-btn:hover { color: var(--text); background: var(--accent-soft); }
-.lib-view-btn.active { background: var(--sage); color: #F8F5EE; }
+.lib-view-btn.active { background: var(--sage); color: var(--sage-fg); }
  
 /* ── Bookshelf ─────────────────────────────────────────────── */
 .guide-shelf-wrap { margin-bottom: 30px; }

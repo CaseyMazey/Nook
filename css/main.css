@@ -43,6 +43,7 @@
   --sage-light:  #96A47E;
   --sage-bg:     rgba(107,127,88,0.13);
   --sage-border: rgba(107,127,88,0.32);
+  --sage-fg:     #F8F5EE;   /* Text auf --sage-Hintergrund, in beiden Themes identisch */
 
   /* ── Event color (calendar/blocks) ───────────────────── */
   --event-color:    #6B7F58;
@@ -78,6 +79,13 @@
   /* ── Transitions ──────────────────────────────────────── */
   --transition:      150ms ease;
   --transition-slow: 280ms ease;
+
+  /* ── Spacing — für neue/zu vereinheitlichende Abstände ─── */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 14px;
+  --spacing-lg: 20px;
+  --spacing-xl: 28px;
 }
 
 /* ── Dark Mode ─────────────────────────────────────────────── */
@@ -109,6 +117,8 @@
   --prio-2-bg: rgba(114,132,96,0.14);
   --prio-3:    #807860;
   --prio-3-bg: rgba(128,120,96,0.12);
+  --budget-income:  #6B8F6F;
+  --budget-expense: var(--prio-1);
 }
 
 /* =============================================================
@@ -304,11 +314,11 @@ ul { list-style: none; }
 .nav-btn:hover svg { opacity: 0.75; }
 .nav-btn.active {
   background: var(--sage);
-  color: #F8F5EE;
+  color: var(--sage-fg);
   font-weight: 500;
   box-shadow: 0 1px 4px rgba(50,40,20,0.12);
 }
-.nav-btn.active svg { opacity: 1; color: #F8F5EE; }
+.nav-btn.active svg { opacity: 1; color: var(--sage-fg); }
 
 #sidebar-footer {
   padding: 14px 18px;
@@ -385,7 +395,7 @@ ul { list-style: none; }
 ============================================================= */
 .btn-primary {
   background: var(--sage);
-  color: #F8F5EE;
+  color: var(--sage-fg);
   padding: 9px 18px;
   border-radius: var(--radius-sm);
   font-size: 13px;

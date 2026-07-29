@@ -509,6 +509,8 @@ function setBudgetSubtab(tab) {
   document.getElementById('budget-panel-sparplan').classList.toggle('hidden', showBudget);
   document.getElementById('budget-subtab-btn-budget').classList.toggle('active', showBudget);
   document.getElementById('budget-subtab-btn-sparplan').classList.toggle('active', !showBudget);
+  const savedByBtn = document.getElementById('sparplan-savedby-btn');
+  if (savedByBtn) savedByBtn.classList.toggle('hidden', showBudget);
   if (!showBudget) renderSparplaner();
 }
 
@@ -531,6 +533,8 @@ function initBudgetSubtabs() {
     document.getElementById('budget-panel-sparplan').classList.toggle('hidden', showBudget);
     btnB.classList.toggle('active', showBudget);
     btnS.classList.toggle('active', !showBudget);
+    const savedByBtn = document.getElementById('sparplan-savedby-btn');
+    if (savedByBtn) savedByBtn.classList.toggle('hidden', showBudget);
   }
 }
 
@@ -2188,13 +2192,12 @@ function renderSparplanScenarios(rates) {
     <div class="sp-scenarios-grid">
       ${['garant','real','opt'].map(key => {
         const m = SCENARIO_META[key];
-        const active = key === sparplanerScenario;
         const bd = sparplanerScenarioBreakdown(key);
         const rechenweg = key === 'garant'
           ? `${fmtEuro(bd.fixedNet)} fest`
           : `${fmtEuro(bd.fixedNet)} fest ${bd.varNet >= 0 ? '+' : '−'} ${fmtEuro(Math.abs(bd.varNet))} ${key === 'real' ? 'Ø variabel' : 'Bestfall variabel'}`;
         return `
-        <button class="sp-scen-card ${active ? 'active' : ''}" data-scen="${key}">
+        <button class="sp-scen-card" data-scen="${key}" title="Als Basis für Zeitstrahl &amp; Simulator verwenden">
           <div class="sp-scen-eyebrow sp-scen-${key}">${m.icon} ${m.label}</div>
           <div class="sp-scen-desc">${m.desc}</div>
           <div class="sp-scen-value sp-scen-${key}">${fmtEuro(rates[key])}</div>
@@ -2352,19 +2355,75 @@ function renderSparplanTimeline(activeRate) {
   }
   etas.sort((a, b) => a.date - b.date);
 
+  // ── Echte proportionale Zeitachse ──────────────────────────
+  // Die Position jeder Karte richtet sich nach dem tatsächlichen
+  // Datumsabstand, nicht nach der Reihenfolge der Ziele.
+  const startDate = new Date(); startDate.setHours(0, 0, 0, 0);
+  const endDate = etas[etas.length - 1].date;
+  const totalMs = Math.max(1, endDate - startDate);
+  const totalDays = totalMs / 86400000;
+
+  // Achsenbreite proportional zur Zeitspanne (mehr Zeit = mehr Platz),
+  // mit sinnvollen Grenzen für sehr kurze bzw. sehr lange Horizonte.
+  const trackWidth = Math.round(Math.min(2600, Math.max(680, totalDays * 2.6)));
+  const CARD_W  = 116;              // an .sp-tl-card min-width in CSS gekoppelt
+  const MIN_GAP = CARD_W + 18;      // Mindestabstand, bevor eine neue Zeile beginnt
+  const ROW_H   = 108;              // vertikaler Abstand zwischen Zeilen
+
+  // X-Position (px) je Ziel — proportional zum tatsächlichen Datum
+  const points = etas.map(e => ({
+    e,
+    x: Math.round(((e.date - startDate) / totalMs) * trackWidth),
+  }));
+
+  // Überlappungs-Schutz: Ziele, die zeitlich zu nah beieinander liegen,
+  // wandern in eine zusätzliche Zeile — die X-Position (= das Datum)
+  // bleibt dabei exakt erhalten, nur die Höhe verschiebt sich.
+  const rowsLastX = [];
+  points.forEach(p => {
+    let row = rowsLastX.findIndex(lastX => p.x - lastX >= MIN_GAP);
+    if (row === -1) { row = rowsLastX.length; rowsLastX.push(p.x); }
+    else rowsLastX[row] = p.x;
+    p.row = row;
+  });
+  const maxRow = points.reduce((m, p) => Math.max(m, p.row), 0);
+
+  // Jahresmarkierungen entlang der Achse
+  const years = [];
+  for (let y = startDate.getFullYear(); y <= endDate.getFullYear(); y++) {
+    const jan1 = new Date(y, 0, 1);
+    const clamped = jan1 < startDate ? startDate : jan1;
+    years.push({ year: y, x: Math.round(((clamped - startDate) / totalMs) * trackWidth) });
+  }
+
+  const axisHeight = 40 + (maxRow + 1) * ROW_H + 30;
+
+  const yearHtml = years.map(y => `
+    <div class="sp-tl-year-line" style="left:${y.x}px"></div>
+    <div class="sp-tl-year-label" style="left:${y.x}px">${y.year}</div>`).join('');
+
+  const pointHtml = points.map(p => {
+    const g = p.e.goal;
+    const connectorH = 26 + p.row * ROW_H;
+    return `
+      <div class="sp-tl-point" style="left:${p.x}px">
+        <div class="sp-tl-dot"></div>
+        <div class="sp-tl-connector" style="height:${connectorH}px"></div>
+        <div class="sp-tl-card" style="top:${connectorH + 6}px">
+          <div class="sp-tl-month">${sparplanerFormatEtaDate(p.e.date)}</div>
+          <div class="sp-tl-icon">${PLANT_EMOJIS[g.plantType] || '🌱'}</div>
+          <div class="sp-tl-goal">${g.name}</div>
+          <div class="sp-tl-amt">${fmtEuro(g.target)} erreicht</div>
+        </div>
+      </div>`;
+  }).join('');
+
   el.innerHTML = `
     <div class="sp-timeline-wrap">
-      <div class="sp-timeline-track">
-        ${etas.map(e => `
-          <div class="sp-tl-stop">
-            <div class="sp-tl-dot"></div>
-            <div class="sp-tl-card">
-              <div class="sp-tl-month">${sparplanerFormatEtaDate(e.date)}</div>
-              <div class="sp-tl-icon">${PLANT_EMOJIS[e.goal.plantType] || '🌱'}</div>
-              <div class="sp-tl-goal">${e.goal.name}</div>
-              <div class="sp-tl-amt">${fmtEuro(e.goal.target)} erreicht</div>
-            </div>
-          </div>`).join('')}
+      <div class="sp-timeline-axis" style="width:${trackWidth}px;height:${axisHeight}px;">
+        <div class="sp-tl-baseline" style="width:${trackWidth}px"></div>
+        ${yearHtml}
+        ${pointHtml}
       </div>
     </div>`;
 }
@@ -2815,6 +2874,99 @@ document.getElementById('goal-tx-save').addEventListener('click', () => {
   renderFinanzgarten();
   renderSparplaner();
   goalTxTarget = null;
+});
+
+// =========================
+// "GESPART BIS..." — kleine, eigenständige Zusatzrechnung
+// Bewusst UNABHÄNGIG von Sparzielen: nutzt ausschließlich Datum,
+// Szenario-Sparrate und optional den Kontostand. Ändert nichts am
+// Sparplan selbst und wird von keiner anderen Funktion aufgerufen.
+// =========================
+
+// Monate zwischen heute und einem Zieldatum, als reine Kalendermonat-
+// Differenz (konsistent mit der ETA-Logik an anderer Stelle).
+function sparplanerMonthsUntil(targetDate) {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const target = new Date(targetDate); target.setHours(0, 0, 0, 0);
+  return (target.getFullYear() - today.getFullYear()) * 12 + (target.getMonth() - today.getMonth());
+}
+
+function sparplanerSavedBy(targetDate, scenario) {
+  const months = Math.max(0, sparplanerMonthsUntil(targetDate));
+  const rate = sparplanerScenarioRate(scenario);
+  const saved = round2(months * rate);
+  return { months, rate, saved };
+}
+
+let savedByScenario = null; // wird beim Öffnen mit dem aktuell aktiven Sparplaner-Szenario vorbelegt
+
+function openSparplanSavedByModal() {
+  document.getElementById('sparplan-savedby-result').innerHTML = '';
+  document.getElementById('sparplan-savedby-date').value = '';
+  savedByScenario = sparplanerScenario;
+  ['garant','real','opt'].forEach(s =>
+    document.getElementById(`sparplan-savedby-scen-${s}`).classList.toggle('active', s === savedByScenario));
+
+  const kRow = document.getElementById('sparplan-savedby-kontostand-row');
+  kRow.classList.toggle('hidden', kontostand === null);
+  document.getElementById('sparplan-savedby-include-kontostand').checked = false;
+
+  document.getElementById('sparplan-savedby-modal-overlay').classList.remove('hidden');
+  setTimeout(() => document.getElementById('sparplan-savedby-date').focus(), 50);
+}
+
+const savedByBtn = document.getElementById('sparplan-savedby-btn');
+if (savedByBtn) savedByBtn.addEventListener('click', openSparplanSavedByModal);
+
+['garant','real','opt'].forEach(s => {
+  document.getElementById(`sparplan-savedby-scen-${s}`).addEventListener('click', () => {
+    savedByScenario = s;
+    ['garant','real','opt'].forEach(x =>
+      document.getElementById(`sparplan-savedby-scen-${x}`).classList.toggle('active', x === s));
+  });
+});
+
+document.getElementById('sparplan-savedby-close').addEventListener('click', () =>
+  document.getElementById('sparplan-savedby-modal-overlay').classList.add('hidden'));
+document.getElementById('sparplan-savedby-cancel').addEventListener('click', () =>
+  document.getElementById('sparplan-savedby-modal-overlay').classList.add('hidden'));
+document.getElementById('sparplan-savedby-modal-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('sparplan-savedby-modal-overlay'))
+    document.getElementById('sparplan-savedby-modal-overlay').classList.add('hidden');
+});
+
+document.getElementById('sparplan-savedby-calc').addEventListener('click', () => {
+  const dateVal = document.getElementById('sparplan-savedby-date').value;
+  const resultEl = document.getElementById('sparplan-savedby-result');
+  if (!dateVal) {
+    resultEl.innerHTML = '<div class="sp-savedby-hint">Bitte zuerst ein Datum auswählen.</div>';
+    return;
+  }
+  const targetDate = new Date(dateVal + 'T00:00:00');
+  const { months, rate, saved } = sparplanerSavedBy(targetDate, savedByScenario);
+
+  const includeKontostand = kontostand !== null && document.getElementById('sparplan-savedby-include-kontostand').checked;
+  const total = includeKontostand ? round2(kontostand + saved) : saved;
+  const dateLabel = targetDate.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+  if (months <= 0) {
+    resultEl.innerHTML = `<div class="sp-savedby-hint">Das gewählte Datum liegt im aktuellen Monat oder in der Vergangenheit — in diesem Zeitraum kommt noch nichts Neues hinzu.</div>`;
+    return;
+  }
+
+  resultEl.innerHTML = `
+    <div class="sp-savedby-result">
+      <div class="sp-savedby-headline">Bis zum ${dateLabel} könntest du ungefähr</div>
+      <div class="sp-savedby-total">${fmtEuro(total)}</div>
+      <div class="sp-savedby-sub">angespart haben.</div>
+      <div class="sp-savedby-breakdown">
+        <div class="sp-savedby-row"><span>Zeitraum</span><span>${months} Monat${months === 1 ? '' : 'e'}</span></div>
+        <div class="sp-savedby-row"><span>Szenario</span><span>${SCENARIO_META[savedByScenario].label}</span></div>
+        <div class="sp-savedby-row"><span>Sparbetrag</span><span>${fmtEuro(rate)} / Monat</span></div>
+        <div class="sp-savedby-calc">${months} × ${fmtEuro(rate)} = ${fmtEuro(saved)}</div>
+        ${includeKontostand ? `<div class="sp-savedby-calc">${fmtEuro(kontostand)} + ${fmtEuro(saved)} = ${fmtEuro(total)}</div>` : ''}
+      </div>
+    </div>`;
 });
 
 // Wire secondary add-buttons — bind directly, no DOMContentLoaded proxy needed

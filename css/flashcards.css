@@ -123,7 +123,7 @@
 #learn-card-inner.flipped { transform: rotateY(180deg); }
 #learn-card-front, #learn-card-back { position: absolute; width: 100%; min-height: 140px; display: flex; align-items: center; justify-content: center; padding: 20px; text-align: center; font-size: 15px; line-height: 1.5; backface-visibility: hidden; border-radius: var(--radius-lg); border: 1px solid var(--border-strong); }
 #learn-card-front { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); }
-#learn-card-back { background: var(--sage); color: #F8F5EE; transform: rotateY(180deg); }
+#learn-card-back { background: var(--sage); color: var(--sage-fg); transform: rotateY(180deg); }
 #learn-card-hint { position: absolute; bottom: 8px; width: 100%; text-align: center; font-size: 11px; color: var(--text-3); pointer-events: none; }
 
 #learn-actions { gap: 6px; margin-top: 8px; }

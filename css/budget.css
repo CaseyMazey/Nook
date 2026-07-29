@@ -1272,9 +1272,6 @@
 .sp-scen-card[data-scen="garant"] { background: var(--b-green-soft); }
 .sp-scen-card[data-scen="real"]   { background: var(--b-olive-soft); }
 .sp-scen-card[data-scen="opt"]    { background: var(--sage-bg); }
-.sp-scen-card.active[data-scen="garant"] { border-color: var(--b-green-mid); }
-.sp-scen-card.active[data-scen="real"]   { border-color: var(--b-olive); }
-.sp-scen-card.active[data-scen="opt"]    { border-color: var(--sage); }
 
 /* ── Generisches Sparplaner-Panel (Karte) ─────────────────── */
 .sp-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--b-radius); box-shadow: var(--b-shadow); overflow: hidden; }
@@ -1336,17 +1333,45 @@
 .sp-goal-compare.late  { background: var(--b-red-soft); color: var(--b-red); }
 .sp-goal-compare.none  { background: var(--surface-2); color: var(--text-3); }
 
-/* ── Zeitstrahl ────────────────────────────────────────────── */
-.sp-timeline-wrap { padding: 26px 30px 20px; overflow-x: auto; }
-.sp-timeline-track { position: relative; display: flex; justify-content: space-between; min-width: 560px; gap: 8px; }
-.sp-timeline-track::before { content: ''; position: absolute; top: 9px; left: 0; right: 0; height: 2px; background: var(--border-strong); }
-.sp-tl-stop { position: relative; display: flex; flex-direction: column; align-items: center; flex: 1; }
-.sp-tl-dot { width: 18px; height: 18px; border-radius: 50%; background: var(--surface); border: 2.5px solid var(--sage); z-index: 1; margin-bottom: 12px; }
-.sp-tl-card { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 14px; text-align: center; min-width: 108px; }
+/* ── Zeitstrahl — echte proportionale Zeitachse ───────────────
+   Positionen werden in budget.js aus dem tatsächlichen ETA-Datum
+   berechnet (px entlang der Achse) und per inline style gesetzt.
+   Das CSS definiert nur das visuelle Grundgerüst. ─────────────── */
+.sp-timeline-wrap { padding: 34px 40px 20px 24px; overflow-x: auto; }
+.sp-timeline-axis { position: relative; }
+
+.sp-tl-baseline { position: absolute; top: 0; left: 0; height: 2px; background: var(--border-strong); }
+
+.sp-tl-year-line {
+  position: absolute; top: -18px; bottom: 0; width: 1px;
+  background: var(--border); pointer-events: none;
+}
+.sp-tl-year-label {
+  position: absolute; top: -34px; transform: translateX(-2px);
+  font-size: 10.5px; font-weight: 700; font-family: var(--mono);
+  color: var(--text-3); letter-spacing: .02em; white-space: nowrap;
+}
+
+.sp-tl-point { position: absolute; top: 0; transform: translateX(-50%); }
+.sp-tl-dot {
+  position: absolute; top: -5px; left: 50%; transform: translateX(-50%);
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--surface); border: 2.5px solid var(--sage); z-index: 1;
+}
+.sp-tl-connector {
+  position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 1.5px; background: var(--border-strong);
+}
+.sp-tl-card {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 9px 12px; text-align: center;
+  min-width: 116px; box-shadow: var(--shadow-xs);
+}
 .sp-tl-month { font-size: 10px; color: var(--text-3); font-family: var(--mono); margin-bottom: 4px; }
 .sp-tl-icon { font-size: 18px; margin-bottom: 2px; }
-.sp-tl-goal { font-size: 12px; font-weight: 600; color: var(--text); }
-.sp-tl-amt { font-size: 10.5px; color: var(--text-3); font-family: var(--mono); }
+.sp-tl-goal { font-size: 12px; font-weight: 600; color: var(--text); white-space: nowrap; }
+.sp-tl-amt { font-size: 10.5px; color: var(--text-3); font-family: var(--mono); white-space: nowrap; }
 
 /* ── Was-wäre-wenn + Zusammenfassung ───────────────────────── */
 #sparplan-bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
@@ -1383,3 +1408,23 @@
   color: var(--text-3);
   cursor: not-allowed;
 }
+
+/* ── "Gespart bis..." — kleine, eigenständige Zusatzfunktion ─── */
+.sp-subtab-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.sp-savedby-trigger {
+  font-size: 11.5px; font-weight: 600; color: var(--text-3);
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 99px; padding: 6px 12px; margin-top: 10px;
+  transition: all var(--transition);
+}
+.sp-savedby-trigger:hover { color: var(--sage-dark); border-color: var(--sage); background: var(--sage-bg); }
+
+.sp-savedby-result { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); text-align: center; }
+.sp-savedby-headline { font-size: 13px; color: var(--text-2); }
+.sp-savedby-total { font-family: var(--mono); font-size: 30px; font-weight: 700; color: var(--sage-dark); margin: 6px 0 2px; }
+.sp-savedby-sub { font-size: 13px; color: var(--text-2); margin-bottom: 14px; }
+.sp-savedby-breakdown { text-align: left; background: var(--surface-2); border-radius: var(--radius-sm); padding: 10px 14px; display: flex; flex-direction: column; gap: 6px; }
+.sp-savedby-row { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-2); }
+.sp-savedby-row span:last-child { font-weight: 600; color: var(--text); }
+.sp-savedby-calc { font-family: var(--mono); font-size: 12px; color: var(--text-3); text-align: center; padding-top: 6px; border-top: 1px dashed var(--border-strong); margin-top: 2px; }
+.sp-savedby-hint { font-size: 12.5px; color: var(--text-3); text-align: center; padding: 10px 0 2px; }

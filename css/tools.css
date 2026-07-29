@@ -124,11 +124,11 @@
   border-color: var(--sage-border);
 }
 .calc-key--op:hover { background: var(--sage-border); }
-.calc-key--op.active { background: var(--sage); color: #F8F5EE; }
+.calc-key--op.active { background: var(--sage); color: var(--sage-fg); }
 
 .calc-key--eq {
   background: var(--sage);
-  color: #F8F5EE;
+  color: var(--sage-fg);
   border-color: var(--sage);
 }
 .calc-key--eq:hover { background: var(--sage-dark); }

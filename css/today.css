@@ -48,7 +48,7 @@
 .block-time { font-family: var(--mono); font-size: 10px; color: var(--text-3); margin-bottom: 5px; }
 .block-label { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 6px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .free-tag { font-size: 10px; background: var(--surface-3); color: var(--text-3); padding: 2px 8px; border-radius: 99px; font-weight: 500; border: 1px solid var(--border); }
-.active-tag { font-size: 10px; background: var(--sage); color: #F8F5EE; padding: 2px 8px; border-radius: 99px; font-weight: 600; letter-spacing: 0.05em; }
+.active-tag { font-size: 10px; background: var(--sage); color: var(--sage-fg); padding: 2px 8px; border-radius: 99px; font-weight: 600; letter-spacing: 0.05em; }
 
 .block-tasks { display: flex; flex-direction: column; gap: 3px; margin-top: auto; }
 .block-tasks li { font-size: 11px; background: var(--bg-2); border-radius: 5px; padding: 3px 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-2); }
@@ -121,7 +121,7 @@
 .mini-cal-cell { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 6px; font-size: 11px; color: var(--text-2); cursor: pointer; transition: background var(--transition); gap: 2px; }
 .mini-cal-cell:hover { background: var(--accent-soft); color: var(--text); }
 .mini-cal-cell.other-month { color: var(--text-3); opacity: 0.4; }
-.mini-cal-cell.is-today { background: var(--sage); color: #F8F5EE; font-weight: 700; border-radius: 50%; }
+.mini-cal-cell.is-today { background: var(--sage); color: var(--sage-fg); font-weight: 700; border-radius: 50%; }
 .mini-cal-cell.is-today:hover { opacity: 0.88; }
 
 .mini-cal-dot { display: none; width: 3.5px; height: 3.5px; border-radius: 50%; background: var(--sage); flex-shrink: 0; }
