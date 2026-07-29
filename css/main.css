@@ -86,6 +86,9 @@
   --spacing-md: 14px;
   --spacing-lg: 20px;
   --spacing-xl: 28px;
+
+  /* ── Amber — Favoriten/Feiertags-Akzent (guides.css + calendar.css) ── */
+  --amber: #c0834a;
 }
 
 /* ── Dark Mode ─────────────────────────────────────────────── */
@@ -119,6 +122,12 @@
   --prio-3-bg: rgba(128,120,96,0.12);
   --budget-income:  #6B8F6F;
   --budget-expense: var(--prio-1);
+
+  /* ── Code-Panel (nur dark, bewusst schwärzer als --surface-2) ─ */
+  --code-bg:            #1e1b17;
+  --code-border:        rgba(255,235,200,0.08);
+  --code-header-bg:     rgba(255,235,200,0.04);
+  --code-header-border: rgba(255,235,200,0.06);
 }
 
 /* =============================================================

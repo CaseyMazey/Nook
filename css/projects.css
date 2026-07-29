@@ -2,6 +2,14 @@
    PROJECTS.CSS
 ============================================================= */
 
+:root {
+  --forest-bg:    #eeeae0;
+  --proj-success: #16a34a;
+}
+[data-theme="dark"] {
+  --forest-bg: #1e2218;
+}
+
 #project-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
@@ -23,7 +31,7 @@
 
 /* Progress bar fills */
 .project-bar-fill { background: var(--proj-color, var(--sage)); }
-.project-bar-fill.complete { background: #16a34a; }
+.project-bar-fill.complete { background: var(--proj-success); }
 .project-bar-fill--extra { background: var(--text-3); }
 
 /* Checkbox accent */
@@ -238,9 +246,8 @@
   min-height: calc(100vh - 120px);
   overflow: hidden;
   border-radius: var(--radius-lg);
-  background: #eeeae0;
+  background: var(--forest-bg);
 }
-[data-theme="dark"] #project-forest { background: #1e2218; }
 
 .forest-bg {
   position: absolute;
@@ -340,7 +347,7 @@
   display: inline-flex; align-items: center; gap: 5px;
   font-size: 10px; font-weight: 700;
   text-transform: uppercase; letter-spacing: 0.12em;
-  color: #16a34a; background: rgba(22,163,74,0.1);
+  color: var(--proj-success); background: color-mix(in srgb, var(--proj-success) 10%, transparent);
   border-radius: 99px; padding: 3px 12px; width: fit-content;
 }
 .pdt-status-badge.archived { color: #d97706; background: rgba(217,119,6,0.1); }
@@ -441,7 +448,7 @@
 .pdt-info-content { display: flex; flex-direction: column; gap: 1px; }
 .pdt-info-key { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; }
 .pdt-info-val { font-size: 13.5px; font-weight: 500; color: var(--text); margin-top: 2px; }
-.pdt-status-val { color: #16a34a; }
+.pdt-status-val { color: var(--proj-success); }
 
 .pdt-info-divider { height: 1px; background: var(--border); margin: 14px 0; }
 
@@ -552,9 +559,8 @@
   position: relative; width: 100%;
   height: calc(100vh - 138px);
   overflow: hidden; border-radius: var(--radius-lg);
-  background: #eeeae0;
+  background: var(--forest-bg);
 }
-[data-theme="dark"] #project-forest { background: #1e2218; }
 
 /* .forest-tree-svg -> project-tree.css */
 
@@ -566,4 +572,4 @@
   border: 1px solid var(--border); border-radius: var(--radius-sm);
   background: none; color: var(--text-3); cursor: pointer; transition: all 120ms;
 }
-.toggle-select-btn.active { background: var(--sage,#5a9467); color:#fff; border-color: var(--sage,#5a9467); }
+.toggle-select-btn.active { background: var(--sage,#5a9467); color: var(--sage-fg); border-color: var(--sage,#5a9467); }

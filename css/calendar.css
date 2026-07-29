@@ -4,6 +4,16 @@
    CALENDAR.CSS — Muted cozy palette
 ============================================================= */
 
+:root {
+  /* Saison-Akzente für den Hero-Bereich (Sommer nutzt --sage-dark) */
+  --season-spring: #6f9463;
+  --season-autumn: #8a5233;
+  --season-winter: #4a5b6b;
+
+  /* Geburtstags-Akzent */
+  --birthday-accent: #c4507a;
+}
+
 .cal-nav { display: flex; gap: 8px; }
 
 #calendar-grid {
@@ -136,13 +146,13 @@
   margin-right: -12px;
   padding-left: 10px;
   padding-right: 10px;
-  background: rgba(107,127,88,0.18);
+  background: color-mix(in srgb, var(--sage) 18%, transparent);
   color: var(--sage-dark);
   font-weight: 500;
   position: relative;
 }
 .cal-event-pill.cal-span.countdown-pill {
-  background: rgba(154,79,53,0.13);
+  background: color-mix(in srgb, var(--prio-1) 13%, transparent);
   color: var(--prio-1);
 }
 .cal-event-pill.cal-span.cal-span-start {
@@ -380,10 +390,10 @@
   line-height: 1.05;
   letter-spacing: -0.5px;
 }
-.cal-hero-spring #cal-hero-text .view-title { color: #6f9463; }
+.cal-hero-spring #cal-hero-text .view-title { color: var(--season-spring); }
 .cal-hero-summer #cal-hero-text .view-title { color: var(--sage-dark); }
-.cal-hero-autumn #cal-hero-text .view-title { color: #8a5233; }
-.cal-hero-winter #cal-hero-text .view-title { color: #4a5b6b; }
+.cal-hero-autumn #cal-hero-text .view-title { color: var(--season-autumn); }
+.cal-hero-winter #cal-hero-text .view-title { color: var(--season-winter); }
 
 /* Saison-Badge: schlicht, ohne Pillen-Hintergrund, Name vor Symbol */
 .cal-season-tag {
@@ -396,10 +406,10 @@
   color: var(--text-2);
   margin-bottom: 10px;
 }
-.cal-hero-spring .cal-season-tag { color: #6f9463; }
+.cal-hero-spring .cal-season-tag { color: var(--season-spring); }
 .cal-hero-summer .cal-season-tag { color: var(--sage-dark); }
-.cal-hero-autumn .cal-season-tag { color: #8a5233; }
-.cal-hero-winter .cal-season-tag { color: #4a5b6b; }
+.cal-hero-autumn .cal-season-tag { color: var(--season-autumn); }
+.cal-hero-winter .cal-season-tag { color: var(--season-winter); }
 
 /* Spruch: bricht innerhalb der Textspalte um, Schreibschrift für
    einen handschriftlichen, persönlichen Eindruck (wie im Mockup) */
@@ -622,8 +632,8 @@
 /* =============================================================
    PHASE 3 — FEIERTAGE
 ============================================================= */
-.cal-day.is-holiday { background: color-mix(in srgb, var(--surface) 92%, #c0834a 8%); }
-[data-theme="dark"] .cal-day.is-holiday { background: color-mix(in srgb, var(--surface) 90%, #c0834a 10%); }
+.cal-day.is-holiday { background: color-mix(in srgb, var(--surface) 92%, var(--amber) 8%); }
+[data-theme="dark"] .cal-day.is-holiday { background: color-mix(in srgb, var(--surface) 90%, var(--amber) 10%); }
 .cal-day.is-holiday.is-today { background: var(--surface); }
 
 .cal-holiday-pill {
@@ -634,9 +644,9 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  background: rgba(192,131,74,0.15);
+  background: color-mix(in srgb, var(--amber) 15%, transparent);
   color: #8a5c30;
-  border-left: 2px solid #c0834a;
+  border-left: 2px solid var(--amber);
 }
 [data-theme="dark"] .cal-holiday-pill { color: #d9a866; }
 
@@ -653,9 +663,9 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  background: rgba(196,80,122,0.14);
+  background: color-mix(in srgb, var(--birthday-accent) 14%, transparent);
   color: #a8447a;
-  border-left: 2px solid #c4507a;
+  border-left: 2px solid var(--birthday-accent);
 }
 [data-theme="dark"] .cal-birthday-cal-pill { color: #e08fb3; }
 
@@ -663,9 +673,9 @@
    auf den ersten Blick erkennbar als Vorankündigung, nicht als der
    eigentliche Geburtstag. */
 .cal-birthday-reminder-pill {
-  background: rgba(196,80,122,0.06);
+  background: color-mix(in srgb, var(--birthday-accent) 6%, transparent);
   color: #b87196;
-  border-left-color: rgba(196,80,122,0.45);
+  border-left-color: color-mix(in srgb, var(--birthday-accent) 45%, transparent);
   font-style: italic;
 }
 [data-theme="dark"] .cal-birthday-reminder-pill { color: #c9a0b7; }
