@@ -70,7 +70,6 @@
 }
 .guide-detail-desc { font-size: 14px; color: var(--text-2); margin-bottom: 10px; line-height: 1.65; }
 .guide-detail-info-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
-.guide-detail-date { font-size: 11px; color: var(--text-3); font-family: var(--mono); }
 .guide-detail-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; position: relative; }
 .guide-detail-fav-btn {
   display: inline-flex; align-items: center; justify-content: center;
@@ -624,7 +623,7 @@
   color: var(--text-3); border: 1px solid var(--border-strong); background: var(--bg);
   transition: all var(--transition); cursor: pointer; flex-shrink: 0;
 }
-.guide-chapter-row:hover .guide-chapter-open { color: var(--sage-dark); border-color: var(--sage); background: var(--sage-bg); }
+
  
 .guide-chapter-list-footer { margin-top: 14px; }
  

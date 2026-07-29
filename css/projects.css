@@ -47,7 +47,6 @@
 }
 
 /* Archive rows */
-.archive-project-name { font-size: 14px; font-weight: 600; color: var(--text); }
 .archive-project-meta { font-size: 12px; color: var(--text-3); margin-top: 2px; font-family: var(--mono); }
 
 /* --- Startdatum --- */
@@ -149,12 +148,6 @@
   text-overflow: ellipsis;
 }
 
-.subproject-progress {
-  font-size: 11px;
-  color: var(--text-3);
-  font-family: var(--mono);
-  flex-shrink: 0;
-}
 
 .subproject-bar-wrap {
   width: 60px;
@@ -508,8 +501,6 @@
   justify-content: space-between;
   padding: 16px 18px 10px;
 }
-.detail-tile-title { font-size: 14px; font-weight: 600; color: var(--text); }
-.detail-tile-meta { font-size: 11px; color: var(--text-3); font-family: var(--mono); flex-shrink: 0; }
 
 /* Breitere, sichtbarere Progressbar */
 .detail-tile-bar-wrap {

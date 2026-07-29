@@ -569,7 +569,9 @@ ul { list-style: none; }
   to   { opacity: 1; transform: scale(1)    translateY(0); }
 }
 
-.modal-head { display: flex; justify-content: space-between; align-items: center; }
+.modal-head,
+.budget-goal-head,
+.dr-result-top { display: flex; justify-content: space-between; align-items: center; }
 .modal-head > span { font-family: var(--font); font-size: 17px; font-weight: 700; letter-spacing: -0.3px; }
 .modal-x { color: var(--text-3); font-size: 14px; padding: 4px 8px; border-radius: var(--radius-sm); transition: background var(--transition), color var(--transition); }
 .modal-x:hover { background: var(--accent-soft); color: var(--text); }
@@ -611,7 +613,23 @@ ul { list-style: none; }
   cursor: pointer; display: flex; align-items: center; justify-content: center;
   transition: border-color var(--transition), color var(--transition), background var(--transition);
 }
-.hub-color-add-btn:hover { border-color: var(--sage); color: var(--sage-dark); background: var(--sage-bg); }
+/* ── Geteiltes Sage-Hover-Muster ───────────────────────────
+   War 10x identisch dupliziert über budget/calendar/games/
+   guides/main/settings/tools.css — hier zentral zusammengefasst. */
+.hub-color-add-btn:hover,
+.sp-sim-reset:hover,
+.sp-savedby-trigger:hover,
+.recur-scope-btn:hover,
+.game-play-btn:not(:disabled):hover,
+.game-toggle-btn:hover,
+.guide-chapter-row:hover .guide-chapter-open,
+.clock-type-btn:hover,
+.tool-mode-btn:hover,
+.dr-formula-inline-btn.active {
+  background: var(--sage-bg);
+  border-color: var(--sage);
+  color: var(--sage-dark);
+}
 .hub-color-library-wrap { display: flex; flex-direction: column; gap: 6px; }
 .hub-color-library-label { font-size: 11px; color: var(--text-3); font-weight: 500; letter-spacing: .04em; text-transform: uppercase; }
 .hub-color-library { display: flex; flex-wrap: wrap; gap: 6px; min-height: 16px; }
@@ -660,7 +678,19 @@ ul { list-style: none; }
   transition: all var(--transition);
 }
 .toggle-select-btn:hover { border-color: var(--sage); color: var(--sage); background: var(--sage-bg); }
-.toggle-select-btn.active { background: var(--sage-bg); color: var(--sage-dark); border-color: var(--sage); font-weight: 600; }
+
+/* ── Geteiltes Sage-Active-Muster ──────────────────────────
+   War 5x identisch dupliziert über games/main/settings/tools.css. */
+.toggle-select-btn.active,
+.tile-type-btn.active,
+.game-toggle-btn.active,
+.clock-type-btn.active,
+.tool-mode-btn.active {
+  background: var(--sage-bg);
+  border-color: var(--sage);
+  color: var(--sage-dark);
+  font-weight: 600;
+}
 
 #tile-type-picker { display: flex; gap: 6px; }
 #tile-type-picker.tile-style-picker { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
@@ -680,7 +710,6 @@ ul { list-style: none; }
   transition: all var(--transition);
 }
 .tile-type-btn:hover { background: var(--accent-soft); color: var(--text); }
-.tile-type-btn.active { background: var(--sage-bg); color: var(--sage-dark); border-color: var(--sage); font-weight: 600; }
 .tile-type-desc { font-size: 12px; color: var(--text-3); margin-top: 2px; }
 
 .countdown-row {
@@ -694,7 +723,43 @@ ul { list-style: none; }
 .countdown-row:last-child { border-bottom: none; }
 .countdown-row-info { display: flex; flex-direction: column; gap: 2px; }
 .countdown-row-title { font-size: 13.5px; font-weight: 500; }
-.countdown-row-days { font-size: 11px; font-family: var(--mono); color: var(--text-3); }
+
+/* ── Geteiltes "Bold-Status/Titel-Text"-Muster ─────────────
+   War 5x identisch dupliziert über budget/flashcards/projects.css. */
+.b-status-text,
+.b-liq-total-label,
+#fc-session-panel-title,
+.archive-project-name,
+.detail-tile-title {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* ── Geteiltes "Meta-Text"-Muster (kleine, gedämpfte Mono-Angaben:
+   Datum, Zähler, Fortschritt) — war 10x identisch dupliziert über
+   budget/calendar/guides/positivity/projects/today.css. ── */
+.countdown-row-days,
+.b-garden-dd-pct,
+.cal-birthday-date,
+.subproject-progress,
+.detail-tile-meta,
+.mini-cal-event-date,
+.cal-day-ev-time,
+.cal-side-count,
+.guide-detail-date,
+.positivity-char-count {
+  color: var(--text-3);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+.b-garden-dd-pct,
+.cal-birthday-date,
+.subproject-progress,
+.detail-tile-meta,
+.mini-cal-event-date {
+  flex-shrink: 0;
+}
 
 /* Toggle switch */
 .toggle { position: relative; display: inline-flex; width: 38px; height: 22px; flex-shrink: 0; }
@@ -736,10 +801,24 @@ ul { list-style: none; }
 .task-item:hover { background: var(--surface-3); }
 .task-item input[type="checkbox"] { width: 15px; height: 15px; accent-color: var(--sage); cursor: pointer; }
 
-.prio-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.prio-dot,
+.b-section-dot,
+.positivity-card-row-dot {
+  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+}
 .prio-dot[data-prio="1"] { background: var(--prio-1); }
 .prio-dot[data-prio="2"] { background: var(--prio-2); }
 .prio-dot[data-prio="3"] { background: var(--prio-3); }
+
+/* ── Geteiltes "Fortschrittsbalken-Füllung"-Muster ─────────
+   War 3x identisch dupliziert über budget/flashcards/project-tree.css. */
+.b-garden-progress-fill,
+.leitner-seg,
+.forest-tree-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 400ms ease;
+}
 
 .task-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .task-title {

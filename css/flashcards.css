@@ -62,7 +62,6 @@
 /* Leitner progress bar */
 .group-progress-row { padding: 10px 16px 8px; border-bottom: 1px solid var(--border); background: var(--surface); }
 .leitner-bar { display: flex; height: 6px; border-radius: 99px; overflow: hidden; background: var(--surface-3); margin-bottom: 8px; gap: 2px; }
-.leitner-seg { height: 100%; border-radius: 99px; transition: width 400ms ease; }
 .leitner-legend { display: flex; flex-wrap: wrap; gap: 5px; }
 .leitner-badge { font-size: 11px; font-family: var(--mono); padding: 2px 8px; border-radius: 99px; white-space: nowrap; }
 
@@ -91,7 +90,6 @@
 #fc-session-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 0; overflow-y: auto; position: sticky; top: 18px; max-height: calc(100vh - 36px); align-self: start; }
 #fc-session-panel.hidden { display: none; }
 .fc-session-panel-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-#fc-session-panel-title { font-size: 14px; font-weight: 600; color: var(--text); }
 .fc-session-section-label { font-size: 12px; font-weight: 600; color: var(--text-2); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
 #fc-hard-count { background: color-mix(in srgb, var(--fc-danger) 13%, transparent); color: var(--fc-danger); border: 1px solid color-mix(in srgb, var(--fc-danger) 27%, transparent); }
 

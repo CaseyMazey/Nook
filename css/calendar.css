@@ -129,7 +129,6 @@
 }
 .cal-day-ev-row:last-child { border-bottom: none; }
 .cal-day-ev-left { display: flex; flex-direction: column; gap: 2px; flex: 1; }
-.cal-day-ev-time { font-family: var(--mono); font-size: 11px; color: var(--text-3); }
 .cal-day-ev-title { font-size: 13.5px; color: var(--text); }
 .cal-day-ev-notes { font-size: 12px; color: var(--text-3); }
 .cal-day-ev-row .task-delete { opacity: 1; font-size: 12px; }
@@ -269,7 +268,7 @@
   cursor: pointer;
   transition: all var(--transition);
 }
-.recur-scope-btn:hover { background: var(--sage-bg); border-color: var(--sage); color: var(--sage-dark); }
+
 
 
 /* =============================================================
@@ -414,7 +413,7 @@
 /* Spruch: bricht innerhalb der Textspalte um, Schreibschrift für
    einen handschriftlichen, persönlichen Eindruck (wie im Mockup) */
 #cal-season-sentence {
-  font-family: 'Caveat', var(--font-serif), var(--font), cursive;
+  font-family: 'Caveat', var(--font), cursive;
   font-size: 17px;
   font-weight: 400;
   line-height: 1.4;
@@ -537,11 +536,6 @@
   white-space: nowrap;
 }
 
-.cal-side-count {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--text-3);
-}
 
 /* =============================================================
    RESPONSIVE
@@ -568,12 +562,6 @@
   border-bottom: 1px solid var(--border);
 }
 .cal-birthday-item:last-child { border-bottom: none; }
-.cal-birthday-date {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--text-3);
-  flex-shrink: 0;
-}
 .cal-birthday-name {
   font-size: 12.5px;
   color: var(--text);

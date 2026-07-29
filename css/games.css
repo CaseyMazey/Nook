@@ -255,12 +255,6 @@
   transition: background var(--transition), border-color var(--transition);
 }
 
-.game-play-btn:not(:disabled):hover {
-  border-color: var(--sage);
-  color: var(--sage-dark);
-  background: var(--sage-bg);
-}
-
 .game-play-btn:disabled {
   cursor: not-allowed;
 }
@@ -456,8 +450,6 @@
   transition: border-color var(--transition), color var(--transition), background var(--transition);
 }
 
-.game-toggle-btn:hover { border-color: var(--sage); color: var(--sage-dark); background: var(--sage-bg); }
-.game-toggle-btn.active { background: var(--sage-bg); color: var(--sage-dark); border-color: var(--sage); font-weight: 600; }
 
 .game-action-btn {
   width: 100%;

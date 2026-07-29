@@ -482,8 +482,7 @@
   font-family: var(--font);
   transition: border-color var(--transition), color var(--transition), background var(--transition);
 }
-.tool-mode-btn:hover { border-color: var(--sage); color: var(--sage-dark); background: var(--sage-bg); }
-.tool-mode-btn.active { background: var(--sage-bg); color: var(--sage-dark); border-color: var(--sage); font-weight: 600; }
+
 
 /* =========================
    DATENÜBERTRAGUNGSRATEN-RECHNER
@@ -560,7 +559,7 @@
   width: 100%;
   justify-content: center;
 }
-.dr-formula-inline-btn.active { background: var(--sage-bg); color: var(--sage-dark); border-color: var(--sage); }
+
 
 .dr-formula-inline-panel {
   margin-top: 8px;
@@ -927,11 +926,6 @@
   gap: 4px;
 }
 
-.dr-result-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
 
 .dr-result-label {
   font-size: 11px;

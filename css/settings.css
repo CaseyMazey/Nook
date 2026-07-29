@@ -85,5 +85,4 @@
   background: var(--surface-2);
   transition: all var(--transition);
 }
-.clock-type-btn:hover { background: var(--sage-bg); color: var(--sage-dark); border-color: var(--sage); }
-.clock-type-btn.active { background: var(--sage-bg); color: var(--sage-dark); border-color: var(--sage); font-weight: 600; }
+
