@@ -25,7 +25,6 @@
 /* ── Shared badges ─────────────────────────────────────────── */
 .guide-fav-star    { color: var(--amber); font-size: 14px; }
 .guide-fav-star-lg { color: var(--amber); font-size: 18px; }
-.guide-tags-row { display: flex; flex-wrap: wrap; gap: 5px; }
 .guide-tag {
   font-size: 10.5px;
   font-family: var(--mono);
@@ -37,7 +36,6 @@
 .guide-tag-cat { background: var(--accent-soft); color: var(--text-2); border: 1px solid var(--border); }
  
 /* ── Detail view ──────────────────────────────────────────── */
-.guide-detail-view { display: flex; flex-direction: column; gap: 0; }
 .guide-back-btn {
   display: inline-flex;
   align-items: center;

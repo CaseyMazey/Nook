@@ -618,7 +618,6 @@ ul { list-style: none; }
    guides/main/settings/tools.css — hier zentral zusammengefasst. */
 .hub-color-add-btn:hover,
 .sp-sim-reset:hover,
-.sp-savedby-trigger:hover,
 .recur-scope-btn:hover,
 .game-play-btn:not(:disabled):hover,
 .game-toggle-btn:hover,

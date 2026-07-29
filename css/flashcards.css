@@ -18,8 +18,6 @@
 .fc-stat-label { font-size: 11px; color: var(--text-3); }
 .fc-stat-due .fc-stat-value { color: var(--fc-danger); }
 .fc-stat-streak .fc-stat-value { color: var(--fc-warn); }
-.fc-stat-session-active { border-color: var(--sage); background: var(--sage-bg); }
-.fc-stat-session-active .fc-stat-value { color: var(--sage-dark); }
 
 /* Layout: 3 Spalten */
 #flashcard-layout { display: grid; grid-template-columns: 248px 1fr; gap: 18px; transition: grid-template-columns 300ms ease; align-items: start; }
