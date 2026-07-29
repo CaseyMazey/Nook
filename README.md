@@ -20,11 +20,12 @@ Anschließend einfach `index.html` öffnen.
 - 🏠 Persönliches Dashboard für den Alltag
 - 📌 Pinnwand mit freien Karten (Notizen, Checklisten, Code, Zitate u.v.m.)
 - 📅 Kalender mit Termin- und Countdownsystem
-- 💰 Budgetverwaltung mit Liquiditätsvorschau
+- 💰 Budgetverwaltung mit Liquiditätsvorschau und Sparplaner (Szenarien, Zeitstrahl, Was-wäre-wenn-Simulator)
 - 🌱 Finanzgarten zur Visualisierung von Sparzielen
 - 📚 Karteikarten mit Leitner-System und Lernstatistiken
 - 📝 Persönliches Markdown-Wiki
 - 📁 Projektverwaltung mit Projektwald
+- 🧰 Werkzeugkasten (Taschenrechner, Focus Timer, Converter, Datenübertragungsraten-Rechner mit Lernmodus, Notenmanager)
 - 🎮 Modularer Spiele-Hub inkl. virtuellem Haustier-System
 - 🌟 Tägliche Positivity-Erinnerungen
 - 🌤 Wetterwidget mit Standortauswahl
@@ -248,6 +249,34 @@ Zeigt:
 - Puffer nach Ausgaben
 - Kritische Zeiträume
 
+## Sparplaner
+
+Eigener Unterbereich innerhalb von Budget zur langfristigen Sparplanung, basierend auf den wiederkehrenden Ein- und Ausgaben.
+
+### Szenarien
+
+Berechnet aus den wiederkehrenden Posten drei mögliche monatliche Sparraten:
+
+- 🔒 Garantiert – nur feste, sichere Beträge
+- 📊 Realistisch – inkl. Durchschnitt variabler Posten
+- 🚀 Optimistisch – bester Fall
+
+Jeder wiederkehrende Posten kann einzeln von der Sparplan-Berechnung ausgeschlossen werden.
+
+### Zeitstrahl
+
+Zeigt anhand des gewählten Szenarios, wann Sparziele voraussichtlich erreicht werden.
+
+### 🔮 Was-wäre-wenn?
+
+Simulator zum Durchspielen einer frei wählbaren monatlichen Sparrate, ohne das eigentliche Szenario zu verändern.
+
+### Weitere Funktionen
+
+- Übersicht aller Einnahmen/Ausgaben, die in die Berechnung einfließen
+- Direkter Soll-Vergleich mit den Sparzielen
+- Zusammenfassung als kompakte Kennzahlen
+
 ---
 
 # 🌱 Finanzgarten
@@ -288,6 +317,50 @@ Jede Pflanzenart besitzt eigene SVG-Grafiken und individuelle Wachstumsstufen.
 - Automatische Aktualisierung
 - Keine Bestrafung bei Ausgaben
 - Fokus auf positive Motivation
+
+---
+
+# 🧰 Tools
+
+Kleiner Werkzeugkasten direkt in Nook — für den Ausbildungsalltag und schnelle Alltagsrechnungen.
+
+## Enthalten
+
+### Taschenrechner
+
+- Grundrechenarten mit Verlaufsfunktion
+- Deutsche Komma-Schreibweise
+
+### Focus Timer
+
+- Pomodoro-Prinzip (Fokus, kurze Pause, lange Pause)
+- Visueller Fortschrittsring
+- Sitzungszähler
+
+### Converter
+
+- Einheitenumrechnung für gängige Größen
+
+### Datenübertragungsraten-Rechner
+
+- Umrechnung zwischen Datenübertragungseinheiten (z. B. Bit/s, Byte/s, kBit/s, MBit/s)
+- **Lernmodus**: erklärt den Rechenweg didaktisch Schritt für Schritt (Gegeben → Gesucht → Formel → Formel umstellen → Einheiten umrechnen → Werte einsetzen → Berechnen → Ergebnis)
+- Geeignet zur Prüfungsvorbereitung (IT-Berufe)
+
+### Notenmanager
+
+Verwaltung von Schul- und Ausbildungsnoten über mehrere Ausbildungsjahre hinweg.
+
+- Ausbildungsjahre mit eigenen Fächern
+- Globale Notenkategorien mit Standardgewichtung (z. B. Klausur, mündlich, Projekt)
+- Leistungen pro Fach mit Datum, Kategorie, Note und individueller Gewichtung
+- Zeugnisse im Karten-Design, inkl. „Zeugnisse vergleichen“-Ansicht
+- Eingabe im deutschen Komma-Format
+
+### Geplante Module
+
+- **Signallaufzeiten** – Berechnung von Signalausbreitung und -verzögerung
+- **Netzwerktechnik / IPv4 / Subnetting** – CIDR-Tabelle, Netzmasken, Host- und Broadcast-Berechnung
 
 ---
 
@@ -505,6 +578,7 @@ Gespeichert werden unter anderem:
 - Projekte
 - Anleitungen
 - Pinnwand-Karten
+- Notenmanager-Daten (Ausbildungsjahre, Fächer, Kategorien, Zeugnisse)
 - Positivity-Karten und -Kategorien
 - Spielstände (inkl. Cozy Home)
 - Einstellungen
@@ -521,4 +595,5 @@ Geplante Erweiterungen:
 - Zusätzliche Finanzgarten-Pflanzen
 - Erweiterte Projektverwaltung
 - `inDevelopment`-Kartenstatus für Spiele in Arbeit
-- Aufräumen ungenutzter Altlasten in `style.css`
+- Tools-Module „Signallaufzeiten“ und „Netzwerktechnik/IPv4/Subnetting“
+- Aufräumen ungenutzter Altlasten (laufender Dead-Code-Audit)
