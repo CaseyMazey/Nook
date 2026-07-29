@@ -53,11 +53,6 @@ function toggleBookmark(guideId, blockId) {
   saveBookmarks();
 }
 
-function getBookmarkedBlocks(guideId) {
-  const ids = guideBookmarks[guideId] || [];
-  return ids.map(id => document.getElementById(id)).filter(Boolean);
-}
-
 // ── Markdown + Code renderer ─────────────────────────────
 // Lightweight renderer: headings, bold, italic, code blocks,
 // inline code, lists, horizontal rules, links.
@@ -279,14 +274,6 @@ const GUIDE_BOOK_COLORS = 6; // legacy pastel count (css: .guide-book-0 .. .guid
 // hub-utils.js (HUB_PALETTE_HEX, hubUserColors), damit Kalender & künftige
 // Tabs dieselbe Farbverwaltung nutzen können.
 
-// Returns a hex string for a book regardless of whether coverColor is a legacy
-// index (number 0-5) or a modern hex string.
-function getCatHex(cat, idx) {
-  if (typeof cat.coverColor === 'string' && /^#/.test(cat.coverColor)) return cat.coverColor;
-  const legacyIdx = (typeof cat.coverColor === 'number') ? cat.coverColor : idx;
-  return HUB_PALETTE_HEX[legacyIdx % GUIDE_BOOK_COLORS];
-}
-
 // Applies the correct color class or inline style to a book element.
 function applyBookColor(el, cat, idx) {
   for (let i = 0; i < GUIDE_BOOK_COLORS; i++) el.classList.remove('guide-book-' + i);
@@ -340,14 +327,6 @@ function getCategoryStats(cat) {
     if ((g.openCount || 0) > maxOpen) { maxOpen = g.openCount; mostRead = g; }
   });
   return { created, updated, opened, favCount, count: guides.length, mostRead };
-}
-
-// Find the first fenced code block in markdown content
-function extractFirstCodeBlock(content) {
-  if (!content) return null;
-  const m = content.match(/```(\w*)\n([\s\S]*?)```/);
-  if (!m) return null;
-  return { lang: m[1] || 'code', code: m[2].trimEnd() };
 }
 
 // ── Library header (book + chapter counts) ────────────────

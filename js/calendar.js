@@ -32,7 +32,7 @@ const DEFAULT_EVENT_COLOR = '#6b7f58';
 function getDaysUntil(date) {
   const now = new Date(); now.setHours(0, 0, 0, 0);
   const target = new Date(date); target.setHours(0, 0, 0, 0);
-  return Math.ceil((target - now) / 86400000);
+  return Math.ceil((target - now) / MS_PER_DAY);
 }
 
 function saveEvents(){ DB.set('events', events); }
@@ -120,7 +120,7 @@ function computeSeriesOccurrenceDates(series, limitEndDate) {
       if (limitEndDate) {
         const probe = new Date(startWeekMonday);
         probe.setDate(probe.getDate() + weekOffset * 7 * interval);
-        if (probe.getTime() > limitEndDate.getTime() + 7 * 86400000) break;
+        if (probe.getTime() > limitEndDate.getTime() + 7 * MS_PER_DAY) break;
       }
     }
   } else if (rrule.freq === 'monthly') {
@@ -1142,7 +1142,7 @@ function getSeasonInfo(date) {
   // Nächster Monat (JS rollt Dezember→Januar automatisch ins Folgejahr).
   const nextMonthDate = new Date(date.getFullYear(), date.getMonth() + 1, 1);
   const nextSub = SEASON_DEFS[nextMonthDate.getMonth() + 1];
-  const daysUntil = Math.ceil((nextMonthDate - date) / 86400000);
+  const daysUntil = Math.ceil((nextMonthDate - date) / MS_PER_DAY);
 
   return {
     label: sub.label, icon: sub.icon, css: sub.css, sentence,
@@ -1166,7 +1166,7 @@ const MOON_PHASES = [
 ];
 
 function getMoonPhase(date) {
-  const days = (date.getTime() - MOON_REF_MS) / 86400000;
+  const days = (date.getTime() - MOON_REF_MS) / MS_PER_DAY;
   let phase = (days % SYNODIC_MONTH) / SYNODIC_MONTH;
   if (phase < 0) phase += 1;
   const illum = Math.round((1 - Math.cos(2*Math.PI*phase)) / 2 * 100);

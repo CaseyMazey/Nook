@@ -112,15 +112,6 @@ function weatherCodeToSvg(code) {
 
 let weatherSettings = DB.get('weatherSettings', { mode: 'manual', city: 'Cologne' });
 
-const OWM_ICON_MAP = {
-  '01': '☀️', '02': '⛅', '03': '🌥️', '04': '☁️',
-  '09': '🌧️', '10': '🌦️', '11': '⛈️', '13': '❄️', '50': '🌫️'
-};
-
-function owmIcon(iconCode) {
-  return OWM_ICON_MAP[iconCode?.slice(0,2)] || '🌡️';
-}
-
 async function fetchWeatherByCoords(lat, lon) {
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=precipitation_probability&timezone=auto`;
   const res = await fetch(url);
@@ -225,7 +216,7 @@ function updateCountdown() {
     dayEvs.forEach(ev => {
       if (!ev.countdown) return;
       const evDate = parseLocalDate(key); evDate.setHours(0,0,0,0);
-      const days = Math.ceil((evDate - now) / 86400000);
+      const days = Math.ceil((evDate - now) / MS_PER_DAY);
       if (days >= 0) candidates.push({ id: ev.id, title: ev.title, daysLeft: days });
     });
   });
@@ -285,17 +276,12 @@ function renderClock() {
   if (!w) return;
   w.style.display = 'block';
   const now = new Date();
-  if (clockType === 'digital') {
-    w.innerHTML = '';
-    w.className = 'clock-digital';
-    const h = String(now.getHours()).padStart(2,'0');
-    const m = String(now.getMinutes()).padStart(2,'0');
-    const s = String(now.getSeconds()).padStart(2,'0');
-    w.textContent = `${h}:${m}:${s}`;
-  } else {
-    w.className = 'clock-analog';
-    w.innerHTML = buildAnalogSVG(now, 90);
-  }
+  w.innerHTML = '';
+  w.className = 'clock-digital';
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  const s = String(now.getSeconds()).padStart(2,'0');
+  w.textContent = `${h}:${m}:${s}`;
 }
 
 // =========================
@@ -359,10 +345,6 @@ function startSidebarClock() {
   if (sidebarClockInterval) clearInterval(sidebarClockInterval);
   renderSidebarClock();
   sidebarClockInterval = setInterval(renderSidebarClock, 1000);
-}
-
-function stopSidebarClock() {
-  if (sidebarClockInterval) { clearInterval(sidebarClockInterval); sidebarClockInterval = null; }
 }
 
 // =========================

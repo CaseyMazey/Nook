@@ -9,6 +9,13 @@
 // =========================
 
 // =========================
+// 0) ZEIT-KONSTANTEN
+// =========================
+
+// Millisekunden pro Tag — zentrale Konstante statt verstreuter 86400000-Literale
+const MS_PER_DAY = 86400000;
+
+// =========================
 // 1) FARBSYSTEM
 // =========================
 

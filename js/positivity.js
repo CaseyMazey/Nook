@@ -2,8 +2,6 @@
 // POSITIVITY — Tägliche positive Erinnerungen
 // =========================
 
-const POSITIVITY_FAV_COLOR = '#B8755A';
-
 const POSITIVITY_DEFAULTS = [
   {
     id: 'cat-remember', name: 'Things To Remember', color: '#7A9B6A', builtIn: true,

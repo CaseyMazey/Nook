@@ -92,8 +92,6 @@ let deskCards        = DB.get('deskCards', null);
 let generalTodos     = DB.get('generalTodos', []);
 let shoppingList     = DB.get('shoppingList', []);
 let subjects         = DB.get('subjects', []);
-let clockEnabled     = DB.get('clockEnabled', false);
-let clockType        = DB.get('clockType', 'digital');
 let collapsedGroups  = new Set(DB.get('collapsedGroups', []));
 
 if (darkMode) document.documentElement.setAttribute('data-theme', 'dark');
@@ -123,7 +121,7 @@ function getISOWeek(date) {
   const d=new Date(date); d.setHours(0,0,0,0);
   d.setDate(d.getDate()+3-((d.getDay()+6)%7));
   const w1=new Date(d.getFullYear(),0,4);
-  return 1+Math.round(((d-w1)/86400000-3+((w1.getDay()+6)%7))/7);
+  return 1+Math.round(((d-w1)/MS_PER_DAY-3+((w1.getDay()+6)%7))/7);
 }
 function getWeekStart(date) {
   const d=new Date(date); d.setHours(0,0,0,0);
@@ -206,9 +204,9 @@ function getTasksForCalendarDay(date) {
  */
 function getTasksForTile() {
   const now = Date.now();
-  const sevenDaysAgo  = now - 7 * 24 * 60 * 60 * 1000;
+  const sevenDaysAgo  = now - 7 * MS_PER_DAY;
   const weekMon       = getWeekStart(state.currentDate).getTime();
-  const weekMonNext   = weekMon + 7 * 24 * 60 * 60 * 1000;
+  const weekMonNext   = weekMon + 7 * MS_PER_DAY;
 
   return tasks.filter(t => {
     const created = t.createdAt || 0;

@@ -37,10 +37,6 @@ function migrateProject(p) {
   return p;
 }
 
-function touchProject(project) {
-  project.updatedAt = Date.now();
-  saveProjects();
-}
 projects = projects.map(migrateProject);
 
 // =========================
@@ -84,12 +80,6 @@ function getSubprojectStats(sp) {
   const pct   = total === 0 ? 0 : Math.round((done / total) * 100);
   return { total, done, pct };
 }
-
-const PROJECT_COLORS = [
-  '#2563eb','#7c3aed','#db2777','#dc2626',
-  '#ea580c','#ca8a04','#16a34a','#0891b2',
-  '#475569','#78716c'
-];
 
 function formatStartDate(project) {
   const ts = project.startDate || project.createdAt;

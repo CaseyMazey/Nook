@@ -56,7 +56,7 @@ function calcGlobalStats(){
     if(c.hard) hardCards++;
     const box = c.box||1;
     const last = c.lastSeen ? c.lastSeen.slice(0,10) : null;
-    const daysAgo = last ? Math.floor((Date.now() - new Date(last))/86400000) : 999;
+    const daysAgo = last ? Math.floor((Date.now() - new Date(last))/MS_PER_DAY) : 999;
     const intervals = [0,1,2,4,8];
     if(daysAgo >= intervals[box-1]) dueToday++;
   })));
@@ -254,7 +254,7 @@ function calcSubjectDue(subj){
   const intervals=[0,1,2,4,8]; let due=0;
   subj.groups.forEach(g => g.cards.forEach(c => {
     const box=c.box||1, last=c.lastSeen?c.lastSeen.slice(0,10):null;
-    const daysAgo=last?Math.floor((Date.now()-new Date(last))/86400000):999;
+    const daysAgo=last?Math.floor((Date.now()-new Date(last))/MS_PER_DAY):999;
     if(daysAgo>=intervals[box-1]) due++;
   }));
   return due;
@@ -383,7 +383,7 @@ function calcGroupDue(group){
   const intervals=[0,1,2,4,8]; let due=0;
   group.cards.forEach(c => {
     const box=c.box||1, last=c.lastSeen?c.lastSeen.slice(0,10):null;
-    const daysAgo=last?Math.floor((Date.now()-new Date(last))/86400000):999;
+    const daysAgo=last?Math.floor((Date.now()-new Date(last))/MS_PER_DAY):999;
     if(daysAgo>=intervals[box-1]) due++;
   });
   return due;
@@ -790,19 +790,6 @@ document.getElementById('fc-session-end')?.addEventListener('click', closeSessio
 
 function stripCardForExport(c){
   return { id: c.id, front: c.front, back: c.back };
-}
-
-function withCardDefaults(c){
-  return {
-    id: c.id || crypto.randomUUID(),
-    front: c.front || '',
-    back: c.back || '',
-    box: c.box || 1,
-    lastSeen: c.lastSeen || null,
-    totalAnswers: c.totalAnswers || 0,
-    correctAnswers: c.correctAnswers || 0,
-    hard: c.hard || false
-  };
 }
 
 function exportSubject(subj){

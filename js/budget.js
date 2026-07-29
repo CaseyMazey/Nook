@@ -68,15 +68,6 @@ function budgetMonthKey(date){
 function budgetMonthLabel(date){
   return date.toLocaleDateString('de-DE',{month:'long',year:'numeric'});
 }
-function getRecurringForMonth(date){
-  const m = date.getMonth()+1;
-  return budgetRecurring.filter(r => {
-    if (r.freq === 'monthly') return true;
-    if (r.freq === 'yearly')  return r.dateMonth === m;
-    return false;
-  });
-}
-
 function priorityLabel(p) {
   if (p === 'must') return 'Muss';
   if (p === 'want') return 'Möchte';
@@ -981,14 +972,6 @@ function renderLiquidity() {
 
   container.appendChild(card);
 }
-
-function fmtEur(amount) {
-  return (amount >= 0 ? '+' : '') + amount.toFixed(2) + ' €';
-}
-
-// =========================
-// FINANZGARTEN
-// =========================
 
 // =========================
 // FINANZGARTEN
@@ -2361,7 +2344,7 @@ function renderSparplanTimeline(activeRate) {
   const startDate = new Date(); startDate.setHours(0, 0, 0, 0);
   const endDate = etas[etas.length - 1].date;
   const totalMs = Math.max(1, endDate - startDate);
-  const totalDays = totalMs / 86400000;
+  const totalDays = totalMs / MS_PER_DAY;
 
   // Achsenbreite proportional zur Zeitspanne (mehr Zeit = mehr Platz),
   // mit sinnvollen Grenzen für sehr kurze bzw. sehr lange Horizonte.
