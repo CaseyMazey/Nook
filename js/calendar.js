@@ -188,6 +188,7 @@ function getSeriesOccurrencesInRange(rangeStart, rangeEnd) {
         time: series.time || '',
         countdown: false, // Countdown wird für wiederkehrende Termine nicht unterstützt
         color: series.color || null,
+        showInAgenda: series.showInAgenda !== false,
         isRecurring: true
       };
       if (exception && exception.type === 'modified') Object.assign(base, exception.data);
@@ -380,7 +381,7 @@ function openEventModal(key, day, existingEvent = null, editCtx = null) {
 
   let dataSrc;
   if (editCtx?.scope === 'series') {
-    dataSrc = { title: editCtx.series.title, notes: editCtx.series.notes, time: editCtx.series.time, color: editCtx.series.color };
+    dataSrc = { title: editCtx.series.title, notes: editCtx.series.notes, time: editCtx.series.time, color: editCtx.series.color, showInAgenda: editCtx.series.showInAgenda };
   } else if (editCtx?.scope === 'following' || editCtx?.scope === 'occurrence') {
     dataSrc = existingEvent || {};
   } else {
@@ -401,6 +402,7 @@ function openEventModal(key, day, existingEvent = null, editCtx = null) {
   document.getElementById('event-modal-notes').value         = dataSrc.notes || '';
   document.getElementById('event-modal-time').value          = dataSrc.time || '';
   document.getElementById('event-modal-countdown').checked   = existingEvent?.countdown || false;
+  document.getElementById('event-modal-agenda').checked      = dataSrc.showInAgenda !== false;
   eventColorWidget.setValue(dataSrc.color || DEFAULT_EVENT_COLOR);
 
   // ── Recurrence UI je nach Bearbeitungsmodus ──
@@ -491,6 +493,7 @@ document.getElementById('event-modal-save').addEventListener('click', () => {
   const time      = endVal ? '' : document.getElementById('event-modal-time').value;
   const notesTxt  = document.getElementById('event-modal-notes').value.trim();
   const countdown = document.getElementById('event-modal-countdown').checked;
+  const showInAgenda = document.getElementById('event-modal-agenda').checked;
   const color     = document.getElementById('event-modal-color').value || null;
   const rrule     = buildRruleFromUi();
 
@@ -506,7 +509,7 @@ document.getElementById('event-modal-save').addEventListener('click', () => {
     const series = eventModalEditCtx.series;
     const occKey = dateKey(eventModalEditCtx.occDate);
     if (!series.exceptions) series.exceptions = {};
-    series.exceptions[occKey] = { type: 'modified', data: { title, notes: notesTxt, time, color } };
+    series.exceptions[occKey] = { type: 'modified', data: { title, notes: notesTxt, time, color, showInAgenda } };
     saveEventSeries();
     finishEventModalSave();
     return;
@@ -528,7 +531,7 @@ document.getElementById('event-modal-save').addEventListener('click', () => {
     if (rrule) {
       const newSeries = {
         id: crypto.randomUUID(),
-        title, notes: notesTxt, time, color,
+        title, notes: notesTxt, time, color, showInAgenda,
         startDate: dateKey(occDate),
         rrule,
         exceptions: {}
@@ -539,7 +542,7 @@ document.getElementById('event-modal-save').addEventListener('click', () => {
       // Keine Wiederholung mehr gewünscht → normaler Einzeltermin ab diesem Tag
       const k = dateKey(occDate);
       if (!events[k]) events[k] = [];
-      events[k].push({ id: crypto.randomUUID(), title, notes: notesTxt, time, countdown: false, color });
+      events[k].push({ id: crypto.randomUUID(), title, notes: notesTxt, time, countdown: false, color, showInAgenda });
       saveEvents();
     }
     finishEventModalSave();
@@ -549,7 +552,7 @@ document.getElementById('event-modal-save').addEventListener('click', () => {
   // ── SCOPE: gesamte Terminserie ──
   if (eventModalEditCtx?.scope === 'series') {
     const series = eventModalEditCtx.series;
-    series.title = title; series.notes = notesTxt; series.time = time; series.color = color;
+    series.title = title; series.notes = notesTxt; series.time = time; series.color = color; series.showInAgenda = showInAgenda;
     series.startDate = key; // Verschieben des Serienankers erlaubt
     if (rrule) series.rrule = rrule;
     saveEventSeries();
@@ -569,7 +572,7 @@ document.getElementById('event-modal-save').addEventListener('click', () => {
     }
     const newSeries = {
       id: crypto.randomUUID(),
-      title, notes: notesTxt, time, color,
+      title, notes: notesTxt, time, color, showInAgenda,
       startDate: key,
       rrule,
       exceptions: {}
@@ -590,7 +593,7 @@ document.getElementById('event-modal-save').addEventListener('click', () => {
     events[oldKey] = (events[oldKey] || []).filter(e => e.id !== ev.id);
 
     if (!events[key]) events[key] = [];
-    const updated = { ...ev, title, time, notes: notesTxt, countdown, color };
+    const updated = { ...ev, title, time, notes: notesTxt, countdown, color, showInAgenda };
     if (isRange) {
       updated.startDate = key;
       updated.endDate   = endVal;
@@ -607,7 +610,7 @@ document.getElementById('event-modal-save').addEventListener('click', () => {
   } else {
     const id = crypto.randomUUID();
     if (!events[key]) events[key] = [];
-    const newEv = { id, title, notes: notesTxt, countdown, color };
+    const newEv = { id, title, notes: notesTxt, countdown, color, showInAgenda };
     if (isRange) {
       newEv.startDate = key;
       newEv.endDate   = endVal;

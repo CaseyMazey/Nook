@@ -501,41 +501,48 @@ function buildMiniCal(refDate) {
     });
   }
 
-  // Terminliste des angezeigten Monats — bei aktuellem Monat ab heute ("nächste
-  // Termine"), bei anderen Monaten ab dem 1. dieses Monats, damit nicht in den
-  // Folgemonat hinein gelistet wird.
+  // Terminliste des angezeigten Monats — immer der gesamte Monat (1. bis
+  // letzter Tag), unabhängig davon ob aktueller, vergangener oder künftiger
+  // Monat. Ein einmaliger Scan über alle Termine statt Tag-für-Tag-Lookup,
+  // da mehrtägige Termine nur unter ihrem Start-Datum-Schlüssel liegen und
+  // sonst verpasst würden, sobald das Fenster nicht exakt am Starttag beginnt.
   let upcomingHtml = '';
   const upcoming = [];
-  const seenIds  = new Set();
-  const isCurrentMonth = (year === today.getFullYear() && month === today.getMonth());
-  const listFrom = isCurrentMonth ? new Date(today) : new Date(year, month, 1);
-  const listTo   = new Date(year, month, daysInMonth);
-  for (let cur = new Date(listFrom); cur <= listTo; cur.setDate(cur.getDate() + 1)) {
-    const d   = new Date(cur); // eigene Kopie, da 'cur' pro Durchlauf mutiert wird
-    const key = dateKey(d);
-    // Single-day events on this day
-    (events[key] || []).forEach(ev => {
-      if (seenIds.has(ev.id)) return;
-      seenIds.add(ev.id);
-      const evColor = ev.color || DEFAULT_EVENT_COLOR;
-      if (!ev.endDate) {
-        upcoming.push({ title: ev.title, date: d, dateStr: d.toLocaleDateString('de-DE', { day: 'numeric', month: 'long' }), color: evColor, isRange: false });
-      } else {
-        const end = parseLocalDate(ev.endDate);
-        const startStr = parseLocalDate(ev.startDate || key).toLocaleDateString('de-DE',{day:'numeric',month:'short'});
-        const endStr   = end.toLocaleDateString('de-DE', {day:'numeric', month:'short'});
-        upcoming.push({ title: ev.title, date: d, dateStr: `${startStr} – ${endStr}`, color: evColor, isRange: true });
-      }
-    });
-    // Wiederkehrende Vorkommen an diesem Tag
-    if (typeof getSeriesOccurrencesInRange === 'function') {
-      getSeriesOccurrencesInRange(d, d).forEach(({ event: ev }) => {
-        if (seenIds.has(ev.id)) return;
-        seenIds.add(ev.id);
-        upcoming.push({ title: '↻ ' + ev.title, date: d, dateStr: d.toLocaleDateString('de-DE', { day: 'numeric', month: 'long' }), color: ev.color || DEFAULT_EVENT_COLOR, isRange: false });
+  const listFrom  = new Date(year, month, 1);
+  const listTo    = new Date(year, month, daysInMonth);
+
+  if (typeof events !== 'undefined') {
+    Object.entries(events).forEach(([key, dayEvs]) => {
+      (dayEvs || []).forEach(ev => {
+        if (ev.showInAgenda === false) return; // per Toggle aus der Liste ausgeblendet
+        const evColor = ev.color || DEFAULT_EVENT_COLOR;
+        if (!ev.endDate) {
+          const d = parseLocalDate(key);
+          if (d < listFrom || d > listTo) return;
+          upcoming.push({ title: ev.title, date: d, dateStr: d.toLocaleDateString('de-DE', { day: 'numeric', month: 'long' }), color: evColor, isRange: false });
+          return;
+        }
+        const start = parseLocalDate(ev.startDate || key); start.setHours(0,0,0,0);
+        const end   = parseLocalDate(ev.endDate);           end.setHours(0,0,0,0);
+        if (end < listFrom || start > listTo) return; // kein Überschneiden mit dem angezeigten Monat
+        const startStr = start.toLocaleDateString('de-DE', { day: 'numeric', month: 'short' });
+        const endStr   = end.toLocaleDateString('de-DE',   { day: 'numeric', month: 'short' });
+        // Sortierdatum: Beginn des Termins, geclamped auf den Monatsanfang, falls er vorher startete
+        const sortDate = start < listFrom ? listFrom : start;
+        upcoming.push({ title: ev.title, date: sortDate, dateStr: `${startStr} – ${endStr}`, color: evColor, isRange: true });
       });
-    }
+    });
   }
+
+  // Wiederkehrende Vorkommen im gesamten angezeigten Monat (Funktion unterstützt bereits Zeiträume)
+  if (typeof getSeriesOccurrencesInRange === 'function') {
+    getSeriesOccurrencesInRange(listFrom, listTo).forEach(({ date: d, event: ev }) => {
+      if (ev.showInAgenda === false) return;
+      upcoming.push({ title: '↻ ' + ev.title, date: d, dateStr: d.toLocaleDateString('de-DE', { day: 'numeric', month: 'long' }), color: ev.color || DEFAULT_EVENT_COLOR, isRange: false });
+    });
+  }
+
+  upcoming.sort((a, b) => a.date - b.date);
 
   if (upcoming.length > 0) {
     upcomingHtml = `<div id="mini-cal-events">${
