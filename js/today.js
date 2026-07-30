@@ -353,50 +353,6 @@ function startSidebarClock() {
 
 let miniCalDate = new Date();
 
-// Weist Ereignissen einer Kalenderzeile (Mo–So) "Lanes" (Zeilen-Slots) zu, damit
-// mehrtägige Balken über die Woche hinweg auf gleicher Höhe bleiben und sich
-// mehrere gleichzeitige Termine untereinander statt überlappend stapeln.
-// week: Array mit 7 Slots ({day:Number|null}); dayEntries: Map<Tag, Eintrag[]>
-function assignWeekLanes(week, dayEntries) {
-  const eventsInWeek = new Map(); // id -> {startIdx, endIdx, color, isRange}
-  week.forEach((slot, idx) => {
-    if (slot.day == null) return;
-    (dayEntries.get(slot.day) || []).forEach(entry => {
-      const info = eventsInWeek.get(entry.id);
-      if (info) info.endIdx = idx;
-      else eventsInWeek.set(entry.id, { startIdx: idx, endIdx: idx, color: entry.color, isRange: entry.isRange });
-    });
-  });
-
-  // Frühester Start zuerst; bei Gleichstand mehrtägige Termine vor Einzelterminen (stabilere Balken)
-  const ids = [...eventsInWeek.keys()].sort((a, b) => {
-    const ea = eventsInWeek.get(a), eb = eventsInWeek.get(b);
-    if (ea.startIdx !== eb.startIdx) return ea.startIdx - eb.startIdx;
-    return (eb.isRange ? 1 : 0) - (ea.isRange ? 1 : 0);
-  });
-
-  // Greedy Lane-Zuweisung (Interval-Graph-Coloring): erste freie Lane ohne Überlappung
-  const laneEnds = [];
-  const laneOf   = new Map();
-  ids.forEach(id => {
-    const { startIdx, endIdx } = eventsInWeek.get(id);
-    let lane = laneEnds.findIndex(end => end < startIdx);
-    if (lane === -1) { lane = laneEnds.length; laneEnds.push(endIdx); }
-    else laneEnds[lane] = endIdx;
-    laneOf.set(id, lane);
-  });
-
-  const laneCount = laneEnds.length;
-  const matrix = Array.from({ length: 7 }, () => new Array(laneCount).fill(null));
-  ids.forEach(id => {
-    const { startIdx, endIdx } = eventsInWeek.get(id);
-    const lane = laneOf.get(id);
-    for (let i = startIdx; i <= endIdx; i++) matrix[i][lane] = id;
-  });
-
-  return { eventsInWeek, matrix, laneCount };
-}
-
 function buildMiniCal(refDate) {
   const year  = refDate.getFullYear();
   const month = refDate.getMonth();
@@ -405,32 +361,36 @@ function buildMiniCal(refDate) {
   const monthNames = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
   const dayNames   = ['Mo','Di','Mi','Do','Fr','Sa','So'];
 
-  // Ereignis-Vorkommen dieses Monats pro Tag sammeln (Tag → Liste von Einträgen)
-  const dayEntries = new Map();
-  const addEntry = (day, entry) => {
-    if (!dayEntries.has(day)) dayEntries.set(day, []);
-    dayEntries.get(day).push(entry);
-  };
+  // Build set of days that have any event (single or range or recurring)
+  const eventDays    = new Set(); // days with single events
+  const rangeDays    = new Set(); // days inside a multi-day range
+  const rangeStart   = new Set();
+  const rangeEnd     = new Set();
+  const dayColors    = new Map(); // day -> tatsächliche Termin-Farbe (erster gefundener Termin gewinnt)
 
   if (typeof events !== 'undefined') {
     Object.entries(events).forEach(([key, dayEvs]) => {
       (dayEvs || []).forEach(ev => {
-        const color = ev.color || DEFAULT_EVENT_COLOR;
         if (!ev.endDate) {
-          // Einzeltag
+          // Single-day
           const d = parseLocalDate(key);
           if (d.getFullYear() === year && d.getMonth() === month) {
-            addEntry(d.getDate(), { id: ev.id, color, isRange: false });
+            eventDays.add(d.getDate());
+            if (!dayColors.has(d.getDate())) dayColors.set(d.getDate(), ev.color || DEFAULT_EVENT_COLOR);
           }
           return;
         }
-        // Mehrtägig: jeden Tag im Zeitraum als eigenen Eintrag der gleichen Ereignis-ID erfassen
+        // Multi-day: mark all days in range
         const start = parseLocalDate(ev.startDate || key); start.setHours(0,0,0,0);
         const end   = parseLocalDate(ev.endDate);           end.setHours(0,0,0,0);
         const cur   = new Date(start);
         while (cur <= end) {
           if (cur.getFullYear() === year && cur.getMonth() === month) {
-            addEntry(cur.getDate(), { id: ev.id, color, isRange: true });
+            const d = cur.getDate();
+            rangeDays.add(d);
+            if (!dayColors.has(d)) dayColors.set(d, ev.color || DEFAULT_EVENT_COLOR);
+            if (cur.getTime() === start.getTime()) rangeStart.add(d);
+            if (cur.getTime() === end.getTime())   rangeEnd.add(d);
           }
           cur.setDate(cur.getDate() + 1);
         }
@@ -438,13 +398,14 @@ function buildMiniCal(refDate) {
     });
   }
 
-  // Wiederkehrende Vorkommen dieses Monats als Einzeltag-Einträge erfassen
+  // Wiederkehrende Vorkommen dieses Monats ebenfalls als Punkt markieren
   if (typeof getSeriesOccurrencesInRange === 'function') {
     const gridStart = new Date(year, month, 1);
     const gridEnd   = new Date(year, month + 1, 0);
     getSeriesOccurrencesInRange(gridStart, gridEnd).forEach(({ date: d, event: ev }) => {
       if (d.getFullYear() === year && d.getMonth() === month) {
-        addEntry(d.getDate(), { id: ev.id + '_' + dateKey(d), color: ev.color || DEFAULT_EVENT_COLOR, isRange: false });
+        eventDays.add(d.getDate());
+        if (!dayColors.has(d.getDate())) dayColors.set(d.getDate(), ev.color || DEFAULT_EVENT_COLOR);
       }
     });
   }
@@ -455,94 +416,76 @@ function buildMiniCal(refDate) {
 
   const daysInMonth = new Date(year, month+1, 0).getDate();
   const prevDays    = new Date(year, month, 0).getDate();
-  const total       = startDow + daysInMonth;
-  const remainder   = total % 7 === 0 ? 0 : 7 - (total % 7);
-
-  // Zellenfolge (ohne Kopfzeile) in Kalenderzeilen à 7 Tage aufteilen, damit
-  // Ereignis-Balken pro Zeile (Mo–So) unabhängig ausgerichtet werden können
-  const sequence = [];
-  for (let i = startDow - 1; i >= 0; i--) sequence.push({ day: null, label: prevDays - i });
-  for (let d = 1; d <= daysInMonth; d++) sequence.push({ day: d, label: d });
-  for (let d = 1; d <= remainder; d++) sequence.push({ day: null, label: d });
 
   let cells = dayNames.map(d => `<div class="mini-cal-day-name">${d}</div>`).join('');
 
-  for (let w = 0; w < sequence.length; w += 7) {
-    const week = sequence.slice(w, w + 7);
-    const { eventsInWeek, matrix, laneCount } = assignWeekLanes(week, dayEntries);
-
-    week.forEach((slot, idx) => {
-      if (slot.day == null) {
-        cells += `<div class="mini-cal-cell other-month"><span class="mini-cal-daynum">${slot.label}</span></div>`;
-        return;
-      }
-      const d = slot.day;
-      const cellDate = new Date(year, month, d); cellDate.setHours(0,0,0,0);
-      const isT = cellDate.getTime() === today.getTime();
-      const key = dateKey(cellDate);
-
-      let barsHtml = '';
-      if (laneCount > 0) {
-        const laneBars = matrix[idx].map(id => {
-          if (!id) return `<span class="mini-cal-bar bar-empty"></span>`;
-          const info       = eventsInWeek.get(id);
-          const isRowStart = idx === info.startIdx;
-          const isRowEnd   = idx === info.endIdx;
-          const posCls = (!info.isRange || (isRowStart && isRowEnd)) ? 'bar-single'
-                       : isRowStart ? 'bar-start'
-                       : isRowEnd   ? 'bar-end'
-                       : 'bar-mid';
-          return `<span class="mini-cal-bar ${posCls}" style="background:${info.color}"></span>`;
-        }).join('');
-        barsHtml = `<div class="mini-cal-bars">${laneBars}</div>`;
-      }
-
-      cells += `<div class="mini-cal-cell${isT ? ' is-today' : ''}" data-date="${key}" data-day="${d}"><span class="mini-cal-daynum">${d}</span>${barsHtml}</div>`;
-    });
+  for (let i = startDow - 1; i >= 0; i--) {
+    cells += `<div class="mini-cal-cell other-month"><span>${prevDays - i}</span></div>`;
   }
 
-  // Terminliste des angezeigten Monats — immer der gesamte Monat (1. bis
-  // letzter Tag), unabhängig davon ob aktueller, vergangener oder künftiger
-  // Monat. Ein einmaliger Scan über alle Termine statt Tag-für-Tag-Lookup,
-  // da mehrtägige Termine nur unter ihrem Start-Datum-Schlüssel liegen und
-  // sonst verpasst würden, sobald das Fenster nicht exakt am Starttag beginnt.
+  for (let d = 1; d <= daysInMonth; d++) {
+    const cellDate = new Date(year, month, d); cellDate.setHours(0,0,0,0);
+    const isT  = cellDate.getTime() === today.getTime();
+    const hasE = eventDays.has(d);
+    const isR  = rangeDays.has(d);
+    const isRS = rangeStart.has(d);
+    const isRE = rangeEnd.has(d);
+    const key  = dateKey(cellDate);
+
+    const cls = ['mini-cal-cell',
+      isT  ? 'is-today'    : '',
+      hasE ? 'has-events'  : '',
+      isR  ? 'in-range'    : '',
+      isRS ? 'range-start' : '',
+      isRE ? 'range-end'   : '',
+    ].filter(Boolean).join(' ');
+
+    // Farbiger Punkt/Hintergrund zeigt die tatsächliche Terminfarbe; bei "heute" bleibt die kontrastreiche Standardfarbe erhalten
+    const dotColor   = (hasE && !isT) ? dayColors.get(d) : null;
+    const rangeColor = (isR  && !isT) ? dayColors.get(d) : null;
+    const dotStyle   = dotColor   ? ` style="background:${dotColor}"` : '';
+    const cellStyle  = rangeColor ? ` style="background:${hexToRgba(rangeColor, (isRS || isRE) ? 0.22 : 0.14)}"` : '';
+    const numStyle   = rangeColor ? ` style="color:${rangeColor}"` : '';
+
+    cells += `<div class="${cls}" data-date="${key}" data-day="${d}"${cellStyle}><span${numStyle}>${d}</span><span class="mini-cal-dot"${dotStyle}></span></div>`;
+  }
+
+  const total     = startDow + daysInMonth;
+  const remainder = total % 7 === 0 ? 0 : 7 - (total % 7);
+  for (let d = 1; d <= remainder; d++) {
+    cells += `<div class="mini-cal-cell other-month"><span>${d}</span></div>`;
+  }
+
+  // Upcoming events list (next 14 days) — includes multi-day starts + recurring
   let upcomingHtml = '';
   const upcoming = [];
-  const listFrom  = new Date(year, month, 1);
-  const listTo    = new Date(year, month, daysInMonth);
-
-  if (typeof events !== 'undefined') {
-    Object.entries(events).forEach(([key, dayEvs]) => {
-      (dayEvs || []).forEach(ev => {
-        if (ev.showInAgenda === false) return; // per Toggle aus der Liste ausgeblendet
-        const evColor = ev.color || DEFAULT_EVENT_COLOR;
-        if (!ev.endDate) {
-          const d = parseLocalDate(key);
-          if (d < listFrom || d > listTo) return;
-          upcoming.push({ title: ev.title, date: d, dateStr: d.toLocaleDateString('de-DE', { day: 'numeric', month: 'long' }), color: evColor, isRange: false });
-          return;
-        }
-        const start = parseLocalDate(ev.startDate || key); start.setHours(0,0,0,0);
-        const end   = parseLocalDate(ev.endDate);           end.setHours(0,0,0,0);
-        if (end < listFrom || start > listTo) return; // kein Überschneiden mit dem angezeigten Monat
-        const startStr = start.toLocaleDateString('de-DE', { day: 'numeric', month: 'short' });
-        const endStr   = end.toLocaleDateString('de-DE',   { day: 'numeric', month: 'short' });
-        // Sortierdatum: Beginn des Termins, geclamped auf den Monatsanfang, falls er vorher startete
-        const sortDate = start < listFrom ? listFrom : start;
-        upcoming.push({ title: ev.title, date: sortDate, dateStr: `${startStr} – ${endStr}`, color: evColor, isRange: true });
+  const seenIds  = new Set();
+  for (let i = 0; i <= 14; i++) {
+    const d   = new Date(today); d.setDate(today.getDate() + i);
+    const key = dateKey(d);
+    // Single-day events on this day
+    (events[key] || []).forEach(ev => {
+      if (seenIds.has(ev.id)) return;
+      seenIds.add(ev.id);
+      const evColor = ev.color || DEFAULT_EVENT_COLOR;
+      if (!ev.endDate) {
+        upcoming.push({ title: ev.title, date: d, dateStr: d.toLocaleDateString('de-DE', { day: 'numeric', month: 'long' }), color: evColor, isRange: false });
+      } else {
+        const end = parseLocalDate(ev.endDate);
+        const startStr = parseLocalDate(ev.startDate || key).toLocaleDateString('de-DE',{day:'numeric',month:'short'});
+        const endStr   = end.toLocaleDateString('de-DE', {day:'numeric', month:'short'});
+        upcoming.push({ title: ev.title, date: d, dateStr: `${startStr} – ${endStr}`, color: evColor, isRange: true });
+      }
+    });
+    // Wiederkehrende Vorkommen an diesem Tag
+    if (typeof getSeriesOccurrencesInRange === 'function') {
+      getSeriesOccurrencesInRange(d, d).forEach(({ event: ev }) => {
+        if (seenIds.has(ev.id)) return;
+        seenIds.add(ev.id);
+        upcoming.push({ title: '↻ ' + ev.title, date: d, dateStr: d.toLocaleDateString('de-DE', { day: 'numeric', month: 'long' }), color: ev.color || DEFAULT_EVENT_COLOR, isRange: false });
       });
-    });
+    }
   }
-
-  // Wiederkehrende Vorkommen im gesamten angezeigten Monat (Funktion unterstützt bereits Zeiträume)
-  if (typeof getSeriesOccurrencesInRange === 'function') {
-    getSeriesOccurrencesInRange(listFrom, listTo).forEach(({ date: d, event: ev }) => {
-      if (ev.showInAgenda === false) return;
-      upcoming.push({ title: '↻ ' + ev.title, date: d, dateStr: d.toLocaleDateString('de-DE', { day: 'numeric', month: 'long' }), color: ev.color || DEFAULT_EVENT_COLOR, isRange: false });
-    });
-  }
-
-  upcoming.sort((a, b) => a.date - b.date);
 
   if (upcoming.length > 0) {
     upcomingHtml = `<div id="mini-cal-events">${
@@ -856,10 +799,7 @@ function updateThemeIcon() {
 }
 
 document.getElementById('theme-toggle-btn')?.addEventListener('click', () => {
-  darkMode = !darkMode;
-  DB.set('darkMode', darkMode);
-  document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
-  updateThemeIcon();
+  setDarkMode(!darkMode);
 });
 
 // =========================

@@ -96,6 +96,23 @@ let collapsedGroups  = new Set(DB.get('collapsedGroups', []));
 
 if (darkMode) document.documentElement.setAttribute('data-theme', 'dark');
 
+// ── Zentraler Theme-Switch ──────────────────────────────────────────────
+// Einziger Ort, der darkMode setzt/speichert und alle Folgen auslöst:
+// data-theme-Attribut, Sidebar-Icon, und Neu-Rendern der Ansichten mit
+// nutzerdefinierten Farben (--user-color-*, siehe hub-utils.js), damit
+// diese sofort statt erst beim nächsten Tab-Wechsel aktualisiert werden.
+// Wird sowohl vom Sidebar-Sonne/Mond-Button (today.js) als auch vom
+// Schalter in den Einstellungen (settings.js) aufgerufen.
+function setDarkMode(dark) {
+  darkMode = dark;
+  DB.set('darkMode', darkMode);
+  document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
+  if (typeof updateThemeIcon === 'function') updateThemeIcon();
+  if (typeof renderDesk === 'function') renderDesk();
+  if (typeof renderCalendar === 'function') renderCalendar();
+  if (typeof renderGuideShelf === 'function') renderGuideShelf();
+}
+
 function applyColors() {
   const r = document.documentElement.style;
   r.setProperty('--event-color',    colors.event);
