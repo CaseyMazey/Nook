@@ -822,9 +822,18 @@ function renderCalendar() {
         const pill = document.createElement('div');
         pill.className = 'cal-event-pill' + (ev.countdown ? ' countdown-pill' : '');
         if (ev.color) {
-          pill.style.background = hexToRgba(ev.color, 0.16);
-          pill.style.color = ev.color;
-          pill.style.borderLeftColor = ev.color;
+          if (isDarkThemeActive()) {
+            // Dark: reine Übersetzung der Nutzerfarbe würde auf dunklem Grund
+            // unlesbar — Text/Rand kommen aus der zentralen Engine.
+            const v = computeUserColorVars(ev.color, true);
+            pill.style.background = hexToRgba(ev.color, 0.24);
+            pill.style.color = v.text;
+            pill.style.borderLeftColor = v.border;
+          } else {
+            pill.style.background = hexToRgba(ev.color, 0.16);
+            pill.style.color = ev.color;
+            pill.style.borderLeftColor = ev.color;
+          }
         }
         pill.textContent = (isRecurring ? '↻ ' : '') + (ev.time ? ev.time + ' ' : '') + ev.title;
         pill.title = ev.notes || '';
@@ -846,9 +855,16 @@ function renderCalendar() {
                         :                    'cal-span-mid';
         pill.className = `cal-event-pill cal-span ${spanClass}` + (ev.countdown ? ' countdown-pill' : '');
         if (ev.color) {
-          pill.style.background = hexToRgba(ev.color, 0.22);
-          pill.style.color = ev.color;
-          if (rowStart) pill.style.borderLeftColor = ev.color;
+          if (isDarkThemeActive()) {
+            const v = computeUserColorVars(ev.color, true);
+            pill.style.background = hexToRgba(ev.color, 0.30);
+            pill.style.color = v.text;
+            if (rowStart) pill.style.borderLeftColor = v.border;
+          } else {
+            pill.style.background = hexToRgba(ev.color, 0.22);
+            pill.style.color = ev.color;
+            if (rowStart) pill.style.borderLeftColor = ev.color;
+          }
         }
         pill.textContent = isStart ? ev.title : (isEnd ? '↳ Ende' : '');
         pill.title = ev.title + (ev.notes ? ' — ' + ev.notes : '');

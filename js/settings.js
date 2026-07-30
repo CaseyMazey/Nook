@@ -53,6 +53,12 @@ document.getElementById('setting-username').addEventListener('input', e => {
 document.getElementById('setting-darkmode').addEventListener('change', e => {
   darkMode = e.target.checked; DB.set('darkMode', darkMode);
   document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
+  // Nutzerdefinierte Farben (Pinnwand/Kalender/Guides) werden zentral aus
+  // hub-utils.js abgeleitet und hängen vom aktiven Theme ab — hier nur die
+  // betroffenen Ansichten neu rendern, falls sie aktuell existieren.
+  if (typeof renderDesk === 'function') renderDesk();
+  if (typeof renderCalendar === 'function') renderCalendar();
+  if (typeof renderGuideShelf === 'function') renderGuideShelf();
 });
 
 function renderBlockSettings(){

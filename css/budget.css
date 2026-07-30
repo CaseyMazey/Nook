@@ -41,7 +41,8 @@
   --b-status-amber:      #ca8a04;
   --b-status-amber-text: #92400e;
 
-  /* Finanzgarten — feste Illustrationsfarben (Papier-/Erde-Optik, bewusst themenunabhängig wie eine Zeichnung) */
+  /* Finanzgarten — Papier-/Erde-Optik. Illustration bleibt themenunabhängig (SVGs),
+     die Karten-/Textfarben passen sich über die Dark-Overrides unten an. */
   --b-garden-bg-1:       #F6F0E4;
   --b-garden-bg-2:       #EDE4D0;
   --b-garden-border:     #C8B07A;
@@ -53,8 +54,19 @@
   --b-garden-pip:        #8B9E3A;
   --b-garden-wood:       #A07840;
   --b-garden-wood-light: #C4A06A;
+  --b-garden-shadow:     0 4px 18px rgba(100,75,30,0.13), 0 1px 4px rgba(100,75,30,0.08);
+  --b-garden-line:       rgba(150,115,60,0.14);
+  --b-garden-header-bg:  rgba(175,140,70,0.08);
+  --b-garden-chip-bg:        rgba(175,140,70,0.15);
+  --b-garden-chip-bg-hover:  rgba(175,140,70,0.28);
+  --b-garden-chip-border:    rgba(175,140,70,0.3);
+  --b-garden-stage-bg:   rgba(175,140,70,0.18);
+  --b-garden-track:      rgba(150,115,60,0.18);
+  --b-garden-rail:       rgba(140,100,40,0.2);
+  --b-garden-highlight:  rgba(255,255,255,0.12);
 
-  /* Mini-Übersichtskarten (Einnahmen/Ausgaben/Frei) — feste Pastellflächen; Text via rgba(0,0,0,x), analog Pinnwand-Prinzip */
+  /* Mini-Übersichtskarten (Einnahmen/Ausgaben/Frei) — feste Pastellflächen, analog Pinnwand-Prinzip.
+     Textfarben laufen über --b-card-ink-* / --b-card-line-* statt rohem rgba(0,0,0,x). */
   --b-card-income-bg:   #A3B18A;
   --b-card-expense-bg:  #C0AC99;
   --b-card-free-bg:     #EBE4D4;
@@ -65,6 +77,21 @@
   --b-card-need: #D08010;
   --b-card-want: #5A9020;
   --b-card-bad:  #7A1810;
+
+  --b-card-ink-1: rgba(0,0,0,0.78);
+  --b-card-ink-2: rgba(0,0,0,0.50);
+  --b-card-ink-3: rgba(0,0,0,0.45);
+  --b-card-ink-4: rgba(0,0,0,0.42);
+  --b-card-ink-5: rgba(0,0,0,0.38);
+  --b-card-ink-6: rgba(0,0,0,0.35);
+  --b-card-ink-7: rgba(0,0,0,0.32);
+  --b-card-line-1: rgba(0,0,0,0.05);
+  --b-card-line-2: rgba(0,0,0,0.07);
+  --b-card-line-3: rgba(0,0,0,0.08);
+  --b-card-line-4: rgba(0,0,0,0.09);
+  --b-card-line-5: rgba(0,0,0,0.10);
+  --b-card-line-6: rgba(0,0,0,0.13);
+  --b-card-panel:  rgba(255,255,255,0.62);
 }
 
 /* Dark mode overrides for budget-specific tokens */
@@ -74,9 +101,57 @@
   --b-red-soft:   rgba(192,57,43,0.16);
 
   --b-status-amber-text: #f5c242;
+
+  /* Finanzgarten — dunklere Erde/Papier-Optik, Illustrationen bleiben lesbar */
+  --b-garden-bg-1:       #2A2116;
+  --b-garden-bg-2:       #221B12;
+  --b-garden-border:     #6B5A34;
+  --b-garden-title:      #D8B978;
+  --b-garden-select:     #C9A868;
+  --b-garden-stage:      #D3AC63;
+  --b-garden-plant:      #C7A876;
+  --b-garden-plant-val:  #E6D2A8;
+  --b-garden-pip:        #A7C24E;
+  --b-garden-wood:       #7A5A34;
+  --b-garden-wood-light: #93764A;
+  --b-garden-shadow:     0 4px 18px rgba(0,0,0,0.35), 0 1px 4px rgba(0,0,0,0.20);
+  --b-garden-line:       rgba(255,225,160,0.10);
+  --b-garden-header-bg:  rgba(255,225,160,0.05);
+  --b-garden-chip-bg:        rgba(255,225,160,0.12);
+  --b-garden-chip-bg-hover:  rgba(255,225,160,0.20);
+  --b-garden-chip-border:    rgba(255,225,160,0.22);
+  --b-garden-stage-bg:   rgba(255,225,160,0.14);
+  --b-garden-track:      rgba(255,225,160,0.14);
+  --b-garden-rail:       rgba(255,225,160,0.16);
+  --b-garden-highlight:  rgba(255,255,255,0.06);
+
+  /* Mini-Übersichtskarten — dunklere, entsättigte Pastellflächen + heller Ink */
+  --b-card-income-bg:   #3C4A34;
+  --b-card-expense-bg:  #4A3B32;
+  --b-card-free-bg:     #332E24;
+  --b-card-income-text:  #A9CB93;
+  --b-card-expense-text: #DCA98C;
+  --b-card-neutral-text: #EDE6D8;
+  --b-card-must: #E08A72;
+  --b-card-need: #E3A94D;
+  --b-card-want: #9CC169;
+  --b-card-bad:  #D98B78;
+
+  --b-card-ink-1: rgba(255,255,255,0.85);
+  --b-card-ink-2: rgba(255,255,255,0.58);
+  --b-card-ink-3: rgba(255,255,255,0.52);
+  --b-card-ink-4: rgba(255,255,255,0.48);
+  --b-card-ink-5: rgba(255,255,255,0.44);
+  --b-card-ink-6: rgba(255,255,255,0.40);
+  --b-card-ink-7: rgba(255,255,255,0.38);
+  --b-card-line-1: rgba(255,255,255,0.08);
+  --b-card-line-2: rgba(255,255,255,0.10);
+  --b-card-line-3: rgba(255,255,255,0.11);
+  --b-card-line-4: rgba(255,255,255,0.12);
+  --b-card-line-5: rgba(255,255,255,0.13);
+  --b-card-line-6: rgba(255,255,255,0.16);
+  --b-card-panel:  rgba(0,0,0,0.22);
 }
-/* Finanzgarten & Mini-Übersichtskarten bleiben bewusst ohne Dark-Override —
-   feste Illustrations-/Pastellflächen, siehe Kommentare oben bei den jeweiligen Tokens. */
 
 /* ── View override ────────────────────────────────────────── */
 #view-budget {
@@ -383,7 +458,7 @@
 #budget-garden-card {
   background: linear-gradient(160deg, var(--b-garden-bg-1) 0%, var(--b-garden-bg-2) 100%);
   border-radius: var(--b-radius);
-  box-shadow: 0 4px 18px rgba(100,75,30,0.13), 0 1px 4px rgba(100,75,30,0.08);
+  box-shadow: var(--b-garden-shadow);
   border: 1.5px solid var(--b-garden-border);
   overflow: hidden;
   position: relative;
@@ -394,8 +469,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 14px 18px 10px;
-  border-bottom: 1px solid rgba(150,115,60,0.14);
-  background: rgba(175,140,70,0.08);
+  border-bottom: 1px solid var(--b-garden-line);
+  background: var(--b-garden-header-bg);
 }
 .b-garden-title-block { display: flex; align-items: center; gap: 7px; }
 .b-garden-emoji { font-size: 16px; line-height: 1; }
@@ -405,8 +480,8 @@
 .b-garden-select-btn {
   display: flex; align-items: center; gap: 5px;
   font-size: 12px; font-weight: 600; color: var(--b-garden-select);
-  background: rgba(175,140,70,0.15);
-  border: 1px solid rgba(175,140,70,0.3);
+  background: var(--b-garden-chip-bg);
+  border: 1px solid var(--b-garden-chip-border);
   border-radius: 99px;
   padding: 4px 12px;
   cursor: pointer;
@@ -416,7 +491,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.b-garden-select-btn:hover { background: rgba(175,140,70,0.28); }
+.b-garden-select-btn:hover { background: var(--b-garden-chip-bg-hover); }
 .b-garden-select-arrow { opacity: 0.6; font-size: 10px; }
 
 /* Emoji in Sparzielliste */
@@ -464,7 +539,7 @@
 .b-garden-stage-label {
   font-size: 10px; font-weight: 700;
   color: var(--b-garden-stage);
-  background: rgba(175,140,70,0.18);
+  background: var(--b-garden-stage-bg);
   border-radius: 99px;
   padding: 2px 8px;
   letter-spacing: 0.04em;
@@ -476,11 +551,11 @@
 .b-garden-plant-val  { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--b-garden-plant-val); text-align: center; }
 
 /* Progress */
-.b-garden-progress-bar { width: 78%; height: 5px; background: rgba(150,115,60,0.18); border-radius: 99px; overflow: hidden; }
+.b-garden-progress-bar { width: 78%; height: 5px; background: var(--b-garden-track); border-radius: 99px; overflow: hidden; }
 
 /* Pips (Finanzbaum Stufen) */
 .b-garden-mini-bar { display: flex; gap: 3px; margin-top: 2px; }
-.b-garden-pip { width: 8px; height: 4px; border-radius: 2px; background: rgba(150,115,60,0.18); }
+.b-garden-pip { width: 8px; height: 4px; border-radius: 2px; background: var(--b-garden-track); }
 .b-garden-pip.filled { background: var(--b-garden-pip); }
 
 /* Zaun-Trennlinie */
@@ -506,7 +581,7 @@
   position: absolute; left: 50%; top: 6px; bottom: 10px;
   width: 2px;
   transform: translateX(-50%);
-  background: rgba(140,100,40,0.2);
+  background: var(--b-garden-rail);
 }
 
 /* Erde unten */
@@ -520,7 +595,7 @@
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 3px;
-  background: rgba(255,255,255,0.12);
+  background: var(--b-garden-highlight);
 }
 
 /* Plant selector in modal */
@@ -924,7 +999,7 @@
 #budget-main-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
 
 .b-main-card {
-  border: 1px solid rgba(0,0,0,0.10);
+  border: 1px solid var(--b-card-line-5);
   border-radius: var(--radius-xl);
   overflow: hidden;
   box-shadow: var(--shadow-sm);
@@ -940,49 +1015,49 @@
   width: 100%; display: flex; align-items: center; justify-content: space-between;
   padding: 13px 16px 11px; background: none; border: none; cursor: pointer; text-align: left; gap: 12px;
 }
-.b-main-card-summary:hover { background: rgba(0,0,0,0.05); }
+.b-main-card-summary:hover { background: var(--b-card-line-1); }
 
 .b-mcs-left { display: flex; flex-direction: column; gap: 3px; }
-.b-mcs-label { font-size: 9px; font-weight: 700; letter-spacing: 0.13em; text-transform: uppercase; color: rgba(0,0,0,0.42); }
-.b-mcs-value { font-family: var(--mono); font-size: 20px; font-weight: 700; color: rgba(0,0,0,0.78); line-height: 1.1; }
+.b-mcs-label { font-size: 9px; font-weight: 700; letter-spacing: 0.13em; text-transform: uppercase; color: var(--b-card-ink-4); }
+.b-mcs-value { font-family: var(--mono); font-size: 20px; font-weight: 700; color: var(--b-card-ink-1); line-height: 1.1; }
 .b-mcs-value.income  { color: var(--b-card-income-text); }
 .b-mcs-value.expense { color: var(--b-card-expense-text); }
-.b-mcs-arrow { font-size: 10px; color: rgba(0,0,0,0.32); flex-shrink: 0; }
+.b-mcs-arrow { font-size: 10px; color: var(--b-card-ink-7); flex-shrink: 0; }
 
 /* Detail panel — clearly lighter than header */
 .b-main-card-detail {
-  background: rgba(255,255,255,0.62);
-  border-top: 1px solid rgba(0,0,0,0.09);
+  background: var(--b-card-panel);
+  border-top: 1px solid var(--b-card-line-4);
   padding: 8px 14px 10px;
   flex: 1;
 }
 
 .b-main-card-list { display: flex; flex-direction: column; }
-.b-main-empty { font-size: 12px; color: rgba(0,0,0,0.38); padding: 4px 0; font-style: italic; }
+.b-main-empty { font-size: 12px; color: var(--b-card-ink-5); padding: 4px 0; font-style: italic; }
 
 .b-main-row {
   display: grid; grid-template-columns: 38px 1fr 14px auto;
   align-items: center; gap: 5px;
-  padding: 3px 0; border-bottom: 1px solid rgba(0,0,0,0.05); font-size: 12px; line-height: 1.2;
+  padding: 3px 0; border-bottom: 1px solid var(--b-card-line-1); font-size: 12px; line-height: 1.2;
 }
 .b-main-row:last-child { border-bottom: none; }
 
 .b-main-row-clickable { cursor: pointer; border-radius: 4px; margin: 0 -3px; padding: 3px 3px; transition: background 100ms; }
-.b-main-row-clickable:hover  { background: rgba(0,0,0,0.07); }
-.b-main-row-clickable:active { background: rgba(0,0,0,0.13); }
+.b-main-row-clickable:hover  { background: var(--b-card-line-2); }
+.b-main-row-clickable:active { background: var(--b-card-line-6); }
 .b-main-row.b-main-row-paid  { opacity: 0.35; text-decoration: line-through; }
 
-.b-main-row-day    { font-family: var(--mono); font-size: 9.5px; color: rgba(0,0,0,0.38); }
+.b-main-row-day    { font-family: var(--mono); font-size: 9.5px; color: var(--b-card-ink-5); }
 .b-main-row-name   { color: var(--b-card-neutral-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.b-main-row-check  { font-size: 10px; color: rgba(0,0,0,0.45); text-align: center; }
+.b-main-row-check  { font-size: 10px; color: var(--b-card-ink-3); text-align: center; }
 .b-main-row-amount { font-family: var(--mono); font-size: 11.5px; font-weight: 600; white-space: nowrap; }
 .b-main-row-amount.income  { color: var(--b-card-income-text); }
 .b-main-row-amount.expense { color: var(--b-card-expense-text); }
 
-.b-main-group-head { display: flex; align-items: center; gap: 5px; font-size: 9.5px; font-weight: 700; color: rgba(0,0,0,0.38); padding: 4px 0 2px; text-transform: uppercase; letter-spacing: 0.05em; }
+.b-main-group-head { display: flex; align-items: center; gap: 5px; font-size: 9.5px; font-weight: 700; color: var(--b-card-ink-5); padding: 4px 0 2px; text-transform: uppercase; letter-spacing: 0.05em; }
 
-.b-main-card-total { display: flex; justify-content: space-between; align-items: center; padding: 6px 0 0; border-top: 1px solid rgba(0,0,0,0.08); margin-top: 3px; }
-.b-main-total-label { font-size: 9.5px; font-weight: 600; color: rgba(0,0,0,0.38); text-transform: uppercase; letter-spacing: 0.07em; }
+.b-main-card-total { display: flex; justify-content: space-between; align-items: center; padding: 6px 0 0; border-top: 1px solid var(--b-card-line-3); margin-top: 3px; }
+.b-main-total-label { font-size: 9.5px; font-weight: 600; color: var(--b-card-ink-5); text-transform: uppercase; letter-spacing: 0.07em; }
 .b-main-total-value { font-family: var(--mono); font-size: 13px; font-weight: 700; }
 .b-main-total-value.income  { color: var(--b-card-income-text); }
 .b-main-total-value.expense { color: var(--b-card-expense-text); }
@@ -990,7 +1065,7 @@
 /* Free budget card inner */
 #b-free-content { padding: 6px 0 2px; }
 .b-free-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; }
-.b-free-label     { font-size: 12px; color: rgba(0,0,0,0.50); }
+.b-free-label     { font-size: 12px; color: var(--b-card-ink-2); }
 .b-free-label-big { font-size: 13px; font-weight: 600; color: var(--b-card-neutral-text); }
 .b-free-val { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--b-card-neutral-text); }
 .b-free-val.income  { color: var(--b-card-income-text); }
@@ -998,7 +1073,7 @@
 .b-free-val-big { font-family: var(--mono); font-size: 17px; font-weight: 700; }
 .b-free-val-big.income  { color: var(--b-card-income-text); }
 .b-free-val-big.expense { color: var(--b-card-expense-text); }
-.b-free-divider { height: 1px; background: rgba(0,0,0,0.09); margin: 5px 0 3px; }
+.b-free-divider { height: 1px; background: var(--b-card-line-4); margin: 5px 0 3px; }
 .b-free-row-total { margin-top: 2px; }
 #b-status-inner { padding: 5px 0 2px; }
 
@@ -1017,12 +1092,12 @@
 .b-free-prio-dot.must { background: var(--b-card-must); }
 .b-free-prio-dot.need { background: var(--b-card-need); }
 .b-free-prio-dot.want { background: var(--b-card-want); }
-.b-free-prio-label { color: rgba(0,0,0,0.52); font-size: 11.5px; }
+.b-free-prio-label { color: var(--b-card-ink-2); font-size: 11.5px; }
 .b-free-prio-amt   { font-family: var(--mono); font-size: 11px; color: var(--b-card-expense-text); text-align: right; }
 .b-free-prio-after { font-family: var(--mono); font-size: 11px; font-weight: 600; text-align: right; min-width: 64px; }
 .b-free-prio-after.ok      { color: var(--b-card-income-text); }
 .b-free-prio-after.bad     { color: var(--b-card-bad); }
-.b-free-prio-after.neutral { color: rgba(0,0,0,0.35); }
+.b-free-prio-after.neutral { color: var(--b-card-ink-6); }
 
 /* =============================================================
    3-SPALTEN KARTEN (Wiederkehrende / Einmalige / Sparziele)

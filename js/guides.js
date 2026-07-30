@@ -277,12 +277,19 @@ const GUIDE_BOOK_COLORS = 6; // legacy pastel count (css: .guide-book-0 .. .guid
 // Applies the correct color class or inline style to a book element.
 function applyBookColor(el, cat, idx) {
   for (let i = 0; i < GUIDE_BOOK_COLORS; i++) el.classList.remove('guide-book-' + i);
+  el.classList.remove('guide-book-custom');
   if (typeof cat.coverColor === 'string' && /^#/.test(cat.coverColor)) {
-    el.style.background = hexToGradient(cat.coverColor);
+    // Nutzerdefinierte Farbe — zentral berechnete, themeabhängige Fläche
+    // statt fest hardcodierter Buch-Optik.
+    const v = applyUserColorVars(el, cat.coverColor);
+    el.classList.add('guide-book-custom');
+    el.style.background = `linear-gradient(160deg, ${v.bg} 0%, ${hexDarken(v.bg, 0.12)} 100%)`;
+    el.style.color = v.text;
   } else {
     const legacyIdx = (typeof cat.coverColor === 'number') ? cat.coverColor : idx;
     el.classList.add('guide-book-' + (legacyIdx % GUIDE_BOOK_COLORS));
     el.style.background = '';
+    el.style.color = '';
   }
 }
 
@@ -586,7 +593,7 @@ function renderSingleGuide(guideId) {
     <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
       <path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
-    <span class="guide-back-btn-label">${escHtml(category.name)}</span>
+    ${escHtml(category.name)}
   `;
   back.addEventListener('click', () => { hideGuideScrollBtn(); activeGuideId = null; renderGuideContent(); });
 
@@ -594,12 +601,7 @@ function renderSingleGuide(guideId) {
   const header = document.createElement('div');
   header.className = 'guide-detail-header';
 
-  // Fixed toolbar row: back button (left) + action buttons (right)
-  const toolbar = document.createElement('div');
-  toolbar.className = 'guide-detail-toolbar';
-
   const titleArea = document.createElement('div');
-  titleArea.className = 'guide-detail-title-area';
   titleArea.innerHTML = `
     <div class="guide-detail-title-row">
       ${guide.favorite ? '<span class="guide-fav-star guide-fav-star-lg">★</span>' : ''}
@@ -675,8 +677,7 @@ function renderSingleGuide(guideId) {
 
   menuWrap.append(menuBtn, dropdown);
   actions.append(favBtn, menuWrap);
-  toolbar.append(back, actions);
-  header.append(toolbar, titleArea);
+  header.append(titleArea, actions);
 
   // Content
   const content = document.createElement('div');
@@ -686,7 +687,7 @@ function renderSingleGuide(guideId) {
     : null;
   content.innerHTML = renderMarkdown(guide.content || '', guide.id, category.id, featuredBlockId);
 
-  main.append(header, content);
+  main.append(back, header, content);
   showGuideScrollBtn();
 
   renderSidebarForCategory(category, guide);

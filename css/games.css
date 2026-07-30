@@ -462,7 +462,7 @@
   color: var(--sage-fg);
   cursor: pointer;
   transition: background var(--transition), box-shadow var(--transition);
-  box-shadow: 0 1px 4px rgba(50,40,20,0.14);
+  box-shadow: var(--shadow-xs);
 }
 
 .game-action-btn:hover { background: var(--sage-dark); box-shadow: var(--shadow-sm); }

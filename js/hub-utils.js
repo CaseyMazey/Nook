@@ -129,6 +129,98 @@ function initColorPickerWidget(ids, opts = {}) {
 }
 
 // =========================
+// 1b) THEME-AWARE NUTZERFARBEN — --user-color-*
+// Zentrale Berechnung abgeleiteter Darstellungsfarben aus einer einzigen
+// vom Nutzer gewählten Basisfarbe (Pinnwand, Kalender, Guides, künftige Tabs).
+// Die Basisfarbe bleibt immer die Ausgangsfarbe — das aktive Theme leitet
+// daraus nur Hintergrund/Rand/Hover/Fokus/Text/Schatten ab. Komponenten
+// setzen diese Werte per applyUserColorVars() als CSS-Variablen auf ein
+// Element und müssen selbst nie wissen, ob Light- oder Dark-Theme aktiv ist.
+// =========================
+
+function isDarkThemeActive() {
+  return document.documentElement.getAttribute('data-theme') === 'dark';
+}
+
+function hexToRgbArr(hex) {
+  if (!hex || hex[0] !== '#') return [0, 0, 0];
+  let h = hex.slice(1);
+  if (h.length === 3) h = h.split('').map(c => c + c).join('');
+  return [parseInt(h.slice(0, 2), 16) || 0, parseInt(h.slice(2, 4), 16) || 0, parseInt(h.slice(4, 6), 16) || 0];
+}
+
+function relativeLuminance(rgb) {
+  return (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]) / 255;
+}
+
+// Mischt zwei Hex-Farben (t = Anteil hexB, 0..1)
+function mixHex(hexA, hexB, t) {
+  const a = hexToRgbArr(hexA), b = hexToRgbArr(hexB);
+  const mix = a.map((c, i) => Math.round(c * (1 - t) + b[i] * t));
+  return '#' + mix.map(v => v.toString(16).padStart(2, '0')).join('');
+}
+
+// Neutraler Dunkel-Ton, an --surface-3 (Dark) angelehnt — Ziel für die
+// Dark-Mode-Mischung, damit Nutzerfarben sich wie Teil der Dark-UI anfühlen.
+const USER_COLOR_DARK_NEUTRAL = '#26221B';
+
+/**
+ * Berechnet die vollständige --user-color-* Variablen-Menge aus einer
+ * Basisfarbe, abhängig vom aktiven Theme.
+ * @param {string} hex        Nutzer-Basisfarbe, z.B. "#C9D6BC"
+ * @param {boolean} [forceDark]  optional erzwingen statt automatisch erkennen
+ * @returns {{bg:string, border:string, hover:string, focus:string, text:string, shadow:string}}
+ */
+function computeUserColorVars(hex, forceDark) {
+  if (!hex || hex[0] !== '#') hex = HUB_PALETTE_HEX[0];
+  const isDark = typeof forceDark === 'boolean' ? forceDark : isDarkThemeActive();
+
+  if (!isDark) {
+    const bg = hex;
+    return {
+      bg,
+      border: hexDarken(bg, 0.16),
+      hover:  hexDarken(bg, 0.06),
+      focus:  hexDarken(bg, 0.30),
+      text:   relativeLuminance(hexToRgbArr(bg)) > 0.6 ? '#3D3626' : '#F5F1E6',
+      shadow: hexToRgba(hex, 0.25),
+    };
+  }
+
+  // Dark: Basisfarbe wird Richtung neutrales Dark-UI-Grau gemischt → dunklere,
+  // entsättigte Fläche. Rand/Hover/Fokus bleiben näher an der Originalfarbe
+  // und wirken dadurch heller als die Fläche.
+  const bg     = mixHex(hex, USER_COLOR_DARK_NEUTRAL, 0.62);
+  const border = mixHex(hex, USER_COLOR_DARK_NEUTRAL, 0.28);
+  const hover  = mixHex(hex, USER_COLOR_DARK_NEUTRAL, 0.42);
+  const focus  = mixHex(hex, USER_COLOR_DARK_NEUTRAL, 0.18);
+  return {
+    bg, border, hover, focus,
+    text:   relativeLuminance(hexToRgbArr(bg)) > 0.5 ? '#221E18' : '#F0EAD8',
+    shadow: 'rgba(0,0,0,0.35)',
+  };
+}
+
+/**
+ * Berechnet computeUserColorVars() und setzt das Ergebnis als
+ * --user-color-bg/-border/-hover/-focus/-text/-shadow direkt auf das Element.
+ * @param {HTMLElement} el
+ * @param {string} hex
+ * @returns {object|null} die berechneten Werte, oder null wenn kein Element
+ */
+function applyUserColorVars(el, hex) {
+  if (!el) return null;
+  const v = computeUserColorVars(hex);
+  el.style.setProperty('--user-color-bg', v.bg);
+  el.style.setProperty('--user-color-border', v.border);
+  el.style.setProperty('--user-color-hover', v.hover);
+  el.style.setProperty('--user-color-focus', v.focus);
+  el.style.setProperty('--user-color-text', v.text);
+  el.style.setProperty('--user-color-shadow', v.shadow);
+  return v;
+}
+
+// =========================
 // 2) CODEBLOCK-RENDERER
 // =========================
 // Baut das HTML für einen ```code```-Block. Bookmark-/Feature-Buttons sind

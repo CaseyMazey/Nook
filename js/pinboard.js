@@ -62,14 +62,6 @@ function migrateDeskCardsIfNeeded() {
 }
 migrateDeskCardsIfNeeded();
 
-// ---- Kontrastfarbe für Titel/Text auf beliebiger Kartenfarbe ----
-function deskTextColor(hex) {
-  if (!hex || hex[0] !== '#' || hex.length < 7) return null;
-  const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
-  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return lum > 0.6 ? '#3D3626' : '#F5F1E6';
-}
-
 // ---- Sortierung: Angepinnt zuerst, sonst nach gespeicherter Reihenfolge ----
 function sortedDeskCards(col) {
   return deskCards
@@ -96,9 +88,14 @@ function buildDeskCardEl(card) {
   const el = document.createElement('div');
   el.className = `panel today-tile desk-card desk-card--${card.style}`;
   el.dataset.id = card.id;
-  el.style.background = card.color || '';
-  const fg = deskTextColor(card.color);
-  if (fg) el.style.setProperty('--card-fg', fg);
+  if (card.color) {
+    applyUserColorVars(el, card.color);
+    el.style.background = 'var(--user-color-bg)';
+    el.style.setProperty('--card-fg', 'var(--user-color-text)');
+    el.style.setProperty('--card-border', 'var(--user-color-border)');
+  } else {
+    el.style.background = '';
+  }
   if (card.height) el.style.height = card.height + 'px';
 
   // Header
