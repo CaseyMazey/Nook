@@ -128,26 +128,37 @@
 
 .mini-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; }
 .mini-cal-day-name { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-3); text-align: center; padding-bottom: 6px; }
-.mini-cal-cell { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 6px; font-size: 11px; color: var(--text-2); cursor: pointer; transition: background var(--transition); gap: 2px; }
+
+/* Tageszelle: immer gleich aufgebaut, unabhängig von Ereignissen. Wächst nur
+   in der Höhe, wenn mehrere Ereignisbalken gestapelt werden. */
+.mini-cal-cell { min-height: 30px; display: flex; flex-direction: column; align-items: center; border-radius: 8px; padding: 3px 1px 4px; font-size: 11px; color: var(--text-2); cursor: pointer; transition: background var(--transition); gap: 2px; }
 .mini-cal-cell:hover { background: var(--accent-soft); color: var(--text); }
 .mini-cal-cell.other-month { color: var(--text-3); opacity: 0.4; }
-.mini-cal-cell.is-today { background: var(--sage); color: var(--sage-fg); font-weight: 700; border-radius: 50%; }
-.mini-cal-cell.is-today:hover { opacity: 0.88; }
 
-.mini-cal-dot { display: none; width: 3.5px; height: 3.5px; border-radius: 50%; background: var(--sage); flex-shrink: 0; }
-.mini-cal-cell.has-events .mini-cal-dot { display: block; }
-.mini-cal-cell.is-today .mini-cal-dot { background: rgba(248,245,238,0.75); }
+/* Tageszahl als eigenes Element — die Heute-Markierung ist ein Kreis nur
+   hinter der Zahl, nicht mehr die ganze Zelle, damit Ereignisbalken darunter
+   sichtbar bleiben. */
+.mini-cal-daynum { width: 20px; height: 20px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 500; }
+.mini-cal-cell.is-today .mini-cal-daynum { background: var(--sage); color: var(--sage-fg); font-weight: 700; }
+.mini-cal-cell.is-today:hover .mini-cal-daynum { opacity: 0.88; }
+
+/* Ereignisse als eigene Balken/Pillen innerhalb der Zelle — liegen über dem
+   Kalender, statt dessen Hintergrund einzufärben. Mehrere Termine stapeln
+   sich untereinander, an gleicher Woche ausgerichtet. */
+.mini-cal-bars { display: flex; flex-direction: column; gap: 2px; width: 100%; margin-top: 1px; }
+.mini-cal-bar { height: 5px; border-radius: 0; }
+.mini-cal-bar.bar-empty { background: transparent; }
+.mini-cal-bar.bar-single { margin: 0 4px; border-radius: 3px; }
+.mini-cal-bar.bar-start  { margin-left: 4px; margin-right: -1px; border-radius: 3px 0 0 3px; }
+.mini-cal-bar.bar-mid    { margin-left: -1px; margin-right: -1px; }
+.mini-cal-bar.bar-end    { margin-right: 4px; margin-left: -1px; border-radius: 0 3px 3px 0; }
+
 #mini-cal-events { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 10px; display: flex; flex-direction: column; gap: 7px; }
 .mini-cal-event-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .mini-cal-event-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
 .mini-cal-event-dot.prio-1 { background: var(--prio-1); }
 .mini-cal-event-dot.prio-ev { background: var(--sage); }
 .mini-cal-event-title { flex: 1; font-size: 12px; color: var(--text); line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.mini-cal-cell.in-range { background: color-mix(in srgb, var(--sage) 14%, transparent); border-radius: 0; margin: 0 -1px; }
-.mini-cal-cell.range-start { background: color-mix(in srgb, var(--sage) 22%, transparent); border-radius: 6px 0 0 6px; }
-.mini-cal-cell.range-end { background: color-mix(in srgb, var(--sage) 22%, transparent); border-radius: 0 6px 6px 0; }
-.mini-cal-cell.range-start.range-end { border-radius: 6px; }
-.mini-cal-cell.in-range span, .mini-cal-cell.range-start span, .mini-cal-cell.range-end span { color: var(--sage-dark); font-weight: 600; }
 .mini-cal-event-dot.range-ev { background: var(--sage); width: 8px; border-radius: 2px; }
 
 /* ═══════════════════════════════════════════════════════════
