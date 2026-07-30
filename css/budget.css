@@ -810,6 +810,10 @@
 }
 .budget-goal-card:last-child { border-bottom: none; }
 .budget-goal-card:hover { background: var(--bg); }
+.budget-goal-card:hover .budget-edit-btn { opacity: 1; }
+.budget-goal-card:hover .task-delete { opacity: 1 !important; }
+.budget-goal-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.budget-goal-actions { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
 .budget-goal-bar {
   height: 5px;
   background: var(--border-strong);

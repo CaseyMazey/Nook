@@ -2110,9 +2110,12 @@ function renderBudgetGoals(){
     const emoji = PLANT_EMOJIS[goal.plantType] || '🌱';
     const nm   = document.createElement('span'); nm.className = 'budget-row-name';
     nm.innerHTML = `<span class="budget-goal-emoji">${emoji}</span> ${goal.name}`;
-    const del  = document.createElement('button'); del.className = 'task-delete'; del.textContent = '✕'; del.style.opacity = '0';
-    card.addEventListener('mouseenter', () => del.style.opacity = '1');
-    card.addEventListener('mouseleave', () => del.style.opacity = '0');
+
+    const actions = document.createElement('div'); actions.className = 'budget-goal-actions';
+    const editBtn = document.createElement('button'); editBtn.className = 'budget-edit-btn';
+    editBtn.title = 'Bearbeiten'; editBtn.innerHTML = '&#9998;';
+    editBtn.addEventListener('click', e => { e.stopPropagation(); openEditGoalModal(goal); });
+    const del  = document.createElement('button'); del.className = 'task-delete'; del.textContent = '✕';
     del.addEventListener('click', () => {
       budgetGoals = budgetGoals.filter(g => g.id !== goal.id);
       // If the active garden goal was deleted, clear the stored ID
@@ -2120,7 +2123,8 @@ function renderBudgetGoals(){
       if (activeId === goal.id) DB.set('gardenActiveGoalId', null);
       saveBudgetGoals(); renderBudgetGoals(); renderFinanzgarten(); renderSparplaner();
     });
-    head.append(nm, del);
+    actions.append(editBtn, del);
+    head.append(nm, actions);
     const bar  = document.createElement('div'); bar.className = 'budget-goal-bar';
     const fill = document.createElement('div'); fill.className = 'budget-goal-fill'; fill.style.width = pct + '%';
     bar.appendChild(fill);
@@ -2798,7 +2802,20 @@ document.getElementById('onetime-save').addEventListener('click', () => {
 // GOAL MODALS
 // =========================
 
+// editingGoalId !== null  → goal-save aktualisiert das bestehende Ziel (Name/Icon/
+// Zielbetrag/ETA), der angesparte Betrag bleibt unberührt (nur über Einzahlen/Abheben).
+// editingGoalId === null → goal-save legt ein neues Ziel an (inkl. Startbetrag).
+let editingGoalId = null;
+
+function closeGoalModal() {
+  document.getElementById('goal-modal-overlay').classList.add('hidden');
+  editingGoalId = null;
+}
+
 document.getElementById('add-goal-btn').addEventListener('click', () => {
+  editingGoalId = null;
+  document.getElementById('goal-modal-title').textContent = 'Neues Sparziel';
+  document.getElementById('goal-current-row').classList.remove('hidden');
   document.getElementById('goal-name').value = '';
   document.getElementById('goal-target').value = '';
   document.getElementById('goal-current').value = '';
@@ -2809,21 +2826,49 @@ document.getElementById('add-goal-btn').addEventListener('click', () => {
   document.getElementById('goal-modal-overlay').classList.remove('hidden');
   setTimeout(() => document.getElementById('goal-name').focus(), 50);
 });
-document.getElementById('goal-modal-close').addEventListener('click',  () => document.getElementById('goal-modal-overlay').classList.add('hidden'));
-document.getElementById('goal-cancel').addEventListener('click',        () => document.getElementById('goal-modal-overlay').classList.add('hidden'));
+
+function openEditGoalModal(goal) {
+  editingGoalId = goal.id;
+  document.getElementById('goal-modal-title').textContent = 'Sparziel bearbeiten';
+  // Der angesparte Betrag wird hier bewusst nicht angezeigt/editiert —
+  // Änderungen daran laufen ausschließlich über Einzahlen/Abheben.
+  document.getElementById('goal-current-row').classList.add('hidden');
+  document.getElementById('goal-name').value = goal.name;
+  document.getElementById('goal-target').value = goal.target;
+  document.getElementById('goal-eta').value = goal.eta || '';
+  const radio = document.querySelector(`input[name="goal-plant"][value="${goal.plantType}"]`);
+  if (radio) radio.checked = true;
+  else { const firstRadio = document.querySelector('input[name="goal-plant"]'); if (firstRadio) firstRadio.checked = true; }
+  document.getElementById('goal-modal-overlay').classList.remove('hidden');
+  setTimeout(() => document.getElementById('goal-name').focus(), 50);
+}
+
+document.getElementById('goal-modal-close').addEventListener('click',  closeGoalModal);
+document.getElementById('goal-cancel').addEventListener('click',        closeGoalModal);
 document.getElementById('goal-modal-overlay').addEventListener('click', e => {
-  if (e.target === document.getElementById('goal-modal-overlay'))
-    document.getElementById('goal-modal-overlay').classList.add('hidden');
+  if (e.target === document.getElementById('goal-modal-overlay')) closeGoalModal();
 });
 document.getElementById('goal-save').addEventListener('click', () => {
   const name = document.getElementById('goal-name').value.trim();
   if (!name) return;
   const target    = parseFloat(document.getElementById('goal-target').value) || 0;
-  const current   = parseFloat(document.getElementById('goal-current').value) || 0;
   const plantRadio = document.querySelector('input[name="goal-plant"]:checked');
   const plantType = plantRadio ? plantRadio.value : 'sunflower';
   const etaVal = document.getElementById('goal-eta').value || null;
-  budgetGoals.push({ id: crypto.randomUUID(), name, target, current, plantType, eta: etaVal });
+
+  if (editingGoalId) {
+    const goal = budgetGoals.find(g => g.id === editingGoalId);
+    if (goal) {
+      goal.name = name;
+      goal.target = target;
+      goal.plantType = plantType;
+      goal.eta = etaVal;
+    }
+    editingGoalId = null;
+  } else {
+    const current = parseFloat(document.getElementById('goal-current').value) || 0;
+    budgetGoals.push({ id: crypto.randomUUID(), name, target, current, plantType, eta: etaVal });
+  }
   saveBudgetGoals();
   document.getElementById('goal-modal-overlay').classList.add('hidden');
   renderBudgetGoals();
