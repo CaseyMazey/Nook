@@ -85,7 +85,30 @@ let quicknote        = DB.get('quicknote', '');
 let berichtsheft     = DB.get('berichtsheft', { betrieb: '', schule: '' });
 let blocks           = DB.get('blocks', DEFAULT_BLOCKS);
 let countdownVisible = DB.get('countdownVisible', {});
-let darkMode         = DB.get('darkMode', false);
+// ── Theme-Engine (Phase 2) ───────────────────────────────────────────────
+// THEME_FAMILY ordnet jedem Theme-Namen seine Farbfamilie zu. Neue Themes
+// (Midnight, Forest, Espresso, OLED) nutzen in Phase 2 bewusst dieselbe
+// "dark"-Familie wie der bisherige Dark Mode — sie bekommen erst in Phase 3
+// eigene Farbwerte. Neue Themes werden hier einfach ergänzt.
+const THEME_FAMILY = {
+  light:    'light',
+  dark:     'dark',
+  midnight: 'dark',
+  forest:   'dark',
+  espresso: 'dark',
+  oled:     'dark',
+};
+// Migration: altes darkMode-Boolean → theme-String (einmalig, dann bleibt
+// nur noch der 'theme'-Key maßgeblich).
+let theme = DB.get('theme', null);
+if (theme === null) {
+  theme = DB.get('darkMode', false) ? 'dark' : 'light';
+  DB.set('theme', theme);
+}
+// darkMode bleibt als abgeleiteter Boolean bestehen — für bestehende
+// Stellen, die nur zwischen hell/dunkel unterscheiden (Sonne/Mond-Icon
+// in today.js, Sidebar-Schnellumschalter).
+let darkMode = THEME_FAMILY[theme] === 'dark';
 let colors           = DB.get('colors', DEFAULT_COLORS);
 let customTiles      = DB.get('customTiles', []);
 let deskCards        = DB.get('deskCards', null);
@@ -94,23 +117,36 @@ let shoppingList     = DB.get('shoppingList', []);
 let subjects         = DB.get('subjects', []);
 let collapsedGroups  = new Set(DB.get('collapsedGroups', []));
 
-if (darkMode) document.documentElement.setAttribute('data-theme', 'dark');
+document.documentElement.setAttribute('data-theme', theme);
+document.documentElement.setAttribute('data-theme-family', THEME_FAMILY[theme]);
 
 // ── Zentraler Theme-Switch ──────────────────────────────────────────────
-// Einziger Ort, der darkMode setzt/speichert und alle Folgen auslöst:
-// data-theme-Attribut, Sidebar-Icon, und Neu-Rendern der Ansichten mit
-// nutzerdefinierten Farben (--user-color-*, siehe hub-utils.js), damit
-// diese sofort statt erst beim nächsten Tab-Wechsel aktualisiert werden.
-// Wird sowohl vom Sidebar-Sonne/Mond-Button (today.js) als auch vom
-// Schalter in den Einstellungen (settings.js) aufgerufen.
-function setDarkMode(dark) {
-  darkMode = dark;
-  DB.set('darkMode', darkMode);
-  document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
+// Einziger Ort, der theme setzt/speichert und alle Folgen auslöst:
+// data-theme-/data-theme-family-Attribute, Sidebar-Icon, und Neu-Rendern
+// der Ansichten mit nutzerdefinierten Farben (--user-color-*, siehe
+// hub-utils.js), damit diese sofort statt erst beim nächsten Tab-Wechsel
+// aktualisiert werden.
+// Wird von der Theme-Auswahl in den Einstellungen (settings.js) aufgerufen.
+function setTheme(name) {
+  if (!THEME_FAMILY.hasOwnProperty(name)) name = 'light';
+  theme = name;
+  darkMode = THEME_FAMILY[theme] === 'dark';
+  DB.set('theme', theme);
+  document.documentElement.setAttribute('data-theme', theme);
+  document.documentElement.setAttribute('data-theme-family', THEME_FAMILY[theme]);
   if (typeof updateThemeIcon === 'function') updateThemeIcon();
   if (typeof renderDesk === 'function') renderDesk();
   if (typeof renderCalendar === 'function') renderCalendar();
   if (typeof renderGuideShelf === 'function') renderGuideShelf();
+}
+
+// Schnellumschalter (Sidebar Sonne/Mond) — schaltet nur zwischen Light und
+// dem zuletzt aktiven Dark-Theme hin und her, ohne die übrigen Dark-Varianten
+// aus der Einstellungsseite zu berühren.
+let lastDarkTheme = THEME_FAMILY[theme] === 'dark' ? theme : 'dark';
+function setDarkMode(dark) {
+  if (dark) { lastDarkTheme = THEME_FAMILY[theme] === 'dark' ? theme : lastDarkTheme; setTheme(lastDarkTheme); }
+  else      { setTheme('light'); }
 }
 
 function applyColors() {

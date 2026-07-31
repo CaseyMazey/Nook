@@ -71,7 +71,7 @@
 .cal-day.is-today .cal-day-num { color: var(--sage-dark); font-weight: 700; }
 .cal-day.is-today:hover { background: var(--sage-bg); }
 .cal-day.weekend { background: color-mix(in srgb, var(--surface) 88%, var(--surface-3) 12%); }
-[data-theme="dark"] .cal-day.weekend { background: color-mix(in srgb, var(--surface) 92%, var(--bg-2) 8%); }
+[data-theme-family="dark"] .cal-day.weekend { background: color-mix(in srgb, var(--surface) 92%, var(--bg-2) 8%); }
 
 .cal-day-num { font-size: 13px; font-weight: 500; color: var(--text-2); margin-bottom: 6px; flex-shrink: 0; }
 .cal-items { display: flex; flex-direction: column; gap: 2px; flex: 1; overflow: hidden; min-width: 0; }
@@ -336,7 +336,7 @@
   pointer-events: none;
   z-index: 0;
 }
-[data-theme="dark"] .cal-hero::before {
+[data-theme-family="dark"] .cal-hero::before {
   background-image:
     linear-gradient(100deg,
       color-mix(in srgb, var(--bg) 90%, transparent) 0%,
@@ -364,7 +364,7 @@
   z-index: 0;
   filter: blur(2px);
 }
-[data-theme="dark"] .cal-hero::after {
+[data-theme-family="dark"] .cal-hero::after {
   background: radial-gradient(ellipse at 25% 50%, color-mix(in srgb, var(--bg) 45%, transparent) 0%, transparent 72%);
 }
 
@@ -372,7 +372,7 @@
 .cal-hero-summer  { --cal-hero-img: url('../assets/calendar/summer.png'); }
 .cal-hero-autumn  { --cal-hero-img: url('../assets/calendar/fall.png'); }
 .cal-hero-winter  { --cal-hero-img: url('../assets/calendar/winter.png'); }
-[data-theme="dark"] .cal-hero { box-shadow: var(--shadow-md); }
+[data-theme-family="dark"] .cal-hero { box-shadow: var(--shadow-md); }
 
 /* ── Textebene (Monat, Saison-Badge, Satz) ───────────────────── */
 #cal-hero-text {
@@ -621,7 +621,7 @@
    PHASE 3 — FEIERTAGE
 ============================================================= */
 .cal-day.is-holiday { background: color-mix(in srgb, var(--surface) 92%, var(--amber) 8%); }
-[data-theme="dark"] .cal-day.is-holiday { background: color-mix(in srgb, var(--surface) 90%, var(--amber) 10%); }
+[data-theme-family="dark"] .cal-day.is-holiday { background: color-mix(in srgb, var(--surface) 90%, var(--amber) 10%); }
 .cal-day.is-holiday.is-today { background: var(--surface); }
 
 .cal-holiday-pill {
@@ -636,7 +636,7 @@
   color: #8a5c30;
   border-left: 2px solid var(--amber);
 }
-[data-theme="dark"] .cal-holiday-pill { color: #d9a866; }
+[data-theme-family="dark"] .cal-holiday-pill { color: #d9a866; }
 
 /* =============================================================
    PHASE 6 — GEBURTSTAGE IM KALENDER + ERINNERUNGEN
@@ -655,7 +655,7 @@
   color: #a8447a;
   border-left: 2px solid var(--birthday-accent);
 }
-[data-theme="dark"] .cal-birthday-cal-pill { color: #e08fb3; }
+[data-theme-family="dark"] .cal-birthday-cal-pill { color: #e08fb3; }
 
 /* Erinnerungs-Pill: dieselbe Farbfamilie, aber deutlich dezenter —
    auf den ersten Blick erkennbar als Vorankündigung, nicht als der
@@ -666,7 +666,7 @@
   border-left-color: color-mix(in srgb, var(--birthday-accent) 45%, transparent);
   font-style: italic;
 }
-[data-theme="dark"] .cal-birthday-reminder-pill { color: #c9a0b7; }
+[data-theme-family="dark"] .cal-birthday-reminder-pill { color: #c9a0b7; }
 
 #cal-settings-btn {
   width: 24px; height: 24px;

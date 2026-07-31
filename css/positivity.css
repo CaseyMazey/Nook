@@ -3,7 +3,7 @@
 ============================================================= */
 
 :root { --fav-color: #B8755A; }
-[data-theme="dark"] { --fav-color: #D99577; }
+[data-theme-family="dark"] { --fav-color: #D99577; }
 
 /* ── Sidebar Widget ──────────────────────────────────────── */
 #sidebar-positivity { padding: 10px 18px 4px; }
@@ -22,7 +22,7 @@
 .positivity-action-btn:hover { background: var(--accent-soft); color: var(--text); }
 .positivity-action-btn.active { color: var(--positivity-fav-color, var(--fav-color)); }
 .positivity-action-btn.small { width: 22px; height: 22px; flex-shrink: 0; }
-[data-theme="dark"] .positivity-action-btn.active { color: #D99577; }
+[data-theme-family="dark"] .positivity-action-btn.active { color: #D99577; }
 
 /* ── Einstellungen: Kategorie-Liste ──────────────────────── */
 .positivity-total-badge { font-family: var(--mono); font-size: 11px; color: var(--sage); font-weight: 600; }

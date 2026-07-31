@@ -92,7 +92,7 @@
 }
 
 /* ── Dark Mode ─────────────────────────────────────────────── */
-[data-theme="dark"] {
+[data-theme-family="dark"] {
   --bg:        #1A1815;
   --bg-2:      #201E1A;
   --surface:   #252119;
@@ -128,6 +128,99 @@
   --code-border:        rgba(255,235,200,0.08);
   --code-header-bg:     rgba(255,235,200,0.04);
   --code-header-border: rgba(255,235,200,0.06);
+}
+
+/* =============================================================
+   THEME-VARIANTEN (Phase 3 — Feinschliff)
+   Bauen auf [data-theme-family="dark"] auf und überschreiben nur die
+   Oberflächen-/Rand-/Text-Töne. Sage-Akzent, Prio-, Budget- und
+   Code-Panel-Farben bleiben bewusst themeübergreifend gleich — das
+   ist die Markenidentität und wird nicht pro Theme neu erfunden.
+============================================================= */
+
+/* ── Classic Dark — neutralisiert (war zu braun) ─────────────── */
+[data-theme="dark"] {
+  --bg:          #181817;
+  --bg-2:        #1e1d1c;
+  --surface:     #20201e;
+  --surface-2:   #272625;
+  --surface-3:   #2d2c2a;
+  --dash-bg:     #201f1d;
+  --dash-border: rgba(203,200,194,0.07);
+  --border:        rgba(203,200,194,0.09);
+  --border-strong: rgba(203,200,194,0.16);
+  --text:   #e6e3df;
+  --text-2: #94918b;
+  --text-3: #615e59;
+  --accent-soft: #262524;
+}
+
+/* ── Midnight — leicht bläulich ──────────────────────────────── */
+[data-theme="midnight"] {
+  --bg:          #121419;
+  --bg-2:        #16191f;
+  --surface:     #141925;
+  --surface-2:   #1a202c;
+  --surface-3:   #1e2432;
+  --dash-bg:     #141924;
+  --dash-border: rgba(176,190,221,0.07);
+  --border:        rgba(176,190,221,0.10);
+  --border-strong: rgba(176,190,221,0.18);
+  --text:   #dde0e8;
+  --text-2: #878c97;
+  --text-3: #565a64;
+  --accent-soft: #1b1f29;
+}
+
+/* ── Forest — dunkles Grün ────────────────────────────────────── */
+[data-theme="forest"] {
+  --bg:          #131915;
+  --bg-2:        #181f1b;
+  --surface:     #16251b;
+  --surface-2:   #1c2c22;
+  --surface-3:   #203227;
+  --dash-bg:     #16241b;
+  --dash-border: rgba(181,217,194,0.07);
+  --border:        rgba(181,217,194,0.10);
+  --border-strong: rgba(181,217,194,0.18);
+  --text:   #dee7e1;
+  --text-2: #89958d;
+  --text-3: #58635c;
+  --accent-soft: #1d2a21;
+}
+
+/* ── Espresso — warmes Braun (entspricht ungefähr dem alten Dark) ─ */
+[data-theme="espresso"] {
+  --bg:          #1a1815;
+  --bg-2:        #201d1a;
+  --surface:     #252019;
+  --surface-2:   #2c2620;
+  --surface-3:   #322c24;
+  --dash-bg:     #241f19;
+  --dash-border: rgba(230,201,168,0.07);
+  --border:        rgba(230,201,168,0.11);
+  --border-strong: rgba(230,201,168,0.18);
+  --text:   #ede3d8;
+  --text-2: #9e9080;
+  --text-3: #6a5e50;
+  --accent-soft: #2a2520;
+}
+
+/* ── OLED — nahezu schwarz ─────────────────────────────────────── */
+[data-theme="oled"] {
+  --bg:          #070707;
+  --bg-2:        #080808;
+  --surface:     #090909;
+  --surface-2:   #0b0b0b;
+  --surface-3:   #0c0c0c;
+  --dash-bg:     #090908;
+  --dash-border: rgba(199,199,199,0.06);
+  --border:        rgba(199,199,199,0.08);
+  --border-strong: rgba(199,199,199,0.15);
+  --text:   #e3e3e2;
+  --text-2: #908f8e;
+  --text-3: #5e5d5c;
+  --accent-soft: #0a0a0a;
 }
 
 /* =============================================================

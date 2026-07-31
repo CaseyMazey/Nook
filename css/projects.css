@@ -6,7 +6,7 @@
   --forest-bg:    #eeeae0;
   --proj-success: #16a34a;
 }
-[data-theme="dark"] {
+[data-theme-family="dark"] {
   --forest-bg: #1e2218;
 }
 
@@ -355,7 +355,7 @@
   letter-spacing: -0.02em;
   text-shadow: 0 1px 12px rgba(255,255,255,0.55);
 }
-[data-theme="dark"] .pdt-project-name { text-shadow: none; }
+[data-theme-family="dark"] .pdt-project-name { text-shadow: none; }
 
 .pdt-project-desc {
   font-size: 14px; color: var(--text-3);
@@ -412,7 +412,7 @@
   margin-left: auto;
   width: calc(100% - 32px);
 }
-[data-theme="dark"] .pdt-info-card {
+[data-theme-family="dark"] .pdt-info-card {
   background: rgba(26,30,20,0.88);
   border-color: rgba(255,255,255,0.08);
 }
@@ -429,7 +429,7 @@
   border-bottom: 1px solid rgba(0,0,0,0.055);
 }
 .pdt-info-item:last-of-type { border-bottom: none; }
-[data-theme="dark"] .pdt-info-item { border-bottom-color: rgba(255,255,255,0.06); }
+[data-theme-family="dark"] .pdt-info-item { border-bottom-color: rgba(255,255,255,0.06); }
 
 .pdt-info-icon {
   width: 20px; display: flex; align-items: center;

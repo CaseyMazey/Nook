@@ -95,7 +95,7 @@
 }
 
 /* Dark mode overrides for budget-specific tokens */
-[data-theme="dark"] {
+[data-theme-family="dark"] {
   --b-green-soft: rgba(45,90,61,0.18);
   --b-olive-soft: rgba(107,124,90,0.16);
   --b-red-soft:   rgba(192,57,43,0.16);
@@ -426,7 +426,7 @@
 .b-check-icon.warn    { background: color-mix(in srgb, var(--bg) 70%, var(--b-status-amber) 12%); color: var(--b-status-amber-text); }
 .b-check-icon.bad     { background: var(--b-red-soft); color: var(--b-red); }
 .b-check-icon.neutral { background: var(--accent-soft); color: var(--text-3); }
-[data-theme="dark"] .b-check-icon.warn { background: rgba(202,138,4,0.18); }
+[data-theme-family="dark"] .b-check-icon.warn { background: rgba(202,138,4,0.18); }
 
 .b-status-hint {
   font-size: 12px;

@@ -4,11 +4,20 @@
 
 function renderSettings(){
   document.getElementById('setting-username').value = userName || '';
-  document.getElementById('setting-darkmode').checked = darkMode;
+  renderThemeSettings();
   renderBlockSettings();
   renderWeatherSettings();
   renderColorSettings();
   if (typeof renderPositivitySettings === 'function') renderPositivitySettings();
+}
+
+// ── Theme-Auswahl (Phase 2 Theme-Engine) ─────────────────────────────────
+function renderThemeSettings(){
+  const picker = document.getElementById('theme-picker');
+  if (!picker) return;
+  picker.querySelectorAll('.theme-picker-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.themeValue === theme);
+  });
 }
 
 // =========================
@@ -50,8 +59,11 @@ document.getElementById('setting-username').addEventListener('input', e => {
   if (typeof renderTodayHeader === 'function') renderTodayHeader();
 });
 
-document.getElementById('setting-darkmode').addEventListener('change', e => {
-  setDarkMode(e.target.checked);
+document.getElementById('theme-picker')?.addEventListener('click', e => {
+  const btn = e.target.closest('.theme-picker-btn');
+  if (!btn) return;
+  setTheme(btn.dataset.themeValue);
+  renderThemeSettings();
 });
 
 function renderBlockSettings(){

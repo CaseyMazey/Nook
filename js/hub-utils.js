@@ -139,7 +139,7 @@ function initColorPickerWidget(ids, opts = {}) {
 // =========================
 
 function isDarkThemeActive() {
-  return document.documentElement.getAttribute('data-theme') === 'dark';
+  return document.documentElement.getAttribute('data-theme-family') === 'dark';
 }
 
 function hexToRgbArr(hex) {

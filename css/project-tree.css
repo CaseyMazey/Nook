@@ -43,7 +43,7 @@
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   backdrop-filter: blur(4px);
 }
-[data-theme="dark"] .forest-tree-label {
+[data-theme-family="dark"] .forest-tree-label {
   background: rgba(30,34,24,0.88);
   border-color: rgba(255,255,255,0.1);
 }

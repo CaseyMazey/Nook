@@ -56,7 +56,7 @@
  
 /* Code — Textarea bekommt maximalen Platz, Copy-Button dezent im Codeblock, nur bei Hover sichtbar */
 .desk-card--code .desk-card-body { position: relative; background: var(--surface-2); }
-[data-theme="dark"] .desk-card--code .desk-card-body { background: var(--code-bg); }
+[data-theme-family="dark"] .desk-card--code .desk-card-body { background: var(--code-bg); }
 .desk-card--code .desk-textarea { font-family: var(--mono); font-size: 12.5px; line-height: 1.7; padding: 14px 16px; white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere; }
 .desk-code-copy {
   position: absolute; top: 8px; right: 8px; width: 26px; height: 26px;
@@ -83,9 +83,9 @@
   touch-action: none;
 }
 .desk-resize-handle::after { content: ''; width: 28px; height: 3px; border-radius: 99px; background: rgba(0,0,0,0.16); transition: background 150ms; }
-[data-theme="dark"] .desk-resize-handle::after { background: rgba(255,255,255,0.16); }
+[data-theme-family="dark"] .desk-resize-handle::after { background: rgba(255,255,255,0.16); }
 .desk-resize-handle:hover::after, .desk-resize-handle.resizing::after { background: rgba(0,0,0,0.32); }
-[data-theme="dark"] .desk-resize-handle:hover::after, [data-theme="dark"] .desk-resize-handle.resizing::after { background: rgba(255,255,255,0.32); }
+[data-theme-family="dark"] .desk-resize-handle:hover::after, [data-theme-family="dark"] .desk-resize-handle.resizing::after { background: rgba(255,255,255,0.32); }
  
 /* ── Checklisten ──────────────────────────────────────────── */
 .checklist { padding: 6px 0; }

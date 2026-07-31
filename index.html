@@ -1195,11 +1195,20 @@
               </div>
             </div>
  
-            <div class="panel settings-panel" style="display:none;">
+            <div class="panel settings-panel">
               <div class="panel-header"><span class="panel-label">Darstellung</span></div>
               <div class="settings-row">
-                <div><div class="settings-row-title">Dark Mode</div><div class="settings-row-sub">Dunkles Farbschema</div></div>
-                <label class="toggle"><input type="checkbox" id="setting-darkmode"/><span class="toggle-slider"></span></label>
+                <div><div class="settings-row-title">Theme</div><div class="settings-row-sub">Farbschema für den gesamten Hub</div></div>
+              </div>
+              <div class="settings-row">
+                <div id="theme-picker" style="display:flex;flex-wrap:wrap;gap:6px;">
+                  <button class="clock-type-btn theme-picker-btn" data-theme-value="light">Light</button>
+                  <button class="clock-type-btn theme-picker-btn" data-theme-value="dark">Classic Dark</button>
+                  <button class="clock-type-btn theme-picker-btn" data-theme-value="midnight">Midnight</button>
+                  <button class="clock-type-btn theme-picker-btn" data-theme-value="forest">Forest</button>
+                  <button class="clock-type-btn theme-picker-btn" data-theme-value="espresso">Espresso</button>
+                  <button class="clock-type-btn theme-picker-btn" data-theme-value="oled">OLED</button>
+                </div>
               </div>
             </div>
  

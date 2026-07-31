@@ -8,7 +8,7 @@
   --quicknote-line: 175,155,55;   /* RGB-Tripel, für color-mix/rgba mit variabler Deckkraft */
   --quicknote-text: #7A6E28;
 }
-[data-theme="dark"] {
+[data-theme-family="dark"] {
   --quicknote-bg:   #272510;
   --quicknote-line: 200,180,60;
   --quicknote-text: #A09038;
@@ -54,7 +54,7 @@
 .block-slot:hover { box-shadow: var(--shadow-sm); }
 .block-slot.free { background: var(--surface-3); border: 1.5px dashed var(--border-strong); box-shadow: none; opacity: 0.65; }
 .block-slot.active-block { border-color: transparent; border-width: 1.5px; background: #EBE4D4; box-shadow: var(--shadow-sm); }
-[data-theme="dark"] .block-slot.active-block { background: rgba(235,228,212,0.12); box-shadow: var(--shadow-sm); }
+[data-theme-family="dark"] .block-slot.active-block { background: rgba(235,228,212,0.12); box-shadow: var(--shadow-sm); }
 
 .block-time { font-family: var(--mono); font-size: 10px; color: var(--text-3); margin-bottom: 5px; }
 .block-label { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 6px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
@@ -109,12 +109,12 @@
 
 /* ── Schnellnotiz ─────────────────────────────────────────── */
 #panel-quicknote { background: var(--quicknote-bg); border: 1px solid rgba(var(--quicknote-line),0.22); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-sm); }
-[data-theme="dark"] #panel-quicknote { border-color: rgba(var(--quicknote-line),0.12); }
+[data-theme-family="dark"] #panel-quicknote { border-color: rgba(var(--quicknote-line),0.12); }
 #panel-quicknote .panel-header { background: rgba(0,0,0,0.03); border-bottom: 1px solid rgba(var(--quicknote-line),0.14); }
-[data-theme="dark"] #panel-quicknote .panel-header { background: rgba(255,255,255,0.02); border-bottom-color: rgba(var(--quicknote-line),0.08); }
+[data-theme-family="dark"] #panel-quicknote .panel-header { background: rgba(255,255,255,0.02); border-bottom-color: rgba(var(--quicknote-line),0.08); }
 #panel-quicknote .panel-label { color: var(--quicknote-text); }
 #panel-quicknote #quicknote { width: 100%; border: none; outline: none; resize: none; padding: 14px 16px 18px; font-size: 13.5px; color: var(--text); background: transparent; min-height: 130px; line-height: 2; background-image: repeating-linear-gradient(to bottom, transparent, transparent calc(2em - 1px), rgba(var(--quicknote-line),0.14) calc(2em - 1px), rgba(var(--quicknote-line),0.14) 2em); background-size: 100% 2em; }
-[data-theme="dark"] #panel-quicknote #quicknote { background-image: repeating-linear-gradient(to bottom, transparent, transparent calc(2em - 1px), rgba(var(--quicknote-line),0.07) calc(2em - 1px), rgba(var(--quicknote-line),0.07) 2em); }
+[data-theme-family="dark"] #panel-quicknote #quicknote { background-image: repeating-linear-gradient(to bottom, transparent, transparent calc(2em - 1px), rgba(var(--quicknote-line),0.07) calc(2em - 1px), rgba(var(--quicknote-line),0.07) 2em); }
 
 /* ── Mini Kalender ─────────────────────────────────────────── */
 #today-mini-cal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 18px 18px 14px; box-shadow: var(--shadow-sm); }
