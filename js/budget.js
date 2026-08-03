@@ -2435,6 +2435,9 @@ function bindSecondaryButtons() {
     }
   });
   // Re-run month nav binding in case the nav buttons appeared after initial load
-  bindMonthNav();
+  // (bindMonthNav lebt in budget-sparprognose.js, das erst nach budget.js geladen wird —
+  // beim allerersten Aufruf hier ist es u.U. noch nicht definiert; die eigene
+  // Selbstinvocation von budget-sparprognose.js übernimmt das initiale Binding)
+  if (typeof bindMonthNav === 'function') bindMonthNav();
 }
 bindSecondaryButtons();
