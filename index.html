@@ -1901,10 +1901,24 @@
       <div id="sparplan-wizard-step-custom" class="hidden">
         <input type="text" class="modal-input" id="spw-custom-name" placeholder="z.B. Weihnachtsgeld-Sparplan..." autocomplete="off"/>
 
+        <!-- Gemeinsames Intervall für den GESAMTEN Plan — gilt für alle
+             Werkzeuge und bestimmt nur die Beschriftung der Positionen
+             (Woche 1, Tag 1, ...). Es werden keine Kalenderdaten erzeugt. -->
+        <div class="modal-row"><label>Intervall <span style="font-size:11px;color:var(--text-3);font-weight:400;">gilt für den gesamten Sparplan</span></label>
+          <div id="spw-custom-interval-picker" style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="toggle-select-btn" data-interval="daily">Täglich</button>
+            <button class="toggle-select-btn active" data-interval="weekly">Wöchentlich</button>
+            <button class="toggle-select-btn" data-interval="biweekly">Zweiwöchentlich</button>
+            <button class="toggle-select-btn" data-interval="monthly">Monatlich</button>
+          </div>
+        </div>
+
         <!-- Hauptansicht: Werkzeugleiste + die EINE Ratenliste. Jedes
              Werkzeug hängt seine erzeugten Einträge ans Ende der
              bestehenden Liste an — die Liste selbst ist die einzige
-             Quelle der Wahrheit, kein Werkzeug ersetzt sie. -->
+             Quelle der Wahrheit, kein Werkzeug ersetzt sie. Es werden
+             nur Positionen (Woche 1, Woche 2, ...) dargestellt, keine
+             Kalendertage. -->
         <div id="spw-custom-main">
           <div class="modal-row"><label>Raten hinzufügen mit...</label></div>
           <div class="sp-wizard-toolbar">
@@ -1922,39 +1936,21 @@
           <button type="button" class="sp-wizard-back-link" id="spw-fixed-back">‹ Zurück zur Liste</button>
           <div class="modal-row"><label>Betrag (&#8364;)</label><input type="number" class="modal-input" id="spw-fixed-amount" placeholder="25.00" step="0.01" min="0"/></div>
           <div class="modal-row"><label>Anzahl</label><input type="number" class="modal-input" id="spw-fixed-count" placeholder="10" min="1" step="1" style="max-width:120px;"/></div>
-          <div class="modal-row"><label>Startdatum</label><input type="date" class="modal-input" id="spw-fixed-start" style="max-width:170px;"/></div>
-          <div class="modal-row"><label>Intervall</label>
-            <select class="modal-input" id="spw-fixed-interval" style="max-width:170px;">
-              <option value="monthly">Monatlich</option>
-              <option value="biweekly">Zweiwöchentlich</option>
-              <option value="weekly" selected>Wöchentlich</option>
-              <option value="daily">Täglich</option>
-            </select>
-          </div>
           <div class="sp-wizard-preview" id="spw-fixed-preview"></div>
           <div class="modal-actions" style="padding-top:4px;justify-content:flex-start;"><button class="btn-primary" id="spw-fixed-generate">Zur Liste hinzufügen</button></div>
         </div>
 
-        <!-- Zufällige Beträge — Vorschau, dann anhängen -->
+        <!-- Zufällige Beträge — Vorschau, dann anhängen. Nur ganze Euro. -->
         <div id="spw-custom-form-random" class="hidden">
           <button type="button" class="sp-wizard-back-link" id="spw-random-back">‹ Zurück zur Liste</button>
-          <div class="modal-row"><label>Von (&#8364;)</label><input type="number" class="modal-input" id="spw-random-min" placeholder="5.00" step="0.01" min="0" style="max-width:120px;"/></div>
-          <div class="modal-row"><label>Bis (&#8364;)</label><input type="number" class="modal-input" id="spw-random-max" placeholder="20.00" step="0.01" min="0" style="max-width:120px;"/></div>
+          <div class="modal-row"><label>Von (&#8364;)</label><input type="number" class="modal-input" id="spw-random-min" placeholder="5" step="1" min="0" style="max-width:120px;"/></div>
+          <div class="modal-row"><label>Bis (&#8364;)</label><input type="number" class="modal-input" id="spw-random-max" placeholder="20" step="1" min="0" style="max-width:120px;"/></div>
           <div class="modal-row"><label>Anzahl</label><input type="number" class="modal-input" id="spw-random-count" placeholder="10" min="1" step="1" style="max-width:120px;"/></div>
-          <div class="modal-row"><label>Startdatum</label><input type="date" class="modal-input" id="spw-random-start" style="max-width:170px;"/></div>
-          <div class="modal-row"><label>Intervall</label>
-            <select class="modal-input" id="spw-random-interval" style="max-width:170px;">
-              <option value="monthly">Monatlich</option>
-              <option value="biweekly">Zweiwöchentlich</option>
-              <option value="weekly" selected>Wöchentlich</option>
-              <option value="daily">Täglich</option>
-            </select>
-          </div>
           <div class="modal-row modal-row-inline">
             <label>Nur Vielfache von <span style="font-size:11px;color:var(--text-3);font-weight:400;">optional</span></label>
             <label class="toggle"><input type="checkbox" id="spw-random-multiple-toggle"/><span class="toggle-slider"></span></label>
           </div>
-          <div class="modal-row hidden" id="spw-random-multiple-row"><label>Vielfaches von (&#8364;)</label><input type="number" class="modal-input" id="spw-random-multiple" placeholder="5.00" step="0.01" min="0" style="max-width:120px;"/></div>
+          <div class="modal-row hidden" id="spw-random-multiple-row"><label>Vielfaches von (&#8364;)</label><input type="number" class="modal-input" id="spw-random-multiple" placeholder="5" step="1" min="1" style="max-width:120px;"/></div>
           <div class="modal-actions" style="padding-top:4px;justify-content:flex-start;"><button class="btn-primary" id="spw-random-generate">Vorschau generieren</button></div>
 
           <div id="spw-random-preview-wrap" class="hidden">

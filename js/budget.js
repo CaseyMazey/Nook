@@ -2170,8 +2170,11 @@ const SP_INTERVAL_META = {
   weekly:   { label: 'Wöchentlich' },
   biweekly: { label: 'Zweiwöchentlich' },
   monthly:  { label: 'Monatlich' },
-  custom:   { label: 'Individuell' },
+  custom:   { label: 'Individuell' }, // Fallback für ältere Pläne ohne echtes Intervall
 };
+// Beschriftung der Positionen im individuellen Sparplan (KEINE Kalender-
+// daten — nur "Woche N"/"Tag N"/... je nach gewähltem Intervall).
+const SP_POSITION_LABELS = { daily: 'Tag', weekly: 'Woche', biweekly: '14 Tage', monthly: 'Monat' };
 const SP_METHOD_META = {
   constant:   { label: 'Konstant' },
   increasing: { label: 'Steigend' },
@@ -2194,19 +2197,42 @@ const SP_CUSTOM_GENERATORS = {
 // Registry für künftige Sparvorlagen (1-Cent-Challenge, 5-Euro-Schein-
 // Challenge, Münz-Challenge, Zufalls-Challenge, steigend/fallend, ...).
 // Bewusst noch leer — eine Vorlage ist später nur ein weiterer Eintrag
-// mit { label, icon, desc, build(start, interval) => [{date, amount}] },
-// ohne dass Wizard- oder Speicherlogik angepasst werden muss.
+// mit { label, icon, desc, build(count) => [Beträge] }, ohne dass
+// Wizard- oder Speicherlogik angepasst werden muss.
 const SP_TEMPLATE_REGISTRY = {};
 
 function sparplanNewId() { return `sp_${Date.now().toString(36)}${Math.random().toString(36).slice(2,6)}`; }
 
 // Lokales Datum → 'YYYY-MM-DD', ohne UTC-Verschiebung (analog budgetMonthKey)
+// — wird nur noch von den Varianten "Zielbetrag"/"Sparrate" benutzt, die
+// echte Kalendertermine haben. "Individuell" arbeitet rein positionsbasiert.
 function sparplanDateStr(d){
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 function sparplanFormatDate(dateStr){
   if (!dateStr) return '–';
   return new Date(dateStr + 'T00:00:00').toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+function sparplanPositionLabel(interval, position){
+  return `${SP_POSITION_LABELS[interval] || 'Rate'} ${position}`;
+}
+// Zeigt eine Rate an — je nach Plantyp entweder als Position ("Woche 3",
+// nur "Individuell") oder als echtes Kalenderdatum (alle anderen Varianten).
+// Zentrale Stelle, damit Karte/Detailansicht nicht zwischen beiden Fällen
+// unterscheiden müssen.
+function sparplanEntryLabel(plan, entry){
+  if (plan.method === 'custom') return sparplanPositionLabel(plan.interval, plan.entries.indexOf(entry) + 1);
+  return sparplanFormatDate(entry.date);
+}
+// Liefert die offenen/erledigten Raten eines Plans in der richtigen
+// Reihenfolge. Bei "Individuell" entspricht die Array-Reihenfolge bereits
+// der Position (keine Kalenderdaten, daher keine Sortierung nötig); bei
+// den anderen Varianten wird chronologisch nach Datum sortiert. Einzige
+// Stelle im Code, an der Raten-Reihenfolge entschieden wird.
+function sparplanOrderedEntries(plan, done){
+  const filtered = plan.entries.filter(e => e.done === done);
+  if (plan.method === 'custom') return filtered;
+  return filtered.sort((a, b) => a.date.localeCompare(b.date));
 }
 
 // Nächster Termin je Intervall — 'T00:00:00' verhindert UTC-Tagesverschiebung
@@ -2231,39 +2257,33 @@ function sparplanGenerateDates(startStr, endStr, interval){
   }
   return dates;
 }
-// Wie sparplanGenerateDates(), aber über eine feste Anzahl Termine statt
-// ein Enddatum — wird von den Individuell-Generatoren (Fester Betrag /
-// Zufällige Beträge) genutzt.
-function sparplanGenerateDatesCount(startStr, interval, count){
-  const dates = [];
-  let cur = new Date(startStr + 'T00:00:00');
-  for (let i = 0; i < count; i++) {
-    dates.push(new Date(cur));
-    cur = sparplanAddInterval(cur, interval);
-  }
-  return dates;
-}
 
-// ── Individuell-Generatoren — zentrale Erzeugungslogik, damit Vorschau
-// (Zufällige Beträge) und direkte Erzeugung (Fester Betrag) dieselbe
-// Basis nutzen. Beide liefern reine {date, amount}-Listen; die
-// eigentliche Bearbeitung/Speicherung übernimmt die gemeinsame
-// Nachbearbeitungs-Tabelle im Wizard. ──
-function sparplanGenFixed({ amount, count, interval, start }){
-  return sparplanGenerateDatesCount(start, interval, count)
-    .map(d => ({ date: sparplanDateStr(d), amount: round2(amount) }));
+// ── Individuell-Generatoren — zentrale Erzeugungslogik für Beträge.
+// Liefern reine Betrags-Listen (keine Kalenderdaten!) — die Position
+// jeder Rate ergibt sich ausschließlich aus ihrem Index in der bereits
+// bestehenden Liste (spwCustomEntries.length + i), berechnet an der
+// einzigen Stelle im Wizard, an der Einträge angehängt werden. ──
+function sparplanGenFixed({ amount, count }){
+  return new Array(count).fill(round2(amount));
 }
+// Ganzzahliger Zufallsbetrag zwischen min und max (inklusive). Mit
+// "Vielfaches von" werden ausschließlich Vielfache dieses Werts erzeugt,
+// die innerhalb von [min, max] liegen — sonst ein gleichverteilter
+// ganzzahliger Wert im Bereich.
 function sparplanRandomAmount(min, max, multipleOf){
   if (multipleOf && multipleOf > 0) {
-    const steps = Math.max(0, Math.floor((max - min) / multipleOf));
-    const stepIdx = Math.floor(Math.random() * (steps + 1));
-    return round2(min + stepIdx * multipleOf);
+    const first = Math.ceil(min / multipleOf) * multipleOf;
+    const last  = Math.floor(max / multipleOf) * multipleOf;
+    if (last < first) return Math.round(first);
+    const steps = Math.round((last - first) / multipleOf);
+    return first + Math.floor(Math.random() * (steps + 1)) * multipleOf;
   }
-  return round2(min + Math.random() * (max - min));
+  const lo = Math.ceil(min), hi = Math.floor(max);
+  if (hi <= lo) return lo;
+  return lo + Math.floor(Math.random() * (hi - lo + 1));
 }
-function sparplanGenRandom({ min, max, count, interval, start, multipleOf }){
-  return sparplanGenerateDatesCount(start, interval, count)
-    .map(d => ({ date: sparplanDateStr(d), amount: sparplanRandomAmount(min, max, multipleOf) }));
+function sparplanGenRandom({ min, max, count, multipleOf }){
+  return Array.from({ length: count }, () => sparplanRandomAmount(min, max, multipleOf));
 }
 
 // Verteilt einen Zielbetrag auf n Termine nach Sparart. Rundungsdifferenzen
@@ -2307,7 +2327,7 @@ function sparplanCurrentAmount(plan){
   return round2(plan.entries.filter(e => e.done).reduce((s, e) => s + e.amount, 0));
 }
 function sparplanNextEntry(plan){
-  return plan.entries.filter(e => !e.done).sort((a, b) => a.date.localeCompare(b.date))[0] || null;
+  return sparplanOrderedEntries(plan, false)[0] || null;
 }
 function sparplanProgressPct(plan){
   const target = sparplanTargetAmount(plan);
@@ -2319,7 +2339,14 @@ function sparplanEndDate(plan){
   const last = plan.entries[plan.entries.length - 1];
   return last ? last.date : null;
 }
+// "Individuell" hat keine Kalenderdaten — hier zählt die Anzahl noch
+// offener Raten statt der verbleibenden Zeit bis zu einem Datum.
 function sparplanRemainingTimeLabel(plan){
+  if (plan.method === 'custom') {
+    const remaining = plan.entries.filter(e => !e.done).length;
+    if (remaining === 0) return 'Abgeschlossen';
+    return remaining === 1 ? 'noch 1 Rate' : `noch ${remaining} Raten`;
+  }
   const endStr = sparplanEndDate(plan);
   if (!endStr) return '–';
   const months = sparplanerMonthsUntil(new Date(endStr + 'T00:00:00'));
@@ -2349,7 +2376,7 @@ function buildSparplanCard(plan){
       <span class="sp-plan-card-pct">${pct}%</span>
     </div>
     <div class="sp-plan-card-meta">
-      <span>${next ? `Nächste Rate: ${fmtEuro(next.amount)} · ${sparplanFormatDate(next.date)}` : 'Alle Raten erledigt 🎉'}</span>
+      <span>${next ? `Nächste Rate: ${fmtEuro(next.amount)} · ${sparplanEntryLabel(plan, next)}` : 'Alle Raten erledigt 🎉'}</span>
       <span>${sparplanRemainingTimeLabel(plan)}</span>
     </div>
     <button class="btn-ghost sp-plan-open-btn">Öffnen</button>`;
@@ -3316,9 +3343,10 @@ bindSecondaryButtons();
 // =========================
 let spwVariant = null;
 let spwMethod  = 'constant';
-let spwCustomEntries = []; // [{date, amount}] — DIE eine Ratenliste, additiv befüllt
+let spwInterval = 'weekly'; // gemeinsames Intervall für den GESAMTEN individuellen Plan
+let spwCustomEntries = []; // [{amount}] — DIE eine Ratenliste, additiv befüllt. Position = Index im Array, keine Kalenderdaten.
 let spwGeneratorMethodsUsed = new Set(); // welche Werkzeuge für diesen Plan benutzt wurden (fürs Detail-Label)
-let spwRandomPreview = [];  // Vorschau-Puffer für "Zufällige Beträge", vor "Zur Liste hinzufügen"
+let spwRandomPreview = [];  // Vorschau-Puffer für "Zufällige Beträge" (reine Beträge), vor "Zur Liste hinzufügen"
 
 function showSpwStep(step) {
   ['variant', 'target', 'rate', 'custom'].forEach(s => {
@@ -3348,10 +3376,9 @@ function renderSpwCustomRows() {
   spwCustomEntries.forEach((entry, i) => {
     const row = document.createElement('div'); row.className = 'sp-wizard-custom-row';
     row.innerHTML = `
-      <input type="date" class="modal-input spw-custom-date" value="${entry.date || ''}"/>
+      <span class="sp-wizard-custom-position">${sparplanPositionLabel(spwInterval, i + 1)}</span>
       <input type="number" class="modal-input spw-custom-amount" placeholder="0.00 €" step="0.01" min="0" value="${entry.amount ?? ''}"/>
       <button class="task-delete spw-custom-remove" title="Entfernen">✕</button>`;
-    row.querySelector('.spw-custom-date').addEventListener('input', e => { entry.date = e.target.value; });
     row.querySelector('.spw-custom-amount').addEventListener('input', e => {
       entry.amount = parseFloat(e.target.value) || 0;
       updateSpwCustomSum();
@@ -3402,38 +3429,37 @@ function updateSpwRatePreview() {
 // ── "Fester Betrag" — Live-Vorschau + Erzeugung ──
 function readSpwFixedParams() {
   return {
-    amount:   parseFloat(document.getElementById('spw-fixed-amount').value),
-    count:    parseInt(document.getElementById('spw-fixed-count').value, 10),
-    interval: document.getElementById('spw-fixed-interval').value,
-    start:    document.getElementById('spw-fixed-start').value,
+    amount: parseFloat(document.getElementById('spw-fixed-amount').value),
+    count:  parseInt(document.getElementById('spw-fixed-count').value, 10),
   };
 }
 function updateSpwFixedPreview() {
   const previewEl = document.getElementById('spw-fixed-preview');
   if (!previewEl) return;
-  const { amount, count, interval, start } = readSpwFixedParams();
-  if (!amount || amount <= 0 || !count || count <= 0 || !start) { previewEl.textContent = ''; return; }
-  previewEl.innerHTML = `${count} Rate(n) à ${fmtEuro(round2(amount))} = <b>${fmtEuro(round2(amount * count))}</b>`;
+  const { amount, count } = readSpwFixedParams();
+  if (!amount || amount <= 0 || !count || count <= 0) { previewEl.textContent = ''; return; }
+  const from = spwCustomEntries.length + 1, to = spwCustomEntries.length + count;
+  const range = count > 1 ? `${sparplanPositionLabel(spwInterval, from)}–${to}` : sparplanPositionLabel(spwInterval, from);
+  previewEl.innerHTML = `${range}: ${count} × ${fmtEuro(round2(amount))} = <b>${fmtEuro(round2(amount * count))}</b>`;
 }
 function applySpwFixedGenerate() {
-  const { amount, count, interval, start } = readSpwFixedParams();
-  if (!amount || amount <= 0 || !count || count <= 0 || !start) {
-    alert('Bitte Betrag, Anzahl und Startdatum angeben.'); return;
+  const { amount, count } = readSpwFixedParams();
+  if (!amount || amount <= 0 || !count || count <= 0) {
+    alert('Bitte Betrag und Anzahl angeben.'); return;
   }
-  spwCustomEntries.push(...sparplanGenFixed({ amount, count, interval, start }));
+  spwCustomEntries.push(...sparplanGenFixed({ amount, count }).map(a => ({ amount: a })));
   spwGeneratorMethodsUsed.add('fixed');
   renderSpwCustomRows();
   showSpwCustomSection('main');
 }
 
-// ── "Zufällige Beträge" — Vorschau mit Neu-generieren/Übernehmen ──
+// ── "Zufällige Beträge" — Vorschau mit Neu-generieren/Übernehmen.
+// Nur ganze Euro (siehe sparplanRandomAmount). ──
 function readSpwRandomParams() {
   return {
-    min:      parseFloat(document.getElementById('spw-random-min').value),
-    max:      parseFloat(document.getElementById('spw-random-max').value),
-    count:    parseInt(document.getElementById('spw-random-count').value, 10),
-    interval: document.getElementById('spw-random-interval').value,
-    start:    document.getElementById('spw-random-start').value,
+    min:   parseFloat(document.getElementById('spw-random-min').value),
+    max:   parseFloat(document.getElementById('spw-random-max').value),
+    count: parseInt(document.getElementById('spw-random-count').value, 10),
     multipleOf: document.getElementById('spw-random-multiple-toggle').checked
       ? parseFloat(document.getElementById('spw-random-multiple').value) || 0
       : 0,
@@ -3444,21 +3470,22 @@ function renderSpwRandomPreview() {
   const sumEl  = document.getElementById('spw-random-preview-sum');
   if (!listEl || !sumEl) return;
   listEl.innerHTML = '';
-  spwRandomPreview.forEach(e => {
+  const baseIndex = spwCustomEntries.length; // Vorschau schließt an bereits vorhandene Raten an
+  spwRandomPreview.forEach((amount, i) => {
     const row = document.createElement('div'); row.className = 'sp-detail-entry-row';
-    row.innerHTML = `<span>${sparplanFormatDate(e.date)}</span><span class="sp-detail-entry-amount">${fmtEuro(e.amount)}</span>`;
+    row.innerHTML = `<span>${sparplanPositionLabel(spwInterval, baseIndex + i + 1)}</span><span class="sp-detail-entry-amount">${fmtEuro(amount)}</span>`;
     listEl.appendChild(row);
   });
-  const sum = round2(spwRandomPreview.reduce((s, e) => s + e.amount, 0));
+  const sum = round2(spwRandomPreview.reduce((s, a) => s + a, 0));
   sumEl.innerHTML = `${spwRandomPreview.length} Rate(n) · Summe <b>${fmtEuro(sum)}</b>`;
   document.getElementById('spw-random-preview-wrap').classList.remove('hidden');
 }
 function applySpwRandomGenerate() {
-  const { min, max, count, interval, start, multipleOf } = readSpwRandomParams();
-  if (!Number.isFinite(min) || !Number.isFinite(max) || min < 0 || max <= min || !count || count <= 0 || !start) {
-    alert('Bitte einen gültigen Von/Bis-Betrag, Anzahl und Startdatum angeben.'); return;
+  const { min, max, count, multipleOf } = readSpwRandomParams();
+  if (!Number.isFinite(min) || !Number.isFinite(max) || min < 0 || max <= min || !count || count <= 0) {
+    alert('Bitte einen gültigen Von/Bis-Betrag und eine Anzahl angeben.'); return;
   }
-  spwRandomPreview = sparplanGenRandom({ min, max, count, interval, start, multipleOf });
+  spwRandomPreview = sparplanGenRandom({ min, max, count, multipleOf });
   renderSpwRandomPreview();
 }
 
@@ -3483,6 +3510,7 @@ function renderSpwTemplateList() {
 function openSparplanWizard() {
   spwVariant = null;
   spwMethod  = 'constant';
+  spwInterval = 'weekly';
   spwCustomEntries = [];
   spwGeneratorMethodsUsed = new Set();
   spwRandomPreview = [];
@@ -3490,13 +3518,11 @@ function openSparplanWizard() {
   ['spw-target-name','spw-target-amount','spw-target-start','spw-target-end',
    'spw-rate-name','spw-rate-amount','spw-rate-start','spw-rate-end',
    'spw-custom-name',
-   'spw-fixed-amount','spw-fixed-count','spw-fixed-start',
-   'spw-random-min','spw-random-max','spw-random-count','spw-random-start','spw-random-multiple',
+   'spw-fixed-amount','spw-fixed-count',
+   'spw-random-min','spw-random-max','spw-random-count','spw-random-multiple',
   ].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   document.getElementById('spw-target-interval').value = 'monthly';
   document.getElementById('spw-rate-interval').value   = 'monthly';
-  document.getElementById('spw-fixed-interval').value  = 'weekly';
-  document.getElementById('spw-random-interval').value = 'weekly';
   document.getElementById('spw-target-preview').textContent = '';
   document.getElementById('spw-rate-preview').textContent   = '';
   document.getElementById('spw-fixed-preview').textContent  = '';
@@ -3504,6 +3530,7 @@ function openSparplanWizard() {
   document.getElementById('spw-random-multiple-row').classList.add('hidden');
   document.getElementById('spw-random-preview-wrap').classList.add('hidden');
   document.querySelectorAll('#sparplan-wizard-step-target .toggle-select-btn').forEach(b => b.classList.toggle('active', b.dataset.method === 'constant'));
+  document.querySelectorAll('#spw-custom-interval-picker .toggle-select-btn').forEach(b => b.classList.toggle('active', b.dataset.interval === 'weekly'));
   renderSpwCustomRows();
   showSpwCustomSection('main');
   showSpwStep('variant');
@@ -3537,17 +3564,34 @@ document.querySelectorAll('#sparplan-wizard-step-target .toggle-select-btn').for
   if (el) el.addEventListener('input', updateSpwRatePreview);
 });
 
+// Gemeinsames Intervall für den GESAMTEN individuellen Plan. Wirkt sich
+// nur auf die Positions-Beschriftung aus ("Woche N" → "Tag N" etc.) —
+// bereits vorhandene Raten werden dabei automatisch mit-relabelt, da die
+// Beschriftung nie gespeichert, sondern immer aus spwInterval berechnet
+// wird (renderSpwCustomRows()).
+document.querySelectorAll('#spw-custom-interval-picker .toggle-select-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#spw-custom-interval-picker .toggle-select-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    spwInterval = btn.dataset.interval;
+    renderSpwCustomRows();
+    updateSpwFixedPreview();
+  });
+});
+
 // Werkzeugleiste innerhalb "Individuell" — jedes Werkzeug hängt seine
 // Einträge an die bestehende Liste an, statt sie zu ersetzen. Beliebig
-// oft und in beliebiger Reihenfolge kombinierbar.
+// oft und in beliebiger Reihenfolge kombinierbar. Positionen ergeben
+// sich zentral aus der Listenlänge zum Zeitpunkt des Anhängens.
 document.querySelectorAll('#spw-custom-main .sp-wizard-toolbar [data-generator]').forEach(btn => {
   btn.addEventListener('click', () => {
     const gen = btn.dataset.generator;
     if (gen === 'manual') {
-      spwCustomEntries.push({ date: '', amount: null });
+      spwCustomEntries.push({ amount: null });
       spwGeneratorMethodsUsed.add('manual');
       renderSpwCustomRows();
     } else if (gen === 'fixed') {
+      updateSpwFixedPreview();
       showSpwCustomSection('fixed');
     } else if (gen === 'random') {
       document.getElementById('spw-random-preview-wrap').classList.add('hidden');
@@ -3562,7 +3606,7 @@ document.getElementById('spw-fixed-back').addEventListener('click', () => showSp
 document.getElementById('spw-random-back').addEventListener('click', () => showSpwCustomSection('main'));
 document.getElementById('spw-template-back').addEventListener('click', () => showSpwCustomSection('main'));
 
-['spw-fixed-amount','spw-fixed-count','spw-fixed-start','spw-fixed-interval'].forEach(id => {
+['spw-fixed-amount','spw-fixed-count'].forEach(id => {
   const el = document.getElementById(id);
   if (el) el.addEventListener('input', updateSpwFixedPreview);
 });
@@ -3575,7 +3619,7 @@ document.getElementById('spw-random-generate').addEventListener('click', applySp
 document.getElementById('spw-random-regenerate').addEventListener('click', applySpwRandomGenerate);
 document.getElementById('spw-random-apply').addEventListener('click', () => {
   if (!spwRandomPreview.length) return;
-  spwCustomEntries.push(...spwRandomPreview.map(e => ({ date: e.date, amount: e.amount })));
+  spwCustomEntries.push(...spwRandomPreview.map(amount => ({ amount })));
   spwGeneratorMethodsUsed.add('random');
   renderSpwCustomRows();
   showSpwCustomSection('main');
@@ -3623,18 +3667,22 @@ document.getElementById('sparplan-wizard-save').addEventListener('click', () => 
 
   } else if (spwVariant === 'custom') {
     const name  = document.getElementById('spw-custom-name').value.trim();
-    const valid = spwCustomEntries.filter(e => e.date && e.amount > 0).sort((a, b) => a.date.localeCompare(b.date));
+    // KEINE Sortierung — die Array-Reihenfolge IST die Position (Woche 1,
+    // Woche 2, ...), es gibt keine Kalenderdaten zum Sortieren.
+    const valid = spwCustomEntries.filter(e => e.amount > 0);
     if (!name || valid.length === 0) {
-      alert('Bitte einen Namen und mindestens eine gültige Rate (Datum + Betrag) angeben.'); return;
+      alert('Bitte einen Namen und mindestens eine gültige Rate angeben.'); return;
     }
     const stamp = Date.now().toString(36);
     // Kein Zielbetrag: die Summe ergibt sich ausschließlich aus den
     // erzeugten/eingetragenen Raten (sparplanTargetAmount() leitet sie
-    // bei targetAmount:null automatisch aus entries[] ab).
+    // bei targetAmount:null automatisch aus entries[] ab). Kein Start-/
+    // Enddatum: plan.interval ist das gemeinsame Intervall, anhand dessen
+    // sparplanEntryLabel() die Positionen ("Woche N") beschriftet.
     plan = { id: sparplanNewId(), name, image: null, targetAmount: null,
-      startDate: valid[0].date, endDate: valid[valid.length - 1].date, interval: 'custom', method: 'custom',
+      startDate: null, endDate: null, interval: spwInterval, method: 'custom',
       generatorMethods: [...spwGeneratorMethodsUsed],
-      entries: valid.map((e, i) => ({ id: `spe_${stamp}_${i}`, date: e.date, amount: round2(e.amount), done: false })),
+      entries: valid.map((e, i) => ({ id: `spe_${stamp}_${i}`, amount: round2(e.amount), done: false })),
       linkedToBudget: false, createdAt: Date.now() };
   }
 
@@ -3676,8 +3724,8 @@ function renderSparplanDetailBody() {
   const target  = sparplanTargetAmount(plan);
   const current = sparplanCurrentAmount(plan);
   const pct     = sparplanProgressPct(plan);
-  const done     = plan.entries.filter(e => e.done).sort((a, b) => a.date.localeCompare(b.date));
-  const upcoming = plan.entries.filter(e => !e.done).sort((a, b) => a.date.localeCompare(b.date));
+  const done     = sparplanOrderedEntries(plan, true);
+  const upcoming = sparplanOrderedEntries(plan, false);
 
   // Individuell kann aus mehreren Werkzeugen zusammengesetzt sein
   // (z. B. Fester Betrag + Zufällig) — alle benutzten Werkzeuge werden
@@ -3698,11 +3746,17 @@ function renderSparplanDetailBody() {
     ? `<input type="number" class="modal-input" id="sp-detail-edit-target" value="${plan.targetAmount}" step="0.01" min="0" style="max-width:140px;"/>`
     : `<span>${fmtEuro(target)}</span>`;
 
+  // "Individuell" hat keinen Zeitraum (keine Kalenderdaten) — stattdessen
+  // die Anzahl der Raten anzeigen.
+  const zeitraumRow = plan.method === 'custom'
+    ? `<div class="sp-detail-row"><span>Anzahl Raten</span><span>${plan.entries.length}</span></div>`
+    : `<div class="sp-detail-row"><span>Zeitraum</span><span>${sparplanFormatDate(plan.startDate)} – ${sparplanFormatDate(plan.endDate)}</span></div>`;
+
   body.innerHTML = `
     <div class="sp-detail-stammdaten">
       <div class="sp-detail-row"><span>Name</span>${nameField}</div>
       <div class="sp-detail-row"><span>Zielbetrag</span>${targetField}</div>
-      <div class="sp-detail-row"><span>Zeitraum</span><span>${sparplanFormatDate(plan.startDate)} – ${sparplanFormatDate(plan.endDate)}</span></div>
+      ${zeitraumRow}
       <div class="sp-detail-row"><span>Intervall</span><span>${SP_INTERVAL_META[plan.interval]?.label || plan.interval}</span></div>
       <div class="sp-detail-row"><span>Sparart</span><span>${methodLabel}</span></div>
     </div>
@@ -3740,7 +3794,7 @@ function renderSparplanDetailBody() {
   const upcomingEl = document.getElementById('sp-detail-upcoming');
   upcoming.forEach(e => {
     const row = document.createElement('div'); row.className = 'sp-detail-entry-row';
-    row.innerHTML = `<span>${sparplanFormatDate(e.date)}</span><span class="sp-detail-entry-amount">${fmtEuro(e.amount)}</span>`;
+    row.innerHTML = `<span>${sparplanEntryLabel(plan, e)}</span><span class="sp-detail-entry-amount">${fmtEuro(e.amount)}</span>`;
     const btn = document.createElement('button'); btn.className = 'btn-ghost sp-detail-entry-btn'; btn.textContent = 'Erledigt';
     btn.addEventListener('click', () => { e.done = true; saveBudgetSavingsPlans(); renderSparplanDetailBody(); renderSparplaeneGrid(); });
     row.appendChild(btn);
@@ -3749,7 +3803,7 @@ function renderSparplanDetailBody() {
   const historyEl = document.getElementById('sp-detail-history');
   done.forEach(e => {
     const row = document.createElement('div'); row.className = 'sp-detail-entry-row sp-detail-entry-row--done';
-    row.innerHTML = `<span>${sparplanFormatDate(e.date)}</span><span class="sp-detail-entry-amount">${fmtEuro(e.amount)}</span>`;
+    row.innerHTML = `<span>${sparplanEntryLabel(plan, e)}</span><span class="sp-detail-entry-amount">${fmtEuro(e.amount)}</span>`;
     const btn = document.createElement('button'); btn.className = 'btn-ghost sp-detail-entry-btn'; btn.textContent = 'Rückgängig';
     btn.addEventListener('click', () => { e.done = false; saveBudgetSavingsPlans(); renderSparplanDetailBody(); renderSparplaeneGrid(); });
     row.appendChild(btn);
