@@ -1127,12 +1127,12 @@
 .b-card-title { font-size: 13px; font-weight: 600; color: var(--text); }
 
 /* =============================================================
-   SPARPLANER — Sub-Tab innerhalb von #view-budget
+   SPARPROGNOSE & SPARPLÄNE — Sub-Tabs innerhalb von #view-budget
    Ausschließlich bestehende Tokens (main.css / budget.css oben).
    Keine neuen Farben, keine hardcodierten Abstände.
 ============================================================= */
 
-/* ── Sub-Tab-Umschalter (Budget ↔ Sparplaner) ─────────────── */
+/* ── Sub-Tab-Umschalter (Budget ↔ Sparprognose ↔ Sparpläne) ── */
 .sp-subtab-switch {
   display: inline-flex;
   background: var(--surface-2);
@@ -1153,8 +1153,8 @@
 .sp-subtab-btn.active { background: var(--surface); color: var(--sage-dark); box-shadow: var(--shadow-xs); }
 .sp-subtab-btn:not(.active):hover { color: var(--text); }
 
-#budget-panel-budget, #budget-panel-sparplan { display: flex; flex-direction: column; gap: 0; }
-#budget-panel-sparplan { gap: 16px; }
+#budget-panel-budget, #budget-panel-sparplan, #budget-panel-sparplaene { display: flex; flex-direction: column; gap: 0; }
+#budget-panel-sparplan, #budget-panel-sparplaene { gap: 16px; }
 
 /* ── Szenario-Karten ───────────────────────────────────────── */
 .sp-scenarios-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
@@ -1297,7 +1297,96 @@
   .sp-scenarios-grid { grid-template-columns: 1fr; }
   .sp-goal-table-head, .sp-goal-row { grid-template-columns: 40px 1fr; }
   .sp-goal-eta-block, .sp-goal-compare { grid-column: 1 / -1; }
+  .sp-plaene-grid { grid-template-columns: 1fr; }
+  .sp-wizard-custom-row { grid-template-columns: 1fr 1fr auto; }
 }
+
+/* =============================================================
+   SPARPLÄNE — eigenständiges Modul (Übersicht, Assistent, Detail)
+   Ausschließlich bestehende Tokens, keine neuen Farben.
+============================================================= */
+
+/* ── Kopf & Grid der Übersicht ───────────────────────────────── */
+.sp-plaene-sub { padding: 0 16px 13px; font-size: 12px; color: var(--text-3); }
+.sp-plaene-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+
+/* ── Einzelne Sparplan-Karte ──────────────────────────────────── */
+.sp-plan-card {
+  border-radius: var(--b-radius);
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  padding: 16px 18px;
+  box-shadow: var(--b-shadow);
+  transition: all var(--transition);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.sp-plan-card:hover { box-shadow: var(--b-shadow-lg); transform: translateY(-1px); }
+.sp-plan-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sp-plan-card-name { font-size: 13.5px; font-weight: 600; color: var(--text); }
+.sp-plan-badge { background: var(--sage-bg); color: var(--sage-dark); }
+.sp-plan-bar { height: 6px; }
+.sp-plan-card-row { display: flex; align-items: center; justify-content: space-between; font-family: var(--mono); font-size: 12.5px; color: var(--text); }
+.sp-plan-card-amounts-of { color: var(--text-3); }
+.sp-plan-card-pct { color: var(--text-3); }
+.sp-plan-card-meta { display: flex; flex-direction: column; gap: 2px; font-size: 11.5px; color: var(--text-3); }
+.sp-plan-open-btn { align-self: flex-start; font-size: 11.5px; padding: 5px 14px; margin-top: 2px; }
+
+/* ── Assistent: Variantenauswahl ─────────────────────────────── */
+.sp-wizard-variant-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.sp-wizard-variant-btn {
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: var(--b-radius-xs);
+  border: 1.5px solid var(--border-strong);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: all var(--transition);
+}
+.sp-wizard-variant-btn:hover { border-color: var(--sage); background: var(--sage-bg); }
+.sp-wizard-variant-title { font-size: 13px; font-weight: 600; color: var(--text); }
+.sp-wizard-variant-desc { font-size: 11.5px; color: var(--text-3); line-height: 1.4; }
+.sp-wizard-preview { margin-top: 8px; font-size: 12px; color: var(--text-3); font-family: var(--mono); min-height: 16px; }
+.sp-wizard-custom-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 6px; align-items: center; margin-bottom: 6px; }
+
+/* ── Detailansicht ────────────────────────────────────────────── */
+.sp-detail-stammdaten { display: flex; flex-direction: column; gap: 8px; }
+.sp-detail-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12.5px; }
+.sp-detail-row > span:first-child { color: var(--text-3); }
+.sp-detail-section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-3); margin: 16px 0 6px; }
+.sp-detail-entry-list { display: flex; flex-direction: column; gap: 4px; max-height: 160px; overflow-y: auto; }
+.sp-detail-entry-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 7px 10px; border-radius: var(--b-radius-xs); background: var(--surface-2);
+  font-size: 12.5px;
+}
+.sp-detail-entry-row--done { opacity: .65; }
+.sp-detail-entry-amount { font-family: var(--mono); }
+.sp-detail-entry-btn { font-size: 11px; padding: 3px 10px; }
+
+/* ── Individuell: additive Werkzeugleiste & Generator-Formulare ──
+   Die 4 Werkzeuge sind KEINE exklusiven Varianten mehr, sondern
+   hängen ihre Ergebnisse an dieselbe Liste an — siehe budget.js
+   showSpwCustomSection()/spwCustomEntries. ── */
+.sp-wizard-toolbar { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 14px; }
+.sp-wizard-back-link {
+  background: none; border: none; padding: 0 0 12px; margin: 0;
+  font-size: 12px; font-weight: 600; color: var(--sage-dark); cursor: pointer;
+}
+.sp-wizard-back-link:hover { text-decoration: underline; }
+.sp-template-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 10px 12px; border-radius: var(--b-radius-xs); border: 1.5px dashed var(--border-strong);
+  color: var(--text-3); font-size: 12.5px; margin-bottom: 6px;
+}
+.sp-template-item .badge-soon {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+  background: var(--sage-bg); color: var(--sage-dark); border-radius: 99px; padding: 2px 8px;
+}
+
 
 /* ── Rechenweg unter Szenario-Karten (Fix: Nachvollziehbarkeit) ── */
 .sp-scen-formula {

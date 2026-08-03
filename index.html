@@ -976,7 +976,8 @@
               <div class="sp-subtab-row">
                 <div class="sp-subtab-switch" id="budget-subtab-switch">
                   <button class="sp-subtab-btn active" id="budget-subtab-btn-budget" data-subtab="budget">Budget</button>
-                  <button class="sp-subtab-btn" id="budget-subtab-btn-sparplan" data-subtab="sparplan">Sparplaner</button>
+                  <button class="sp-subtab-btn" id="budget-subtab-btn-sparplan" data-subtab="sparplan">Sparprognose</button>
+                  <button class="sp-subtab-btn" id="budget-subtab-btn-sparplaene" data-subtab="sparplaene">Sparpläne</button>
                 </div>
                 <button class="sp-savedby-trigger hidden" id="sparplan-savedby-btn" title="Gespart bis... — kleine Zusatzrechnung, unabhängig von deinen Sparzielen">⭐ Gespart bis...</button>
               </div>
@@ -1121,9 +1122,10 @@
           </div>
           <!-- ── /SUB-TAB: BUDGET ─────────────────────────────── -->
 
-          <!-- ── SUB-TAB: SPARPLANER (alle Inhalte werden von
-               budget.js dynamisch aus den echten Budget-Daten
-               gerendert — keine statischen/hardcodierten Werte) ── -->
+          <!-- ── SUB-TAB: SPARPROGNOSE (bisher "Sparplaner"; alle
+               Inhalte werden von budget.js dynamisch aus den echten
+               Budget-Daten gerendert — keine statischen/hardcodierten
+               Werte). IDs bewusst unverändert gelassen. ── -->
           <div id="budget-panel-sparplan" class="hidden">
 
             <div id="sparplan-scenarios"></div>
@@ -1158,7 +1160,21 @@
             </div>
 
           </div>
-          <!-- ── /SUB-TAB: SPARPLANER ─────────────────────────── -->
+          <!-- ── /SUB-TAB: SPARPROGNOSE ───────────────────────── -->
+
+          <!-- ── SUB-TAB: SPARPLÄNE (neu; Karten werden von
+               renderSparplaeneGrid() in budget.js dynamisch befüllt) ── -->
+          <div id="budget-panel-sparplaene" class="hidden">
+            <div class="sp-panel" id="sparplaene-head-panel">
+              <div class="sp-panel-head">
+                <div class="sp-panel-title">🐷 Sparpläne</div>
+                <button class="sp-add-btn" id="sparplan-add-plan-btn">+ Sparplan</button>
+              </div>
+              <div class="sp-plaene-sub">Plane gezielt auf einen Betrag hin — unabhängig von deiner Sparprognose.</div>
+            </div>
+            <div id="sparplaene-grid" class="sp-plaene-grid"></div>
+          </div>
+          <!-- ── /SUB-TAB: SPARPLÄNE ──────────────────────────── -->
  
           <!-- Legacy kontostand-edit-btn stub -->
           <div style="display:none;"><button id="kontostand-edit-btn"></button></div>
@@ -1739,7 +1755,7 @@
         </div>
       </div>
       <div class="modal-row" id="recurring-certainty-row">
-        <label>Sicherheit <span style="font-size:11px;color:var(--text-3);font-weight:400;">(für den Sparplaner)</span></label>
+        <label>Sicherheit <span style="font-size:11px;color:var(--text-3);font-weight:400;">(für die Sparprognose)</span></label>
         <div style="display:flex;gap:6px;">
           <button class="toggle-select-btn active" id="recurring-certainty-fixed">Fest</button>
           <button class="toggle-select-btn" id="recurring-certainty-variable">Variabel</button>
@@ -1753,7 +1769,7 @@
         </div>
       </div>
       <div class="modal-row modal-row-inline hidden" id="recurring-sparplan-include-row">
-        <label>Als Sonderfall im Sparplaner anzeigen <span style="font-size:11px;color:var(--text-3);font-weight:400;">rein informativ, ohne Einfluss auf die Sparrate</span></label>
+        <label>Als Sonderfall in der Sparprognose anzeigen <span style="font-size:11px;color:var(--text-3);font-weight:400;">rein informativ, ohne Einfluss auf die Sparrate</span></label>
         <label class="toggle">
           <input type="checkbox" id="recurring-sparplan-include" checked/>
           <span class="toggle-slider"></span>
@@ -1795,7 +1811,7 @@
       <input type="text" class="modal-input" id="goal-name" placeholder="z.B. Urlaub, Laptop..." autocomplete="off"/>
       <div class="modal-row"><label>Zielbetrag (&#8364;)</label><input type="number" class="modal-input" id="goal-target" placeholder="500.00" step="0.01" min="0"/></div>
       <div class="modal-row" id="goal-current-row"><label>Aktueller Betrag (&#8364;)</label><input type="number" class="modal-input" id="goal-current" placeholder="0.00" step="0.01" min="0"/></div>
-      <div class="modal-row"><label>Wunschtermin (ETA) <span style="font-size:11px;color:var(--text-3);font-weight:400;">optional — für den Sparplaner</span></label><input type="month" class="modal-input" id="goal-eta" style="max-width:160px;"/></div>
+      <div class="modal-row"><label>Wunschtermin (ETA) <span style="font-size:11px;color:var(--text-3);font-weight:400;">optional — für die Sparprognose</span></label><input type="month" class="modal-input" id="goal-eta" style="max-width:160px;"/></div>
       <div class="modal-row">
         <label>Pflanze auswählen</label>
         <div class="goal-plant-selector" id="goal-plant-selector">
@@ -1816,6 +1832,172 @@
       <div class="modal-head"><span id="goal-tx-title">Einzahlen</span><button class="modal-x" id="goal-tx-close">&#10005;</button></div>
       <div class="modal-row"><label>Betrag (&#8364;)</label><input type="number" class="modal-input" id="goal-tx-amount" placeholder="0.00" step="0.01" min="0"/></div>
       <div class="modal-actions"><button id="goal-tx-cancel" class="btn-ghost">Abbrechen</button><button id="goal-tx-save" class="btn-primary">OK</button></div>
+    </div>
+  </div>
+
+  <!-- Sparplan-Assistent (Wizard) — 3 Varianten, unabhängig von der
+       Sparprognose. Reserviert keinerlei Budget-Beträge. -->
+  <div id="sparplan-wizard-modal-overlay" class="modal-backdrop hidden">
+    <div class="modal-box" style="width:480px;max-height:85vh;overflow-y:auto;">
+      <div class="modal-head"><span id="sparplan-wizard-title">Neuer Sparplan</span><button class="modal-x" id="sparplan-wizard-close">&#10005;</button></div>
+
+      <div id="sparplan-wizard-step-variant">
+        <div class="modal-row"><label>Wie möchtest du planen?</label></div>
+        <div class="sp-wizard-variant-list">
+          <button class="sp-wizard-variant-btn" data-variant="target">
+            <span class="sp-wizard-variant-title">🎯 Ich kenne meinen Zielbetrag</span>
+            <span class="sp-wizard-variant-desc">Betrag, Zeitraum &amp; Intervall angeben — Nook berechnet die Sparrate.</span>
+          </button>
+          <button class="sp-wizard-variant-btn" data-variant="rate">
+            <span class="sp-wizard-variant-title">💶 Ich kenne meine Sparrate</span>
+            <span class="sp-wizard-variant-desc">Zeitraum, Intervall &amp; Rate angeben — Nook berechnet den Endbetrag.</span>
+          </button>
+          <button class="sp-wizard-variant-btn" data-variant="custom">
+            <span class="sp-wizard-variant-title">✏️ Individuell</span>
+            <span class="sp-wizard-variant-desc">Jede Rate selbst mit Datum &amp; Betrag festlegen.</span>
+          </button>
+        </div>
+      </div>
+
+      <div id="sparplan-wizard-step-target" class="hidden">
+        <input type="text" class="modal-input" id="spw-target-name" placeholder="z.B. Führerschein, Laptop..." autocomplete="off"/>
+        <div class="modal-row"><label>Zielbetrag (&#8364;)</label><input type="number" class="modal-input" id="spw-target-amount" placeholder="1500.00" step="0.01" min="0"/></div>
+        <div class="modal-row"><label>Startdatum</label><input type="date" class="modal-input" id="spw-target-start" style="max-width:170px;"/></div>
+        <div class="modal-row"><label>Zieldatum</label><input type="date" class="modal-input" id="spw-target-end" style="max-width:170px;"/></div>
+        <div class="modal-row"><label>Sparintervall</label>
+          <select class="modal-input" id="spw-target-interval" style="max-width:170px;">
+            <option value="monthly">Monatlich</option>
+            <option value="biweekly">Zweiwöchentlich</option>
+            <option value="weekly">Wöchentlich</option>
+            <option value="daily">Täglich</option>
+          </select>
+        </div>
+        <div class="modal-row"><label>Sparart</label>
+          <div style="display:flex;gap:6px;">
+            <button class="toggle-select-btn active" data-method="constant">Konstant</button>
+            <button class="toggle-select-btn" data-method="increasing">Steigend</button>
+            <button class="toggle-select-btn" data-method="decreasing">Fallend</button>
+          </div>
+        </div>
+        <div class="sp-wizard-preview" id="spw-target-preview"></div>
+      </div>
+
+      <div id="sparplan-wizard-step-rate" class="hidden">
+        <input type="text" class="modal-input" id="spw-rate-name" placeholder="z.B. Notgroschen, Reise..." autocomplete="off"/>
+        <div class="modal-row"><label>Sparrate (&#8364;)</label><input type="number" class="modal-input" id="spw-rate-amount" placeholder="50.00" step="0.01" min="0"/></div>
+        <div class="modal-row"><label>Startdatum</label><input type="date" class="modal-input" id="spw-rate-start" style="max-width:170px;"/></div>
+        <div class="modal-row"><label>Enddatum</label><input type="date" class="modal-input" id="spw-rate-end" style="max-width:170px;"/></div>
+        <div class="modal-row"><label>Sparintervall</label>
+          <select class="modal-input" id="spw-rate-interval" style="max-width:170px;">
+            <option value="monthly">Monatlich</option>
+            <option value="biweekly">Zweiwöchentlich</option>
+            <option value="weekly">Wöchentlich</option>
+            <option value="daily">Täglich</option>
+          </select>
+        </div>
+        <div class="sp-wizard-preview" id="spw-rate-preview"></div>
+      </div>
+
+      <div id="sparplan-wizard-step-custom" class="hidden">
+        <input type="text" class="modal-input" id="spw-custom-name" placeholder="z.B. Weihnachtsgeld-Sparplan..." autocomplete="off"/>
+
+        <!-- Hauptansicht: Werkzeugleiste + die EINE Ratenliste. Jedes
+             Werkzeug hängt seine erzeugten Einträge ans Ende der
+             bestehenden Liste an — die Liste selbst ist die einzige
+             Quelle der Wahrheit, kein Werkzeug ersetzt sie. -->
+        <div id="spw-custom-main">
+          <div class="modal-row"><label>Raten hinzufügen mit...</label></div>
+          <div class="sp-wizard-toolbar">
+            <button class="sp-add-btn" data-generator="fixed">💶 Fester Betrag</button>
+            <button class="sp-add-btn" data-generator="random">🎲 Zufällige Beträge</button>
+            <button class="sp-add-btn" data-generator="manual">✏️ Eigene Einträge</button>
+            <button class="sp-add-btn" data-generator="template">📋 Aus Vorlage</button>
+          </div>
+          <div id="spw-custom-rows"></div>
+          <div class="sp-wizard-preview" id="spw-custom-sum"></div>
+        </div>
+
+        <!-- Fester Betrag — hängt Raten an, ersetzt nichts -->
+        <div id="spw-custom-form-fixed" class="hidden">
+          <button type="button" class="sp-wizard-back-link" id="spw-fixed-back">‹ Zurück zur Liste</button>
+          <div class="modal-row"><label>Betrag (&#8364;)</label><input type="number" class="modal-input" id="spw-fixed-amount" placeholder="25.00" step="0.01" min="0"/></div>
+          <div class="modal-row"><label>Anzahl</label><input type="number" class="modal-input" id="spw-fixed-count" placeholder="10" min="1" step="1" style="max-width:120px;"/></div>
+          <div class="modal-row"><label>Startdatum</label><input type="date" class="modal-input" id="spw-fixed-start" style="max-width:170px;"/></div>
+          <div class="modal-row"><label>Intervall</label>
+            <select class="modal-input" id="spw-fixed-interval" style="max-width:170px;">
+              <option value="monthly">Monatlich</option>
+              <option value="biweekly">Zweiwöchentlich</option>
+              <option value="weekly" selected>Wöchentlich</option>
+              <option value="daily">Täglich</option>
+            </select>
+          </div>
+          <div class="sp-wizard-preview" id="spw-fixed-preview"></div>
+          <div class="modal-actions" style="padding-top:4px;justify-content:flex-start;"><button class="btn-primary" id="spw-fixed-generate">Zur Liste hinzufügen</button></div>
+        </div>
+
+        <!-- Zufällige Beträge — Vorschau, dann anhängen -->
+        <div id="spw-custom-form-random" class="hidden">
+          <button type="button" class="sp-wizard-back-link" id="spw-random-back">‹ Zurück zur Liste</button>
+          <div class="modal-row"><label>Von (&#8364;)</label><input type="number" class="modal-input" id="spw-random-min" placeholder="5.00" step="0.01" min="0" style="max-width:120px;"/></div>
+          <div class="modal-row"><label>Bis (&#8364;)</label><input type="number" class="modal-input" id="spw-random-max" placeholder="20.00" step="0.01" min="0" style="max-width:120px;"/></div>
+          <div class="modal-row"><label>Anzahl</label><input type="number" class="modal-input" id="spw-random-count" placeholder="10" min="1" step="1" style="max-width:120px;"/></div>
+          <div class="modal-row"><label>Startdatum</label><input type="date" class="modal-input" id="spw-random-start" style="max-width:170px;"/></div>
+          <div class="modal-row"><label>Intervall</label>
+            <select class="modal-input" id="spw-random-interval" style="max-width:170px;">
+              <option value="monthly">Monatlich</option>
+              <option value="biweekly">Zweiwöchentlich</option>
+              <option value="weekly" selected>Wöchentlich</option>
+              <option value="daily">Täglich</option>
+            </select>
+          </div>
+          <div class="modal-row modal-row-inline">
+            <label>Nur Vielfache von <span style="font-size:11px;color:var(--text-3);font-weight:400;">optional</span></label>
+            <label class="toggle"><input type="checkbox" id="spw-random-multiple-toggle"/><span class="toggle-slider"></span></label>
+          </div>
+          <div class="modal-row hidden" id="spw-random-multiple-row"><label>Vielfaches von (&#8364;)</label><input type="number" class="modal-input" id="spw-random-multiple" placeholder="5.00" step="0.01" min="0" style="max-width:120px;"/></div>
+          <div class="modal-actions" style="padding-top:4px;justify-content:flex-start;"><button class="btn-primary" id="spw-random-generate">Vorschau generieren</button></div>
+
+          <div id="spw-random-preview-wrap" class="hidden">
+            <div class="sp-detail-section-title">Vorschau</div>
+            <div class="sp-detail-entry-list" id="spw-random-preview-list"></div>
+            <div class="sp-wizard-preview" id="spw-random-preview-sum"></div>
+            <div class="modal-actions" style="padding-top:8px;">
+              <button class="btn-ghost" id="spw-random-regenerate">🔄 Neu generieren</button>
+              <button class="btn-primary" id="spw-random-apply">✅ Zur Liste hinzufügen</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Aus Vorlage (Platzhalter, Registry vorbereitet) -->
+        <div id="spw-custom-form-template" class="hidden">
+          <button type="button" class="sp-wizard-back-link" id="spw-template-back">‹ Zurück zur Liste</button>
+          <div id="spw-template-list"></div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-ghost hidden" id="sparplan-wizard-back">Zurück</button>
+        <button class="btn-ghost" id="sparplan-wizard-cancel">Abbrechen</button>
+        <button class="btn-primary hidden" id="sparplan-wizard-save">Sparplan erstellen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sparplan-Detailansicht -->
+  <div id="sparplan-detail-modal-overlay" class="modal-backdrop hidden">
+    <div class="modal-box" style="width:480px;max-height:85vh;overflow-y:auto;">
+      <div class="modal-head">
+        <span id="sparplan-detail-title">Sparplan</span>
+        <div style="display:flex;gap:2px;">
+          <button class="modal-x" id="sparplan-detail-edit-btn" title="Bearbeiten">&#9998;</button>
+          <button class="modal-x" id="sparplan-detail-close">&#10005;</button>
+        </div>
+      </div>
+      <div id="sparplan-detail-body"></div>
+      <div class="modal-actions">
+        <button class="btn-ghost" id="sparplan-detail-delete" style="color:var(--b-red);">Löschen</button>
+        <button class="btn-primary" id="sparplan-detail-done-btn">Schließen</button>
+      </div>
     </div>
   </div>
  
