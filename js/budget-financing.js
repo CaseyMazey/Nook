@@ -214,3 +214,44 @@ function sparplanReservedForIncome(recurringId){
   });
   return round2(total);
 }
+
+// ── Statistik-Ansicht pro Einnahme ("133 € → 5 € Ticket, 125 € Führerschein, 3 € frei") ──
+const FIN_KIND_ICON = { 'Ausgabe': '🔁', 'Einmalig': '📌', 'Sparziel': '🎯' };
+
+function renderIncomeBreakdownBody(recurringId, monthKey){
+  const rec = budgetRecurring.find(r => r.id === recurringId);
+  if (!rec) return '<div class="empty-state">Diese Einnahme existiert nicht mehr.</div>';
+  const items = financingBreakdownForIncome(recurringId, monthKey);
+  const allocated = financingAllocatedForIncome(recurringId, monthKey);
+  const free = round2(rec.amount - allocated);
+
+  const rows = items.length
+    ? items.map(it => `
+      <div class="fin-breakdown-row">
+        <span class="fin-breakdown-name">${FIN_KIND_ICON[it.kind] || ''} ${it.name}</span>
+        <span class="fin-breakdown-amount">${fmtEuro(it.amount)}</span>
+      </div>`).join('')
+    : '<div class="empty-state" style="font-size:12px;padding:8px 0;">Noch nichts zugeordnet — der gesamte Betrag ist frei.</div>';
+
+  return `
+    <div class="fin-breakdown-total"><span>${rec.name}</span><span>${fmtEuro(rec.amount)}</span></div>
+    <div class="fin-breakdown-list">${rows}</div>
+    <div class="fin-breakdown-free${free < 0 ? ' fin-breakdown-free--over' : ''}">
+      <span>${free < 0 ? 'Überdeckt um' : 'Frei'}</span>
+      <span>${fmtEuro(Math.abs(free))}</span>
+    </div>`;
+}
+
+function openIncomeBreakdown(recurringId, monthKey){
+  const rec = budgetRecurring.find(r => r.id === recurringId);
+  if (!rec) return;
+  document.getElementById('income-breakdown-title').textContent = rec.name;
+  document.getElementById('income-breakdown-body').innerHTML = renderIncomeBreakdownBody(recurringId, monthKey);
+  document.getElementById('income-breakdown-modal-overlay').classList.remove('hidden');
+}
+document.getElementById('income-breakdown-close').addEventListener('click', () =>
+  document.getElementById('income-breakdown-modal-overlay').classList.add('hidden'));
+document.getElementById('income-breakdown-modal-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('income-breakdown-modal-overlay'))
+    document.getElementById('income-breakdown-modal-overlay').classList.add('hidden');
+});

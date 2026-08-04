@@ -1050,7 +1050,16 @@
 .b-main-card-list { display: flex; flex-direction: column; }
 .b-main-empty { font-size: 12px; color: var(--b-card-ink-5); padding: 4px 0; font-style: italic; }
 .b-main-row-note { font-size: 10.5px; color: var(--b-card-ink-5); padding: 0 3px 4px; font-family: var(--mono); }
+.b-main-row-note-clickable { cursor: pointer; text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 2px; }
+.b-main-row-note-clickable:hover { color: var(--sage-dark); }
 .b-main-row-warning { color: var(--b-red); font-family: inherit; }
+
+/* ── Einnahme-Finanzierungs-Aufschlüsselung ── */
+.fin-breakdown-total { display: flex; justify-content: space-between; font-weight: 700; font-size: 15px; padding: 4px 0 10px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+.fin-breakdown-row { display: flex; justify-content: space-between; font-size: 13px; padding: 5px 0; color: var(--text-2); }
+.fin-breakdown-amount { font-family: var(--mono); }
+.fin-breakdown-free { display: flex; justify-content: space-between; font-weight: 700; font-size: 13px; padding: 10px 0 2px; margin-top: 6px; border-top: 1px solid var(--border); color: var(--b-green); }
+.fin-breakdown-free--over { color: var(--b-red); }
 
 .b-main-row {
   display: grid; grid-template-columns: 38px 1fr 14px auto;

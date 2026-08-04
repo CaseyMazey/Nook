@@ -1825,6 +1825,16 @@
     </div>
   </div>
  
+  <!-- Einnahme-Finanzierungs-Aufschlüsselung ("Jedem Euro einen Job") —
+       zeigt für eine Einnahme, wofür sie bereits verplant ist.
+       Rendering: renderIncomeBreakdownBody() in budget-financing.js. -->
+  <div id="income-breakdown-modal-overlay" class="modal-backdrop hidden">
+    <div class="modal-box" style="width:380px;">
+      <div class="modal-head"><span id="income-breakdown-title">Einnahme</span><button class="modal-x" id="income-breakdown-close">&#10005;</button></div>
+      <div id="income-breakdown-body"></div>
+    </div>
+  </div>
+
   <!-- Goal Modal -->
   <div id="goal-modal-overlay" class="modal-backdrop hidden">
     <div class="modal-box" style="width:420px;">

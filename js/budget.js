@@ -34,6 +34,22 @@ function saveBudgetRecurring(){ DB.set('budgetRecurring', budgetRecurring); }
 function saveBudgetOnetime(){   DB.set('budgetOnetime',   budgetOnetime);   }
 function saveBudgetGoals(){     DB.set('budgetGoals',     budgetGoals);     }
 
+// Rundet exakt auf Cent — verhindert Fließkomma-Artefakte
+// (z.B. 268.29999999999995 oder Anzeige mit 3 statt 2 Nachkommastellen).
+// Bewusst HIER (budget.js, lädt als erstes) statt in budget-sparprognose.js:
+// budget-sparziele.js und budget-financing.js rufen das schon beim Laden
+// des Skripts auf (Migrationen), nicht erst bei einer späteren
+// Nutzerinteraktion — zu diesem Zeitpunkt wäre budget-sparprognose.js
+// noch gar nicht geladen gewesen (ReferenceError in echten Browsern,
+// von einem jsdom-Test mit zusammengefügten Skripten nicht erkennbar).
+function round2(v) {
+  return Math.round((v + Number.EPSILON) * 100) / 100;
+}
+function fmtEuro(v) {
+  const r = round2(v);
+  return (r < 0 ? '-' : '') + Math.abs(r).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+}
+
 // Migration: add missing fields to existing entries
 function migrateBudgetData() {
   let changed = false, goalsChanged = false;
@@ -483,8 +499,12 @@ function renderMainCards(month, mk) {
       if (allocated > 0.005) {
         const free = Math.max(0, round2(i.amount - allocated));
         const note = document.createElement('div');
-        note.className = 'b-main-row-note';
+        note.className = 'b-main-row-note b-main-row-note-clickable';
         note.textContent = `↳ ${i.name}: ${allocated.toLocaleString('de-DE',{minimumFractionDigits:2})} € verplant · ${free.toLocaleString('de-DE',{minimumFractionDigits:2})} € frei`;
+        note.title = 'Aufschlüsselung anzeigen';
+        note.addEventListener('click', () => {
+          if (typeof openIncomeBreakdown === 'function') openIncomeBreakdown(i.id, mk);
+        });
         incomeList.appendChild(note);
       }
     });
