@@ -51,6 +51,9 @@ function migrateBudgetData() {
   });
   budgetGoals.forEach(g => {
     if (g.eta === undefined) { g.eta = null; goalsChanged = true; }
+    // NEU: Priorität analog zu Ausgaben (must/need/want) — steuert künftig
+    // die Zuteilungsreihenfolge in der Sparprognose (sparplanerETAs()).
+    if (!g.priority) { g.priority = 'need'; goalsChanged = true; }
   });
   if (changed) { saveBudgetRecurring(); saveBudgetOnetime(); }
   if (goalsChanged) { saveBudgetGoals(); }
@@ -447,6 +450,22 @@ function renderMainCards(month, mk) {
     allIncomeRows.forEach(row => {
       if (!row.paid) openIncome += row.amount;
       incomeList.appendChild(makeClickableRow(row.day, month.getMonth()+1, row.name, row.amount, '+', row.paid, row.onToggle));
+    });
+  }
+  // Finanzierungsquellen-Reservierung (Sparpläne) — rein informative Zeile
+  // je wiederkehrender Einnahme, sofern etwas davon reserviert ist.
+  // sparplanReservedForIncome() lebt in budget-sparplaene.js, daher defensiv
+  // per typeof geprüft (gleiches Muster wie an anderer Stelle in dieser Datei).
+  if (typeof sparplanReservedForIncome === 'function') {
+    recIncomes.forEach(i => {
+      const reserved = sparplanReservedForIncome(i.id);
+      if (reserved > 0.005) {
+        const free = Math.max(0, round2(i.amount - reserved));
+        const note = document.createElement('div');
+        note.className = 'b-main-row-note';
+        note.textContent = `↳ ${i.name}: ${reserved.toLocaleString('de-DE',{minimumFractionDigits:2})} € reserviert · ${free.toLocaleString('de-DE',{minimumFractionDigits:2})} € frei`;
+        incomeList.appendChild(note);
+      }
     });
   }
   const fmtOpenIn = openIncome.toLocaleString('de-DE',{minimumFractionDigits:2});
@@ -1954,7 +1973,12 @@ function renderBudgetGoals(){
     const head = document.createElement('div'); head.className = 'budget-goal-head';
     const emoji = PLANT_EMOJIS[goal.plantType] || '🌱';
     const nm   = document.createElement('span'); nm.className = 'budget-row-name';
-    nm.innerHTML = `<span class="budget-goal-emoji">${emoji}</span> ${goal.name}`;
+    // Verknüpften Sparplan (falls vorhanden) rein informativ anzeigen —
+    // sparplanForGoal() lebt in budget-sparplaene.js (später geladen),
+    // daher defensiv per typeof prüfen (gleiches Muster wie bindMonthNav).
+    const linkedPlan = typeof sparplanForGoal === 'function' ? sparplanForGoal(goal.id) : null;
+    const linkHint = linkedPlan ? ` <span class="budget-badge" title="Verknüpfter Sparplan">🔗 ${linkedPlan.name}</span>` : '';
+    nm.innerHTML = `<span class="budget-goal-emoji">${emoji}</span> ${goal.name} ${priorityBadge(goal.priority || 'need')}${linkHint}`;
 
     const actions = document.createElement('div'); actions.className = 'budget-goal-actions';
     const editBtn = document.createElement('button'); editBtn.className = 'budget-edit-btn';
@@ -2266,6 +2290,20 @@ document.getElementById('onetime-save').addEventListener('click', () => {
 // Zielbetrag/ETA), der angesparte Betrag bleibt unberührt (nur über Einzahlen/Abheben).
 // editingGoalId === null → goal-save legt ein neues Ziel an (inkl. Startbetrag).
 let editingGoalId = null;
+// NEU: Priorität des Sparziels (must/need/want) — nutzt dieselbe Badge-/
+// Button-Logik wie die Ausgaben-Priorität (priorityBadge(), .budget-prio-btn).
+let goalPriority = 'need';
+
+function setGoalPriorityButtons(p) {
+  ['must','need','want'].forEach(x => {
+    const btn = document.getElementById(`goal-prio-${x}`);
+    if (btn) btn.classList.toggle('active', x === p);
+  });
+}
+['must','need','want'].forEach(p => {
+  const btn = document.getElementById(`goal-prio-${p}`);
+  if (btn) btn.addEventListener('click', () => { goalPriority = p; setGoalPriorityButtons(p); });
+});
 
 function closeGoalModal() {
   document.getElementById('goal-modal-overlay').classList.add('hidden');
@@ -2280,6 +2318,8 @@ document.getElementById('add-goal-btn').addEventListener('click', () => {
   document.getElementById('goal-target').value = '';
   document.getElementById('goal-current').value = '';
   document.getElementById('goal-eta').value = '';
+  goalPriority = 'need';
+  setGoalPriorityButtons(goalPriority);
   // Reset plant selector to first option
   const firstRadio = document.querySelector('input[name="goal-plant"]');
   if (firstRadio) firstRadio.checked = true;
@@ -2296,6 +2336,8 @@ function openEditGoalModal(goal) {
   document.getElementById('goal-name').value = goal.name;
   document.getElementById('goal-target').value = goal.target;
   document.getElementById('goal-eta').value = goal.eta || '';
+  goalPriority = goal.priority || 'need';
+  setGoalPriorityButtons(goalPriority);
   const radio = document.querySelector(`input[name="goal-plant"][value="${goal.plantType}"]`);
   if (radio) radio.checked = true;
   else { const firstRadio = document.querySelector('input[name="goal-plant"]'); if (firstRadio) firstRadio.checked = true; }
@@ -2323,11 +2365,12 @@ document.getElementById('goal-save').addEventListener('click', () => {
       goal.target = target;
       goal.plantType = plantType;
       goal.eta = etaVal;
+      goal.priority = goalPriority;
     }
     editingGoalId = null;
   } else {
     const current = parseFloat(document.getElementById('goal-current').value) || 0;
-    budgetGoals.push({ id: crypto.randomUUID(), name, target, current, plantType, eta: etaVal });
+    budgetGoals.push({ id: crypto.randomUUID(), name, target, current, plantType, eta: etaVal, priority: goalPriority });
   }
   saveBudgetGoals();
   document.getElementById('goal-modal-overlay').classList.add('hidden');

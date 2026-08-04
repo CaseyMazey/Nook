@@ -37,7 +37,24 @@ function renderColorSettings(){
     onSelect: () => {}, // Auswahl hat in der Verwaltung keine Wirkung, nur Löschen
     onDelete: () => { empty.style.display = hubUserColors.length ? 'none' : 'block'; }
   });
+
+  const lToD = document.getElementById('color-autoadjust-light-to-dark');
+  const dToL = document.getElementById('color-autoadjust-dark-to-light');
+  if (lToD) lToD.checked = colorAutoAdjustSettings.lightToDark;
+  if (dToL) dToL.checked = colorAutoAdjustSettings.darkToLight;
 }
+
+// ── Theme-Anpassung für neu erstellte Nutzerfarben (Standardverhalten) ──
+// Wirkt nur auf Farben, die ab jetzt zur Bibliothek hinzugefügt werden —
+// siehe initColorPickerWidget() in hub-utils.js.
+document.getElementById('color-autoadjust-light-to-dark')?.addEventListener('change', e => {
+  colorAutoAdjustSettings.lightToDark = e.target.checked;
+  saveColorAutoAdjustSettings();
+});
+document.getElementById('color-autoadjust-dark-to-light')?.addEventListener('change', e => {
+  colorAutoAdjustSettings.darkToLight = e.target.checked;
+  saveColorAutoAdjustSettings();
+});
 
 function renderWeatherSettings() {
   const ws = DB.get('weatherSettings', { mode: 'manual', city: 'Cologne' });

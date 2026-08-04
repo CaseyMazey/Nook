@@ -27,6 +27,38 @@ const HUB_PALETTE_HEX = ['#C9D6BC', '#ECDFCB', '#DAD3EA', '#F2E6AE', '#E2DED4', 
 let hubUserColors = DB.get('hubUserColors', DB.get('guideUserColors', []));
 function saveHubUserColors() { DB.set('hubUserColors', hubUserColors); }
 
+// Migration: alte Einträge waren reine Hex-Strings ohne Theme-Herkunft.
+// Werden zu Objekten mit baseTheme überführt — 'light' entspricht dem
+// bisherigen (einzigen) Verhalten, damit sich für bestehende Farben
+// optisch nichts ändert, solange der Light→Dark-Toggle aktiv ist.
+if (hubUserColors.some(c => typeof c === 'string')) {
+  hubUserColors = hubUserColors.map(c => typeof c === 'string'
+    ? { hex: c, baseTheme: 'light' }
+    : c);
+  saveHubUserColors();
+}
+
+// Standardverhalten für die Auto-Anpassung neu erstellter Farben (Einstellungen
+// → Persönliche Farben verwalten → Theme-Anpassung). Wirkt nur auf Farben, die
+// AB JETZT gespeichert werden — bestehende Farben behalten ihre eigenen Werte.
+let colorAutoAdjustSettings = DB.get('colorAutoAdjust', { lightToDark: true, darkToLight: false });
+function saveColorAutoAdjustSettings() { DB.set('colorAutoAdjust', colorAutoAdjustSettings); }
+
+/**
+ * Liefert das baseTheme einer Farbe aus der Bibliothek, oder 'light' als
+ * Default für Farben, die nicht in der Bibliothek gespeichert sind (z.B.
+ * direkt über den nativen Picker gewählt, nie hinzugefügt). baseTheme ist
+ * die feste Herkunft einer Farbe und ändert sich nie nachträglich — ob
+ * automatisch angepasst wird, entscheidet live der globale Toggle in den
+ * Einstellungen (colorAutoAdjustSettings), nicht ein eingefrorener Wert.
+ * @param {string} hex
+ * @returns {'light'|'dark'}
+ */
+function findColorBaseTheme(hex) {
+  const entry = hubUserColors.find(c => c.hex === hex);
+  return (entry && entry.baseTheme) || 'light';
+}
+
 // Farbe abdunkeln (0..1 Faktor) — für Verlauf-Endpunkte
 function hexDarken(hex, factor) {
   let r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
@@ -55,7 +87,8 @@ function renderColorLibrary(containerId, opts = {}) {
   const useGradient = opts.gradient !== false;
   const deletable = opts.deletable === true;
   lib.innerHTML = '';
-  hubUserColors.forEach(hex => {
+  hubUserColors.forEach(entry => {
+    const hex = entry.hex;
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'hub-color-swatch' + (hex === opts.selected ? ' active' : '');
@@ -70,7 +103,7 @@ function renderColorLibrary(containerId, opts = {}) {
       del.title = 'Entfernen';
       del.addEventListener('click', e => {
         e.stopPropagation();
-        hubUserColors = hubUserColors.filter(c => c !== hex);
+        hubUserColors = hubUserColors.filter(c => c.hex !== hex);
         saveHubUserColors();
         renderColorLibrary(containerId, opts);
         if (opts.onDelete) opts.onDelete();
@@ -117,8 +150,13 @@ function initColorPickerWidget(ids, opts = {}) {
   const addBtn = document.getElementById(ids.addBtnId);
   if (addBtn) {
     addBtn.addEventListener('click', () => {
-      if (!current || hubUserColors.includes(current)) return;
-      hubUserColors.push(current);
+      if (!current || hubUserColors.some(c => c.hex === current)) return;
+      // Theme, in dem die Farbe entstanden ist, wird automatisch erkannt —
+      // der Nutzer muss es nicht selbst auswählen. Ob automatisch angepasst
+      // wird, ist kein Snapshot mehr, sondern wird bei jeder Anzeige live
+      // aus dem Settings-Toggle gelesen (computeUserColorVars).
+      const baseTheme = isDarkThemeActive() ? 'dark' : 'light';
+      hubUserColors.push({ hex: current, baseTheme });
       saveHubUserColors();
       renderColorLibrary(ids.libraryId, { selected: current, gradient: useGradient, onSelect: setValue });
     });
@@ -161,21 +199,38 @@ function mixHex(hexA, hexB, t) {
 }
 
 // Neutraler Dunkel-Ton, an --surface-3 (Dark) angelehnt — Ziel für die
-// Dark-Mode-Mischung, damit Nutzerfarben sich wie Teil der Dark-UI anfühlen.
+// Light→Dark-Mischung, damit Nutzerfarben sich wie Teil der Dark-UI anfühlen.
 const USER_COLOR_DARK_NEUTRAL = '#26221B';
+// Pendant für die umgekehrte Richtung: an --surface-3 (Light) angelehnt —
+// Ziel für die Dark→Light-Mischung.
+const USER_COLOR_LIGHT_NEUTRAL = '#EAE5DA';
 
 /**
  * Berechnet die vollständige --user-color-* Variablen-Menge aus einer
- * Basisfarbe, abhängig vom aktiven Theme.
+ * Basisfarbe. Berücksichtigt, in welchem Theme die Farbe ursprünglich
+ * erstellt wurde (baseTheme, fest pro Farbe) und ob automatisch fürs
+ * jeweils andere Theme angepasst werden soll — das entscheidet LIVE der
+ * globale Toggle in den Einstellungen (colorAutoAdjustSettings), damit ein
+ * Umschalten sofort auf alle betroffenen Farben wirkt, nicht nur auf neue.
+ * Eine Farbe wird NUR verändert, wenn sie im jeweils anderen Theme als dem
+ * aktuellen angezeigt wird UND der zugehörige Toggle aktiv ist. Andernfalls
+ * bleibt sie in ihrer "nativen" Darstellung (so, wie für ihr eigenes
+ * baseTheme gedacht) — auch wenn das aktuelle Theme ein anderes ist.
  * @param {string} hex        Nutzer-Basisfarbe, z.B. "#C9D6BC"
  * @param {boolean} [forceDark]  optional erzwingen statt automatisch erkennen
  * @returns {{bg:string, border:string, hover:string, focus:string, text:string, shadow:string}}
  */
 function computeUserColorVars(hex, forceDark) {
   if (!hex || hex[0] !== '#') hex = HUB_PALETTE_HEX[0];
-  const isDark = typeof forceDark === 'boolean' ? forceDark : isDarkThemeActive();
+  const currentIsDark = typeof forceDark === 'boolean' ? forceDark : isDarkThemeActive();
+  const baseIsDark = findColorBaseTheme(hex) === 'dark';
+  const globalAutoAdjust = baseIsDark ? colorAutoAdjustSettings.darkToLight : colorAutoAdjustSettings.lightToDark;
+  const adjust = globalAutoAdjust && baseIsDark !== currentIsDark;
 
-  if (!isDark) {
+  // Fall 1: Light-nativ — im Light Mode erstellt, wird auch so gezeigt
+  // (entweder weil aktuell Light aktiv ist, oder weil im Dark Mode keine
+  // Auto-Anpassung gewünscht ist). Originalfarbe bleibt Fläche.
+  if (!baseIsDark && !adjust) {
     const bg = hex;
     return {
       bg,
@@ -187,17 +242,48 @@ function computeUserColorVars(hex, forceDark) {
     };
   }
 
-  // Dark: Basisfarbe wird Richtung neutrales Dark-UI-Grau gemischt → dunklere,
+  // Fall 2: Light → Dark automatisch angepasst (bisherige Formel, unverändert).
+  // Basisfarbe wird Richtung neutrales Dark-UI-Grau gemischt → dunklere,
   // entsättigte Fläche. Rand/Hover/Fokus bleiben näher an der Originalfarbe
   // und wirken dadurch heller als die Fläche.
-  const bg     = mixHex(hex, USER_COLOR_DARK_NEUTRAL, 0.62);
-  const border = mixHex(hex, USER_COLOR_DARK_NEUTRAL, 0.28);
-  const hover  = mixHex(hex, USER_COLOR_DARK_NEUTRAL, 0.42);
-  const focus  = mixHex(hex, USER_COLOR_DARK_NEUTRAL, 0.18);
+  if (!baseIsDark && adjust) {
+    const bg     = mixHex(hex, USER_COLOR_DARK_NEUTRAL, 0.62);
+    const border = mixHex(hex, USER_COLOR_DARK_NEUTRAL, 0.28);
+    const hover  = mixHex(hex, USER_COLOR_DARK_NEUTRAL, 0.42);
+    const focus  = mixHex(hex, USER_COLOR_DARK_NEUTRAL, 0.18);
+    return {
+      bg, border, hover, focus,
+      text:   relativeLuminance(hexToRgbArr(bg)) > 0.5 ? '#221E18' : '#F0EAD8',
+      shadow: 'rgba(0,0,0,0.35)',
+    };
+  }
+
+  // Fall 3: Dark-nativ — im Dark Mode erstellt, wird auch so gezeigt. Bleibt
+  // nah am Original (der Nutzer hat die Farbe bereits für eine dunkle Fläche
+  // gewählt) statt sie wie Fall 2 zusätzlich abzudunkeln.
+  if (baseIsDark && !adjust) {
+    const bg = hex;
+    return {
+      bg,
+      border: mixHex(hex, '#FFFFFF', 0.22),
+      hover:  mixHex(hex, '#FFFFFF', 0.10),
+      focus:  mixHex(hex, '#FFFFFF', 0.34),
+      text:   relativeLuminance(hexToRgbArr(bg)) > 0.5 ? '#221E18' : '#F0EAD8',
+      shadow: 'rgba(0,0,0,0.35)',
+    };
+  }
+
+  // Fall 4: Dark → Light automatisch angepasst. Basisfarbe wird Richtung
+  // neutralen Light-UI-Ton gemischt → aufgehellte, für helle Flächen
+  // passende Fläche, analog zu Fall 2 in umgekehrter Richtung.
+  const bg     = mixHex(hex, USER_COLOR_LIGHT_NEUTRAL, 0.55);
+  const border = mixHex(hex, USER_COLOR_LIGHT_NEUTRAL, 0.20);
+  const hover  = mixHex(hex, USER_COLOR_LIGHT_NEUTRAL, 0.35);
+  const focus  = mixHex(hex, USER_COLOR_LIGHT_NEUTRAL, 0.10);
   return {
     bg, border, hover, focus,
-    text:   relativeLuminance(hexToRgbArr(bg)) > 0.5 ? '#221E18' : '#F0EAD8',
-    shadow: 'rgba(0,0,0,0.35)',
+    text:   relativeLuminance(hexToRgbArr(bg)) > 0.6 ? '#3D3626' : '#F5F1E6',
+    shadow: hexToRgba(hex, 0.25),
   };
 }
 
