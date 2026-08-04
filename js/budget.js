@@ -52,6 +52,7 @@ function migrateBudgetData() {
   budgetOnetime.forEach(e => {
     if (!e.priority) { e.priority = 'need'; changed = true; }
     if (e.paid === undefined) { e.paid = false; changed = true; }
+    if (e.type === 'expense' && !Array.isArray(e.funding)) { e.funding = []; changed = true; }
   });
   budgetGoals.forEach(g => {
     if (g.eta === undefined) { g.eta = null; goalsChanged = true; }
@@ -2285,6 +2286,19 @@ document.getElementById('recurring-save').addEventListener('click', () => {
 
 let onetimeType = 'expense', onetimePriority = 'need';
 
+// "Jedem Euro einen Job": Finanzierung nur für Ausgaben, gilt (anders
+// als bei wiederkehrenden Ausgaben) NUR für den Monat dieser Buchung —
+// die Engine wertet das über monthKey in financingAllocatedForIncome()
+// bereits automatisch aus (budget-financing.js).
+function updateOnetimeFundingVisibility() {
+  const show = onetimeType === 'expense';
+  document.getElementById('onetime-funding-row').classList.toggle('hidden', !show);
+  document.getElementById('onetime-funding-list').classList.toggle('hidden', !show);
+}
+function currentOnetimeAmount() {
+  return parseFloat(document.getElementById('onetime-amount').value) || 0;
+}
+
 document.getElementById('add-onetime-btn').addEventListener('click', () => {
   document.getElementById('onetime-name').value = '';
   document.getElementById('onetime-amount').value = '';
@@ -2298,8 +2312,18 @@ document.getElementById('add-onetime-btn').addEventListener('click', () => {
   ['must','need','want'].forEach(p =>
     document.getElementById(`onetime-prio-${p}`).classList.toggle('active', p === 'need'));
   document.getElementById('onetime-prio-row').classList.remove('hidden');
+  updateOnetimeFundingVisibility();
+  if (typeof renderFundingEditor === 'function') {
+    renderFundingEditor(document.getElementById('onetime-funding-list'), [], currentOnetimeAmount, 'onetime-funding');
+  }
   document.getElementById('onetime-modal-overlay').classList.remove('hidden');
   setTimeout(() => document.getElementById('onetime-name').focus(), 50);
+});
+
+document.getElementById('onetime-amount').addEventListener('input', () => {
+  if (onetimeType === 'expense' && typeof updateFundingDiff === 'function') {
+    updateFundingDiff(document.getElementById('onetime-funding-list'), currentOnetimeAmount, 'onetime-funding');
+  }
 });
 
 ['income','expense'].forEach(t => {
@@ -2308,6 +2332,7 @@ document.getElementById('add-onetime-btn').addEventListener('click', () => {
     ['income','expense'].forEach(x =>
       document.getElementById(`onetime-type-${x}`).classList.toggle('active', x === t));
     document.getElementById('onetime-prio-row').classList.toggle('hidden', t !== 'expense');
+    updateOnetimeFundingVisibility();
   });
 });
 ['must','need','want'].forEach(p => {
@@ -2341,6 +2366,9 @@ document.getElementById('onetime-save').addEventListener('click', () => {
     priority: onetimeType === 'expense' ? onetimePriority : 'none',
     paid: false,
     day,
+    ...(onetimeType === 'expense' && typeof readFundingEditor === 'function'
+      ? { funding: readFundingEditor(document.getElementById('onetime-funding-list'), 'onetime-funding') }
+      : {}),
   });
   saveBudgetOnetime();
   document.getElementById('onetime-modal-overlay').classList.add('hidden');
