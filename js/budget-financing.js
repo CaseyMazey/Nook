@@ -53,6 +53,15 @@
 // größe, nur eine reine "zugeordnet: X €"-Anzeige (z.B. bei Sparzielen
 // ohne festen Monatsbetrag). Zuordnung blockiert nie das Speichern —
 // die Anzeige ist eine Hilfe, keine Validierungssperre.
+// totalAmount darf eine feste Zahl ODER eine Funktion sein, die den
+// aktuellen Referenzbetrag liefert — wichtig für Formulare, in denen sich
+// der Betrag NACH dem Rendern noch ändert (z.B. das Betragsfeld einer
+// Ausgabe), damit die Live-Diff-Anzeige nicht auf einem beim Rendern
+// eingefrorenen Wert hängen bleibt.
+function resolveFundingTotal(totalAmount){
+  return typeof totalAmount === 'function' ? totalAmount() : totalAmount;
+}
+
 function renderFundingEditor(container, funding, totalAmount, classPrefix){
   if (!container) return;
   const incomes = budgetRecurring.filter(r => r.type === 'income');
@@ -95,15 +104,16 @@ function renderFundingEditor(container, funding, totalAmount, classPrefix){
 function updateFundingDiff(container, totalAmount, classPrefix){
   const diffEl = container.querySelector(`.${classPrefix}-diff`);
   if (!diffEl) return;
+  const total = resolveFundingTotal(totalAmount);
   const assigned = round2(readFundingEditor(container, classPrefix).reduce((s, f) => s + f.amount, 0));
-  if (totalAmount == null) {
+  if (total == null) {
     diffEl.textContent = assigned > 0 ? `Zugeordnet: ${fmtEuro(assigned)} / Monat` : '';
     diffEl.style.color = 'var(--text-3)';
     return;
   }
-  const diff = round2(totalAmount - assigned);
+  const diff = round2(total - assigned);
   if (Math.abs(diff) < 0.005) {
-    diffEl.textContent = `✓ Vollständig zugeordnet (${fmtEuro(totalAmount)})`;
+    diffEl.textContent = `✓ Vollständig zugeordnet (${fmtEuro(total)})`;
     diffEl.style.color = 'var(--b-green)';
   } else if (diff > 0) {
     diffEl.textContent = `Noch ${fmtEuro(diff)} unzugeordnet`;

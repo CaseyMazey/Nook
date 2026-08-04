@@ -1050,6 +1050,7 @@
 .b-main-card-list { display: flex; flex-direction: column; }
 .b-main-empty { font-size: 12px; color: var(--b-card-ink-5); padding: 4px 0; font-style: italic; }
 .b-main-row-note { font-size: 10.5px; color: var(--b-card-ink-5); padding: 0 3px 4px; font-family: var(--mono); }
+.b-main-row-warning { color: var(--b-red); font-family: inherit; }
 
 .b-main-row {
   display: grid; grid-template-columns: 38px 1fr 14px auto;

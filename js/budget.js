@@ -44,6 +44,10 @@ function migrateBudgetData() {
     // dadurch bleibt jede bisherige Berechnung (Liquidität, Kontostand, ...) unverändert.
     if (!r.certainty) { r.certainty = 'fixed'; changed = true; }
     if (r.includeInSparplan === undefined) { r.includeInSparplan = true; changed = true; }
+    // "Jedem Euro einen Job": Finanzierung nur für Ausgaben relevant.
+    // Fehlende Zuordnung bleibt der unveränderte Normalfall (ganz normal
+    // aus dem allgemeinen Topf bezahlt) — kein Zwang, keine Warnung.
+    if (r.type === 'expense' && !Array.isArray(r.funding)) { r.funding = []; changed = true; }
   });
   budgetOnetime.forEach(e => {
     if (!e.priority) { e.priority = 'need'; changed = true; }
@@ -467,18 +471,19 @@ function renderMainCards(month, mk) {
       incomeList.appendChild(makeClickableRow(row.day, month.getMonth()+1, row.name, row.amount, '+', row.paid, row.onToggle));
     });
   }
-  // Finanzierungsquellen-Reservierung (Sparpläne) — rein informative Zeile
-  // je wiederkehrender Einnahme, sofern etwas davon reserviert ist.
-  // sparplanReservedForIncome() lebt in budget-sparplaene.js, daher defensiv
-  // per typeof geprüft (gleiches Muster wie an anderer Stelle in dieser Datei).
-  if (typeof sparplanReservedForIncome === 'function') {
+  // Zuordnung je Einnahme — rein informative Zeile, sofern etwas davon
+  // verplant ist (Sparziele mit aktiver Reservierung + Ausgaben mit
+  // hinterlegter Finanzierung). financingAllocatedForIncome() lebt in
+  // budget-financing.js, daher defensiv per typeof geprüft (gleiches
+  // Muster wie an anderer Stelle in dieser Datei).
+  if (typeof financingAllocatedForIncome === 'function') {
     recIncomes.forEach(i => {
-      const reserved = sparplanReservedForIncome(i.id);
-      if (reserved > 0.005) {
-        const free = Math.max(0, round2(i.amount - reserved));
+      const allocated = financingAllocatedForIncome(i.id, mk);
+      if (allocated > 0.005) {
+        const free = Math.max(0, round2(i.amount - allocated));
         const note = document.createElement('div');
         note.className = 'b-main-row-note';
-        note.textContent = `↳ ${i.name}: ${reserved.toLocaleString('de-DE',{minimumFractionDigits:2})} € reserviert · ${free.toLocaleString('de-DE',{minimumFractionDigits:2})} € frei`;
+        note.textContent = `↳ ${i.name}: ${allocated.toLocaleString('de-DE',{minimumFractionDigits:2})} € verplant · ${free.toLocaleString('de-DE',{minimumFractionDigits:2})} € frei`;
         incomeList.appendChild(note);
       }
     });
@@ -503,7 +508,7 @@ function renderMainCards(month, mk) {
   const buildExpRows = pk => {
     const rows = [];
     recExpenses.filter(i=>(i.priority||'need')===pk).forEach(i=>rows.push({
-      day:i.day||1, name:i.name, amount:i.amount,
+      day:i.day||1, name:i.name, amount:i.amount, funding:i.funding,
       paid: isRecurringPaid(i.id, mk),
       onToggle: () => {
         const nowPaid = !isRecurringPaid(i.id, mk);
@@ -514,7 +519,7 @@ function renderMainCards(month, mk) {
       }
     }));
     otExpenses.filter(e=>(e.priority||'need')===pk).forEach(e=>rows.push({
-      day:e.day||1, name:e.name, amount:e.amount,
+      day:e.day||1, name:e.name, amount:e.amount, funding:e.funding,
       paid: e.paid||false,
       onToggle: () => {
         e.paid = !e.paid;
@@ -536,6 +541,23 @@ function renderMainCards(month, mk) {
     rows.forEach(row=>{
       if (!row.paid) openExpTotal += row.amount;
       expenseList.appendChild(makeClickableRow(row.day, month.getMonth()+1, row.name, row.amount, '-', row.paid, row.onToggle));
+      // "Jedem Euro einen Job" — Finanzierungshinweis, sofern hinterlegt.
+      // fundingBreakdownLabel()/financingWarningsForConsumer() leben in
+      // budget-financing.js, daher defensiv per typeof geprüft.
+      if (Array.isArray(row.funding) && row.funding.length && typeof fundingBreakdownLabel === 'function') {
+        const note = document.createElement('div');
+        note.className = 'b-main-row-note';
+        note.textContent = `↳ ${fundingBreakdownLabel(row.funding)}`;
+        expenseList.appendChild(note);
+        const warning = typeof financingWarningsForConsumer === 'function'
+          ? financingWarningsForConsumer(row.funding, row.amount) : null;
+        if (warning) {
+          const warnEl = document.createElement('div');
+          warnEl.className = 'b-main-row-note b-main-row-warning';
+          warnEl.textContent = `⚠ ${warning}`;
+          expenseList.appendChild(warnEl);
+        }
+      }
     });
   });
 
@@ -2052,6 +2074,18 @@ function updateRecurringSparplanFieldsVisibility() {
   if (isVariable) syncRecurringAmountFromRange();
 }
 
+// "Jedem Euro einen Job": Finanzierung ist nur für Ausgaben sinnvoll —
+// Einnahmen können nicht sich selbst finanzieren. Referenzbetrag für die
+// Live-Diff-Anzeige ist der aktuell eingetragene Ausgabenbetrag.
+function updateRecurringFundingVisibility() {
+  const show = recurringType === 'expense';
+  document.getElementById('recurring-funding-row').classList.toggle('hidden', !show);
+  document.getElementById('recurring-funding-list').classList.toggle('hidden', !show);
+}
+function currentRecurringAmount() {
+  return parseFloat(document.getElementById('recurring-amount').value) || 0;
+}
+
 function syncRecurringAmountFromRange() {
   const min = parseFloat(document.getElementById('recurring-var-min').value);
   const max = parseFloat(document.getElementById('recurring-var-max').value);
@@ -2106,6 +2140,10 @@ function openRecurringModal(entry = null) {
   document.getElementById('recurring-prio-row').classList.remove('hidden');
   document.getElementById('recurring-prio-row').classList.toggle('budget-prio-row-dimmed', recurringType !== 'expense');
   updateRecurringSparplanFieldsVisibility();
+  updateRecurringFundingVisibility();
+  if (typeof renderFundingEditor === 'function') {
+    renderFundingEditor(document.getElementById('recurring-funding-list'), (entry && entry.funding) || [], currentRecurringAmount, 'rec-funding');
+  }
 
   document.getElementById('recurring-modal-overlay').classList.remove('hidden');
   setTimeout(() => document.getElementById('recurring-name').focus(), 50);
@@ -2119,6 +2157,7 @@ document.getElementById('add-recurring-btn').addEventListener('click', () => ope
     ['income','expense'].forEach(x =>
       document.getElementById(`recurring-type-${x}`).classList.toggle('active', x === t));
     document.getElementById('recurring-prio-row').classList.toggle('budget-prio-row-dimmed', t !== 'expense');
+    updateRecurringFundingVisibility();
   });
 });
 ['monthly','yearly'].forEach(f => {
@@ -2152,6 +2191,12 @@ document.getElementById('add-recurring-btn').addEventListener('click', () => ope
   });
 });
 
+document.getElementById('recurring-amount').addEventListener('input', () => {
+  if (recurringType === 'expense' && typeof updateFundingDiff === 'function') {
+    updateFundingDiff(document.getElementById('recurring-funding-list'), currentRecurringAmount(), 'rec-funding');
+  }
+});
+
 document.getElementById('recurring-modal-close').addEventListener('click',  () => document.getElementById('recurring-modal-overlay').classList.add('hidden'));
 document.getElementById('recurring-cancel').addEventListener('click',        () => document.getElementById('recurring-modal-overlay').classList.add('hidden'));
 document.getElementById('recurring-modal-overlay').addEventListener('click', e => {
@@ -2180,6 +2225,9 @@ document.getElementById('recurring-save').addEventListener('click', () => {
   const includeInSparplan = recurringFreq === 'yearly'
     ? document.getElementById('recurring-sparplan-include').checked
     : true;
+  const fundingVal = (recurringType === 'expense' && typeof readFundingEditor === 'function')
+    ? readFundingEditor(document.getElementById('recurring-funding-list'), 'rec-funding')
+    : null;
 
   function applySparplanFields(e) {
     e.certainty = certainty;
@@ -2197,6 +2245,7 @@ document.getElementById('recurring-save').addEventListener('click', () => {
       e.type     = recurringType;
       e.freq     = recurringFreq;
       e.priority = recurringType === 'expense' ? recurringPriority : 'none';
+      if (recurringType === 'expense') e.funding = fundingVal; else delete e.funding;
       if (recurringFreq === 'monthly') {
         e.day = parseInt(document.getElementById('recurring-day').value) || 1;
         delete e.dateDay; delete e.dateMonth;
@@ -2213,6 +2262,7 @@ document.getElementById('recurring-save').addEventListener('click', () => {
       type: recurringType, freq: recurringFreq,
       priority: recurringType === 'expense' ? recurringPriority : 'none',
     };
+    if (recurringType === 'expense') entry.funding = fundingVal;
     if (recurringFreq === 'monthly') {
       entry.day = parseInt(document.getElementById('recurring-day').value) || 1;
     } else {
