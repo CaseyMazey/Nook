@@ -977,6 +977,7 @@
               <div class="sp-subtab-row">
                 <div class="sp-subtab-switch" id="budget-subtab-switch">
                   <button class="sp-subtab-btn active" id="budget-subtab-btn-budget" data-subtab="budget">Budget</button>
+                  <button class="sp-subtab-btn" id="budget-subtab-btn-sparziele" data-subtab="sparziele">Sparziele</button>
                   <button class="sp-subtab-btn" id="budget-subtab-btn-sparplan" data-subtab="sparplan">Sparprognose</button>
                   <button class="sp-subtab-btn" id="budget-subtab-btn-sparplaene" data-subtab="sparplaene">Sparpläne</button>
                 </div>
@@ -1123,6 +1124,21 @@
           </div>
           <!-- ── /SUB-TAB: BUDGET ─────────────────────────────── -->
 
+          <!-- ── SUB-TAB: SPARZIELE (neu; zentrale Verwaltung aller
+               Sparziele — Karten werden von renderSparziele() in
+               budget-sparziele.js dynamisch befüllt) ──────────── -->
+          <div id="budget-panel-sparziele" class="hidden">
+            <div class="sp-panel" id="sparziele-head-panel">
+              <div class="sp-panel-head">
+                <div class="sp-panel-title">🎯 Sparziele</div>
+                <button class="sp-add-btn" id="sparziel-add-btn-2">+ Sparziel</button>
+              </div>
+              <div class="sp-source-note" style="margin:0 0 12px;">Sparziele sind die zentrale Quelle für Name, Zielbetrag, Priorität, Finanzierung und Reservierung — Sparprognose und Sparpläne greifen automatisch darauf zu.</div>
+              <div id="sparziele-grid" class="sp-plaene-grid"></div>
+            </div>
+          </div>
+          <!-- ── /SUB-TAB: SPARZIELE ──────────────────────────── -->
+
           <!-- ── SUB-TAB: SPARPROGNOSE (bisher "Sparplaner"; alle
                Inhalte werden von budget.js dynamisch aus den echten
                Budget-Daten gerendert — keine statischen/hardcodierten
@@ -1142,7 +1158,7 @@
               <div class="sp-panel" id="sparplan-goals-panel">
                 <div class="sp-panel-head">
                   <div class="sp-panel-title">🎯 Sparziele &amp; Prognose</div>
-                  <button class="sp-add-btn" id="sparplan-add-goal-btn">+ Ziel</button>
+                  <button class="sp-add-btn" id="sparplan-add-goal-btn" title="Wechselt in den Tab „Sparziele“">+ Sparziel</button>
                 </div>
                 <div id="sparplan-goals"></div>
               </div>
@@ -1813,6 +1829,9 @@
       <div class="modal-row"><label>Zielbetrag (&#8364;)</label><input type="number" class="modal-input" id="goal-target" placeholder="500.00" step="0.01" min="0"/></div>
       <div class="modal-row" id="goal-current-row"><label>Aktueller Betrag (&#8364;)</label><input type="number" class="modal-input" id="goal-current" placeholder="0.00" step="0.01" min="0"/></div>
       <div class="modal-row"><label>Wunschtermin (ETA) <span style="font-size:11px;color:var(--text-3);font-weight:400;">optional — für die Sparprognose</span></label><input type="month" class="modal-input" id="goal-eta" style="max-width:160px;"/></div>
+      <div class="modal-row"><label>Startdatum <span style="font-size:11px;color:var(--text-3);font-weight:400;">optional — Standardwert für Sparpläne</span></label><input type="date" class="modal-input" id="goal-startdate" style="max-width:170px;"/></div>
+      <div class="modal-row"><label>Kategorie <span style="font-size:11px;color:var(--text-3);font-weight:400;">optional</span></label><input type="text" class="modal-input" id="goal-category" placeholder="z.B. Mobilität, Technik..." autocomplete="off"/></div>
+      <div class="modal-row"><label>Beschreibung <span style="font-size:11px;color:var(--text-3);font-weight:400;">optional</span></label><textarea class="modal-input" id="goal-description" rows="2" placeholder="Notizen zu diesem Sparziel..." style="resize:vertical;"></textarea></div>
       <div class="modal-row">
         <label>Priorität <span style="font-size:11px;color:var(--text-3);font-weight:400;">steuert die Reihenfolge in der Sparprognose</span></label>
         <div class="budget-prio-picker">
@@ -1820,6 +1839,12 @@
           <button class="budget-prio-btn active" data-prio="need" id="goal-prio-need">Brauche</button>
           <button class="budget-prio-btn" data-prio="want" id="goal-prio-want">Möchte</button>
         </div>
+      </div>
+      <div class="modal-row"><label>Finanzierungsquellen <span style="font-size:11px;color:var(--text-3);font-weight:400;">optional — aus deinen Einnahmen im Budget-Tab</span></label></div>
+      <div id="goal-funding-list"></div>
+      <div class="modal-row modal-row-inline">
+        <label>Geld automatisch reservieren</label>
+        <label class="toggle"><input type="checkbox" id="goal-reserve-active"/><span class="toggle-slider"></span></label>
       </div>
       <div class="modal-row">
         <label>Pflanze auswählen</label>
@@ -1982,9 +2007,11 @@
 
       <!-- Geteilter Verknüpfungs-Block — erscheint zusammen mit jeder der
            drei Varianten (Zielbetrag/Rate/Individuell), da alle drei zu
-           demselben optionalen Sparziel bzw. denselben Finanzierungs-
-           quellen führen können. Kein eigener Wizard-Schritt, um die
-           bestehende Navigation (Zurück/Speichern) nicht zu verändern. -->
+           demselben optionalen Sparziel führen können. Kein eigener
+           Wizard-Schritt, um die bestehende Navigation (Zurück/Speichern)
+           nicht zu verändern. Finanzierung/Reservierung werden NUR bei
+           "Neues Sparziel" hier erfasst — bei "Vorhandenes Sparziel" sind
+           sie bereits am Sparziel gepflegt und werden nur angezeigt. -->
       <div id="sparplan-wizard-step-link" class="hidden" style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px;">
         <div class="modal-row"><label>Sparziel <span style="font-size:11px;color:var(--text-3);font-weight:400;">optional — verknüpft diesen Plan mit dem Finanzgarten</span></label>
           <div style="display:flex;gap:6px;flex-wrap:wrap;">
@@ -1997,6 +2024,10 @@
           <label>Sparziel auswählen</label>
           <select class="modal-input" id="spw-goal-select"></select>
         </div>
+        <div class="modal-row hidden" id="spw-goal-funding-existing-row">
+          <label>Finanzierung <span style="font-size:11px;color:var(--text-3);font-weight:400;">vom Sparziel übernommen — bearbeitbar im Tab „Sparziele"</span></label>
+          <div id="spw-goal-funding-existing-text" style="font-size:12.5px;color:var(--text-3);"></div>
+        </div>
         <div class="modal-row hidden" id="spw-goal-priority-row">
           <label>Priorität <span style="font-size:11px;color:var(--text-3);font-weight:400;">für die Sparprognose</span></label>
           <div class="budget-prio-picker">
@@ -2005,8 +2036,12 @@
             <button class="budget-prio-btn" data-prio="want" id="spw-goal-prio-want">Möchte</button>
           </div>
         </div>
-        <div class="modal-row"><label>Finanzierungsquellen <span style="font-size:11px;color:var(--text-3);font-weight:400;">optional — aus deinen Einnahmen im Budget-Tab</span></label></div>
-        <div id="spw-funding-list"></div>
+        <div class="modal-row hidden" id="spw-goal-funding-new-row"><label>Finanzierungsquellen <span style="font-size:11px;color:var(--text-3);font-weight:400;">optional — für das neue Sparziel</span></label></div>
+        <div id="spw-goal-funding-new" class="hidden"></div>
+        <div class="modal-row modal-row-inline hidden" id="spw-goal-reserve-row">
+          <label>Geld automatisch reservieren</label>
+          <label class="toggle"><input type="checkbox" id="spw-goal-reserve-active"/><span class="toggle-slider"></span></label>
+        </div>
       </div>
 
       <div class="modal-actions">
@@ -2334,6 +2369,8 @@
   <script src="js/flashcards.js"></script>
   <script src="js/guides.js"></script>
   <script src="js/budget.js"></script>
+  <script src="js/budget-sparziele.js"></script>
+  <script src="js/budget-financing.js"></script>
   <script src="js/budget-sparprognose.js"></script>
   <script src="js/budget-sparplaene.js"></script>
   <script src="js/projects.js"></script>

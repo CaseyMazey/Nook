@@ -7,36 +7,57 @@
 
 // =========================
 // SPARPLÄNE — DATENMODELL
-// Komplett unabhängig von budgetGoals/budgetRecurring und von der
-// Sparprognose. Beantwortet "Ich möchte X bis Y — wie muss ich
-// sparen?" statt "Was schafft mein aktuelles Budget?".
-// Struktur je Plan:
-//   { id, name, image, targetAmount (Zahl|null — null = ergibt sich
-//     aus der Summe der Raten), startDate, endDate, interval,
+// Beantwortet "Ich möchte X bis Y — wie muss ich sparen?" statt "Was
+// schafft mein aktuelles Budget?". Struktur je Plan:
+//   { id, name, image, targetAmount (Zahl|null — expliziter Override;
+//     null = erbt vom verknüpften Sparziel, sonst Summe der Raten),
+//     startDate, endDate, interval,
 //     method: 'constant'|'increasing'|'decreasing'|'custom',
 //     entries: [{ id, date, amount, done, linkedOnetimeId }],
 //     goalId: null | <budgetGoals.id> — optionale Verknüpfung zu einem
-//       Sparziel (budget.js). Ersetzt das frühere reservierte Feld
-//       "linkedToBudget", das weiterhin als Legacy-Alias mitgeführt wird.
-//     fundingSources: [{ recurringId: <budgetRecurring.id>, reserve: bool }]
-//       — optionale Finanzierungsquellen aus den Einnahmen; reserve steuert,
-//       ob der Betrag in der Sparprognose als "reserviert" gilt.
-//     linkedToBudget (Legacy-Alias, wird nicht mehr aktiv genutzt),
+//       Sparziel (budget.js). Das Sparziel ist seit der Sparziele-
+//       Umstellung die EINZIGE Datenquelle für Finanzierungsquellen und
+//       Reservierung — ein Plan hält dafür keine eigenen Werte mehr
+//       (siehe budget-sparziele.js).
+//     linkedToBudget (Legacy-Alias, nicht mehr aktiv genutzt),
 //     createdAt }
+// Muss NACH budget.js und budget-sparziele.js geladen werden.
 // =========================
 let budgetSavingsPlans = DB.get('budgetSavingsPlans', []);
 function saveBudgetSavingsPlans(){ DB.set('budgetSavingsPlans', budgetSavingsPlans); }
 
-// Migration: additive Felder für die Sparziel-/Finanzierungs-Kopplung.
-// Bestehende Pläne bleiben unverändert nutzbar (goalId: null,
-// fundingSources: [] verhalten sich exakt wie vorher).
+// Migration: additives goalId-Feld + einmaliger Hochzug alter, plan-
+// eigener Finanzierungsquellen auf das verknüpfte Sparziel (Legacy aus
+// der Zwischenversion, in der Finanzierung noch am Sparplan hing, VOR
+// der "Jedem Euro einen Job"-Umstellung). Schreibt direkt ins aktuelle
+// goal.funding-Format (mit Beträgen statt nur IDs) — budget-financing.js
+// hat zu diesem Zeitpunkt (lädt VOR dieser Datei) sein eigenes
+// fundingSources->funding-Update bereits abgeschlossen, daher hier
+// direkt im finalen Format schreiben statt über den alten Zwischenschritt.
+// Ist am Sparziel bereits etwas hinterlegt, hat das Vorrang — es wird
+// nichts überschrieben, nur einmalig ergänzt.
 (function migrateSavingsPlans() {
-  let changed = false;
+  let changed = false, goalsTouched = false;
   budgetSavingsPlans.forEach(p => {
     if (p.goalId === undefined) { p.goalId = null; changed = true; }
-    if (!Array.isArray(p.fundingSources)) { p.fundingSources = []; changed = true; }
+    if (Array.isArray(p.fundingSources) && p.fundingSources.length && p.goalId) {
+      const goal = budgetGoals.find(g => g.id === p.goalId);
+      if (goal && (!Array.isArray(goal.funding) || !goal.funding.length)) {
+        const totalGuess = sparplanMonthlyEquivalent(p);
+        const n = p.fundingSources.length;
+        const each = round2(totalGuess / n);
+        goal.funding = p.fundingSources.map((f, i) => ({
+          sourceId: f.recurringId,
+          amount: i === n - 1 ? round2(totalGuess - each * (n - 1)) : each,
+        }));
+        goal.reserveActive = p.fundingSources.some(f => f.reserve);
+        goalsTouched = true;
+      }
+    }
+    if (p.fundingSources !== undefined) { delete p.fundingSources; changed = true; }
   });
   if (changed) saveBudgetSavingsPlans();
+  if (goalsTouched) saveBudgetGoals();
 })();
 
 const SP_INTERVAL_META = {
@@ -192,10 +213,15 @@ function sparplanBuildEntries(dates, amounts){
 }
 
 // ── Abgeleitete Werte — nichts wird redundant gespeichert ──────
+// Reihenfolge: expliziter Override am Plan > Zielbetrag des verknüpften
+// Sparziels (lebt live nach — ändert sich das Sparziel, zieht das hier
+// automatisch mit) > Summe der bereits erzeugten Raten als letzter
+// Fallback (z. B. bei "Individuell" ohne Zielbetrag).
 function sparplanTargetAmount(plan){
-  return typeof plan.targetAmount === 'number' && plan.targetAmount > 0
-    ? plan.targetAmount
-    : round2(plan.entries.reduce((s, e) => s + e.amount, 0));
+  if (typeof plan.targetAmount === 'number' && plan.targetAmount > 0) return plan.targetAmount;
+  const goal = plan.goalId ? budgetGoals.find(g => g.id === plan.goalId) : null;
+  if (goal && goal.target > 0) return goal.target;
+  return round2(plan.entries.reduce((s, e) => s + e.amount, 0));
 }
 function sparplanCurrentAmount(plan){
   return round2(plan.entries.filter(e => e.done).reduce((s, e) => s + e.amount, 0));
@@ -229,8 +255,11 @@ function sparplanRemainingTimeLabel(plan){
 }
 function getSparplanById(id){ return budgetSavingsPlans.find(p => p.id === id) || null; }
 
-// ── Sparziel-Verknüpfung & Finanzierungsquellen ────────────────────
+// ── Sparziel-Verknüpfung ────────────────────────────────────────────
 // Findet den (ersten) Sparplan, der ein bestimmtes Sparziel referenziert.
+// Finanzierungsquellen/Reservierung selbst leben seit der Sparziele-
+// Umstellung ausschließlich am Sparziel (siehe budget-sparziele.js:
+// sparplanTotalReserved()/sparplanReservedForIncome()).
 function sparplanForGoal(goalId){
   if (!goalId) return null;
   return budgetSavingsPlans.find(p => p.goalId === goalId) || null;
@@ -241,40 +270,14 @@ function sparplanForGoal(goalId){
 // können (täglich/wöchentlich/...), die Sparprognose aber monatlich
 // rechnet. Nutzt den Durchschnitt der noch offenen Raten, damit
 // steigende/fallende/individuelle Spararten realistisch abgebildet werden.
+// Wird von budget-sparziele.js (goalMonthlyReserveEquivalent) genutzt,
+// wenn ein Sparziel einen Sparplan besitzt.
 function sparplanMonthlyEquivalent(plan){
   const upcoming = sparplanOrderedEntries(plan, false);
   if (!upcoming.length) return 0;
   const avgAmount = round2(upcoming.reduce((s, e) => s + e.amount, 0) / upcoming.length);
   const FACTOR = { daily: 30, weekly: 30 / 7, biweekly: 30 / 14, monthly: 1, custom: 1 };
   return round2(avgAmount * (FACTOR[plan.interval] || 1));
-}
-
-// Alle Pläne mit mindestens einer aktiven Reservierung, die noch offene
-// Raten haben (abgeschlossene Pläne reservieren nichts mehr).
-function sparplanActivePlansWithReserve(){
-  return budgetSavingsPlans.filter(p =>
-    Array.isArray(p.fundingSources) && p.fundingSources.some(f => f.reserve) &&
-    sparplanOrderedEntries(p, false).length > 0);
-}
-
-// Gesamtsumme, die aktuell über alle Sparpläne hinweg reserviert ist —
-// wird von der Sparprognose von der freien Sparrate abgezogen.
-function sparplanTotalReserved(){
-  return round2(sparplanActivePlansWithReserve().reduce((s, p) => s + sparplanMonthlyEquivalent(p), 0));
-}
-
-// Reservierter Betrag für EINE bestimmte Einnahme (budgetRecurring-ID) —
-// verteilt den Monats-Betrag eines Plans gleichmäßig auf alle seine
-// reservierten Finanzierungsquellen, falls mehrere gewählt wurden.
-function sparplanReservedForIncome(recurringId){
-  let total = 0;
-  sparplanActivePlansWithReserve().forEach(p => {
-    const reserveSources = p.fundingSources.filter(f => f.reserve);
-    if (reserveSources.some(f => f.recurringId === recurringId)) {
-      total += sparplanMonthlyEquivalent(p) / reserveSources.length;
-    }
-  });
-  return round2(total);
 }
 
 // Für die Sparprognose: benötigte Rate im Intervall des Plans, als
@@ -353,54 +356,35 @@ let spwCustomEntries = []; // [{amount}] — DIE eine Ratenliste, additiv befül
 let spwGeneratorMethodsUsed = new Set(); // welche Werkzeuge für diesen Plan benutzt wurden (fürs Detail-Label)
 let spwRandomPreview = [];  // Vorschau-Puffer für "Zufällige Beträge" (reine Beträge), vor "Zur Liste hinzufügen"
 
-// ── Sparziel-Verknüpfung & Finanzierungsquellen (geteilter Block) ──
+// ── Sparziel-Verknüpfung (geteilter Block) ──────────────────────────
+// Finanzierungsquellen/Reservierung werden NUR NOCH beim Anlegen eines
+// NEUEN Sparziels hier im Wizard erfasst — bei einem vorhandenen
+// Sparziel sind sie bereits dort gepflegt (budget-sparziele.js) und
+// werden nur noch informativ angezeigt, nicht erneut abgefragt.
 let spwGoalMode     = 'none';  // 'none' | 'new' | 'existing'
 let spwGoalId       = null;    // gewähltes vorhandenes Sparziel
 let spwGoalPriority = 'need';  // Priorität für ein NEU angelegtes Sparziel
 
-// Baut die Liste der Finanzierungsquellen (alle Einnahmen aus budgetRecurring)
-// im Wizard neu auf. Ausgewählte Häkchen/Reservierungen bleiben beim
-// Wechsel zwischen den drei Varianten erhalten, da die Liste nur beim
-// Öffnen des Wizards komplett zurückgesetzt wird.
-function renderSpwFundingList(){
-  const wrap = document.getElementById('spw-funding-list');
+// Editierbare Finanzierungsliste (mit Beträgen) — nur sichtbar, wenn im
+// Wizard ein NEUES Sparziel entsteht. Nutzt denselben Editor wie das
+// Sparziel-Modal (renderFundingEditor() aus budget-financing.js), damit
+// es nur eine einzige Render-/Rechenlogik dafür gibt. Kein fester
+// Referenzbetrag (totalAmount=null), da der endgültige Monatsbedarf des
+// neuen Sparziels an dieser Stelle noch nicht feststeht.
+function renderSpwGoalFundingNew(){
+  const wrap = document.getElementById('spw-goal-funding-new');
   if (!wrap) return;
-  const incomes = budgetRecurring.filter(r => r.type === 'income');
-  if (!incomes.length) {
-    wrap.innerHTML = '<div class="empty-state" style="font-size:12px;">Noch keine Einnahmen im Budget-Tab angelegt.</div>';
-    return;
+  if (typeof renderFundingEditor === 'function') {
+    renderFundingEditor(wrap, [], null, 'spw-goal-funding');
+  } else {
+    wrap.innerHTML = '';
   }
-  wrap.innerHTML = incomes.map(r => `
-    <div class="modal-row modal-row-inline" data-recid="${r.id}">
-      <label style="display:flex;align-items:center;gap:6px;">
-        <input type="checkbox" class="spw-funding-toggle" data-recid="${r.id}"/>
-        ${r.name} <span style="color:var(--text-3);font-family:var(--mono);font-size:11.5px;">(${r.amount.toFixed(2)} €)</span>
-      </label>
-      <label class="toggle hidden spw-funding-reserve-wrap" data-recid="${r.id}" title="Automatisch reservieren">
-        <input type="checkbox" class="spw-funding-reserve" data-recid="${r.id}"/><span class="toggle-slider"></span>
-      </label>
-    </div>`).join('');
-  wrap.querySelectorAll('.spw-funding-toggle').forEach(cb => {
-    cb.addEventListener('change', () => {
-      const reserveWrap = wrap.querySelector(`.spw-funding-reserve-wrap[data-recid="${cb.dataset.recid}"]`);
-      if (reserveWrap) reserveWrap.classList.toggle('hidden', !cb.checked);
-      if (!cb.checked) {
-        const reserveCb = wrap.querySelector(`.spw-funding-reserve[data-recid="${cb.dataset.recid}"]`);
-        if (reserveCb) reserveCb.checked = false;
-      }
-    });
-  });
 }
-
-// Liest die im Wizard gewählten Finanzierungsquellen direkt aus dem DOM
-// (analog zum übrigen Wizard, der Werte erst beim Speichern ausliest).
-function readSpwFundingSources(){
-  const wrap = document.getElementById('spw-funding-list');
-  if (!wrap) return [];
-  return Array.from(wrap.querySelectorAll('.spw-funding-toggle:checked')).map(cb => ({
-    recurringId: cb.dataset.recid,
-    reserve: !!wrap.querySelector(`.spw-funding-reserve[data-recid="${cb.dataset.recid}"]`)?.checked,
-  }));
+// Liest die im Wizard für ein NEUES Sparziel gewählte Finanzierung
+// (inkl. Beträge) — analog zum Sparziel-Modal.
+function readSpwGoalFunding(){
+  const wrap = document.getElementById('spw-goal-funding-new');
+  return (wrap && typeof readFundingEditor === 'function') ? readFundingEditor(wrap, 'spw-goal-funding') : [];
 }
 
 function renderSpwGoalSelect(){
@@ -408,6 +392,7 @@ function renderSpwGoalSelect(){
   if (!sel) return;
   if (!budgetGoals.length) {
     sel.innerHTML = '<option value="">Noch keine Sparziele vorhanden</option>';
+    spwGoalId = null;
     return;
   }
   sel.innerHTML = budgetGoals.map(g => `<option value="${g.id}">${g.name} (${fmtEuro(g.target)})</option>`).join('');
@@ -421,15 +406,61 @@ function setSpwGoalPriorityButtons(p){
   });
 }
 
+// Zeigt bei "Vorhandenes Sparziel" die dort hinterlegte Finanzierung
+// nur informativ an (bearbeitbar ausschließlich im Sparziele-Tab).
+function renderSpwGoalFundingExisting(){
+  const el = document.getElementById('spw-goal-funding-existing-text');
+  if (!el) return;
+  const goal = budgetGoals.find(g => g.id === spwGoalId);
+  if (!goal || !Array.isArray(goal.funding) || !goal.funding.length) {
+    el.textContent = 'Keine Finanzierungsquelle hinterlegt.';
+    return;
+  }
+  const label = typeof fundingBreakdownLabel === 'function' ? fundingBreakdownLabel(goal.funding) : '';
+  el.textContent = label + (goal.reserveActive ? ' · wird automatisch reserviert' : '');
+}
+
+// Übernimmt Start-/Zieldatum und Name aus einem vorhandenen Sparziel in
+// die AKTUELL sichtbare Wizard-Variante — aber nur in leere Felder
+// ("leeres Feld → vom Sparziel übernehmen, ausgefülltes Feld →
+// überschreibt nur diesen Plan"), damit nichts überschrieben wird, was
+// der Nutzer bereits selbst eingegeben hat.
+function applyGoalDefaultsToWizard(){
+  if (spwGoalMode !== 'existing' || !spwGoalId) return;
+  const goal = budgetGoals.find(g => g.id === spwGoalId);
+  if (!goal) return;
+  const etaDate = goal.eta ? (goal.eta.length === 7 ? goal.eta + '-01' : goal.eta) : null;
+  if (spwVariant === 'target') {
+    const n = document.getElementById('spw-target-name');   if (n && !n.value) n.value = goal.name;
+    const a = document.getElementById('spw-target-amount'); if (a && !a.value) a.value = goal.target;
+    const s = document.getElementById('spw-target-start');  if (s && !s.value && goal.startDate) s.value = goal.startDate;
+    const e = document.getElementById('spw-target-end');    if (e && !e.value && etaDate) e.value = etaDate;
+    updateSpwTargetPreview();
+  } else if (spwVariant === 'rate') {
+    const n = document.getElementById('spw-rate-name');  if (n && !n.value) n.value = goal.name;
+    const s = document.getElementById('spw-rate-start'); if (s && !s.value && goal.startDate) s.value = goal.startDate;
+    const e = document.getElementById('spw-rate-end');   if (e && !e.value && etaDate) e.value = etaDate;
+    updateSpwRatePreview();
+  } else if (spwVariant === 'custom') {
+    const n = document.getElementById('spw-custom-name'); if (n && !n.value) n.value = goal.name;
+  }
+}
+
 function resetSpwGoalLink(){
   spwGoalMode = 'none'; spwGoalId = null; spwGoalPriority = 'need';
   document.querySelectorAll('#sparplan-wizard-step-link [data-goalmode]').forEach(b =>
     b.classList.toggle('active', b.dataset.goalmode === 'none'));
   document.getElementById('spw-goal-existing-row').classList.add('hidden');
+  document.getElementById('spw-goal-funding-existing-row').classList.add('hidden');
   document.getElementById('spw-goal-priority-row').classList.add('hidden');
+  document.getElementById('spw-goal-funding-new-row').classList.add('hidden');
+  document.getElementById('spw-goal-funding-new').classList.add('hidden');
+  document.getElementById('spw-goal-reserve-row').classList.add('hidden');
+  const reserveCb = document.getElementById('spw-goal-reserve-active');
+  if (reserveCb) reserveCb.checked = false;
   setSpwGoalPriorityButtons('need');
   renderSpwGoalSelect();
-  renderSpwFundingList();
+  renderSpwGoalFundingNew();
 }
 
 document.querySelectorAll('#sparplan-wizard-step-link [data-goalmode]').forEach(btn => {
@@ -437,15 +468,24 @@ document.querySelectorAll('#sparplan-wizard-step-link [data-goalmode]').forEach(
     spwGoalMode = btn.dataset.goalmode;
     document.querySelectorAll('#sparplan-wizard-step-link [data-goalmode]').forEach(b => b.classList.toggle('active', b === btn));
     document.getElementById('spw-goal-existing-row').classList.toggle('hidden', spwGoalMode !== 'existing');
+    document.getElementById('spw-goal-funding-existing-row').classList.toggle('hidden', spwGoalMode !== 'existing');
     document.getElementById('spw-goal-priority-row').classList.toggle('hidden', spwGoalMode !== 'new');
-    if (spwGoalMode === 'existing') renderSpwGoalSelect();
+    document.getElementById('spw-goal-funding-new-row').classList.toggle('hidden', spwGoalMode !== 'new');
+    document.getElementById('spw-goal-funding-new').classList.toggle('hidden', spwGoalMode !== 'new');
+    document.getElementById('spw-goal-reserve-row').classList.toggle('hidden', spwGoalMode !== 'new');
+    if (spwGoalMode === 'existing') { renderSpwGoalSelect(); renderSpwGoalFundingExisting(); applyGoalDefaultsToWizard(); }
   });
 });
-document.getElementById('spw-goal-select').addEventListener('change', e => { spwGoalId = e.target.value || null; });
+document.getElementById('spw-goal-select').addEventListener('change', e => {
+  spwGoalId = e.target.value || null;
+  renderSpwGoalFundingExisting();
+  applyGoalDefaultsToWizard();
+});
 ['must','need','want'].forEach(p => {
   const btn = document.getElementById(`spw-goal-prio-${p}`);
   if (btn) btn.addEventListener('click', () => { spwGoalPriority = p; setSpwGoalPriorityButtons(p); });
 });
+
 
 function showSpwStep(step) {
   ['variant', 'target', 'rate', 'custom'].forEach(s => {
@@ -649,6 +689,7 @@ document.querySelectorAll('.sp-wizard-variant-btn[data-variant]').forEach(btn =>
     spwVariant = btn.dataset.variant;
     showSpwStep(spwVariant);
     if (spwVariant === 'custom') showSpwCustomSection('main');
+    applyGoalDefaultsToWizard();
   });
 });
 document.querySelectorAll('#sparplan-wizard-step-target .toggle-select-btn').forEach(btn => {
@@ -794,9 +835,12 @@ document.getElementById('sparplan-wizard-save').addEventListener('click', () => 
 
   // ── Sparziel-Verknüpfung ──
   // 'existing': vorhandenes Sparziel referenzieren (keine Datenduplikation —
-  //   Name/Zielbetrag/Priorität bleiben ausschließlich im Sparziel selbst).
+  //   Name/Zielbetrag/Priorität/Finanzierung/Reservierung bleiben
+  //   ausschließlich im Sparziel selbst; wurden bereits als Vorschlag in
+  //   die aktuelle Variante übernommen, siehe applyGoalDefaultsToWizard()).
   // 'new': neues Sparziel aus den Plan-Eckdaten anlegen (Name des Plans,
-  //   Zielbetrag falls vorhanden, sonst aus den Raten abgeleitet).
+  //   Zielbetrag falls vorhanden, sonst aus den Raten abgeleitet) —
+  //   inkl. der im Wizard gewählten Finanzierungsquellen/Reservierung.
   plan.goalId = null;
   if (spwGoalMode === 'existing' && spwGoalId) {
     plan.goalId = spwGoalId;
@@ -807,16 +851,18 @@ document.getElementById('sparplan-wizard-save').addEventListener('click', () => 
       target: sparplanTargetAmount(plan),
       current: 0,
       plantType: 'sunflower',
+      category: null,
+      description: null,
+      startDate: plan.startDate || null,
       eta: plan.endDate || null,
       priority: spwGoalPriority,
+      funding: readSpwGoalFunding(),
+      reserveActive: document.getElementById('spw-goal-reserve-active')?.checked || false,
     };
     budgetGoals.push(newGoal);
     saveBudgetGoals();
     plan.goalId = newGoal.id;
   }
-
-  // ── Finanzierungsquellen ──
-  plan.fundingSources = readSpwFundingSources();
 
   budgetSavingsPlans.push(plan);
   saveBudgetSavingsPlans();
@@ -827,6 +873,7 @@ document.getElementById('sparplan-wizard-save').addEventListener('click', () => 
   if (typeof renderBudgetGoals === 'function') renderBudgetGoals();
   if (typeof renderFinanzgarten === 'function') renderFinanzgarten();
   if (typeof renderSparplaner   === 'function') renderSparplaner();
+  if (typeof renderSparziele    === 'function') renderSparziele();
   if (typeof renderMainCards === 'function' && typeof budgetMonth !== 'undefined') {
     renderMainCards(budgetMonth, budgetMonthKey(budgetMonth));
   }
@@ -892,19 +939,17 @@ function renderSparplanDetailBody() {
     : `<div class="sp-detail-row"><span>Zeitraum</span><span>${sparplanFormatDate(plan.startDate)} – ${sparplanFormatDate(plan.endDate)}</span></div>`;
 
   // Sparziel-Verknüpfung — rein informativ, Bearbeitung läuft über den
-  // Wizard/das Sparziel-Modal selbst (keine doppelte Bearbeitungslogik).
+  // Sparziele-Tab (keine doppelte Bearbeitungslogik).
   const linkedGoal = plan.goalId ? (budgetGoals.find(g => g.id === plan.goalId) || null) : null;
   const goalRow = linkedGoal
     ? `<div class="sp-detail-row"><span>Sparziel</span><span>🔗 ${linkedGoal.name}</span></div>`
     : '';
 
-  // Finanzierungsquellen — Namen aus budgetRecurring auflösen.
-  const sources = Array.isArray(plan.fundingSources) ? plan.fundingSources : [];
-  const fundingRow = sources.length
-    ? `<div class="sp-detail-row"><span>Finanzierung</span><span>${sources.map(f => {
-        const rec = budgetRecurring.find(r => r.id === f.recurringId);
-        return `${rec ? rec.name : '?'}${f.reserve ? ' (reserviert)' : ''}`;
-      }).join(', ')}</span></div>`
+  // Finanzierung — lebt seit der Sparziele-Umstellung am verknüpften
+  // Sparziel, nicht mehr am Plan selbst (budget-financing.js: goal.funding).
+  const fundingLabel = linkedGoal ? fundingBreakdownLabel(linkedGoal.funding) : '';
+  const fundingRow = fundingLabel
+    ? `<div class="sp-detail-row"><span>Finanzierung</span><span>${fundingLabel}${linkedGoal.reserveActive ? ' (reserviert)' : ''}</span></div>`
     : '';
 
   body.innerHTML = `

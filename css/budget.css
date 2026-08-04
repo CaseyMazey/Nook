@@ -816,6 +816,21 @@
 .budget-badge-need { background: var(--b-green-soft);  color: var(--b-green); }
 .budget-badge-want { background: var(--b-olive-soft);  color: var(--b-olive); }
 
+/* ── Sparziele — Status-Chips (welche Funktionen sind eingerichtet) ── */
+.sz-status-row { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+.sz-status-chip {
+  font-size: 10px; padding: 2px 7px; border-radius: 99px;
+  background: var(--surface-3); color: var(--text-3); border: 1px solid var(--border);
+}
+.sz-status-chip--on { background: var(--sage-bg); color: var(--sage-dark); border-color: var(--sage-border); }
+
+/* ── Finanzierungs-Editor ("Jedem Euro einen Job") — budget-financing.js ── */
+.fin-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 5px 0; }
+.fin-row-check { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; flex: 1; }
+.fin-row-max { color: var(--text-3); font-family: var(--mono); font-size: 11.5px; }
+.fin-row-amount { max-width: 90px; flex-shrink: 0; }
+.fin-diff { font-size: 12px; margin-top: 6px; font-weight: 600; }
+
 /* ── Paid toggle ──────────────────────────────────────────── */
 .budget-paid-btn {
   width: 21px; height: 21px;

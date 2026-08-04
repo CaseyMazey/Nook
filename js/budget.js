@@ -51,9 +51,22 @@ function migrateBudgetData() {
   });
   budgetGoals.forEach(g => {
     if (g.eta === undefined) { g.eta = null; goalsChanged = true; }
-    // NEU: Priorität analog zu Ausgaben (must/need/want) — steuert künftig
-    // die Zuteilungsreihenfolge in der Sparprognose (sparplanerETAs()).
+    // Priorität analog zu Ausgaben (must/need/want) — steuert die
+    // Zuteilungsreihenfolge in der Sparprognose (sparplanerETAs()).
     if (!g.priority) { g.priority = 'need'; goalsChanged = true; }
+    // Sparziele-Umstellung: das Sparziel ist jetzt die zentrale Entität —
+    // Kategorie/Beschreibung/Startdatum sind rein informativ, Finanzierung
+    // & Reservierung leben ab jetzt hier (statt am Sparplan).
+    if (g.category === undefined)    { g.category = null;    goalsChanged = true; }
+    if (g.description === undefined) { g.description = null; goalsChanged = true; }
+    if (g.startDate === undefined)   { g.startDate = null;    goalsChanged = true; }
+    // Hinweis: die eigentliche Konvertierung von altem g.fundingSources
+    // (Liste von IDs) zu g.funding (Liste von {sourceId, amount}) läuft in
+    // budget-financing.js (braucht goalMonthlyReserveEquivalent() aus
+    // budget-sparziele.js, die hier noch nicht geladen ist). Hier nur der
+    // Default für wirklich neue Sparziele ohne jegliches Finanzierungsfeld.
+    if (!Array.isArray(g.funding) && !Array.isArray(g.fundingSources)) { g.funding = []; goalsChanged = true; }
+    if (g.reserveActive === undefined)    { g.reserveActive = false; goalsChanged = true; }
   });
   if (changed) { saveBudgetRecurring(); saveBudgetOnetime(); }
   if (goalsChanged) { saveBudgetGoals(); }
@@ -338,6 +351,7 @@ function renderBudget() {
 // =========================
 const BUDGET_SUBTABS = [
   { tab: 'budget',     panelId: 'budget-panel-budget',     btnId: 'budget-subtab-btn-budget' },
+  { tab: 'sparziele',  panelId: 'budget-panel-sparziele',  btnId: 'budget-subtab-btn-sparziele' },
   { tab: 'sparplan',   panelId: 'budget-panel-sparplan',   btnId: 'budget-subtab-btn-sparplan' },
   { tab: 'sparplaene', panelId: 'budget-panel-sparplaene', btnId: 'budget-subtab-btn-sparplaene' },
 ];
@@ -358,6 +372,7 @@ function setBudgetSubtab(tab) {
   budgetActiveSubtab = tab;
   saveBudgetActiveSubtab();
   applyBudgetSubtabVisibility(tab);
+  if (tab === 'sparziele')  { if (typeof renderSparziele === 'function') renderSparziele(); }
   if (tab === 'sparplan')   renderSparplaner();
   if (tab === 'sparplaene') renderSparplaene();
 }
@@ -2318,8 +2333,15 @@ document.getElementById('add-goal-btn').addEventListener('click', () => {
   document.getElementById('goal-target').value = '';
   document.getElementById('goal-current').value = '';
   document.getElementById('goal-eta').value = '';
+  document.getElementById('goal-category').value = '';
+  document.getElementById('goal-description').value = '';
+  document.getElementById('goal-startdate').value = '';
+  document.getElementById('goal-reserve-active').checked = false;
   goalPriority = 'need';
   setGoalPriorityButtons(goalPriority);
+  if (typeof renderFundingEditor === 'function') {
+    renderFundingEditor(document.getElementById('goal-funding-list'), [], null, 'goal-funding');
+  }
   // Reset plant selector to first option
   const firstRadio = document.querySelector('input[name="goal-plant"]');
   if (firstRadio) firstRadio.checked = true;
@@ -2336,8 +2358,16 @@ function openEditGoalModal(goal) {
   document.getElementById('goal-name').value = goal.name;
   document.getElementById('goal-target').value = goal.target;
   document.getElementById('goal-eta').value = goal.eta || '';
+  document.getElementById('goal-category').value = goal.category || '';
+  document.getElementById('goal-description').value = goal.description || '';
+  document.getElementById('goal-startdate').value = goal.startDate || '';
+  document.getElementById('goal-reserve-active').checked = !!goal.reserveActive;
   goalPriority = goal.priority || 'need';
   setGoalPriorityButtons(goalPriority);
+  if (typeof renderFundingEditor === 'function') {
+    const suggestedTotal = typeof goalMonthlyReserveEquivalent === 'function' ? goalMonthlyReserveEquivalent(goal) : null;
+    renderFundingEditor(document.getElementById('goal-funding-list'), goal.funding || [], suggestedTotal > 0 ? suggestedTotal : null, 'goal-funding');
+  }
   const radio = document.querySelector(`input[name="goal-plant"][value="${goal.plantType}"]`);
   if (radio) radio.checked = true;
   else { const firstRadio = document.querySelector('input[name="goal-plant"]'); if (firstRadio) firstRadio.checked = true; }
@@ -2357,6 +2387,13 @@ document.getElementById('goal-save').addEventListener('click', () => {
   const plantRadio = document.querySelector('input[name="goal-plant"]:checked');
   const plantType = plantRadio ? plantRadio.value : 'sunflower';
   const etaVal = document.getElementById('goal-eta').value || null;
+  const categoryVal    = document.getElementById('goal-category').value.trim() || null;
+  const descriptionVal = document.getElementById('goal-description').value.trim() || null;
+  const startDateVal   = document.getElementById('goal-startdate').value || null;
+  const reserveActiveVal = document.getElementById('goal-reserve-active').checked;
+  const fundingVal = typeof readFundingEditor === 'function'
+    ? readFundingEditor(document.getElementById('goal-funding-list'), 'goal-funding')
+    : [];
 
   if (editingGoalId) {
     const goal = budgetGoals.find(g => g.id === editingGoalId);
@@ -2366,17 +2403,27 @@ document.getElementById('goal-save').addEventListener('click', () => {
       goal.plantType = plantType;
       goal.eta = etaVal;
       goal.priority = goalPriority;
+      goal.category = categoryVal;
+      goal.description = descriptionVal;
+      goal.startDate = startDateVal;
+      goal.reserveActive = reserveActiveVal;
+      goal.funding = fundingVal;
     }
     editingGoalId = null;
   } else {
     const current = parseFloat(document.getElementById('goal-current').value) || 0;
-    budgetGoals.push({ id: crypto.randomUUID(), name, target, current, plantType, eta: etaVal, priority: goalPriority });
+    budgetGoals.push({
+      id: crypto.randomUUID(), name, target, current, plantType, eta: etaVal, priority: goalPriority,
+      category: categoryVal, description: descriptionVal, startDate: startDateVal,
+      reserveActive: reserveActiveVal, funding: fundingVal,
+    });
   }
   saveBudgetGoals();
   document.getElementById('goal-modal-overlay').classList.add('hidden');
   renderBudgetGoals();
   renderFinanzgarten();
   renderSparplaner();
+  if (typeof renderSparziele === 'function') renderSparziele();
 });
 
 let goalTxTarget = null, goalTxMode = 'deposit';
@@ -2467,7 +2514,7 @@ function bindSecondaryButtons() {
     ['add-recurring-btn-2',   'add-recurring-btn'],
     ['add-onetime-btn-2',     'add-onetime-btn'],
     ['add-goal-btn-2',        'add-goal-btn'],
-    ['sparplan-add-goal-btn', 'add-goal-btn'],
+    ['sparziel-add-btn-2',    'add-goal-btn'],
   ];
   pairs.forEach(([srcId, targetId]) => {
     const srcEl    = document.getElementById(srcId);
@@ -2477,6 +2524,17 @@ function bindSecondaryButtons() {
       srcEl.addEventListener('click', () => targetEl.click());
     }
   });
+  // Sparprognose legt keine Sparziele mehr selbst an (Sparziele sind jetzt
+  // ausschließlich im Tab "Sparziele" verwaltet) — der Button dort wechselt
+  // stattdessen den Subtab und öffnet von dort aus das Sparziel-Modal.
+  const sparplanGoalBtn = document.getElementById('sparplan-add-goal-btn');
+  if (sparplanGoalBtn && !sparplanGoalBtn._secondaryBound) {
+    sparplanGoalBtn._secondaryBound = true;
+    sparplanGoalBtn.addEventListener('click', () => {
+      setBudgetSubtab('sparziele');
+      document.getElementById('add-goal-btn')?.click();
+    });
+  }
   // Re-run month nav binding in case the nav buttons appeared after initial load
   // (bindMonthNav lebt in budget-sparprognose.js, das erst nach budget.js geladen wird —
   // beim allerersten Aufruf hier ist es u.U. noch nicht definiert; die eigene
