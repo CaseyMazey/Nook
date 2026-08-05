@@ -13,6 +13,11 @@
 let budgetRecurring = DB.get('budgetRecurring', []);
 let budgetOnetime   = DB.get('budgetOnetime', []);
 let budgetGoals     = DB.get('budgetGoals', []);
+// Raten & Schulden — bewusst getrennt von budgetGoals: eine Schuld wird
+// GETILGT, nicht "gespart". Strukturell fast identisch (Betrag,
+// Fortschritt, Finanzierung), aber andere Sprache und andere Bedeutung
+// für den Nutzer (siehe budget-debts.js).
+let budgetDebts      = DB.get('budgetDebts', []);
 let budgetMonth     = new Date();
 
 let budgetActiveSubtab   = DB.get('budgetActiveSubtab', 'budget');       // 'budget' | 'sparplan' | 'sparplaene'
@@ -33,6 +38,7 @@ function saveKontostand() { DB.set('kontostand', kontostand); }
 function saveBudgetRecurring(){ DB.set('budgetRecurring', budgetRecurring); }
 function saveBudgetOnetime(){   DB.set('budgetOnetime',   budgetOnetime);   }
 function saveBudgetGoals(){     DB.set('budgetGoals',     budgetGoals);     }
+function saveBudgetDebts(){     DB.set('budgetDebts',     budgetDebts);     }
 
 // Rundet exakt auf Cent — verhindert Fließkomma-Artefakte
 // (z.B. 268.29999999999995 oder Anzeige mit 3 statt 2 Nachkommastellen).
@@ -375,6 +381,7 @@ const BUDGET_SUBTABS = [
   { tab: 'sparziele',  panelId: 'budget-panel-sparziele',  btnId: 'budget-subtab-btn-sparziele' },
   { tab: 'sparplan',   panelId: 'budget-panel-sparplan',   btnId: 'budget-subtab-btn-sparplan' },
   { tab: 'sparplaene', panelId: 'budget-panel-sparplaene', btnId: 'budget-subtab-btn-sparplaene' },
+  { tab: 'schulden',   panelId: 'budget-panel-schulden',   btnId: 'budget-subtab-btn-schulden' },
 ];
 
 function applyBudgetSubtabVisibility(tab) {
@@ -396,6 +403,7 @@ function setBudgetSubtab(tab) {
   if (tab === 'sparziele')  { if (typeof renderSparziele === 'function') renderSparziele(); }
   if (tab === 'sparplan')   renderSparplaner();
   if (tab === 'sparplaene') renderSparplaene();
+  if (tab === 'schulden')   { if (typeof renderSchulden === 'function') renderSchulden(); }
 }
 
 function initBudgetSubtabs() {
@@ -488,11 +496,11 @@ function renderMainCards(month, mk) {
       incomeList.appendChild(makeClickableRow(row.day, month.getMonth()+1, row.name, row.amount, '+', row.paid, row.onToggle));
     });
   }
-  // Zuordnung je Einnahme — rein informative Zeile, sofern etwas davon
-  // verplant ist (Sparziele mit aktiver Reservierung + Ausgaben mit
-  // hinterlegter Finanzierung). financingAllocatedForIncome() lebt in
-  // budget-financing.js, daher defensiv per typeof geprüft (gleiches
-  // Muster wie an anderer Stelle in dieser Datei).
+  // Zuordnung je Einnahme — bewusst MINIMAL: nur "reserviert · frei".
+  // Die Frage "Wofür?" beantwortet jetzt die Ausgabe selbst ("Bezahlt
+  // durch"), nicht mehr die Einnahme — hier zählt nur noch "Wie viel
+  // bekomme ich, wie viel ist frei?". Die ausführliche Aufschlüsselung
+  // bleibt als Klick-Detail erreichbar (openIncomeBreakdown()).
   if (typeof financingAllocatedForIncome === 'function') {
     recIncomes.forEach(i => {
       const allocated = financingAllocatedForIncome(i.id, mk);
@@ -500,7 +508,7 @@ function renderMainCards(month, mk) {
         const free = Math.max(0, round2(i.amount - allocated));
         const note = document.createElement('div');
         note.className = 'b-main-row-note b-main-row-note-clickable';
-        note.textContent = `↳ ${i.name}: ${allocated.toLocaleString('de-DE',{minimumFractionDigits:2})} € verplant · ${free.toLocaleString('de-DE',{minimumFractionDigits:2})} € frei`;
+        note.textContent = `${allocated.toLocaleString('de-DE',{minimumFractionDigits:2})} € reserviert · ${free.toLocaleString('de-DE',{minimumFractionDigits:2})} € frei`;
         note.title = 'Aufschlüsselung anzeigen';
         note.addEventListener('click', () => {
           if (typeof openIncomeBreakdown === 'function') openIncomeBreakdown(i.id, mk);
@@ -562,14 +570,25 @@ function renderMainCards(month, mk) {
     rows.forEach(row=>{
       if (!row.paid) openExpTotal += row.amount;
       expenseList.appendChild(makeClickableRow(row.day, month.getMonth()+1, row.name, row.amount, '-', row.paid, row.onToggle));
-      // "Jedem Euro einen Job" — Finanzierungshinweis, sofern hinterlegt.
-      // fundingBreakdownLabel()/financingWarningsForConsumer() leben in
-      // budget-financing.js, daher defensiv per typeof geprüft.
-      if (Array.isArray(row.funding) && row.funding.length && typeof fundingBreakdownLabel === 'function') {
-        const note = document.createElement('div');
-        note.className = 'b-main-row-note';
-        note.textContent = `↳ ${fundingBreakdownLabel(row.funding)}`;
-        expenseList.appendChild(note);
+      // "Jedem Euro einen Job" — zeigt direkt bei der Ausgabe, WOFÜR sie
+      // bezahlt wird (nicht nur additiv bei der Einnahme). Beantwortet die
+      // Frage "Wofür?" statt nur "Wie viel ist reserviert?".
+      if (Array.isArray(row.funding) && row.funding.length) {
+        const block = document.createElement('div');
+        block.className = 'b-main-funding-block';
+        const label = document.createElement('div');
+        label.className = 'b-main-funding-label';
+        label.textContent = 'Bezahlt durch';
+        block.appendChild(label);
+        row.funding.forEach(f => {
+          const rec = budgetRecurring.find(r => r.id === f.sourceId);
+          const item = document.createElement('div');
+          item.className = 'b-main-funding-item';
+          const icon = typeof incomeIcon === 'function' ? incomeIcon(rec?.name) : '';
+          item.textContent = `${icon} ${rec ? rec.name : '?'} ${fmtEuro(f.amount)}`;
+          block.appendChild(item);
+        });
+        expenseList.appendChild(block);
         const warning = typeof financingWarningsForConsumer === 'function'
           ? financingWarningsForConsumer(row.funding, row.amount) : null;
         if (warning) {
@@ -2437,6 +2456,7 @@ document.getElementById('add-goal-btn').addEventListener('click', () => {
   document.getElementById('goal-reserve-active').checked = false;
   goalPriority = 'need';
   setGoalPriorityButtons(goalPriority);
+  document.getElementById('goal-delete').classList.add('hidden');
   if (typeof renderFundingEditor === 'function') {
     renderFundingEditor(document.getElementById('goal-funding-list'), [], null, 'goal-funding');
   }
@@ -2462,6 +2482,7 @@ function openEditGoalModal(goal) {
   document.getElementById('goal-reserve-active').checked = !!goal.reserveActive;
   goalPriority = goal.priority || 'need';
   setGoalPriorityButtons(goalPriority);
+  document.getElementById('goal-delete').classList.remove('hidden');
   if (typeof renderFundingEditor === 'function') {
     const suggestedTotal = typeof goalMonthlyReserveEquivalent === 'function' ? goalMonthlyReserveEquivalent(goal) : null;
     renderFundingEditor(document.getElementById('goal-funding-list'), goal.funding || [], suggestedTotal > 0 ? suggestedTotal : null, 'goal-funding');
@@ -2475,6 +2496,21 @@ function openEditGoalModal(goal) {
 
 document.getElementById('goal-modal-close').addEventListener('click',  closeGoalModal);
 document.getElementById('goal-cancel').addEventListener('click',        closeGoalModal);
+document.getElementById('goal-delete').addEventListener('click', () => {
+  if (!editingGoalId) return;
+  const goal = budgetGoals.find(g => g.id === editingGoalId);
+  if (!goal) return;
+  if (!confirm(`Sparziel "${goal.name}" wirklich löschen?`)) return;
+  budgetGoals = budgetGoals.filter(g => g.id !== goal.id);
+  const activeId = DB.get('gardenActiveGoalId', null);
+  if (activeId === goal.id) DB.set('gardenActiveGoalId', null);
+  saveBudgetGoals();
+  closeGoalModal();
+  renderBudgetGoals();
+  renderFinanzgarten();
+  if (typeof renderSparziele === 'function') renderSparziele();
+  if (typeof renderSparplaner === 'function') renderSparplaner();
+});
 document.getElementById('goal-modal-overlay').addEventListener('click', e => {
   if (e.target === document.getElementById('goal-modal-overlay')) closeGoalModal();
 });
@@ -2524,11 +2560,139 @@ document.getElementById('goal-save').addEventListener('click', () => {
   if (typeof renderSparziele === 'function') renderSparziele();
 });
 
-let goalTxTarget = null, goalTxMode = 'deposit';
+// Ein gemeinsames Modal für Sparziel-Transaktionen (Einzahlen/Abheben)
+// UND Schulden-Zahlungen (Bezahlen) — strukturell identisch (ein Betrag,
+// eine Zielgröße), nur die Sprache unterscheidet sich. txKind steuert,
+// welches Objekt/welche Felder betroffen sind.
+// =========================
+// DEBT MODAL (Raten & Schulden — create + edit)
+// Strukturell fast identisch zum Sparziel-Modal, bewusst andere Sprache.
+// =========================
+let editingDebtId = null;
+let debtPriority = 'need';
+
+function setDebtPriorityButtons(p) {
+  ['must','need','want'].forEach(x => {
+    const btn = document.getElementById(`debt-prio-${x}`);
+    if (btn) btn.classList.toggle('active', x === p);
+  });
+}
+['must','need','want'].forEach(p => {
+  const btn = document.getElementById(`debt-prio-${p}`);
+  if (btn) btn.addEventListener('click', () => { debtPriority = p; setDebtPriorityButtons(p); });
+});
+
+function closeDebtModal() {
+  document.getElementById('debt-modal-overlay').classList.add('hidden');
+  editingDebtId = null;
+}
+
+document.getElementById('debt-add-btn').addEventListener('click', () => {
+  editingDebtId = null;
+  document.getElementById('debt-modal-title').textContent = 'Neue Schuld';
+  document.getElementById('debt-paid-row').classList.remove('hidden');
+  document.getElementById('debt-name').value = '';
+  document.getElementById('debt-original').value = '';
+  document.getElementById('debt-paid').value = '';
+  document.getElementById('debt-duedate').value = '';
+  document.getElementById('debt-description').value = '';
+  document.getElementById('debt-reserve-active').checked = false;
+  debtPriority = 'need';
+  setDebtPriorityButtons(debtPriority);
+  document.getElementById('debt-delete').classList.add('hidden');
+  if (typeof renderFundingEditor === 'function') {
+    renderFundingEditor(document.getElementById('debt-funding-list'), [], null, 'debt-funding');
+  }
+  document.getElementById('debt-modal-overlay').classList.remove('hidden');
+  setTimeout(() => document.getElementById('debt-name').focus(), 50);
+});
+
+function openEditDebtModal(debt) {
+  editingDebtId = debt.id;
+  document.getElementById('debt-modal-title').textContent = 'Schuld bearbeiten';
+  // Der bereits bezahlte Betrag wird hier bewusst nicht angezeigt/editiert —
+  // Änderungen laufen ausschließlich über "Bezahlen".
+  document.getElementById('debt-paid-row').classList.add('hidden');
+  document.getElementById('debt-name').value = debt.name;
+  document.getElementById('debt-original').value = debt.originalAmount;
+  document.getElementById('debt-duedate').value = debt.dueDate || '';
+  document.getElementById('debt-description').value = debt.description || '';
+  document.getElementById('debt-reserve-active').checked = !!debt.reserveActive;
+  debtPriority = debt.priority || 'need';
+  setDebtPriorityButtons(debtPriority);
+  document.getElementById('debt-delete').classList.remove('hidden');
+  if (typeof renderFundingEditor === 'function') {
+    renderFundingEditor(document.getElementById('debt-funding-list'), debt.funding || [], null, 'debt-funding');
+  }
+  document.getElementById('debt-modal-overlay').classList.remove('hidden');
+  setTimeout(() => document.getElementById('debt-name').focus(), 50);
+}
+
+document.getElementById('debt-modal-close').addEventListener('click', closeDebtModal);
+document.getElementById('debt-cancel').addEventListener('click',       closeDebtModal);
+document.getElementById('debt-delete').addEventListener('click', () => {
+  if (!editingDebtId) return;
+  const debt = budgetDebts.find(d => d.id === editingDebtId);
+  if (!debt) return;
+  if (!confirm(`Schuld "${debt.name}" wirklich löschen?`)) return;
+  budgetDebts = budgetDebts.filter(d => d.id !== debt.id);
+  saveBudgetDebts();
+  closeDebtModal();
+  if (typeof renderSchulden === 'function') renderSchulden();
+  if (typeof renderFinanzanalyse === 'function') renderFinanzanalyse();
+});
+document.getElementById('debt-modal-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('debt-modal-overlay')) closeDebtModal();
+});
+document.getElementById('debt-save').addEventListener('click', () => {
+  const name = document.getElementById('debt-name').value.trim();
+  if (!name) return;
+  const originalAmount = parseFloat(document.getElementById('debt-original').value) || 0;
+  const dueDateVal = document.getElementById('debt-duedate').value || null;
+  const descriptionVal = document.getElementById('debt-description').value.trim() || null;
+  const reserveActiveVal = document.getElementById('debt-reserve-active').checked;
+  const fundingVal = typeof readFundingEditor === 'function'
+    ? readFundingEditor(document.getElementById('debt-funding-list'), 'debt-funding')
+    : [];
+
+  if (editingDebtId) {
+    const debt = budgetDebts.find(d => d.id === editingDebtId);
+    if (debt) {
+      debt.name = name;
+      debt.originalAmount = originalAmount;
+      debt.dueDate = dueDateVal;
+      debt.description = descriptionVal;
+      debt.priority = debtPriority;
+      debt.reserveActive = reserveActiveVal;
+      debt.funding = fundingVal;
+    }
+    editingDebtId = null;
+  } else {
+    const paidAmount = parseFloat(document.getElementById('debt-paid').value) || 0;
+    budgetDebts.push({
+      id: crypto.randomUUID(), name, originalAmount, paidAmount,
+      dueDate: dueDateVal, description: descriptionVal, priority: debtPriority,
+      reserveActive: reserveActiveVal, funding: fundingVal, createdAt: Date.now(),
+    });
+  }
+  saveBudgetDebts();
+  closeDebtModal();
+  if (typeof renderSchulden === 'function') renderSchulden();
+  if (typeof renderFinanzanalyse === 'function') renderFinanzanalyse();
+});
+
+let goalTxTarget = null, goalTxMode = 'deposit', goalTxKind = 'goal';
 function openGoalTx(goal, mode) {
-  goalTxTarget = goal; goalTxMode = mode;
+  goalTxTarget = goal; goalTxMode = mode; goalTxKind = 'goal';
   document.getElementById('goal-tx-title').textContent =
     mode === 'deposit' ? `Einzahlen — ${goal.name}` : `Abheben — ${goal.name}`;
+  document.getElementById('goal-tx-amount').value = '';
+  document.getElementById('goal-tx-modal-overlay').classList.remove('hidden');
+  setTimeout(() => document.getElementById('goal-tx-amount').focus(), 50);
+}
+function openDebtTx(debt) {
+  goalTxTarget = debt; goalTxMode = 'pay'; goalTxKind = 'debt';
+  document.getElementById('goal-tx-title').textContent = `Bezahlen — ${debt.name}`;
   document.getElementById('goal-tx-amount').value = '';
   document.getElementById('goal-tx-modal-overlay').classList.remove('hidden');
   setTimeout(() => document.getElementById('goal-tx-amount').focus(), 50);
@@ -2542,13 +2706,22 @@ document.getElementById('goal-tx-modal-overlay').addEventListener('click', e => 
 document.getElementById('goal-tx-save').addEventListener('click', () => {
   if (!goalTxTarget) return;
   const amt = parseFloat(document.getElementById('goal-tx-amount').value) || 0;
-  goalTxTarget.current = Math.max(0,
-    goalTxMode === 'deposit' ? goalTxTarget.current + amt : goalTxTarget.current - amt);
-  saveBudgetGoals();
+  if (goalTxKind === 'debt') {
+    goalTxTarget.paidAmount = Math.min(goalTxTarget.originalAmount,
+      Math.max(0, (goalTxTarget.paidAmount || 0) + amt));
+    saveBudgetDebts();
+    if (typeof renderSchulden === 'function') renderSchulden();
+    if (typeof renderFinanzanalyse === 'function') renderFinanzanalyse();
+  } else {
+    goalTxTarget.current = Math.max(0,
+      goalTxMode === 'deposit' ? goalTxTarget.current + amt : goalTxTarget.current - amt);
+    saveBudgetGoals();
+    renderBudgetGoals();
+    renderFinanzgarten();
+    renderSparplaner();
+    if (typeof renderSparziele === 'function') renderSparziele();
+  }
   document.getElementById('goal-tx-modal-overlay').classList.add('hidden');
-  renderBudgetGoals();
-  renderFinanzgarten();
-  renderSparplaner();
   goalTxTarget = null;
 });
 

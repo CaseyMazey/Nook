@@ -18,11 +18,8 @@ function saveSparplanerScenario(){ DB.set('sparplanerScenario', sparplanerScenar
 // jeder Änderung erneut aufgerufen, wie überall sonst in Nook).
 // =========================
 
-// Rundet exakt auf Cent — verhindert Fließkomma-Artefakte
-// (z.B. 268.29999999999995 oder Anzeige mit 3 statt 2 Nachkommastellen)
-function round2(v) {
-  return Math.round((v + Number.EPSILON) * 100) / 100;
-}
+// round2() lebt jetzt in budget.js (lädt zuerst) — siehe dortiger
+// Kommentar für den genauen Grund (Ladereihenfolge-Bug).
 
 // Bandbreite eines Postens: bei "variabel" varMin/varMax, sonst
 // fällt beides auf den festen Betrag zurück (sichere Defaults).
@@ -226,10 +223,8 @@ function renderSparplaner() {
   renderSparplanSummary(rates);
 }
 
-function fmtEuro(v) {
-  const r = round2(v);
-  return (r < 0 ? '-' : '') + Math.abs(r).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
-}
+// fmtEuro() lebt jetzt in budget.js (lädt zuerst) — siehe dortiger
+// Kommentar für den genauen Grund (Ladereihenfolge-Bug).
 
 function renderSparplanScenarios(rates) {
   const el = document.getElementById('sparplan-scenarios');

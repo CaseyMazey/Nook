@@ -980,6 +980,7 @@
                   <button class="sp-subtab-btn" id="budget-subtab-btn-sparziele" data-subtab="sparziele">Sparziele</button>
                   <button class="sp-subtab-btn" id="budget-subtab-btn-sparplan" data-subtab="sparplan">Sparprognose</button>
                   <button class="sp-subtab-btn" id="budget-subtab-btn-sparplaene" data-subtab="sparplaene">Sparpläne</button>
+                  <button class="sp-subtab-btn" id="budget-subtab-btn-schulden" data-subtab="schulden">Schulden</button>
                 </div>
                 <button class="sp-savedby-trigger hidden" id="sparplan-savedby-btn" title="Gespart bis... — kleine Zusatzrechnung, unabhängig von deinen Sparzielen">⭐ Gespart bis...</button>
               </div>
@@ -1128,6 +1129,18 @@
                Sparziele — Karten werden von renderSparziele() in
                budget-sparziele.js dynamisch befüllt) ──────────── -->
           <div id="budget-panel-sparziele" class="hidden">
+            <!-- Finanzanalyse — verständliche Erklärung statt Tabelle;
+                 Rendering: renderFinanzanalyse() in budget-analysis.js.
+                 Nutzt ausschließlich vorhandene Sparziel-/Ausgaben-/
+                 Financing-Daten, keine eigene Datenhaltung. -->
+            <div class="sp-panel" id="finanzanalyse-panel">
+              <div class="sp-panel-head">
+                <div class="sp-panel-title">🔍 Finanzanalyse</div>
+              </div>
+              <div class="sp-source-note" style="margin:0 0 12px;">Wie dein Geld verteilt wird — verständlich erklärt, nicht nur aufgelistet.</div>
+              <div id="finanzanalyse-body"></div>
+            </div>
+
             <div class="sp-panel" id="sparziele-head-panel">
               <div class="sp-panel-head">
                 <div class="sp-panel-title">🎯 Sparziele</div>
@@ -1192,6 +1205,21 @@
             <div id="sparplaene-grid" class="sp-plaene-grid"></div>
           </div>
           <!-- ── /SUB-TAB: SPARPLÄNE ──────────────────────────── -->
+
+          <!-- ── SUB-TAB: SCHULDEN (neu; getrennt von Sparzielen — eine
+               Schuld wird getilgt, nicht gespart. Karten werden von
+               renderSchulden() in budget-debts.js dynamisch befüllt) ── -->
+          <div id="budget-panel-schulden" class="hidden">
+            <div class="sp-panel" id="schulden-head-panel">
+              <div class="sp-panel-head">
+                <div class="sp-panel-title">💳 Raten &amp; Schulden</div>
+                <button class="sp-add-btn" id="debt-add-btn">+ Schuld</button>
+              </div>
+              <div class="sp-source-note" style="margin:0 0 12px;">Offene Verpflichtungen, die getilgt statt angespart werden — z.B. wenn du einer Mitbewohnerin oder einem Freund Geld in Raten zurückzahlst.</div>
+              <div id="schulden-grid" class="sp-plaene-grid"></div>
+            </div>
+          </div>
+          <!-- ── /SUB-TAB: SCHULDEN ───────────────────────────── -->
  
           <!-- Legacy kontostand-edit-btn stub -->
           <div style="display:none;"><button id="kontostand-edit-btn"></button></div>
@@ -1870,7 +1898,11 @@
           <label class="goal-plant-option"><input type="radio" name="goal-plant" value="cherryblossom"/><span class="goal-plant-icon">🌸</span><span class="goal-plant-name">Kirschblüte</span></label>
         </div>
       </div>
-      <div class="modal-actions"><button id="goal-cancel" class="btn-ghost">Abbrechen</button><button id="goal-save" class="btn-primary">Speichern</button></div>
+      <div class="modal-actions">
+        <button id="goal-delete" class="btn-ghost hidden" style="margin-right:auto;color:var(--b-red);border-color:var(--b-red);">Löschen</button>
+        <button id="goal-cancel" class="btn-ghost">Abbrechen</button>
+        <button id="goal-save" class="btn-primary">Speichern</button>
+      </div>
     </div>
   </div>
  
@@ -1880,6 +1912,40 @@
       <div class="modal-head"><span id="goal-tx-title">Einzahlen</span><button class="modal-x" id="goal-tx-close">&#10005;</button></div>
       <div class="modal-row"><label>Betrag (&#8364;)</label><input type="number" class="modal-input" id="goal-tx-amount" placeholder="0.00" step="0.01" min="0"/></div>
       <div class="modal-actions"><button id="goal-tx-cancel" class="btn-ghost">Abbrechen</button><button id="goal-tx-save" class="btn-primary">OK</button></div>
+    </div>
+  </div>
+
+  <!-- Schulden-Modal — strukturell wie das Sparziel-Modal, bewusst
+       andere Sprache (Restschuld statt Zielbetrag, Bezahlen statt
+       Einzahlen, siehe budget-debts.js). Nutzt denselben Finanzierungs-
+       Editor (budget-financing.js) wie Sparziele/Ausgaben. -->
+  <div id="debt-modal-overlay" class="modal-backdrop hidden">
+    <div class="modal-box" style="width:420px;">
+      <div class="modal-head"><span id="debt-modal-title">Neue Schuld</span><button class="modal-x" id="debt-modal-close">&#10005;</button></div>
+      <input type="text" class="modal-input" id="debt-name" placeholder="z.B. WLAN-Router (Mo)" autocomplete="off"/>
+      <div class="modal-row"><label>Ursprünglicher Betrag (&#8364;)</label><input type="number" class="modal-input" id="debt-original" placeholder="70.00" step="0.01" min="0"/></div>
+      <div class="modal-row" id="debt-paid-row"><label>Bereits bezahlt (&#8364;)</label><input type="number" class="modal-input" id="debt-paid" placeholder="0.00" step="0.01" min="0"/></div>
+      <div class="modal-row"><label>Fälligkeit <span style="font-size:11px;color:var(--text-3);font-weight:400;">optional</span></label><input type="date" class="modal-input" id="debt-duedate" style="max-width:170px;"/></div>
+      <div class="modal-row"><label>Beschreibung <span style="font-size:11px;color:var(--text-3);font-weight:400;">optional</span></label><textarea class="modal-input" id="debt-description" rows="2" placeholder="Notizen..." style="resize:vertical;"></textarea></div>
+      <div class="modal-row">
+        <label>Priorität</label>
+        <div class="budget-prio-picker">
+          <button class="budget-prio-btn" data-prio="must" id="debt-prio-must">Muss</button>
+          <button class="budget-prio-btn active" data-prio="need" id="debt-prio-need">Brauche</button>
+          <button class="budget-prio-btn" data-prio="want" id="debt-prio-want">Möchte</button>
+        </div>
+      </div>
+      <div class="modal-row"><label>Finanzierungsquellen <span style="font-size:11px;color:var(--text-3);font-weight:400;">optional — womit tilgst du das?</span></label></div>
+      <div id="debt-funding-list"></div>
+      <div class="modal-row modal-row-inline">
+        <label>Geld automatisch reservieren</label>
+        <label class="toggle"><input type="checkbox" id="debt-reserve-active"/><span class="toggle-slider"></span></label>
+      </div>
+      <div class="modal-actions">
+        <button id="debt-delete" class="btn-ghost hidden" style="margin-right:auto;color:var(--b-red);border-color:var(--b-red);">Löschen</button>
+        <button id="debt-cancel" class="btn-ghost">Abbrechen</button>
+        <button id="debt-save" class="btn-primary">Speichern</button>
+      </div>
     </div>
   </div>
 
@@ -2385,6 +2451,8 @@
   <script src="js/budget.js"></script>
   <script src="js/budget-sparziele.js"></script>
   <script src="js/budget-financing.js"></script>
+  <script src="js/budget-analysis.js"></script>
+  <script src="js/budget-debts.js"></script>
   <script src="js/budget-sparprognose.js"></script>
   <script src="js/budget-sparplaene.js"></script>
   <script src="js/projects.js"></script>

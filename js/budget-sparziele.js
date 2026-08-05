@@ -40,36 +40,10 @@ function goalMonthlyReserveEquivalent(goal){
   return 0;
 }
 
-// ── Status-Zeile pro Sparziel-Karte ─────────────────────────────────
-// Zeigt auf einen Blick, welche Funktionen für dieses Sparziel bereits
-// eingerichtet sind. "Sparprognose aktiv" ist für jedes Sparziel immer
-// wahr, da die Sparprognose seit dieser Umstellung automatisch ALLE
-// Sparziele einbezieht (keine separate Aktivierung nötig).
-function sparzielStatus(goal){
-  const linkedPlan = typeof sparplanForGoal === 'function' ? sparplanForGoal(goal.id) : null;
-  return {
-    sparprognose: true,
-    sparplan:  !!linkedPlan,
-    funding:   Array.isArray(goal.funding) && goal.funding.length > 0,
-    reserve:   !!goal.reserveActive,
-  };
-}
-function sparzielStatusHtml(goal){
-  const s = sparzielStatus(goal);
-  const items = [
-    ['Sparprognose aktiv', s.sparprognose],
-    ['Sparplan vorhanden', s.sparplan],
-    ['Finanzierungsquelle', s.funding],
-    ['Reservierung aktiv', s.reserve],
-  ];
-  return items.map(([label, on]) =>
-    `<span class="sz-status-chip${on ? ' sz-status-chip--on' : ''}">${on ? '✓' : '·'} ${label}</span>`
-  ).join('');
-}
-
 // ── Rendering ────────────────────────────────────────────────────────
 function renderSparziele(){
   if (document.getElementById('budget-panel-sparziele')?.classList.contains('hidden')) return;
+  if (typeof renderFinanzanalyse === 'function') renderFinanzanalyse();
   const grid = document.getElementById('sparziele-grid');
   if (!grid) return;
   grid.innerHTML = '';
@@ -85,10 +59,11 @@ function buildSparzielCard(goal){
   const emoji = PLANT_EMOJIS[goal.plantType] || '🌱';
   const card = document.createElement('div'); card.className = 'sp-plan-card';
 
-  const metaParts = [];
-  if (goal.category) metaParts.push(goal.category);
-  if (goal.startDate) metaParts.push(`ab ${sparplanFormatDate(goal.startDate)}`);
-  if (goal.eta) metaParts.push(`Wunsch: ${goal.eta}`);
+  // Bewusst minimal — Kategorie/Beschreibung/Startdatum bleiben im
+  // Bearbeiten-Modal editierbar, stehen aber nicht mehr auf der Karte.
+  // Die ausführliche Erklärung übernimmt die Finanzanalyse (siehe
+  // budget-analysis.js) — die Karte soll nicht dieselbe Geschichte
+  // noch einmal erzählen.
   const fundingLabel = fundingBreakdownLabel(goal.funding);
 
   card.innerHTML = `
@@ -101,31 +76,17 @@ function buildSparzielCard(goal){
       <span class="sp-plan-card-amounts">${fmtEuro(goal.current)} <span class="sp-plan-card-amounts-of">/ ${fmtEuro(goal.target)}</span></span>
       <span class="sp-plan-card-pct">${pct}%</span>
     </div>
-    ${goal.description ? `<div class="sp-source-note" style="margin:4px 0 0;">${goal.description}</div>` : ''}
-    ${metaParts.length ? `<div class="sp-plan-card-meta"><span>${metaParts.join(' · ')}</span></div>` : ''}
-    ${fundingLabel ? `<div class="sp-plan-card-meta"><span>💳 ${fundingLabel}${goal.reserveActive ? ' (reserviert)' : ''}</span></div>` : ''}
-    <div class="sz-status-row">${sparzielStatusHtml(goal)}</div>
-    <div class="modal-actions" style="padding-top:8px;justify-content:flex-start;gap:6px;">
-      <button class="btn-ghost sz-card-btn" data-action="deposit">Einzahlen</button>
-      <button class="btn-ghost sz-card-btn" data-action="withdraw">Abheben</button>
-      <button class="btn-ghost sz-card-btn" data-action="edit">Bearbeiten</button>
-      <button class="btn-ghost sz-card-btn" data-action="delete">Löschen</button>
+    ${goal.eta ? `<div class="sp-plan-card-meta"><span>Wunsch: ${goal.eta}</span></div>` : ''}
+    ${fundingLabel ? `<div class="sp-plan-card-meta"><span>💳 ${fundingLabel}</span></div>` : ''}
+    <div class="sz-card-actions">
+      <button class="sz-icon-btn" data-action="deposit" title="Einzahlen">+</button>
+      <button class="sz-icon-btn" data-action="withdraw" title="Abheben">−</button>
+      <button class="sp-add-btn sz-edit-pill" data-action="edit">✎ Bearbeiten</button>
     </div>`;
 
   card.querySelector('[data-action="deposit"]').addEventListener('click', () => openGoalTx(goal, 'deposit'));
   card.querySelector('[data-action="withdraw"]').addEventListener('click', () => openGoalTx(goal, 'withdraw'));
   card.querySelector('[data-action="edit"]').addEventListener('click', () => openEditGoalModal(goal));
-  card.querySelector('[data-action="delete"]').addEventListener('click', () => {
-    if (!confirm(`Sparziel "${goal.name}" wirklich löschen?`)) return;
-    budgetGoals = budgetGoals.filter(g => g.id !== goal.id);
-    const activeId = DB.get('gardenActiveGoalId', null);
-    if (activeId === goal.id) DB.set('gardenActiveGoalId', null);
-    saveBudgetGoals();
-    renderSparziele();
-    renderBudgetGoals();
-    renderFinanzgarten();
-    if (typeof renderSparplaner === 'function') renderSparplaner();
-  });
 
   return card;
 }

@@ -224,6 +224,19 @@ function sparplanTargetAmount(plan){
   return round2(plan.entries.reduce((s, e) => s + e.amount, 0));
 }
 function sparplanCurrentAmount(plan){
+  // BUGFIX: Bei verknüpften Plänen war der Fortschritt bisher NUR die
+  // Summe der im Plan selbst abgehakten Raten — eine Einzahlung direkt
+  // am Sparziel (z. B. über "Einzahlen" im Sparziele-Tab) hat den Plan
+  // nie erreicht, wodurch Sparziel und Sparplan auseinanderlaufen
+  // konnten (genau das ist Casey am Führerschein-Ziel aufgefallen).
+  // Der aktuelle Betrag wird deshalb nie doppelt gespeichert: bei einem
+  // verknüpften Plan ist das Sparziel die EINZIGE Quelle der Wahrheit.
+  if (plan.goalId) {
+    const goal = budgetGoals.find(g => g.id === plan.goalId);
+    if (goal) return round2(goal.current || 0);
+  }
+  // Unabhängige Pläne (kein goalId) tracken ihren Fortschritt weiterhin
+  // ausschließlich über die eigenen, abgehakten Raten.
   return round2(plan.entries.filter(e => e.done).reduce((s, e) => s + e.amount, 0));
 }
 function sparplanNextEntry(plan){

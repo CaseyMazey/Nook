@@ -141,6 +141,21 @@ function fundingBreakdownLabel(funding){
   }).join(', ');
 }
 
+// Kleine, rein kosmetische Icon-Heuristik für Einnahmequellen — kein
+// neues Datenfeld, nur ein paar Stichwörter im Namen. Falsch geraten
+// schadet nichts (fällt auf ein neutrales 💶 zurück), macht "Bezahlt
+// durch"-Listen aber auf einen Blick lesbarer.
+function incomeIcon(name){
+  const n = (name || '').toLowerCase();
+  if (n.includes('gehalt') || n.includes('lohn')) return '💼';
+  if (n.includes('fahrt') || n.includes('ticket')) return '🚆';
+  if (n.includes('taschengeld')) return '👛';
+  if (n.includes('miete')) return '🏠';
+  if (n.includes('geschenk')) return '🎁';
+  if (n.includes('stipendium') || n.includes('bafög') || n.includes('bafoeg')) return '🎓';
+  return '💶';
+}
+
 // ── Engine: Zuordnung je Einnahme, über ALLE Verbraucher hinweg ────
 // monthKey ist optional und wird ausschließlich für einmalige Ausgaben
 // ausgewertet (die gelten nur in ihrem eigenen Monat) — wiederkehrende
@@ -157,6 +172,10 @@ function financingAllocatedForIncome(recurringId, monthKey){
   budgetGoals.forEach(g => {
     if (!g.reserveActive) return;
     (g.funding || []).forEach(f => { if (f.sourceId === recurringId) total += f.amount; });
+  });
+  budgetDebts.forEach(d => {
+    if (!d.reserveActive) return;
+    (d.funding || []).forEach(f => { if (f.sourceId === recurringId) total += f.amount; });
   });
   return round2(total);
 }
@@ -178,6 +197,10 @@ function financingBreakdownForIncome(recurringId, monthKey){
     if (!g.reserveActive) return;
     (g.funding || []).forEach(f => { if (f.sourceId === recurringId && f.amount > 0) items.push({ name: g.name, amount: f.amount, kind: 'Sparziel' }); });
   });
+  budgetDebts.forEach(d => {
+    if (!d.reserveActive) return;
+    (d.funding || []).forEach(f => { if (f.sourceId === recurringId && f.amount > 0) items.push({ name: d.name, amount: f.amount, kind: 'Schuld' }); });
+  });
   return items;
 }
 // Warnt, wenn eine aktiv zugeordnete Finanzierung nicht mehr zum Betrag
@@ -194,17 +217,22 @@ function financingWarningsForConsumer(funding, totalAmount){
   return diff > 0 ? `Es fehlen ${fmtEuro(diff)}.` : `${fmtEuro(Math.abs(diff))} zu viel zugeordnet.`;
 }
 
-// ── Reservierung (Sparziele) — jetzt exakt statt geschätzt ─────────
-// Da goal.funding jetzt echte, vom Nutzer eingegebene Beträge enthält,
-// ist keine Gleichverteilungs-Näherung mehr nötig — die Reservierung
-// ist einfach die Summe der zugeordneten Beträge aktiver Sparziele.
+// ── Reservierung (Sparziele + Schulden) — jetzt exakt statt geschätzt ──
+// Da goal.funding/debt.funding jetzt echte, vom Nutzer eingegebene
+// Beträge enthalten, ist keine Gleichverteilungs-Näherung mehr nötig —
+// die Reservierung ist einfach die Summe der zugeordneten Beträge
+// aktiver Sparziele UND Schulden (beide "verplanen" Geld dauerhaft).
 // Namen bewusst unverändert (sparplanTotalReserved/sparplanReservedForIncome),
 // da budget-sparprognose.js diese Funktionen bereits unter diesem Namen
 // aufruft (sparplanerReservedTotal() in budget-sparprognose.js).
 function sparplanTotalReserved(){
-  return round2(budgetGoals
+  const goalsTotal = budgetGoals
     .filter(g => g.reserveActive)
-    .reduce((s, g) => s + (g.funding || []).reduce((s2, f) => s2 + f.amount, 0), 0));
+    .reduce((s, g) => s + (g.funding || []).reduce((s2, f) => s2 + f.amount, 0), 0);
+  const debtsTotal = budgetDebts
+    .filter(d => d.reserveActive)
+    .reduce((s, d) => s + (d.funding || []).reduce((s2, f) => s2 + f.amount, 0), 0);
+  return round2(goalsTotal + debtsTotal);
 }
 function sparplanReservedForIncome(recurringId){
   let total = 0;
@@ -212,11 +240,15 @@ function sparplanReservedForIncome(recurringId){
     if (!g.reserveActive) return;
     (g.funding || []).forEach(f => { if (f.sourceId === recurringId) total += f.amount; });
   });
+  budgetDebts.forEach(d => {
+    if (!d.reserveActive) return;
+    (d.funding || []).forEach(f => { if (f.sourceId === recurringId) total += f.amount; });
+  });
   return round2(total);
 }
 
 // ── Statistik-Ansicht pro Einnahme ("133 € → 5 € Ticket, 125 € Führerschein, 3 € frei") ──
-const FIN_KIND_ICON = { 'Ausgabe': '🔁', 'Einmalig': '📌', 'Sparziel': '🎯' };
+const FIN_KIND_ICON = { 'Ausgabe': '🔁', 'Einmalig': '📌', 'Sparziel': '🎯', 'Schuld': '💳' };
 
 function renderIncomeBreakdownBody(recurringId, monthKey){
   const rec = budgetRecurring.find(r => r.id === recurringId);
