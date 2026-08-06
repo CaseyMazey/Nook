@@ -59,13 +59,12 @@ function buildSparzielCard(goal){
   const emoji = PLANT_EMOJIS[goal.plantType] || '🌱';
   const card = document.createElement('div'); card.className = 'sp-plan-card';
 
-  // Bewusst minimal — Kategorie/Beschreibung/Startdatum bleiben im
+  // Bewusst minimal: Name, Priorität, Fortschritt, Wunschdatum — mehr
+  // nicht. Kategorie/Beschreibung/Startdatum/Finanzierung bleiben im
   // Bearbeiten-Modal editierbar, stehen aber nicht mehr auf der Karte.
-  // Die ausführliche Erklärung übernimmt die Finanzanalyse (siehe
-  // budget-analysis.js) — die Karte soll nicht dieselbe Geschichte
-  // noch einmal erzählen.
-  const fundingLabel = fundingBreakdownLabel(goal.funding);
-
+  // Die ausführliche Erklärung übernimmt vollständig die Finanzanalyse
+  // (siehe budget-analysis.js) — die Karte soll nicht dieselbe
+  // Geschichte noch einmal erzählen.
   card.innerHTML = `
     <div class="sp-plan-card-head">
       <span class="sp-plan-card-name">${emoji} ${goal.name}</span>
@@ -77,7 +76,6 @@ function buildSparzielCard(goal){
       <span class="sp-plan-card-pct">${pct}%</span>
     </div>
     ${goal.eta ? `<div class="sp-plan-card-meta"><span>Wunsch: ${goal.eta}</span></div>` : ''}
-    ${fundingLabel ? `<div class="sp-plan-card-meta"><span>💳 ${fundingLabel}</span></div>` : ''}
     <div class="sz-card-actions">
       <button class="sz-icon-btn" data-action="deposit" title="Einzahlen">+</button>
       <button class="sz-icon-btn" data-action="withdraw" title="Abheben">−</button>

@@ -38,13 +38,17 @@ function sparplanerRange(r) {
 // (includeInSparplan === false) werden komplett ignoriert.
 function sparplanerBuckets() {
   const active = budgetRecurring.filter(r => r.includeInSparplan !== false);
-  const monthly = active.filter(r => r.freq === 'monthly');
-  const yearly  = active.filter(r => r.freq === 'yearly');
+  // "monthly-ish" = alles außer jährlich (täglich/wöchentlich/2-wöchentlich/
+  // monatlich) — wird für die Sparrate einheitlich auf den Monatsbetrag
+  // umgerechnet (recurringMonthlyEquivalent(), budget.js). Für reine
+  // Monatsposten ist der Faktor 1, verhält sich also exakt wie bisher.
+  const monthlyish = active.filter(r => r.freq !== 'yearly');
+  const yearly     = active.filter(r => r.freq === 'yearly');
   return {
-    fixedIncome:  monthly.filter(r => r.type === 'income'  && r.certainty !== 'variable'),
-    fixedExpense: monthly.filter(r => r.type === 'expense' && r.certainty !== 'variable'),
-    varIncome:    monthly.filter(r => r.type === 'income'  && r.certainty === 'variable'),
-    varExpense:   monthly.filter(r => r.type === 'expense' && r.certainty === 'variable'),
+    fixedIncome:  monthlyish.filter(r => r.type === 'income'  && r.certainty !== 'variable'),
+    fixedExpense: monthlyish.filter(r => r.type === 'expense' && r.certainty !== 'variable'),
+    varIncome:    monthlyish.filter(r => r.type === 'income'  && r.certainty === 'variable'),
+    varExpense:   monthlyish.filter(r => r.type === 'expense' && r.certainty === 'variable'),
     sonderIncome: yearly.filter(r => r.type === 'income'),
     sonderExpense:yearly.filter(r => r.type === 'expense'),
   };
@@ -68,7 +72,7 @@ function sparplanerReservedTotal() {
 
 function sparplanerScenarioRate(scenario) {
   const b = sparplanerBuckets();
-  const sum = arr => arr.reduce((s, r) => s + r.amount, 0);
+  const sum = arr => arr.reduce((s, r) => s + recurringMonthlyEquivalent(r), 0);
   const fixedNet = round2(sum(b.fixedIncome) - sum(b.fixedExpense));
   const reserved = sparplanerReservedTotal();
 
@@ -91,7 +95,7 @@ function sparplanerScenarioRate(scenario) {
 // nachvollziehbar bleibt.
 function sparplanerScenarioBreakdown(scenario) {
   const b = sparplanerBuckets();
-  const sum = arr => arr.reduce((s, r) => s + r.amount, 0);
+  const sum = arr => arr.reduce((s, r) => s + recurringMonthlyEquivalent(r), 0);
   const fixedNet = round2(sum(b.fixedIncome) - sum(b.fixedExpense));
   const reserved = sparplanerReservedTotal();
   if (scenario === 'garant') return { fixedNet, varNet: 0, reserved, total: round2(fixedNet - reserved) };
@@ -262,13 +266,15 @@ function renderSparplanIncomeExpense() {
   const el = document.getElementById('sparplan-income-expense');
   if (!el) return;
   const b = sparplanerBuckets();
-  const sum = arr => arr.reduce((s, r) => s + r.amount, 0);
+  const sum = arr => arr.reduce((s, r) => s + recurringMonthlyEquivalent(r), 0);
 
+  const intervalSuffix = { daily: '/Tag', weekly: '/Woche', biweekly: '/2 Wochen', yearly: '/Jahr' };
   function rowHtml(r) {
     const range = r.certainty === 'variable' ? sparplanerRange(r) : null;
+    const suffix = intervalSuffix[r.freq] || '';
     const right = range
       ? `<span class="sp-row-range">${range.min.toLocaleString('de-DE',{minimumFractionDigits:0,maximumFractionDigits:2})}–${range.max.toLocaleString('de-DE',{minimumFractionDigits:0,maximumFractionDigits:2})} €</span><span class="sp-row-amt ${r.type}">Ø ${fmtEuro(range.avg)}</span>`
-      : `<span></span><span class="sp-row-amt ${r.type}">${r.type === 'income' ? '+' : '−'}${fmtEuro(Math.abs(r.amount))}</span>`;
+      : `<span></span><span class="sp-row-amt ${r.type}">${r.type === 'income' ? '+' : '−'}${fmtEuro(Math.abs(r.amount))}${suffix}</span>`;
     return `<div class="sp-row"><span class="sp-row-name">${r.name}</span>${right}</div>`;
   }
 
@@ -287,7 +293,10 @@ function renderSparplanIncomeExpense() {
   const sonderAll  = [...b.sonderIncome, ...b.sonderExpense];
   const fixedNet   = sum(b.fixedIncome) - sum(b.fixedExpense);
   const varNetAvg  = b.varIncome.reduce((s,r)=>s+sparplanerRange(r).avg,0) - b.varExpense.reduce((s,r)=>s+sparplanerRange(r).avg,0);
-  const sonderNet  = sum(b.sonderIncome) - sum(b.sonderExpense);
+  // Sonderfälle sind jährliche Beträge — hier bewusst der volle
+  // Jahresbetrag (r.amount direkt), NICHT der Monats-Äquivalent-Betrag,
+  // da "Saldo / Jahr" genau das ausweisen soll.
+  const sonderNet  = b.sonderIncome.reduce((s, r) => s + r.amount, 0) - b.sonderExpense.reduce((s, r) => s + r.amount, 0);
 
   if (!fixedAll.length && !varAll.length && !sonderAll.length) {
     el.innerHTML = '<div class="empty-state">Noch keine wiederkehrenden Posten im Budget-Tab angelegt.</div>';
@@ -668,7 +677,7 @@ document.getElementById('sparplan-savedby-calc').addEventListener('click', () =>
     return;
   }
   const targetDate = new Date(dateVal + 'T00:00:00');
-  const { months, rate, saved } = sparplanerSavedBy(targetDate, savedByScenario);
+  const { months, rate, saved } = sparplanerSavedBy(targetDate, savedByScenario); // Berechnungslogik unverändert
 
   const includeKontostand = kontostand !== null && document.getElementById('sparplan-savedby-include-kontostand').checked;
   const total = includeKontostand ? round2(kontostand + saved) : saved;
@@ -679,17 +688,53 @@ document.getElementById('sparplan-savedby-calc').addEventListener('click', () =>
     return;
   }
 
+  // ── Ergebnisdarstellung — bewusst modular in kleine Bausteine
+  // (Zusammenfassung / Ergebnis-Karte / Kennzahlen / Berechnung), damit
+  // sich später leicht weitere Abschnitte ergänzen lassen (z.B.
+  // Inflationsbereinigung, Szenario-Vergleich, Diagramm, erreichbare
+  // Sparziele bis zum Datum, Hinweise aus dem Geldfluss) — ohne den
+  // bestehenden Aufbau anzufassen. Reine Darstellung, sparplanerSavedBy()
+  // selbst liefert exakt dieselben Werte wie vorher.
+  const buildRow = (label, value) => `<div class="sp-savedby-row"><span>${label}</span><span>${value}</span></div>`;
+
+  const summarySentence = `Wenn du bis zum ${dateLabel} durchschnittlich ${fmtEuro(rate)} pro Monat sparen kannst, besitzt du voraussichtlich etwa ${fmtEuro(total)}.`;
+
+  const heroHtml = `
+    <div class="sp-savedby-hero">
+      <div class="sp-savedby-hero-label">⭐ Ergebnis</div>
+      <div class="sp-savedby-hero-sub">Bis zum <strong>${dateLabel}</strong> kannst du ungefähr</div>
+      <div class="sp-savedby-hero-amount">${fmtEuro(total)}</div>
+      <div class="sp-savedby-hero-sub">angespart haben.</div>
+    </div>`;
+
+  const factsHtml = `
+    <div class="sp-savedby-section">
+      ${buildRow('📈 Szenario', SCENARIO_META[savedByScenario].label)}
+      ${buildRow('📅 Zeitraum', `${months} Monat${months === 1 ? '' : 'e'}`)}
+      ${buildRow('💰 Monatlicher Sparbetrag', fmtEuro(rate))}
+      ${buildRow('Kontostand berücksichtigt', includeKontostand ? 'Ja' : 'Nein')}
+    </div>`;
+
+  const formula = (a, op, b, result) => `
+    <div class="sp-savedby-formula">
+      <span class="sp-savedby-formula-part">${a}</span>
+      <span class="sp-savedby-formula-op">${op}</span>
+      <span class="sp-savedby-formula-part">${b}</span>
+      <span class="sp-savedby-formula-op">=</span>
+      <span class="sp-savedby-formula-result">${result}</span>
+    </div>`;
+  const calcHtml = `
+    <div class="sp-savedby-section">
+      <div class="sp-savedby-section-title">🧮 Berechnung</div>
+      ${formula(`${months} Monate`, '×', fmtEuro(rate), fmtEuro(saved))}
+      ${includeKontostand ? formula(fmtEuro(kontostand), '+', fmtEuro(saved), fmtEuro(total)) : ''}
+    </div>`;
+
   resultEl.innerHTML = `
     <div class="sp-savedby-result">
-      <div class="sp-savedby-headline">Bis zum ${dateLabel} könntest du ungefähr</div>
-      <div class="sp-savedby-total">${fmtEuro(total)}</div>
-      <div class="sp-savedby-sub">angespart haben.</div>
-      <div class="sp-savedby-breakdown">
-        <div class="sp-savedby-row"><span>Zeitraum</span><span>${months} Monat${months === 1 ? '' : 'e'}</span></div>
-        <div class="sp-savedby-row"><span>Szenario</span><span>${SCENARIO_META[savedByScenario].label}</span></div>
-        <div class="sp-savedby-row"><span>Sparbetrag</span><span>${fmtEuro(rate)} / Monat</span></div>
-        <div class="sp-savedby-calc">${months} × ${fmtEuro(rate)} = ${fmtEuro(saved)}</div>
-        ${includeKontostand ? `<div class="sp-savedby-calc">${fmtEuro(kontostand)} + ${fmtEuro(saved)} = ${fmtEuro(total)}</div>` : ''}
-      </div>
+      <div class="sp-savedby-summary">${summarySentence}</div>
+      ${heroHtml}
+      ${factsHtml}
+      ${calcHtml}
     </div>`;
 });

@@ -289,8 +289,9 @@ function sparplanMonthlyEquivalent(plan){
   const upcoming = sparplanOrderedEntries(plan, false);
   if (!upcoming.length) return 0;
   const avgAmount = round2(upcoming.reduce((s, e) => s + e.amount, 0) / upcoming.length);
-  const FACTOR = { daily: 30, weekly: 30 / 7, biweekly: 30 / 14, monthly: 1, custom: 1 };
-  return round2(avgAmount * (FACTOR[plan.interval] || 1));
+  // RECURRING_INTERVAL_FACTOR lebt zentral in budget.js — einzige Quelle
+  // für "Betrag pro Vorkommen -> Betrag pro Monat" in ganz Nook.
+  return round2(avgAmount * (RECURRING_INTERVAL_FACTOR[plan.interval] || 1));
 }
 
 // Für die Sparprognose: benötigte Rate im Intervall des Plans, als

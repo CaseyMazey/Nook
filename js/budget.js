@@ -56,7 +56,95 @@ function fmtEuro(v) {
   return (r < 0 ? '-' : '') + Math.abs(r).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
 }
 
-// Migration: add missing fields to existing entries
+// Umrechnungsfaktor "Betrag pro Vorkommen" → "Betrag pro Monat", auf
+// Basis von 365,25/12 ≈ 30,4375 Tagen/Monat (Schaltjahre eingerechnet).
+// EINZIGE Quelle für diese Umrechnung in ganz Nook — Sparpläne
+// (sparplanMonthlyEquivalent(), budget-sparplaene.js), Sparprognose
+// (sparplanerBuckets()) und die Financing-Engine (financingFreeForIncome())
+// nutzen alle denselben Faktor, damit "35 €/Woche" überall im gleichen
+// Monatsbetrag resultiert und nicht mehrfach leicht unterschiedlich
+// gerundet wird.
+const RECURRING_INTERVAL_FACTOR = {
+  daily: 30.4375, weekly: 30.4375 / 7, biweekly: 30.4375 / 14,
+  monthly: 1, custom: 1, yearly: 1 / 12,
+};
+function recurringMonthlyEquivalent(entry) {
+  const factor = RECURRING_INTERVAL_FACTOR[entry.freq] ?? 1;
+  return round2((entry.amount || 0) * factor);
+}
+
+function isoDateYMD(y, m, d) { return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
+
+// Echte Zahltermine eines wiederkehrenden Postens INNERHALB eines
+// bestimmten Monats — im Gegensatz zu recurringMonthlyEquivalent()
+// (Durchschnitt) liefert das die tatsächlichen Kalendertage, inkl.
+// Mehrfachvorkommen bei täglich/wöchentlich/2-wöchentlich (z.B. "4
+// Montage im August" → 4 Termine). Wird von der Geldfluss-Ansicht
+// (budget-analysis.js) für Einnahmen UND Ausgaben gleichermaßen
+// genutzt — eine einzige Generator-Funktion für beide Seiten.
+function recurringOccurrencesInMonth(entry, year, month) {
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const amount = entry.amount || 0;
+  const results = [];
+  if (entry.freq === 'monthly') {
+    results.push({ date: isoDateYMD(year, month, Math.min(entry.day || 1, daysInMonth)), amount });
+  } else if (entry.freq === 'yearly') {
+    if (entry.dateMonth === month) {
+      results.push({ date: isoDateYMD(year, month, Math.min(entry.dateDay || 1, daysInMonth)), amount });
+    }
+  } else if (entry.freq === 'daily') {
+    for (let d = 1; d <= daysInMonth; d++) results.push({ date: isoDateYMD(year, month, d), amount });
+  } else if (entry.freq === 'weekly') {
+    const weekday = entry.weekday ?? 1;
+    for (let d = 1; d <= daysInMonth; d++) {
+      if (new Date(year, month - 1, d).getDay() === weekday) results.push({ date: isoDateYMD(year, month, d), amount });
+    }
+  } else if (entry.freq === 'biweekly') {
+    const weekday = entry.weekday ?? 1;
+    const anchor = entry.anchorDate ? new Date(entry.anchorDate + 'T00:00:00') : new Date(year, month - 1, 1);
+    // Anker auf den ersten zum Wochentag passenden Tag ausrichten, damit
+    // der 14-Tage-Rhythmus einen festen Bezugspunkt hat.
+    const anchorAligned = new Date(anchor);
+    while (anchorAligned.getDay() !== weekday) anchorAligned.setDate(anchorAligned.getDate() + 1);
+    for (let d = 1; d <= daysInMonth; d++) {
+      const date = new Date(year, month - 1, d);
+      if (date.getDay() !== weekday) continue;
+      const diffDays = Math.round((date - anchorAligned) / 86400000);
+      if (diffDays % 14 === 0) results.push({ date: isoDateYMD(year, month, d), amount });
+    }
+  }
+  return results;
+}
+
+// Teilt einen Monat in Kalenderwochen (Montag–Sonntag) auf, die den
+// gesamten Monat abdecken — die erste/letzte Woche reicht dabei bewusst
+// über die Monatsgrenze hinaus, damit jede Woche vollständig bleibt
+// (z.B. "Woche 1" beginnt am Montag VOR dem 1., falls der Monat nicht
+// mit einem Montag startet). Grundlage für die Geldfluss-Zeitachse
+// (budget-analysis.js) — 4 oder 5 Spalten, je nach Monat.
+function computeMonthWeeks(year, month) {
+  const lastOfMonth = new Date(year, month, 0);
+  const cursor = new Date(year, month - 1, 1);
+  const dow = (cursor.getDay() + 6) % 7; // 0 = Montag ... 6 = Sonntag
+  cursor.setDate(cursor.getDate() - dow);
+  const weeks = [];
+  while (cursor <= lastOfMonth) {
+    const start = new Date(cursor);
+    const end = new Date(cursor); end.setDate(end.getDate() + 6);
+    weeks.push({
+      startDate: isoDateYMD(start.getFullYear(), start.getMonth() + 1, start.getDate()),
+      endDate:   isoDateYMD(end.getFullYear(),   end.getMonth() + 1,   end.getDate()),
+    });
+    cursor.setDate(cursor.getDate() + 7);
+  }
+  return weeks;
+}
+function weekIndexForDate(dateStr, weeks) {
+  for (let i = 0; i < weeks.length; i++) {
+    if (dateStr >= weeks[i].startDate && dateStr <= weeks[i].endDate) return i;
+  }
+  return weeks.length - 1;
+}
 function migrateBudgetData() {
   let changed = false, goalsChanged = false;
   budgetRecurring.forEach(r => {
@@ -208,10 +296,26 @@ function getMonthRecurringItems(year, month) {
   return budgetRecurring.filter(r => {
     if (r.freq === 'monthly') return true;
     if (r.freq === 'yearly')  return r.dateMonth === month;
+    // Täglich/wöchentlich/2-wöchentlich: PHASE 1 (Stopgap) — erscheinen
+    // einmal pro Monat mit dem Monats-Äquivalent-Betrag, damit sie in
+    // der Übersicht/Prognose korrekt mitzählen. Echte Einzeltermine
+    // (z.B. jeden Montag) sind Phase 2 und ändern hier noch nichts.
+    if (r.freq === 'daily' || r.freq === 'weekly' || r.freq === 'biweekly') return true;
     return false;
   }).map(r => {
-    const day = r.freq === 'monthly' ? r.day : r.dateDay;
-    return { id: r.id, name: r.name, type: r.type, amount: r.amount, day, priority: r.priority || 'need' };
+    let day, amount = r.amount, isAverage = false;
+    if (r.freq === 'monthly') {
+      day = r.day;
+    } else if (r.freq === 'yearly') {
+      day = r.dateDay;
+    } else {
+      // Kein fixer Tag im Monat vorhanden (Phase 1) — als Platzhalter
+      // den heutigen Tag nehmen, Betrag ist der Monats-Äquivalent-Wert.
+      day = new Date().getDate();
+      amount = recurringMonthlyEquivalent(r);
+      isAverage = true;
+    }
+    return { id: r.id, name: r.name, type: r.type, amount, day, priority: r.priority || 'need', isAverage, funding: r.funding };
   });
 }
 
@@ -465,7 +569,7 @@ function renderMainCards(month, mk) {
 
   const allIncomeRows = [];
   recIncomes.forEach(i => allIncomeRows.push({
-    day: i.day||1, name: i.name, amount: i.amount,
+    day: i.day||1, name: i.isAverage ? `⌀ ${i.name}` : i.name, amount: i.amount,
     paid: isRecurringPaid(i.id, mk),
     onToggle: () => {
       const nowPaid = !isRecurringPaid(i.id, mk);
@@ -496,27 +600,6 @@ function renderMainCards(month, mk) {
       incomeList.appendChild(makeClickableRow(row.day, month.getMonth()+1, row.name, row.amount, '+', row.paid, row.onToggle));
     });
   }
-  // Zuordnung je Einnahme — bewusst MINIMAL: nur "reserviert · frei".
-  // Die Frage "Wofür?" beantwortet jetzt die Ausgabe selbst ("Bezahlt
-  // durch"), nicht mehr die Einnahme — hier zählt nur noch "Wie viel
-  // bekomme ich, wie viel ist frei?". Die ausführliche Aufschlüsselung
-  // bleibt als Klick-Detail erreichbar (openIncomeBreakdown()).
-  if (typeof financingAllocatedForIncome === 'function') {
-    recIncomes.forEach(i => {
-      const allocated = financingAllocatedForIncome(i.id, mk);
-      if (allocated > 0.005) {
-        const free = Math.max(0, round2(i.amount - allocated));
-        const note = document.createElement('div');
-        note.className = 'b-main-row-note b-main-row-note-clickable';
-        note.textContent = `${allocated.toLocaleString('de-DE',{minimumFractionDigits:2})} € reserviert · ${free.toLocaleString('de-DE',{minimumFractionDigits:2})} € frei`;
-        note.title = 'Aufschlüsselung anzeigen';
-        note.addEventListener('click', () => {
-          if (typeof openIncomeBreakdown === 'function') openIncomeBreakdown(i.id, mk);
-        });
-        incomeList.appendChild(note);
-      }
-    });
-  }
   const fmtOpenIn = openIncome.toLocaleString('de-DE',{minimumFractionDigits:2});
   incomeTotal.innerHTML = `<span class="b-main-total-label">Offen</span><span class="b-main-total-value income">+${fmtOpenIn} €</span>`;
   const incSum = document.getElementById('b-income-summary-val');
@@ -537,7 +620,7 @@ function renderMainCards(month, mk) {
   const buildExpRows = pk => {
     const rows = [];
     recExpenses.filter(i=>(i.priority||'need')===pk).forEach(i=>rows.push({
-      day:i.day||1, name:i.name, amount:i.amount, funding:i.funding,
+      day:i.day||1, name: i.isAverage ? `⌀ ${i.name}` : i.name, amount:i.amount,
       paid: isRecurringPaid(i.id, mk),
       onToggle: () => {
         const nowPaid = !isRecurringPaid(i.id, mk);
@@ -548,7 +631,7 @@ function renderMainCards(month, mk) {
       }
     }));
     otExpenses.filter(e=>(e.priority||'need')===pk).forEach(e=>rows.push({
-      day:e.day||1, name:e.name, amount:e.amount, funding:e.funding,
+      day:e.day||1, name:e.name, amount:e.amount,
       paid: e.paid||false,
       onToggle: () => {
         e.paid = !e.paid;
@@ -570,34 +653,6 @@ function renderMainCards(month, mk) {
     rows.forEach(row=>{
       if (!row.paid) openExpTotal += row.amount;
       expenseList.appendChild(makeClickableRow(row.day, month.getMonth()+1, row.name, row.amount, '-', row.paid, row.onToggle));
-      // "Jedem Euro einen Job" — zeigt direkt bei der Ausgabe, WOFÜR sie
-      // bezahlt wird (nicht nur additiv bei der Einnahme). Beantwortet die
-      // Frage "Wofür?" statt nur "Wie viel ist reserviert?".
-      if (Array.isArray(row.funding) && row.funding.length) {
-        const block = document.createElement('div');
-        block.className = 'b-main-funding-block';
-        const label = document.createElement('div');
-        label.className = 'b-main-funding-label';
-        label.textContent = 'Bezahlt durch';
-        block.appendChild(label);
-        row.funding.forEach(f => {
-          const rec = budgetRecurring.find(r => r.id === f.sourceId);
-          const item = document.createElement('div');
-          item.className = 'b-main-funding-item';
-          const icon = typeof incomeIcon === 'function' ? incomeIcon(rec?.name) : '';
-          item.textContent = `${icon} ${rec ? rec.name : '?'} ${fmtEuro(f.amount)}`;
-          block.appendChild(item);
-        });
-        expenseList.appendChild(block);
-        const warning = typeof financingWarningsForConsumer === 'function'
-          ? financingWarningsForConsumer(row.funding, row.amount) : null;
-        if (warning) {
-          const warnEl = document.createElement('div');
-          warnEl.className = 'b-main-row-note b-main-row-warning';
-          warnEl.textContent = `⚠ ${warning}`;
-          expenseList.appendChild(warnEl);
-        }
-      }
     });
   });
 
@@ -2153,21 +2208,34 @@ function openRecurringModal(entry = null) {
       document.getElementById('recurring-day').value        = entry.day || '';
       document.getElementById('recurring-date-day').value   = '';
       document.getElementById('recurring-date-month').value = '';
-    } else {
+    } else if (entry.freq === 'weekly' || entry.freq === 'biweekly') {
+      document.getElementById('recurring-day').value        = '';
+      document.getElementById('recurring-date-day').value   = '';
+      document.getElementById('recurring-date-month').value = '';
+      document.getElementById('recurring-weekday').value    = entry.weekday ?? '1';
+      document.getElementById('recurring-anchor-date').value = entry.anchorDate || new Date().toISOString().slice(0,10);
+    } else if (entry.freq === 'yearly') {
       document.getElementById('recurring-day').value        = '';
       document.getElementById('recurring-date-day').value   = entry.dateDay   || '';
       document.getElementById('recurring-date-month').value = entry.dateMonth || '';
+    } else {
+      // daily — keine Positionsangabe nötig
+      document.getElementById('recurring-day').value        = '';
+      document.getElementById('recurring-date-day').value   = '';
+      document.getElementById('recurring-date-month').value = '';
     }
   } else {
     ['recurring-name','recurring-amount','recurring-day','recurring-date-day','recurring-date-month','recurring-var-min','recurring-var-max']
       .forEach(id => document.getElementById(id).value = '');
+    document.getElementById('recurring-weekday').value = '1';
+    document.getElementById('recurring-anchor-date').value = new Date().toISOString().slice(0,10);
     recurringType = 'income'; recurringFreq = 'monthly'; recurringPriority = 'need'; recurringCertainty = 'fixed';
     document.getElementById('recurring-sparplan-include').checked = true;
   }
 
   ['income','expense'].forEach(t =>
     document.getElementById(`recurring-type-${t}`).classList.toggle('active', t === recurringType));
-  ['monthly','yearly'].forEach(f =>
+  ['daily','weekly','biweekly','monthly','yearly'].forEach(f =>
     document.getElementById(`recurring-freq-${f}`).classList.toggle('active', f === recurringFreq));
   ['must','need','want'].forEach(p =>
     document.getElementById(`recurring-prio-${p}`).classList.toggle('active', p === recurringPriority));
@@ -2176,6 +2244,8 @@ function openRecurringModal(entry = null) {
 
   document.getElementById('recurring-day-row').classList.toggle('hidden',  recurringFreq !== 'monthly');
   document.getElementById('recurring-date-row').classList.toggle('hidden', recurringFreq !== 'yearly');
+  document.getElementById('recurring-weekday-row').classList.toggle('hidden', recurringFreq !== 'weekly' && recurringFreq !== 'biweekly');
+  document.getElementById('recurring-anchor-row').classList.toggle('hidden', recurringFreq !== 'biweekly');
   // Priority row: always visible, but dimmed for income entries
   document.getElementById('recurring-prio-row').classList.remove('hidden');
   document.getElementById('recurring-prio-row').classList.toggle('budget-prio-row-dimmed', recurringType !== 'expense');
@@ -2200,13 +2270,15 @@ document.getElementById('add-recurring-btn').addEventListener('click', () => ope
     updateRecurringFundingVisibility();
   });
 });
-['monthly','yearly'].forEach(f => {
+['daily','weekly','biweekly','monthly','yearly'].forEach(f => {
   document.getElementById(`recurring-freq-${f}`).addEventListener('click', () => {
     recurringFreq = f;
-    ['monthly','yearly'].forEach(x =>
+    ['daily','weekly','biweekly','monthly','yearly'].forEach(x =>
       document.getElementById(`recurring-freq-${x}`).classList.toggle('active', x === f));
     document.getElementById('recurring-day-row').classList.toggle('hidden',  f !== 'monthly');
     document.getElementById('recurring-date-row').classList.toggle('hidden', f !== 'yearly');
+    document.getElementById('recurring-weekday-row').classList.toggle('hidden', f !== 'weekly' && f !== 'biweekly');
+    document.getElementById('recurring-anchor-row').classList.toggle('hidden', f !== 'biweekly');
     updateRecurringSparplanFieldsVisibility();
   });
 });
@@ -2275,6 +2347,25 @@ document.getElementById('recurring-save').addEventListener('click', () => {
     else { delete e.varMin; delete e.varMax; }
     e.includeInSparplan = includeInSparplan;
   }
+  // Positionsfeld je Rhythmus — eine einzige Stelle für Neuanlage UND
+  // Bearbeiten, damit sich beide Pfade nicht auseinanderentwickeln.
+  function applyPositionFields(e) {
+    delete e.day; delete e.weekday; delete e.dateDay; delete e.dateMonth; delete e.anchorDate;
+    if (recurringFreq === 'monthly') {
+      e.day = parseInt(document.getElementById('recurring-day').value) || 1;
+    } else if (recurringFreq === 'weekly') {
+      e.weekday = parseInt(document.getElementById('recurring-weekday').value);
+      if (isNaN(e.weekday)) e.weekday = 1;
+    } else if (recurringFreq === 'biweekly') {
+      e.weekday = parseInt(document.getElementById('recurring-weekday').value);
+      if (isNaN(e.weekday)) e.weekday = 1;
+      e.anchorDate = document.getElementById('recurring-anchor-date').value || new Date().toISOString().slice(0,10);
+    } else if (recurringFreq === 'yearly') {
+      e.dateDay   = parseInt(document.getElementById('recurring-date-day').value)   || 1;
+      e.dateMonth = parseInt(document.getElementById('recurring-date-month').value) || 1;
+    }
+    // daily braucht kein Positionsfeld
+  }
 
   if (recurringEditId) {
     const idx = budgetRecurring.findIndex(r => r.id === recurringEditId);
@@ -2286,14 +2377,7 @@ document.getElementById('recurring-save').addEventListener('click', () => {
       e.freq     = recurringFreq;
       e.priority = recurringType === 'expense' ? recurringPriority : 'none';
       if (recurringType === 'expense') e.funding = fundingVal; else delete e.funding;
-      if (recurringFreq === 'monthly') {
-        e.day = parseInt(document.getElementById('recurring-day').value) || 1;
-        delete e.dateDay; delete e.dateMonth;
-      } else {
-        e.dateDay   = parseInt(document.getElementById('recurring-date-day').value)   || 1;
-        e.dateMonth = parseInt(document.getElementById('recurring-date-month').value) || 1;
-        delete e.day;
-      }
+      applyPositionFields(e);
       applySparplanFields(e);
     }
   } else {
@@ -2303,12 +2387,7 @@ document.getElementById('recurring-save').addEventListener('click', () => {
       priority: recurringType === 'expense' ? recurringPriority : 'none',
     };
     if (recurringType === 'expense') entry.funding = fundingVal;
-    if (recurringFreq === 'monthly') {
-      entry.day = parseInt(document.getElementById('recurring-day').value) || 1;
-    } else {
-      entry.dateDay   = parseInt(document.getElementById('recurring-date-day').value)   || 1;
-      entry.dateMonth = parseInt(document.getElementById('recurring-date-month').value) || 1;
-    }
+    applyPositionFields(entry);
     applySparplanFields(entry);
     budgetRecurring.push(entry);
   }

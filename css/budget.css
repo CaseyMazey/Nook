@@ -22,6 +22,14 @@
   --b-red:        #c0392b;
   --b-red-soft:   color-mix(in srgb, var(--bg) 85%, #c0392b 6%);
 
+  /* Blue (Sparziele im Geldfluss) / Purple (Schulden im Geldfluss) —
+     einzige Stellen in Nook, an denen diese beiden Töne vorkommen;
+     an anderer Stelle bitte bestehende Töne wiederverwenden. */
+  --b-blue:        #3a5a7c;
+  --b-blue-soft:   color-mix(in srgb, var(--bg) 82%, #3a5a7c 7%);
+  --b-purple:      #6b4c7c;
+  --b-purple-soft: color-mix(in srgb, var(--bg) 82%, #6b4c7c 7%);
+
   /* Neutral helpers */
   --b-warm-gray:  var(--text-3);
   --b-dark:       var(--text);
@@ -99,6 +107,8 @@
   --b-green-soft: rgba(45,90,61,0.18);
   --b-olive-soft: rgba(107,124,90,0.16);
   --b-red-soft:   rgba(192,57,43,0.16);
+  --b-blue-soft:   rgba(58,90,124,0.20);
+  --b-purple-soft: rgba(107,76,124,0.20);
 
   --b-status-amber-text: #f5c242;
 
@@ -169,11 +179,14 @@
    HEADER
 ═══════════════════════════════════════════════════════════ */
 #budget-header {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   gap: 24px;
 }
+#budget-title-block { min-width: 0; }
+.b-ks-header-pill { justify-self: center; }
+#budget-actions { justify-self: end; }
 
 /* Kontostand Pill — mittig im Header */
 .b-ks-header-pill {
@@ -298,9 +311,11 @@
   font-weight: 500;
   color: var(--text);
   cursor: default;
-  min-width: 160px;
+  width: 240px;
+  flex-shrink: 0;
 }
 #budget-month-picker svg { color: var(--text-3); flex-shrink: 0; }
+#budget-month-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 #budget-month-nav-prev,
 #budget-month-nav-next {
@@ -1052,45 +1067,113 @@
 
 .b-main-card-list { display: flex; flex-direction: column; }
 .b-main-empty { font-size: 12px; color: var(--b-card-ink-5); padding: 4px 0; font-style: italic; }
-.b-main-row-note { font-size: 10.5px; color: var(--b-card-ink-5); padding: 0 3px 4px; font-family: var(--mono); }
-.b-main-row-note-clickable { cursor: pointer; text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 2px; }
-.b-main-row-note-clickable:hover { color: var(--sage-dark); }
-.b-main-row-warning { color: var(--b-red); font-family: inherit; }
-.b-main-funding-block { padding: 2px 3px 6px; }
-.b-main-funding-label { font-size: 10.5px; color: var(--b-card-ink-5); font-weight: 600; }
-.b-main-funding-item { font-size: 10.5px; color: var(--b-card-ink-5); font-family: var(--mono); padding-left: 6px; }
 
-/* ── Einnahme-Finanzierungs-Aufschlüsselung ── */
-.fin-breakdown-total { display: flex; justify-content: space-between; font-weight: 700; font-size: 15px; padding: 4px 0 10px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
-.fin-breakdown-row { display: flex; justify-content: space-between; font-size: 13px; padding: 5px 0; color: var(--text-2); }
-.fin-breakdown-amount { font-family: var(--mono); }
-.fin-breakdown-free { display: flex; justify-content: space-between; font-weight: 700; font-size: 13px; padding: 10px 0 2px; margin-top: 6px; border-top: 1px solid var(--border); color: var(--b-green); }
-.fin-breakdown-free--over { color: var(--b-red); }
+/* ── Geldfluss — ersetzt die bisherige Finanzanalyse. Visuelle
+   Töpfe (Einnahmen-Karten) mit gestapelten Zuordnungen, plus ziehbare
+   Ausgaben-/Sparziel-/Schulden-Karten darunter. Cozy-Stil: runde Ecken,
+   sanfte Schatten, viel Weißraum — keine Tabellenoptik. ── */
+.gf-view { display: flex; flex-direction: column; gap: 22px; }
 
-/* ── Finanzanalyse — gruppiert nach Bedeutung, kompakte Zeilen statt
-   Karten pro Objekt; ein optionaler 💡/⚠-Hinweis pro Eintrag ── */
-.fin-analysis-section { margin-bottom: 18px; }
-.fin-analysis-section:last-child { margin-bottom: 0; }
-.fin-analysis-section-title {
-  font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 8px;
+/* ── Einnahmen-Zeitachse: Wochen als Spalten, Monatsposten als Balken ── */
+.gf-week-grid {
+  display: grid; grid-template-columns: repeat(var(--gf-week-count, 4), 1fr); gap: 0;
+  border: 1px solid var(--border); border-radius: var(--b-radius); overflow: hidden; background: var(--surface);
 }
-.fin-analysis-item {
-  padding: 9px 0; border-bottom: 1px solid var(--border);
+.gf-week-col { padding: 10px; display: flex; flex-direction: column; gap: 8px; min-height: 60px; }
+.gf-week-col + .gf-week-col { border-left: 1px dashed var(--border); }
+.gf-week-head { text-align: center; margin-bottom: 2px; }
+.gf-week-title { font-size: 12px; font-weight: 700; color: var(--text); }
+@media (max-width: 760px) { .gf-week-grid { grid-template-columns: repeat(2, 1fr); } .gf-week-col + .gf-week-col { border-left: none; border-top: 1px dashed var(--border); } }
+
+.gf-bar-wrap { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+.gf-income-bar {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--b-radius);
+  box-shadow: 0 2px 8px rgba(50,40,20,0.06); padding: 12px 16px;
+  transition: box-shadow var(--transition), transform var(--transition);
 }
-.fin-analysis-section .fin-analysis-item:last-child { border-bottom: none; padding-bottom: 0; }
-.fin-analysis-item-head {
-  display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
-  font-size: 13px; font-weight: 600; color: var(--text);
+.gf-income-bar.gf-drop-hover { box-shadow: 0 0 0 2px var(--sage), 0 4px 14px rgba(50,40,20,0.12); transform: translateY(-2px); }
+.gf-bar-main { display: flex; align-items: baseline; justify-content: center; gap: 14px; flex-wrap: wrap; text-align: center; }
+.gf-bar-name { font-size: 13.5px; font-weight: 600; color: var(--text); }
+.gf-bar-amount { font-family: var(--mono); font-size: 17px; font-weight: 700; color: var(--text); }
+.gf-bar-rest { font-size: 12px; font-weight: 700; }
+.gf-stack--bar { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.gf-stack--bar .gf-stack-item { margin-top: 0; }
+
+.gf-income-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--b-radius-sm);
+  box-shadow: 0 2px 6px rgba(50,40,20,0.06); padding: 10px 11px 8px; width: 100%;
+  display: flex; flex-direction: column; gap: 5px; transition: box-shadow var(--transition), transform var(--transition);
 }
-.fin-analysis-item-amount { font-family: var(--mono); font-weight: 400; color: var(--text-3); flex-shrink: 0; }
-.fin-analysis-item-line { font-size: 12px; color: var(--text-2); margin-top: 2px; line-height: 1.5; }
-.fin-analysis-item-line--ok   { color: var(--b-green); font-weight: 600; }
-.fin-analysis-item-line--warn { color: var(--b-red); font-weight: 600; }
-.fin-analysis-insight {
-  font-size: 12px; color: var(--sage-dark); background: var(--sage-bg); border-radius: var(--b-radius-sm);
-  padding: 6px 9px; margin-top: 6px; line-height: 1.45;
+.gf-income-card.gf-drop-hover { box-shadow: 0 0 0 2px var(--sage), 0 4px 14px rgba(50,40,20,0.12); transform: translateY(-2px); }
+.gf-income-head { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; }
+.gf-income-name { font-size: 12.5px; font-weight: 600; color: var(--text); }
+.gf-income-amount { font-family: var(--mono); font-size: 19px; font-weight: 700; color: var(--text); }
+
+/* Farbfamilie je Einnahmequelle (bis zu 4, rotierend) — ans Mockup
+   angelehnt: jede Einnahme bekommt eine eigene, stabile Farbe, damit man
+   auf einen Blick sieht, welcher Stapel-Eintrag zu welcher Quelle gehört.
+   Kompakte Selektoren (Karte+Klasse zusammen), damit die Reihenfolge im
+   Stylesheet keine Rolle spielt. */
+.gf-income-card.gf-income-c1, .gf-income-bar.gf-income-c1 { background: var(--b-green-soft);  border-color: var(--b-green); }
+.gf-income-card.gf-income-c2, .gf-income-bar.gf-income-c2 { background: var(--b-olive-soft);   border-color: var(--b-olive); }
+.gf-income-card.gf-income-c3, .gf-income-bar.gf-income-c3 { background: var(--b-red-soft);     border-color: var(--b-red); }
+.gf-income-card.gf-income-c4, .gf-income-bar.gf-income-c4 { background: var(--b-blue-soft);    border-color: var(--b-blue); }
+.gf-income-c1 .gf-income-name, .gf-income-c1 .gf-bar-name { color: var(--b-green); }
+.gf-income-c2 .gf-income-name, .gf-income-c2 .gf-bar-name { color: var(--b-olive); }
+.gf-income-c3 .gf-income-name, .gf-income-c3 .gf-bar-name { color: var(--b-red); }
+.gf-income-c4 .gf-income-name, .gf-income-c4 .gf-bar-name { color: var(--b-blue); }
+
+.gf-stack { display: flex; flex-direction: column; }
+.gf-stack-item {
+  display: flex; justify-content: space-between; gap: 6px; font-size: 11px; color: var(--text-2);
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--b-radius-xs);
+  padding: 4px 8px; margin-top: calc(-1px - var(--gf-i, 0) * 0px);
+  cursor: grab; touch-action: none; user-select: none; transition: background var(--transition);
 }
-.fin-analysis-insight--warn { color: var(--b-red); background: var(--b-red-soft); }
+.gf-stack-item:hover { background: var(--b-red-soft); }
+.gf-stack-item--over { background: var(--b-red-soft); color: var(--b-red); border-color: var(--b-red); }
+.gf-stack-item + .gf-stack-item { margin-top: 3px; }
+
+.gf-rest { font-size: 12px; font-weight: 700; text-align: right; padding-top: 4px; border-top: 1px dashed var(--border); }
+.gf-rest-ok   { color: var(--b-green); }
+.gf-rest-low  { color: var(--b-olive); }
+.gf-rest-over { color: var(--b-red); }
+
+.gf-consumer-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 1100px) { .gf-consumer-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px) { .gf-consumer-grid { grid-template-columns: 1fr; } }
+
+.gf-group { display: flex; flex-direction: column; min-width: 0; }
+.gf-group-title { font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+.gf-group-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.gf-group-count { font-size: 10px; font-family: var(--mono); color: var(--text-3); font-weight: 400; }
+.gf-group-list { display: flex; flex-direction: column; gap: 8px; }
+
+.gf-consumer-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--b-radius-sm);
+  box-shadow: 0 1px 4px rgba(50,40,20,0.05); padding: 9px 12px; display: flex; align-items: center;
+  justify-content: space-between; gap: 8px; cursor: grab; touch-action: none; user-select: none;
+  transition: box-shadow var(--transition), transform var(--transition);
+}
+.gf-consumer-card:hover { box-shadow: 0 3px 10px rgba(50,40,20,0.10); transform: translateY(-1px); }
+.gf-consumer-card.gf-drag-source, .gf-stack-item.gf-drag-source { opacity: 0.35; }
+.gf-consumer-card.gf-consumer-red    { background: var(--b-red-soft);    border-left: 3px solid var(--b-red); }
+.gf-consumer-card.gf-consumer-blue   { background: var(--b-blue-soft);   border-left: 3px solid var(--b-blue); }
+.gf-consumer-card.gf-consumer-purple { background: var(--b-purple-soft); border-left: 3px solid var(--b-purple); }
+.gf-consumer-name { font-size: 12.5px; font-weight: 600; color: var(--text); }
+.gf-consumer-amount { font-family: var(--mono); font-size: 12.5px; color: var(--text-2); flex-shrink: 0; }
+
+.gf-add-btn {
+  margin-top: 8px; padding: 8px 10px; border: 1px dashed var(--border-strong); border-radius: var(--b-radius-sm);
+  background: transparent; color: var(--text-3); font-size: 12px; cursor: pointer; text-align: center;
+  transition: background var(--transition), color var(--transition);
+}
+.gf-add-btn:hover { background: var(--surface-2); color: var(--text-2); }
+
+.gf-drag-ghost {
+  position: fixed; top: 0; left: 0; z-index: 9999; pointer-events: none;
+  box-shadow: 0 8px 24px rgba(50,40,20,0.22); transform: rotate(-2deg); opacity: 0.95;
+}
 
 .b-main-row {
   display: grid; grid-template-columns: 38px 1fr 14px auto;
@@ -1463,4 +1546,33 @@
   color: var(--text-3);
   cursor: not-allowed;
 }
+
+/* ── "Gespart bis..." — Ergebnisdarstellung (vorher komplett ungestylt,
+   deshalb die Debug-Optik). Fließtext-Zusammenfassung → große Ergebnis-
+   Karte → Kennzahlen → Berechnung, sanft eingeblendet. ── */
+.sp-savedby-hint { font-size: 13px; color: var(--text-3); padding: 10px 2px; line-height: 1.5; }
+
+.sp-savedby-result { display: flex; flex-direction: column; gap: 14px; margin-top: 14px; animation: sp-savedby-fadein 260ms ease-out; }
+@keyframes sp-savedby-fadein { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+.sp-savedby-summary { font-size: 13px; color: var(--text-2); line-height: 1.5; }
+
+.sp-savedby-hero {
+  background: var(--sage-bg); border: 1px solid var(--sage-border); border-radius: var(--b-radius);
+  padding: 16px; text-align: center;
+}
+.sp-savedby-hero-label { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--sage-dark); margin-bottom: 6px; }
+.sp-savedby-hero-sub { font-size: 12.5px; color: var(--text-2); }
+.sp-savedby-hero-amount { font-family: var(--mono); font-size: 30px; font-weight: 700; color: var(--sage-dark); margin: 4px 0; }
+
+.sp-savedby-section { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--b-radius-sm); padding: 10px 14px; }
+.sp-savedby-section-title { font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+.sp-savedby-row { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--text-2); padding: 4px 0; }
+.sp-savedby-row + .sp-savedby-row { border-top: 1px dashed var(--border); }
+.sp-savedby-row span:last-child { font-family: var(--mono); font-weight: 600; color: var(--text); }
+
+.sp-savedby-formula { display: flex; align-items: baseline; justify-content: center; flex-wrap: wrap; gap: 8px; font-family: var(--mono); font-size: 13px; color: var(--text-2); padding: 4px 0; }
+.sp-savedby-formula-op { color: var(--text-3); }
+.sp-savedby-formula-result { font-weight: 700; color: var(--sage-dark); }
+.sp-savedby-formula + .sp-savedby-formula { border-top: 1px dashed var(--border); margin-top: 2px; padding-top: 8px; }
 

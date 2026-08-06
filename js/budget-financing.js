@@ -73,11 +73,16 @@ function renderFundingEditor(container, funding, totalAmount, classPrefix){
   (funding || []).forEach(f => { byId[f.sourceId] = f.amount; });
   container.innerHTML = incomes.map(r => {
     const checked = byId[r.id] !== undefined;
+    // "max." bezieht sich immer auf den Monatsbetrag der Einnahme (auch
+    // bei täglich/wöchentlich/2-wöchentlich) — Finanzierungsbeträge sind
+    // grundsätzlich als Monatsbeträge definiert, unabhängig vom
+    // Intervall der Quelle. recurringMonthlyEquivalent() lebt in budget.js.
+    const monthlyMax = typeof recurringMonthlyEquivalent === 'function' ? recurringMonthlyEquivalent(r) : r.amount;
     return `
     <div class="fin-row" data-recid="${r.id}">
       <label class="fin-row-check">
         <input type="checkbox" class="${classPrefix}-toggle" data-recid="${r.id}" ${checked ? 'checked' : ''}/>
-        ${r.name} <span class="fin-row-max">(max. ${r.amount.toFixed(2)} €)</span>
+        ${r.name} <span class="fin-row-max">(max. ${monthlyMax.toFixed(2)} €/Monat)</span>
       </label>
       <input type="number" class="modal-input fin-row-amount ${classPrefix}-amount${checked ? '' : ' hidden'}"
              data-recid="${r.id}" step="0.01" min="0" placeholder="0.00" value="${checked ? byId[r.id] : ''}"/>
@@ -182,7 +187,10 @@ function financingAllocatedForIncome(recurringId, monthKey){
 function financingFreeForIncome(recurringId, monthKey){
   const rec = budgetRecurring.find(r => r.id === recurringId);
   if (!rec) return 0;
-  return round2(rec.amount - financingAllocatedForIncome(recurringId, monthKey));
+  // Nutzt den Monats-Äquivalent-Betrag der Einnahme (recurringMonthlyEquivalent(),
+  // budget.js), nicht rec.amount direkt — sonst wäre "35 €/Woche frei"
+  // fälschlich nur 35 € statt ~152 € pro Monat.
+  return round2(recurringMonthlyEquivalent(rec) - financingAllocatedForIncome(recurringId, monthKey));
 }
 function financingBreakdownForIncome(recurringId, monthKey){
   const items = [];
@@ -246,44 +254,3 @@ function sparplanReservedForIncome(recurringId){
   });
   return round2(total);
 }
-
-// ── Statistik-Ansicht pro Einnahme ("133 € → 5 € Ticket, 125 € Führerschein, 3 € frei") ──
-const FIN_KIND_ICON = { 'Ausgabe': '🔁', 'Einmalig': '📌', 'Sparziel': '🎯', 'Schuld': '💳' };
-
-function renderIncomeBreakdownBody(recurringId, monthKey){
-  const rec = budgetRecurring.find(r => r.id === recurringId);
-  if (!rec) return '<div class="empty-state">Diese Einnahme existiert nicht mehr.</div>';
-  const items = financingBreakdownForIncome(recurringId, monthKey);
-  const allocated = financingAllocatedForIncome(recurringId, monthKey);
-  const free = round2(rec.amount - allocated);
-
-  const rows = items.length
-    ? items.map(it => `
-      <div class="fin-breakdown-row">
-        <span class="fin-breakdown-name">${FIN_KIND_ICON[it.kind] || ''} ${it.name}</span>
-        <span class="fin-breakdown-amount">${fmtEuro(it.amount)}</span>
-      </div>`).join('')
-    : '<div class="empty-state" style="font-size:12px;padding:8px 0;">Noch nichts zugeordnet — der gesamte Betrag ist frei.</div>';
-
-  return `
-    <div class="fin-breakdown-total"><span>${rec.name}</span><span>${fmtEuro(rec.amount)}</span></div>
-    <div class="fin-breakdown-list">${rows}</div>
-    <div class="fin-breakdown-free${free < 0 ? ' fin-breakdown-free--over' : ''}">
-      <span>${free < 0 ? 'Überdeckt um' : 'Frei'}</span>
-      <span>${fmtEuro(Math.abs(free))}</span>
-    </div>`;
-}
-
-function openIncomeBreakdown(recurringId, monthKey){
-  const rec = budgetRecurring.find(r => r.id === recurringId);
-  if (!rec) return;
-  document.getElementById('income-breakdown-title').textContent = rec.name;
-  document.getElementById('income-breakdown-body').innerHTML = renderIncomeBreakdownBody(recurringId, monthKey);
-  document.getElementById('income-breakdown-modal-overlay').classList.remove('hidden');
-}
-document.getElementById('income-breakdown-close').addEventListener('click', () =>
-  document.getElementById('income-breakdown-modal-overlay').classList.add('hidden'));
-document.getElementById('income-breakdown-modal-overlay').addEventListener('click', e => {
-  if (e.target === document.getElementById('income-breakdown-modal-overlay'))
-    document.getElementById('income-breakdown-modal-overlay').classList.add('hidden');
-});
