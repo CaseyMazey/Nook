@@ -87,6 +87,27 @@
 }
 
 /* =============================================================
+   THEME-BUILDER (Eigenes Theme erstellen) — Modal-Inhalt nutzt sonst
+   komplett die geteilten .modal-*-Klassen aus main.css. Löschen-"×" an
+   eigenen Theme-Buttons im Picker nutzt bewusst dasselbe .bs-del-Muster
+   wie die Block-Einstellungen weiter oben in dieser Datei.
+============================================================= */
+.tb-base-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.tb-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+}
+.tb-field { display: flex; flex-direction: column; gap: 6px; }
+.tb-field-label { font-size: 12px; color: var(--text-2); }
+.tb-hex { font-family: var(--mono); font-size: 12px; color: var(--text-3); }
+
+.theme-picker-btn-custom { display: inline-flex; align-items: center; gap: 6px; }
+.theme-picker-del { opacity: 0.55; }
+.theme-picker-btn-custom:hover .theme-picker-del { opacity: 1; }
+
+/* =============================================================
    RESPONSIVE
 ============================================================= */
 @media (max-width: 1024px) {

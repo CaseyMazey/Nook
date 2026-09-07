@@ -249,6 +249,46 @@ ul { list-style: none; }
   display: grid;
   grid-template-columns: var(--sidebar-w) 1fr;
   min-height: 100vh;
+  /* position+z-index: liegt über #bg-image-overlay (siehe THEME-HINTERGRUNDBILD
+     unten) — ohne das würde ein fixed positioniertes Overlay je nach
+     Stacking-Reihenfolge im Zweifel über statt unter dem eigentlichen
+     Inhalt landen. */
+  position: relative;
+  z-index: 1;
+}
+
+/* =============================================================
+   THEME-HINTERGRUNDBILD (optional, pro Theme) — js/theme-builder.js
+   Ein Foto/Bild kann für das jeweils aktive Theme (eingebaut oder
+   eigenes) hinterlegt werden (Einstellungen > Darstellung). Body bekommt
+   das Bild direkt als background-image; #bg-image-overlay liegt als
+   fixe, abdunkelbare Ebene darüber (dahinter im Stacking, siehe
+   DOM-Reihenfolge: wird per prepend() vor #app eingefügt). Ist ein Bild
+   aktiv, bekommen Sidebar/Panels/Karten/Modals eine halbtransparente,
+   geblurrte Fläche (statt der normalen deckenden Oberfläche), damit das
+   Bild dahinter durchscheint — Klasse .has-bg-image auf <body> statt der
+   fragileren CSS-:has()-Variante der Vorlage, für die Nook keine
+   zusätzliche Browserabhängigkeit eingehen muss. */
+#bg-image-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 0;
+  transition: opacity 400ms ease;
+}
+body.has-bg-image #sidebar,
+body.has-bg-image .panel,
+body.has-bg-image .modal-box {
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+body.has-bg-image .dash-content {
+  background: color-mix(in srgb, var(--dash-bg) 82%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 /* =============================================================
