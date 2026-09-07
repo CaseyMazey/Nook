@@ -87,7 +87,7 @@ function resolveFundingTotal(totalAmount){
 
 function renderFundingEditor(container, funding, totalAmount, classPrefix){
   if (!container) return;
-  const incomes = budgetRecurring.filter(r => r.type === 'income');
+  const incomes = budgetIncomeSources();
   if (!incomes.length) {
     container.innerHTML = '<div class="empty-state" style="font-size:12px;">Noch keine Einnahmen im Budget-Tab angelegt.</div>';
     return;
@@ -164,7 +164,7 @@ function readFundingEditor(container, classPrefix){
 function fundingBreakdownLabel(funding){
   if (!Array.isArray(funding) || !funding.length) return '';
   return funding.map(f => {
-    const rec = budgetRecurring.find(r => r.id === f.sourceId);
+    const rec = budgetIncomeSourceById(f.sourceId);
     return `${rec ? rec.name : '?'} (${fmtEuro(f.amount)})`;
   }).join(', ');
 }
@@ -189,7 +189,7 @@ function incomeIcon(name){
 // zurück, wenn (noch) keins gewählt wurde (Einnahmen von vor diesem
 // Feature). So bleiben bestehende Daten nutzbar, ohne Migration.
 function resolveIncomeIcon(recurringId, name){
-  const entry = budgetRecurring.find(r => r.id === recurringId);
+  const entry = budgetIncomeSourceById(recurringId);
   if (entry && entry.icon) return entry.icon;
   return incomeIcon(name);
 }
@@ -241,7 +241,7 @@ function financingAllocatedForIncome(recurringId, monthKey){
   return round2(total);
 }
 function financingFreeForIncome(recurringId, monthKey){
-  const rec = budgetRecurring.find(r => r.id === recurringId);
+  const rec = budgetIncomeSourceById(recurringId);
   if (!rec) return 0;
   // Nutzt den Monats-Äquivalent-Betrag der Einnahme (recurringMonthlyEquivalent(),
   // budget.js), nicht rec.amount direkt — sonst wäre "35 €/Woche frei"
@@ -272,7 +272,7 @@ function financingBreakdownForIncome(recurringId, monthKey){
 // zugeordnet ist ODER alles noch aufgeht — keine Warnung ohne Grund.
 function financingWarningsForConsumer(funding, totalAmount){
   if (!Array.isArray(funding) || !funding.length) return null;
-  const missingSource = funding.find(f => !budgetRecurring.find(r => r.id === f.sourceId));
+  const missingSource = funding.find(f => !budgetIncomeSourceById(f.sourceId));
   if (missingSource) return 'Eine Finanzierungsquelle wurde gelöscht.';
   if (totalAmount == null) return null;
   const assigned = round2(funding.reduce((s, f) => s + f.amount, 0));

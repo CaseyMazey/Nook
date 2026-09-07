@@ -293,7 +293,7 @@ function calcMonthProjection() {
 }
 
 function getMonthRecurringItems(year, month) {
-  return budgetRecurring.filter(r => {
+  const items = budgetRecurring.filter(r => {
     if (r.freq === 'monthly') return true;
     if (r.freq === 'yearly')  return r.dateMonth === month;
     // Täglich/wöchentlich/2-wöchentlich: PHASE 1 (Stopgap) — erscheinen
@@ -317,6 +317,45 @@ function getMonthRecurringItems(year, month) {
     }
     return { id: r.id, name: r.name, type: r.type, amount, day, priority: r.priority || 'need', isAverage, funding: r.funding };
   });
+  // Taschengeld (budget-taschengeld.js) ist bewusst kein Eintrag in
+  // budgetRecurring, sondern eine virtuelle, monatsabhängig berechnete
+  // Einnahme — nur eingebunden, wenn die Funktion aktiviert ist.
+  if (typeof getTaschengeldMonthEntry === 'function') {
+    const tg = getTaschengeldMonthEntry(year, month);
+    if (tg) items.push(tg);
+  }
+  return items;
+}
+
+// =========================
+// ZENTRALE EINNAHMEQUELLEN — "Jedem Euro einen Job" (budget-financing.js)
+// und Geldfluss-Planer (budget-analysis.js) sind bewusst monatsunabhängig
+// (evergreen "Woche 1-4"-Vorlage, keine echten Kalenderdaten — siehe
+// Kopfkommentar budget-analysis.js) und lesen dafür budgetRecurring-
+// Einnahmen direkt statt über getMonthRecurringItems(). Diese Funktion
+// ist die EINE Stelle, die zusätzlich die virtuelle Taschengeld-Quelle
+// (budget-taschengeld.js) einblendet, wenn aktiviert — als vollwertiger
+// Pseudo-Eintrag im selben Format (freq:'monthly', damit
+// recurringMonthlyEquivalent() & Co. ihn ohne Sonderfall wie jede andere
+// Einnahme behandeln). Referenzmonat ist bewusst IMMER der laufende
+// Kalendermonat (nicht das im Budget-Header gewählte budgetMonth) — die
+// Finanzierungs-Engine kennt gar kein "gewähltes Monat"-Konzept, jede
+// andere Einnahme dort ist ja ebenfalls ein fester, evergreen Betrag.
+// Jede Stelle, die bisher direkt budgetRecurring.filter(income)/.find(id)
+// genutzt hat, soll stattdessen budgetIncomeSources()/budgetIncomeSourceById()
+// verwenden — dann muss keine dieser Stellen wissen, dass es Taschengeld
+// überhaupt gibt.
+function budgetIncomeSources() {
+  const sources = budgetRecurring.filter(r => r.type === 'income');
+  if (typeof getTaschengeldMonthEntry === 'function') {
+    const now = new Date();
+    const tg = getTaschengeldMonthEntry(now.getFullYear(), now.getMonth() + 1);
+    if (tg) sources.push({ id: tg.id, name: tg.name, type: 'income', freq: 'monthly', amount: tg.amount, taschengeld: true });
+  }
+  return sources;
+}
+function budgetIncomeSourceById(id) {
+  return budgetIncomeSources().find(r => r.id === id) || null;
 }
 
 // =========================
@@ -579,11 +618,19 @@ function renderMainCards(month, mk) {
   recIncomes.forEach(i => allIncomeRows.push({
     day: i.day||1, name: i.isAverage ? `⌀ ${i.name}` : i.name, amount: i.amount,
     paid: isRecurringPaid(i.id, mk),
+    taschengeld: !!i.taschengeld,
     onToggle: () => {
       const nowPaid = !isRecurringPaid(i.id, mk);
       setRecurringPaid(i.id, mk, nowPaid);
       kontostand = (kontostand || 0) + (nowPaid ? i.amount : -i.amount);
       saveKontostand();
+      // Taschengeld: sobald als erhalten markiert, den aktuell berechneten
+      // Betrag für diesen Monat fixieren (siehe budget-taschengeld.js) —
+      // spätere Regeländerungen wirken sich dann nicht mehr rückwirkend aus.
+      if (i.taschengeld && typeof freezeTaschengeldMonth === 'function') {
+        if (nowPaid) freezeTaschengeldMonth(mk, i.amount);
+        else unfreezeTaschengeldMonth(mk);
+      }
       renderBudget();
     }
   }));
@@ -605,7 +652,11 @@ function renderMainCards(month, mk) {
   } else {
     allIncomeRows.forEach(row => {
       if (!row.paid) openIncome += row.amount;
-      incomeList.appendChild(makeClickableRow(row.day, month.getMonth()+1, row.name, row.amount, '+', row.paid, row.onToggle));
+      const rowEl = makeClickableRow(row.day, month.getMonth()+1, row.name, row.amount, '+', row.paid, row.onToggle);
+      if (row.taschengeld && typeof addTaschengeldBreakdownButton === 'function') {
+        addTaschengeldBreakdownButton(rowEl, month.getFullYear(), month.getMonth()+1);
+      }
+      incomeList.appendChild(rowEl);
     });
   }
   const fmtOpenIn = openIncome.toLocaleString('de-DE',{minimumFractionDigits:2});
@@ -3004,6 +3055,7 @@ if (budgetHeaderMenuBtn) {
 
     menu.innerHTML = `
       <button type="button" class="b-header-dropdown-item" id="budget-header-menu-finanzbaum">🌳 Finanzbaum konfigurieren</button>
+      <button type="button" class="b-header-dropdown-item" id="budget-header-menu-taschengeld">🪙 Taschengeld-Berechnung</button>
       <button type="button" class="b-header-dropdown-item" id="budget-header-menu-archiv">📦 Archiv</button>
     `;
     const rect = budgetHeaderMenuBtn.getBoundingClientRect();
@@ -3014,6 +3066,10 @@ if (budgetHeaderMenuBtn) {
     document.getElementById('budget-header-menu-finanzbaum').addEventListener('click', () => {
       closeBudgetHeaderMenu();
       openFinanzbaumModal();
+    });
+    document.getElementById('budget-header-menu-taschengeld').addEventListener('click', () => {
+      closeBudgetHeaderMenu();
+      if (typeof openTaschengeldSettingsModal === 'function') openTaschengeldSettingsModal();
     });
     document.getElementById('budget-header-menu-archiv').addEventListener('click', () => {
       closeBudgetHeaderMenu();

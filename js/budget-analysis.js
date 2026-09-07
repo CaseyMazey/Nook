@@ -46,7 +46,7 @@ function geldflussWeeklyOccurrences(entry){
 // Blick sieht, welche Stapel-Karte zu welcher Einnahme gehört.
 const GF_INCOME_PALETTE = ['gf-income-c1', 'gf-income-c2', 'gf-income-c3', 'gf-income-c4'];
 function incomeColorClass(recurringId){
-  const incomes = budgetRecurring.filter(r => r.type === 'income' && r.freq !== 'yearly');
+  const incomes = budgetIncomeSources().filter(r => r.freq !== 'yearly');
   const idx = Math.max(0, incomes.findIndex(r => r.id === recurringId));
   return GF_INCOME_PALETTE[idx % GF_INCOME_PALETTE.length];
 }
@@ -56,7 +56,11 @@ function buildGeldflussIncomeCards(){
   // Jährliche Einnahmen bewusst NICHT einbezogen — der Geldfluss ist
   // eine reine Monatsansicht, einmal im Jahr auftretende Zahlungen sind
   // Sonderfälle, die hier nicht sinnvoll dargestellt werden können.
-  budgetRecurring.filter(r => r.type === 'income' && r.freq !== 'yearly').forEach(r => {
+  // budgetIncomeSources() blendet zusätzlich Taschengeld (budget-
+  // taschengeld.js) ein, wenn aktiviert — als freq:'monthly'-Eintrag läuft
+  // es hier automatisch in den Balken-Zweig unten (isBar), genau wie jede
+  // andere monatliche Einnahme.
+  budgetIncomeSources().filter(r => r.freq !== 'yearly').forEach(r => {
     const isBar = r.freq === 'monthly';
     if (isBar) {
       cards.push({ uid: `${r.id}@bar`, recurringId: r.id, name: r.name, amount: r.amount, stack: [], remaining: r.amount, isBar: true, week: null });

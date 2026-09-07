@@ -70,24 +70,35 @@ function sparplanerReservedTotal() {
   return typeof sparplanTotalReserved === 'function' ? sparplanTotalReserved() : 0;
 }
 
+// Taschengeld (budget-taschengeld.js) für das im Budget-Header aktuell
+// gewählte Monat (budgetMonth aus budget.js) — dieselbe zentrale
+// Berechnung wie die Übersicht, nur szenario-abhängig aggregiert
+// (tgScenarioAmount). 0, wenn die Funktion deaktiviert ist oder das
+// Modul (noch) nicht geladen ist — die Prognose bleibt dann unverändert.
+function sparplanerTaschengeldAmount(scenario) {
+  if (typeof tgScenarioAmount !== 'function' || typeof budgetMonth === 'undefined') return 0;
+  return tgScenarioAmount(scenario, budgetMonth.getFullYear(), budgetMonth.getMonth() + 1);
+}
+
 function sparplanerScenarioRate(scenario) {
   const b = sparplanerBuckets();
   const sum = arr => arr.reduce((s, r) => s + recurringMonthlyEquivalent(r), 0);
   const fixedNet = round2(sum(b.fixedIncome) - sum(b.fixedExpense));
   const reserved = sparplanerReservedTotal();
+  const tg = sparplanerTaschengeldAmount(scenario);
 
-  if (scenario === 'garant') return round2(fixedNet - reserved);
+  if (scenario === 'garant') return round2(fixedNet + tg - reserved);
 
   if (scenario === 'real') {
     const varIncomeAvg  = round2(b.varIncome.reduce((s, r) => s + sparplanerRange(r).avg, 0));
     const varExpenseAvg = round2(b.varExpense.reduce((s, r) => s + sparplanerRange(r).avg, 0));
-    return round2(fixedNet + varIncomeAvg - varExpenseAvg - reserved);
+    return round2(fixedNet + varIncomeAvg - varExpenseAvg + tg - reserved);
   }
 
   // Optimistisch: maximale variable Einnahmen, minimale variable Ausgaben
   const varIncomeMax = round2(b.varIncome.reduce((s, r) => s + sparplanerRange(r).max, 0));
   const varExpenseMin = round2(b.varExpense.reduce((s, r) => s + sparplanerRange(r).min, 0));
-  return round2(fixedNet + varIncomeMax - varExpenseMin - reserved);
+  return round2(fixedNet + varIncomeMax - varExpenseMin + tg - reserved);
 }
 
 // Liefert die einzelnen Bestandteile einer Szenario-Berechnung —
@@ -98,14 +109,15 @@ function sparplanerScenarioBreakdown(scenario) {
   const sum = arr => arr.reduce((s, r) => s + recurringMonthlyEquivalent(r), 0);
   const fixedNet = round2(sum(b.fixedIncome) - sum(b.fixedExpense));
   const reserved = sparplanerReservedTotal();
-  if (scenario === 'garant') return { fixedNet, varNet: 0, reserved, total: round2(fixedNet - reserved) };
+  const tg = sparplanerTaschengeldAmount(scenario);
+  if (scenario === 'garant') return { fixedNet, varNet: 0, reserved, tg, total: round2(fixedNet + tg - reserved) };
 
   const key = scenario === 'real' ? 'avg' : 'max';
   const expKey = scenario === 'real' ? 'avg' : 'min';
   const varIncome = round2(b.varIncome.reduce((s, r) => s + sparplanerRange(r)[key], 0));
   const varExpense = round2(b.varExpense.reduce((s, r) => s + sparplanerRange(r)[expKey], 0));
   const varNet = round2(varIncome - varExpense);
-  return { fixedNet, varNet, reserved, total: round2(fixedNet + varNet - reserved) };
+  return { fixedNet, varNet, reserved, tg, total: round2(fixedNet + varNet + tg - reserved) };
 }
 
 function sparplanerAllRates() {
@@ -285,7 +297,9 @@ function renderSparplanScenarios(rates) {
         let rechenweg = key === 'garant'
           ? `${fmtEuro(bd.fixedNet)} fest`
           : `${fmtEuro(bd.fixedNet)} fest ${bd.varNet >= 0 ? '+' : '−'} ${fmtEuro(Math.abs(bd.varNet))} ${key === 'real' ? 'Ø variabel' : 'Bestfall variabel'}`;
+        if (bd.tg) rechenweg += ` + ${fmtEuro(bd.tg)} Taschengeld`;
         if (bd.reserved > 0) rechenweg += ` − ${fmtEuro(bd.reserved)} reserviert`;
+        const tgLine = (typeof budgetMonth !== 'undefined') ? tgScenarioLine(key, budgetMonth.getFullYear(), budgetMonth.getMonth() + 1) : null;
         return `
         <button class="sp-scen-card" data-scen="${key}" title="Als Basis für Zeitstrahl &amp; Simulator verwenden">
           <div class="sp-scen-eyebrow sp-scen-${key}">${m.icon} ${m.label}</div>
@@ -293,6 +307,7 @@ function renderSparplanScenarios(rates) {
           <div class="sp-scen-value sp-scen-${key}">${fmtEuro(rates[key])}</div>
           <div class="sp-scen-sub">${rates[key] >= 0 ? 'verfügbar' : 'Unterdeckung'} / Monat</div>
           <div class="sp-scen-formula">${rechenweg} = ${fmtEuro(rates[key])}</div>
+          ${tgLine ? `<div class="sp-scen-formula sp-scen-tg-line">${tgLine}</div>` : ''}
         </button>`;
       }).join('')}
     </div>
