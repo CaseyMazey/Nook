@@ -114,30 +114,41 @@ function gdConnectedComponent(dutyId) {
   return Array.from(visited).map(gdFindDuty).filter(Boolean);
 }
 
-// Warteschlange für den automatischen Modus aus der eingefrorenen Historie
-// ableiten: wer zuletzt dran war, steht hinten an; Personen ohne Historie
+// EINE gemeinsame Warteschlange für alle automatischen Pflichten einer
+// Verknüpfungsgruppe ableiten (statt pro Pflicht getrennt) — sonst "sieht"
+// die Wasser-Warteschlange nicht, dass jemand letzte Woche schon bei Müll
+// dran war, und dieselbe Person rotiert ungebremst zwischen den verknüpften
+// Pflichten hin und her, statt wirklich Pause zu bekommen. Wer in IRGENDEINER
+// Pflicht der Gruppe zuletzt dran war (regulär oder Ersatz, auch bei fester
+// Reihenfolge), steht entsprechend weiter hinten. Personen ohne Historie
 // kommen in autoRotationOrder-Reihenfolge (einmalig gemischt beim Speichern)
 // dazu. Kein separat gepflegter Zeiger nötig — robust gegenüber Bearbeitungen.
-function gdDeriveQueue(duty) {
-  const poolIds = gdExpandParticipantsToPeople(duty.participants);
-  const pool = new Set(poolIds);
-  const history = gdSchedule[duty.id] || {};
-  const cutover = gdCutoverWeekId();
-  const pastWeekIds = Object.keys(history).filter(w => w < cutover).sort();
+function gdDeriveComponentQueue(component) {
+  const poolIds = new Set();
+  component.forEach(d => { if (d.rotationMode === 'auto') gdExpandParticipantsToPeople(d.participants).forEach(pid => poolIds.add(pid)); });
 
-  const lastSeenIdx = new Map(); // personId -> Index der letzten Historie-Woche, in der sie vorkam
-  pastWeekIds.forEach((w, idx) => {
-    const entry = history[w];
-    [...(entry.regular || []), ...(entry.ersatz || [])].forEach(ref => {
-      if (ref.type === 'person' && pool.has(ref.id)) lastSeenIdx.set(ref.id, idx);
+  const cutover = gdCutoverWeekId();
+  const events = []; // { week, id } — jede Zuteilung einer Pool-Person in irgendeiner Pflicht der Gruppe
+  component.forEach(d => {
+    const history = gdSchedule[d.id] || {};
+    Object.keys(history).filter(w => w < cutover).sort().forEach(w => {
+      const entry = history[w];
+      [...(entry.regular || []), ...(entry.ersatz || [])].forEach(ref => {
+        if (ref.type === 'person' && poolIds.has(ref.id)) events.push({ week: w, id: ref.id });
+      });
     });
   });
+  events.sort((a, b) => a.week < b.week ? -1 : a.week > b.week ? 1 : 0);
+
+  const lastSeenIdx = new Map(); // personId -> Index des letzten Vorkommens (über alle Pflichten der Gruppe)
+  events.forEach((e, idx) => lastSeenIdx.set(e.id, idx));
 
   const seen = Array.from(lastSeenIdx.entries()).sort((a, b) => a[1] - b[1]).map(e => e[0]);
-  const base = (duty.autoRotationOrder && duty.autoRotationOrder.length) ? duty.autoRotationOrder : poolIds;
-  const unseen = base.filter(pid => pool.has(pid) && !lastSeenIdx.has(pid));
+  const base = [];
+  component.forEach(d => (d.autoRotationOrder || []).forEach(pid => { if (poolIds.has(pid) && !base.includes(pid)) base.push(pid); }));
+  const unseen = base.filter(pid => !lastSeenIdx.has(pid));
   const known = new Set([...seen, ...unseen]);
-  const extra = poolIds.filter(pid => !known.has(pid)); // Sicherheitsnetz, falls autoRotationOrder veraltet ist
+  const extra = Array.from(poolIds).filter(pid => !known.has(pid)); // Sicherheitsnetz, falls autoRotationOrder veraltet ist
   return [...seen, ...unseen, ...extra];
 }
 
@@ -160,8 +171,27 @@ function gdRecomputeComponent(dutyId) {
   component.forEach(d => dutyWeekIndex[d.id].forEach((_, w) => { if (w >= cutover) weekSet.add(w); }));
   const weeks = Array.from(weekSet).sort();
 
-  const queues = {};
-  component.forEach(d => { if (d.rotationMode === 'auto') queues[d.id] = gdDeriveQueue(d); });
+  const dutyPools = {}; // dutyId -> Set(personId), nur für automatische Pflichten gebraucht
+  component.forEach(d => { if (d.rotationMode === 'auto') dutyPools[d.id] = new Set(gdExpandParticipantsToPeople(d.participants)); });
+
+  // EINE geteilte Warteschlange für die ganze Verknüpfungsgruppe (statt pro
+  // Pflicht) — siehe gdDeriveComponentQueue. Jede Zuteilung, ob automatisch
+  // oder fest, schiebt die betroffene Person hier ans Ende, damit sie in
+  // JEDER Pflicht der Gruppe erstmal seltener dran ist, nicht nur in der,
+  // die sie gerade hatte.
+  const sharedQueue = gdDeriveComponentQueue(component);
+  const sharedPoolIds = new Set(sharedQueue);
+  // Verschiebt die angegebenen Personen ans Ende der geteilten Warteschlange
+  // (ihre relative Reihenfolge untereinander bleibt erhalten); Personen
+  // außerhalb der Auto-Teilnehmerkreise der Gruppe werden ignoriert.
+  function gdMoveToBack(queue, pids) {
+    const move = new Set(pids.filter(pid => sharedPoolIds.has(pid)));
+    if (!move.size) return;
+    const moved = queue.filter(pid => move.has(pid));
+    const remaining = queue.filter(pid => !move.has(pid));
+    queue.length = 0;
+    queue.push(...remaining, ...moved);
+  }
 
   weeks.forEach(weekId => {
     const usedThisWeek = new Set(); // Personen-IDs, diese Woche schon in der Verknüpfungsgruppe verplant
@@ -174,24 +204,26 @@ function gdRecomputeComponent(dutyId) {
         if (!order.length) { gdSchedule[d.id][weekId] = { regular: [], ersatz: [] }; return; }
         const idx = dutyWeekIndex[d.id].get(weekId) % order.length;
         const ref = order[idx];
-        gdExpandParticipantsToPeople([ref]).forEach(pid => usedThisWeek.add(pid));
+        const pids = gdExpandParticipantsToPeople([ref]);
+        pids.forEach(pid => usedThisWeek.add(pid));
+        gdMoveToBack(sharedQueue, pids);
         gdSchedule[d.id][weekId] = { regular: [ref], ersatz: [] };
         return;
       }
 
-      // Automatischer Modus: Warteschlangen-Round-Robin mit Kollisionsvermeidung
-      // über die ganze Verknüpfungsgruppe hinweg. Jede Person aus der
-      // Warteschlange wird für diese Pflicht/Woche GENAU EINMAL betrachtet
-      // (erst alle nicht-kollidierenden, dann bei Bedarf die zurückgestellten
-      // Kollisionen) — das schließt Selbst-Duplikate innerhalb derselben
-      // Pflicht strukturell aus, unabhängig davon wie viele Personen extern
-      // schon verplant sind.
+      // Automatischer Modus: Auswahl aus der geteilten Warteschlange, gefiltert
+      // auf den Teilnehmerkreis dieser Pflicht, mit Kollisionsvermeidung über
+      // die ganze Verknüpfungsgruppe hinweg. Jede Person wird für diese
+      // Pflicht/Woche GENAU EINMAL betrachtet (erst alle nicht-kollidierenden,
+      // dann bei Bedarf die zurückgestellten Kollisionen) — das schließt
+      // Selbst-Duplikate innerhalb derselben Pflicht strukturell aus.
+      const pool = dutyPools[d.id];
       const need = (d.seatsRegular || 0) + (d.seatsErsatz || 0);
-      const rotation = queues[d.id].slice();
       const filled = [];
       const filledSet = new Set();
       const deferred = [];
-      for (const candidate of rotation) {
+      for (const candidate of sharedQueue) {
+        if (!pool.has(candidate)) continue;
         if (filled.length >= need) break;
         if (usedThisWeek.has(candidate)) { deferred.push(candidate); continue; }
         filled.push(candidate); filledSet.add(candidate);
@@ -201,13 +233,7 @@ function gdRecomputeComponent(dutyId) {
         filled.push(candidate); filledSet.add(candidate); // unvermeidbare Kollision akzeptiert
       }
       filled.forEach(pid => usedThisWeek.add(pid));
-
-      // Warteschlange für die nächste Woche: wer diesmal nicht drankam,
-      // behält seinen Platz; die Eingeteilten wandern (in Zuteilungs-
-      // Reihenfolge) ans Ende.
-      const waiting = rotation.filter(pid => !filledSet.has(pid));
-      queues[d.id].length = 0;
-      queues[d.id].push(...waiting, ...filled);
+      gdMoveToBack(sharedQueue, filled);
 
       gdSchedule[d.id][weekId] = {
         regular: filled.slice(0, d.seatsRegular || 0).map(pid => ({ type: 'person', id: pid })),
@@ -669,5 +695,24 @@ document.getElementById('gd-duty-delete')?.addEventListener('click', async () =>
   gdRenderOverviewList();
   gdBuildWidget();
 });
+
+// Einmalige Migration: Rotationsalgorithmus wurde von getrennten Pro-Pflicht-
+// Warteschlangen auf eine geteilte Warteschlange pro Verknüpfungsgruppe
+// umgestellt (siehe gdDeriveComponentQueue/gdRecomputeComponent) — die alte
+// Version konnte dieselbe Person kurz hintereinander in verschiedenen
+// verknüpften Pflichten einteilen. Bereits berechnete zukünftige Wochen
+// müssen einmalig mit dem neuen Algorithmus neu berechnet werden; die
+// Vergangenheit bleibt unangetastet (gdRecomputeComponent rechnet nur ab
+// der aktuellen Woche neu).
+(function gdMigrateSharedQueueAlgo() {
+  if (DB.get('gdScheduleAlgoV2', false)) return;
+  const visited = new Set();
+  gdDuties.forEach(d => {
+    if (visited.has(d.id)) return;
+    gdConnectedComponent(d.id).forEach(cd => visited.add(cd.id));
+    gdRecomputeComponent(d.id);
+  });
+  DB.set('gdScheduleAlgoV2', true);
+})();
 
 renderGruppendienste();
