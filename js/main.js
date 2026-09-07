@@ -160,10 +160,16 @@ if (theme === null) {
   theme = DB.get('darkMode', false) ? 'dark' : 'light';
   DB.set('theme', theme);
 }
+// Eigene Themes (Theme-Builder, js/theme-builder.js) stehen nicht in
+// THEME_FAMILY — deren Familie wird beim Erstellen/Anwenden zusätzlich
+// unter 'themeFamily' gespeichert, damit dieses frühe Initial-Setup sie
+// korrekt setzen kann, ohne dass main.js die customThemes-Liste selbst
+// kennen müsste (die lädt erst später).
+let themeFamily = THEME_FAMILY[theme] || DB.get('themeFamily', 'light');
 // darkMode bleibt als abgeleiteter Boolean bestehen — für bestehende
 // Stellen, die nur zwischen hell/dunkel unterscheiden (Sonne/Mond-Icon
 // in today.js, Sidebar-Schnellumschalter).
-let darkMode = THEME_FAMILY[theme] === 'dark';
+let darkMode = themeFamily === 'dark';
 let colors           = DB.get('colors', DEFAULT_COLORS);
 let customTiles      = DB.get('customTiles', []);
 let deskCards        = DB.get('deskCards', null);
@@ -173,7 +179,7 @@ let subjects         = DB.get('subjects', []);
 let collapsedGroups  = new Set(DB.get('collapsedGroups', []));
 
 document.documentElement.setAttribute('data-theme', theme);
-document.documentElement.setAttribute('data-theme-family', THEME_FAMILY[theme]);
+document.documentElement.setAttribute('data-theme-family', themeFamily);
 
 // ── Zentraler Theme-Switch ──────────────────────────────────────────────
 // Einziger Ort, der theme setzt/speichert und alle Folgen auslöst:
@@ -182,25 +188,46 @@ document.documentElement.setAttribute('data-theme-family', THEME_FAMILY[theme]);
 // hub-utils.js), damit diese sofort statt erst beim nächsten Tab-Wechsel
 // aktualisiert werden.
 // Wird von der Theme-Auswahl in den Einstellungen (settings.js) aufgerufen.
+// Akzeptiert neben den 6 eingebauten Namen auch die ID eines eigenen
+// Themes (Theme-Builder, js/theme-builder.js) — dessen Familie steht
+// nicht in THEME_FAMILY, sondern wird aus customThemes nachgeschlagen,
+// falls dieses bereits geladen ist (siehe Skript-Ladereihenfolge unten).
 function setTheme(name) {
-  if (!THEME_FAMILY.hasOwnProperty(name)) name = 'light';
+  let family = THEME_FAMILY[name];
+  if (!family && typeof customThemes !== 'undefined') {
+    const ct = customThemes.find(t => t.id === name);
+    if (ct) family = ct.family;
+  }
+  if (!family) { name = 'light'; family = 'light'; }
   theme = name;
-  darkMode = THEME_FAMILY[theme] === 'dark';
+  themeFamily = family;
+  darkMode = themeFamily === 'dark';
   DB.set('theme', theme);
+  DB.set('themeFamily', themeFamily);
   document.documentElement.setAttribute('data-theme', theme);
-  document.documentElement.setAttribute('data-theme-family', THEME_FAMILY[theme]);
+  document.documentElement.setAttribute('data-theme-family', themeFamily);
   if (typeof updateThemeIcon === 'function') updateThemeIcon();
   if (typeof renderDesk === 'function') renderDesk();
   if (typeof renderCalendar === 'function') renderCalendar();
   if (typeof renderGuideShelf === 'function') renderGuideShelf();
+  // Eigene Farbwerte (inline CSS-Variablen) anwenden/entfernen — siehe
+  // js/theme-builder.js. Für die 6 eingebauten Themes reicht das
+  // data-theme-Attribut allein (Farben kommen aus main.css), die Funktion
+  // entfernt dort nur evtl. noch gesetzte Inline-Variablen eines zuvor
+  // aktiven eigenen Themes.
+  if (typeof applyCustomThemeVars === 'function') applyCustomThemeVars();
+  // Hintergrundbild ist pro Theme hinterlegt (js/theme-builder.js) — beim
+  // Wechsel neu anwenden, damit ein evtl. für das NEUE Theme gespeichertes
+  // Bild erscheint bzw. keins mehr, wenn das neue Theme keins hat.
+  if (typeof applyThemeBackground === 'function') applyThemeBackground();
 }
 
 // Schnellumschalter (Sidebar Sonne/Mond) — schaltet nur zwischen Light und
 // dem zuletzt aktiven Dark-Theme hin und her, ohne die übrigen Dark-Varianten
 // aus der Einstellungsseite zu berühren.
-let lastDarkTheme = THEME_FAMILY[theme] === 'dark' ? theme : 'dark';
+let lastDarkTheme = themeFamily === 'dark' ? theme : 'dark';
 function setDarkMode(dark) {
-  if (dark) { lastDarkTheme = THEME_FAMILY[theme] === 'dark' ? theme : lastDarkTheme; setTheme(lastDarkTheme); }
+  if (dark) { lastDarkTheme = themeFamily === 'dark' ? theme : lastDarkTheme; setTheme(lastDarkTheme); }
   else      { setTheme('light'); }
 }
 
@@ -357,9 +384,25 @@ function showView(name) {
   document.querySelectorAll(`.nav-btn[data-view="${name}"]`).forEach(b=>b.classList.add('active'));
   document.getElementById('bottom-nav-more-btn')?.classList.toggle('active', !BOTTOM_NAV_VIEWS.includes(name));
   currentView=name; renderView(name);
+  // URL-Hash spiegelt die aktuelle View, damit ein Reload wieder hier landet
+  // (siehe hashchange-Listener unten). "mehr" ist nur eine mobile Overlay-
+  // Ansicht über der eigentlichen View und wird daher nicht in der URL abgebildet.
+  // replaceState statt location.hash=…, damit kein zusätzlicher History-Eintrag
+  // entsteht und kein hashchange-Event (→ keine Rekursion) ausgelöst wird.
+  if (name !== 'mehr' && location.hash !== '#'+name) {
+    history.replaceState(null, '', '#'+name);
+  }
 }
 document.querySelectorAll('.nav-btn').forEach(btn=>{
   btn.addEventListener('click',()=>showView(btn.dataset.view));
+});
+
+// Erlaubt Direktlinks/Browser-Navigation über den Hash (z.B. manuell
+// editierte URL); löst nicht durch showView() selbst aus, da dieses
+// history.replaceState() statt location.hash=… verwendet.
+window.addEventListener('hashchange', () => {
+  const name = location.hash.replace(/^#/, '');
+  if (name && name !== currentView && name !== 'mehr' && viewMap[name]) showView(name);
 });
 
 // ── Mobile "Mehr"-Seite (≤480px, siehe css/main.css) ────────────────

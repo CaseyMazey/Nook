@@ -211,11 +211,10 @@ function renderArchiveList() {
     info.append(name, meta);
 
     const btns = document.createElement('div');
-    btns.style.cssText = 'display:flex;gap:6px;flex-shrink:0;';
+    btns.className = 'archive-project-actions';
 
     const restoreBtn = document.createElement('button');
-    restoreBtn.className = 'btn-ghost';
-    restoreBtn.style.fontSize = '12px';
+    restoreBtn.className = 'btn-ghost archive-project-restore-btn';
     restoreBtn.textContent = '↩ Wiederherstellen';
     restoreBtn.addEventListener('click', () => {
       const idx = projects.findIndex(p => p.id === project.id);
@@ -224,8 +223,7 @@ function renderArchiveList() {
     });
 
     const deleteBtn = document.createElement('button');
-    deleteBtn.className = 'btn-ghost';
-    deleteBtn.style.cssText = 'font-size:12px;color:var(--prio-1);border-color:var(--prio-1);';
+    deleteBtn.className = 'btn-ghost archive-project-delete-btn';
     deleteBtn.textContent = '✕ Löschen';
     deleteBtn.addEventListener('click', () => {
       openConfirmModal(

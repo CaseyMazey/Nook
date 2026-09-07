@@ -149,7 +149,83 @@ document.querySelectorAll('#forest-filter-panel [data-prio]').forEach(btn => {
 });
 
 // =========================
+// MOBILE-RASTERANSICHT — eigenes Layout statt Desktop-Lichtungen
+// Unter MOBILE_FOREST_BREAKPOINT (muss mit dem @media-Wert für
+// .forest-grid-mobile in projects.css übereinstimmen) lässt sich die feste
+// Baum/Lichtung-Zuordnung der Desktop-Ansicht (FOREST_SLOTS) nicht mehr
+// gleichzeitig mit einer bedienbaren Toolbar UND zuverlässig anklickbaren
+// Bäumen halten (mehrfach ausprobiert — Bäume verkleinern lässt sie zu
+// klein zum Antippen werden, Bäume verschieben zerstört die Lichtungen-
+// Zuordnung, Toolbar überlappt sonst die vorderen Baumreihen). Ab dieser
+// Breite bekommt der Wald deshalb bewusst ein eigenes, einfaches
+// 2-Spalten-Raster (siehe .forest-grid-mobile), das vertikal scrollt statt
+// alle 14 Bäume ins Fenster zu quetschen. Desktop/Tablet bleiben
+// unverändert bei der Lichtungen-Positionierung.
+// =========================
+const MOBILE_FOREST_BREAKPOINT = 480;
+function isMobileForestLayout() {
+  return window.matchMedia(`(max-width: ${MOBILE_FOREST_BREAKPOINT}px)`).matches;
+}
+
+// =========================
+// ARCHIV-/NEUES-PROJEKT-BUTTONS — MOBIL NEBEN DEN PRIORITÄTSFILTER
+// #project-archive-btn/#add-project-btn leben nur einmal im DOM (gleiches
+// Umhäng-Muster wie placePdtInfoCard() unten bzw. placeSidebarWidgets() in
+// main.js) und wandern unter MOBILE_FOREST_BREAKPOINT aus der Titelzeile
+// (.forest-overlay-header-row) in die Toolbar neben den Prioritäts-
+// Filter-Button (.forest-filter-wrap) — dort werden sie zu reinen
+// Icon-Buttons (.forest-action-icon-btn, Text durch Icon/„+" ersetzt).
+// Grund: In der Titelzeile mussten sie bei schmalen Breiten neben den
+// langen Titel umbrechen (flex-wrap) — in genau diesem umgebrochenen
+// Zustand rendert Chrome die Buttons nicht (Layout/Klickbarkeit korrekt,
+// aber unsichtbar). Als kompakte Icons neben dem Filter-Button passen sie
+// dagegen immer in eine Zeile, der Umbruch (und damit der Render-Bug)
+// entfällt komplett. Farben bleiben unverändert (.btn-ghost/.btn-primary),
+// nur Größe/Inhalt ändern sich. Auf Desktop bleiben Ort + Text exakt wie
+// im ursprünglichen Markup (index.html).
+// =========================
+const FOREST_ARCHIVE_ICON_HTML = '<svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M1 2.2a1 1 0 0 1 1-1h11a1 1 0 0 1 1 1v2.3H1V2.2Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><rect x="1.5" y="4.5" width="12" height="8.5" rx="1.2" stroke="currentColor" stroke-width="1.3"/><path d="M5.8 7.9h3.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>';
+const FOREST_ARCHIVE_DESKTOP_HTML = '⊘ Archiv';
+const FOREST_ADD_ICON_HTML = '+';
+const FOREST_ADD_DESKTOP_HTML = '+ Neues Projekt';
+
+const forestActionsMobileQuery = window.matchMedia(`(max-width: ${MOBILE_FOREST_BREAKPOINT}px)`);
+function placeForestActionButtons(isMobile) {
+  const archiveBtn  = document.getElementById('project-archive-btn');
+  const addBtn      = document.getElementById('add-project-btn');
+  const actionsSlot = document.getElementById('forest-overlay-actions-slot');
+  const toolbarRight = document.querySelector('.forest-toolbar-right');
+  const filterWrap   = document.querySelector('.forest-filter-wrap');
+  if (!archiveBtn || !addBtn || !actionsSlot || !toolbarRight || !filterWrap) return;
+
+  if (isMobile) {
+    archiveBtn.innerHTML = FOREST_ARCHIVE_ICON_HTML;
+    archiveBtn.title = 'Archiv';
+    addBtn.innerHTML = FOREST_ADD_ICON_HTML;
+    addBtn.title = 'Neues Projekt';
+    archiveBtn.classList.add('forest-action-icon-btn');
+    addBtn.classList.add('forest-action-icon-btn');
+    toolbarRight.insertBefore(archiveBtn, filterWrap);
+    toolbarRight.insertBefore(addBtn, filterWrap);
+  } else {
+    archiveBtn.innerHTML = FOREST_ARCHIVE_DESKTOP_HTML;
+    archiveBtn.removeAttribute('title');
+    addBtn.innerHTML = FOREST_ADD_DESKTOP_HTML;
+    addBtn.removeAttribute('title');
+    archiveBtn.classList.remove('forest-action-icon-btn');
+    addBtn.classList.remove('forest-action-icon-btn');
+    // Ursprüngliche Reihenfolge aus index.html: Archiv vor "Neues Projekt".
+    actionsSlot.appendChild(archiveBtn);
+    actionsSlot.appendChild(addBtn);
+  }
+}
+placeForestActionButtons(forestActionsMobileQuery.matches);
+forestActionsMobileQuery.addEventListener('change', e => placeForestActionButtons(e.matches));
+
+// =========================
 // WALDBAUM-KARTE (PNG-Baum + Projektkarte)
+// slot === null -> Mobile-Raster: Position/Größe kommt vollständig aus CSS
+// (.forest-grid-mobile), keine Lichtungen-Zuordnung auf diesen Breiten.
 // =========================
 function buildForestTree(project, slot, containerWidth) {
   const stats      = getProjectStats(project);
@@ -164,11 +240,13 @@ function buildForestTree(project, slot, containerWidth) {
 
   const wrap = document.createElement('div');
   wrap.className = 'forest-tree-wrap' + (isDone ? ' archived' : '');
-  // Baumgröße relativ zur tatsächlichen Container-Breite (nicht fix in px) —
-  // #project-forest kann je nach Viewport-Höhe schrumpfen (siehe projects.css),
-  // die Bäume sollen dabei proportional mitschrumpfen statt zu überlappen.
-  const widthPx = Math.round(containerWidth * 0.1132 * slot.scale);
-  wrap.style.cssText = `left:${slot.x}%;top:${slot.y}%;width:${widthPx}px;z-index:${10 + Math.round(slot.depth * 40)};`;
+  if (slot) {
+    // Baumgröße relativ zur tatsächlichen Container-Breite (nicht fix in px) —
+    // #project-forest kann je nach Viewport-Höhe schrumpfen (siehe projects.css),
+    // die Bäume sollen dabei proportional mitschrumpfen statt zu überlappen.
+    const widthPx = Math.round(containerWidth * 0.1132 * slot.scale);
+    wrap.style.cssText = `left:${slot.x}%;top:${slot.y}%;width:${widthPx}px;z-index:${10 + Math.round(slot.depth * 40)};`;
+  }
 
   const img = document.createElement('img');
   img.className = 'forest-tree-img';
@@ -231,12 +309,42 @@ function buildForestTree(project, slot, containerWidth) {
 // Rendert NUR in #forest-trees-layer — Hintergrundbild, Overlay-Header
 // (Titel/Tabs/Suche/Filter) und Legende sind statisches HTML und bleiben
 // beim Neurendern unangetastet stehen.
+//
+// WICHTIG: Die Slot-Positionen (FOREST_SLOTS) sind fest auf die
+// Lichtungen im Hintergrundbild (img/forest.png) abgestimmt — die
+// Baum-Ebene der DESKTOP/TABLET-Ansicht darf deshalb nie verschoben/
+// skaliert werden. Unter MOBILE_FOREST_BREAKPOINT wird stattdessen
+// komplett auf das Lichtungen-Layout verzichtet und ein eigenes,
+// scrollbares 2-Spalten-Raster gerendert (siehe isMobileForestLayout()
+// oben + .forest-grid-mobile in projects.css).
 // =========================
 function renderForest() {
   const container = document.getElementById('project-forest');
   const layer     = document.getElementById('forest-trees-layer');
   if (!container || !layer) return;
   layer.innerHTML = '';
+
+  const mobileGrid = isMobileForestLayout();
+  layer.classList.toggle('forest-grid-mobile', mobileGrid);
+
+  // #project-forest-wrap ist auf Mobile (≤480px) der Scroll-Viewport
+  // (overflow-y:auto, siehe projects.css) — dessen Kopfzeile (Titel +
+  // Archiv/Neues-Projekt-Buttons, .forest-overlay-top) steht als erstes
+  // Element normal im Fluss und müsste bei scrollTop 0 daher immer
+  // vollständig sichtbar sein. Reale Mobilbrowser können die Scroll-
+  // Position aber unabhängig davon verschieben (z.B. beim Ein-/Ausblenden
+  // der Adressleiste, direkt nach dem Öffnen der View, oder wenn während
+  // des Renderns noch Bildhöhen nachträglich einlaufen, NACHDEM diese
+  // Funktion schon fertig ist) — die Buttons rutschen dadurch unter den
+  // oberen Rand. scrollTop hier sowohl sofort als auch nach dem nächsten
+  // Layout/Paint (doppeltes rAF) explizit auf 0 zu erzwingen behebt das
+  // unabhängig von der genauen Ursache; auf Desktop ist #project-forest-wrap
+  // gar nicht scrollbar, die Zeilen sind dort ein No-Op.
+  const forestWrap = document.getElementById('project-forest-wrap');
+  if (forestWrap) {
+    forestWrap.scrollTop = 0;
+    requestAnimationFrame(() => requestAnimationFrame(() => { forestWrap.scrollTop = 0; }));
+  }
 
   updateForestTabCounts();
 
@@ -260,11 +368,10 @@ function renderForest() {
     return;
   }
 
-  // Max. FOREST_SLOTS.length Bäume gleichzeitig sichtbar — feste Anordnung/
-  // Größe pro Slot bleibt dadurch immer gleich, unabhängig von der
-  // Gesamtprojektzahl. Überzählige Projekte landen auf weiteren Waldseiten
-  // statt (wie früher) optisch überlappend in dieselbe Anordnung gequetscht
-  // zu werden.
+  // Max. FOREST_SLOTS.length (14) Bäume gleichzeitig sichtbar — sowohl in
+  // der Desktop-Lichtungen-Anordnung als auch im Mobile-Raster (7 Reihen
+  // x 2 Spalten dort). Überzählige Projekte landen auf weiteren
+  // Waldseiten/-stücken statt optisch überlappend gequetscht zu werden.
   const pageSize   = FOREST_SLOTS.length;
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   if (forestPage >= totalPages) forestPage = totalPages - 1;
@@ -273,7 +380,7 @@ function renderForest() {
   const pageItems = filtered.slice(forestPage * pageSize, forestPage * pageSize + pageSize);
   const containerWidth = container.clientWidth || 1200;
   pageItems.forEach((project, i) => {
-    layer.appendChild(buildForestTree(project, FOREST_SLOTS[i], containerWidth));
+    layer.appendChild(buildForestTree(project, mobileGrid ? null : FOREST_SLOTS[i], containerWidth));
   });
 
   renderForestPager(totalPages);
@@ -348,11 +455,20 @@ switchToForestView();
 // =========================
 let currentDetailProject = null;
 let detailSubLayer = 0;
+// Akkordeon-Zustand der Unterprojekt-Kacheln (Aufgabenliste ein-/
+// ausgeklappt) — reiner UI-Zustand, nicht in DB persistiert. Set aus
+// Unterprojekt-IDs, die gerade EINGEKLAPPT sind (leer = alle offen).
+let collapsedSubprojects = new Set();
+// Gleiches Akkordeon-Verhalten für die Hauptaufgaben-Kachel (einzelne
+// Kachel, daher reicht ein Boolean statt eines Sets).
+let mainTasksCollapsed = false;
 
 function openProjectDetail(projectId) {
   currentDetailProject = projects.find(p => p.id === projectId);
   if (!currentDetailProject) return;
   detailSubLayer = 0;
+  collapsedSubprojects = new Set();
+  mainTasksCollapsed = false;
 
   const dc = document.querySelector('#view-projects .dash-content');
   // forest-active bringt eine feste height:calc(100vh-44px)+overflow:hidden
@@ -532,17 +648,38 @@ function buildMainTasksTile(p) {
   const mainPct   = mainTotal === 0 ? 0 : Math.round(mainDone / mainTotal * 100);
 
   const tile = document.createElement('div');
-  tile.className = 'detail-tile detail-tile-main';
+  tile.className = 'detail-tile detail-tile-main' + (mainTasksCollapsed ? ' collapsed' : '');
 
   const head = document.createElement('div');
-  head.className = 'detail-tile-head';
+  head.className = 'detail-tile-head detail-tile-head--toggle';
+  head.setAttribute('role', 'button');
+  head.setAttribute('tabindex', '0');
+  head.setAttribute('aria-expanded', String(!mainTasksCollapsed));
+
+  const titleWrap = document.createElement('div');
+  titleWrap.className = 'detail-tile-title-wrap';
+  const chevron = document.createElement('span');
+  chevron.className = 'detail-tile-chevron';
+  chevron.textContent = mainTasksCollapsed ? '▸' : '▾';
   const title = document.createElement('div');
   title.className = 'detail-tile-title';
   title.textContent = 'Hauptaufgaben';
+  titleWrap.append(chevron, title);
+
   const meta = document.createElement('div');
   meta.className = 'detail-tile-meta';
   meta.textContent = `${mainDone}/${mainTotal}`;
-  head.append(title, meta);
+  head.append(titleWrap, meta);
+
+  const toggleMainCollapse = () => {
+    mainTasksCollapsed = tile.classList.toggle('collapsed');
+    chevron.textContent = mainTasksCollapsed ? '▸' : '▾';
+    head.setAttribute('aria-expanded', String(!mainTasksCollapsed));
+  };
+  head.addEventListener('click', toggleMainCollapse);
+  head.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleMainCollapse(); }
+  });
 
   const barWrap = document.createElement('div');
   barWrap.className = 'detail-tile-bar-wrap';
@@ -602,19 +739,48 @@ function renderDetailTiles() {
   }
 
   visibleSubs.forEach(sp => {
-    const stats = getSubprojectStats(sp);
+    const stats     = getSubprojectStats(sp);
+    const collapsed = collapsedSubprojects.has(sp.id);
     const tile  = document.createElement('div');
-    tile.className = 'detail-tile';
+    tile.className = 'detail-tile' + (collapsed ? ' collapsed' : '');
 
+    // Akkordeon: Kopfbereich bleibt immer sichtbar, Klick klappt nur die
+    // Aufgabenliste (taskList weiter unten) auf/zu — Fortschrittsbalken +
+    // Kopf bleiben auch eingeklappt sichtbar. Reiner Anzeigezustand (kein
+    // DB-Feld), geht also nie mit echten Aufgaben-/Projektdaten verloren;
+    // collapsedSubprojects wird nur beim Öffnen eines (ggf. anderen)
+    // Projekts zurückgesetzt (siehe openProjectDetail()).
     const head = document.createElement('div');
-    head.className = 'detail-tile-head';
+    head.className = 'detail-tile-head detail-tile-head--toggle';
+    head.setAttribute('role', 'button');
+    head.setAttribute('tabindex', '0');
+    head.setAttribute('aria-expanded', String(!collapsed));
+
+    const titleWrap = document.createElement('div');
+    titleWrap.className = 'detail-tile-title-wrap';
+    const chevron = document.createElement('span');
+    chevron.className = 'detail-tile-chevron';
+    chevron.textContent = collapsed ? '▸' : '▾';
     const title = document.createElement('div');
     title.className = 'detail-tile-title';
     title.textContent = sp.title;
+    titleWrap.append(chevron, title);
+
     const meta = document.createElement('div');
     meta.className = 'detail-tile-meta';
     meta.textContent = `${stats.done}/${stats.total}`;
-    head.append(title, meta);
+    head.append(titleWrap, meta);
+
+    const toggleCollapse = () => {
+      const nowCollapsed = tile.classList.toggle('collapsed');
+      if (nowCollapsed) collapsedSubprojects.add(sp.id); else collapsedSubprojects.delete(sp.id);
+      chevron.textContent = nowCollapsed ? '▸' : '▾';
+      head.setAttribute('aria-expanded', String(!nowCollapsed));
+    };
+    head.addEventListener('click', toggleCollapse);
+    head.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleCollapse(); }
+    });
 
     const barWrap = document.createElement('div');
     barWrap.className = 'detail-tile-bar-wrap';
@@ -781,6 +947,48 @@ document.getElementById('task-type-extra').addEventListener('click', () => {
 });
 
 // =========================
+// PROJEKTINFOS — MOBIL ALS MODAL
+// .pdt-left/.pdt-info-card leben nur einmal im DOM (in der Detail-Hero,
+// index.html) und werden je nach Breite zwischen Hero (Desktop-Grid) und
+// Projektinfos-Modal (#pdt-info-modal-slot) umgehängt statt dupliziert —
+// gleiches Muster wie placeSidebarWidgets() in main.js für die Positivity-/
+// Countdown-Widgets. Der Breakpoint (1024px) MUSS mit dem Mobile-Override
+// in css/projects.css (".pdt-left, .pdt-info-card") übereinstimmen.
+// =========================
+const pdtInfoMobileQuery = window.matchMedia('(max-width: 1024px)');
+function placePdtInfoCard(isMobile) {
+  const left     = document.querySelector('.pdt-left');
+  const infoCard = document.querySelector('.pdt-info-card');
+  const slot     = document.getElementById('pdt-info-modal-slot');
+  const hero     = document.querySelector('.pdt-hero');
+  const treeCol  = document.querySelector('.pdt-tree-col');
+  if (!left || !infoCard || !slot || !hero || !treeCol) return;
+  if (isMobile) {
+    slot.appendChild(left);
+    slot.appendChild(infoCard);
+  } else {
+    // Zurück an ihren ursprünglichen Platz in der Hero (vor der Baumspalte,
+    // Info-Karte danach) — exakt die Reihenfolge aus dem statischen Markup.
+    hero.insertBefore(left, treeCol);
+    hero.appendChild(infoCard);
+  }
+}
+placePdtInfoCard(pdtInfoMobileQuery.matches);
+pdtInfoMobileQuery.addEventListener('change', e => placePdtInfoCard(e.matches));
+
+function openPdtInfoModal() {
+  document.getElementById('proj-detail-info-modal-overlay').classList.remove('hidden');
+}
+function closePdtInfoModal() {
+  document.getElementById('proj-detail-info-modal-overlay').classList.add('hidden');
+}
+document.getElementById('proj-detail-info-btn').addEventListener('click', openPdtInfoModal);
+document.getElementById('proj-detail-info-modal-close').addEventListener('click', closePdtInfoModal);
+document.getElementById('proj-detail-info-modal-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('proj-detail-info-modal-overlay')) closePdtInfoModal();
+});
+
+// =========================
 // DETAIL VIEW EVENTS
 // =========================
 document.getElementById('proj-detail-back').addEventListener('click', closeProjectDetail);
@@ -796,12 +1004,6 @@ const _addBranchVisible = document.getElementById('proj-detail-add-branch-visibl
 if (_addBranchVisible) _addBranchVisible.addEventListener('click', () => {
   if (currentDetailProject) openAddSubprojectModal(currentDetailProject.id);
 });
-// Bearbeiten Button
-const _editBtn = document.getElementById('proj-detail-edit-btn');
-if (_editBtn) _editBtn.addEventListener('click', () => {
-  if (currentDetailProject) openProjectModal(currentDetailProject);
-});
-
 // =========================
 // DETAIL-MENÜ (⋮) — Bearbeiten + Projekt beenden/reaktivieren (Herbstmodus)
 // Gleiches Dropdown-Muster wie budget.js (.b-header-dropdown): an <body>
@@ -823,6 +1025,39 @@ document.addEventListener('click', closePdtMenu);
 document.addEventListener('scroll', closePdtMenu, true);
 window.addEventListener('resize', closePdtMenu);
 
+// Waldansicht bei Größenänderung neu rendern (Rotation, Fold/Unfold,
+// DevTools-Responsive-Modus) — sowohl Baumgrößen (containerWidth in
+// buildForestTree()) als auch der Toolbar-Versatz (updateForestTreesLayerOffset())
+// hängen von der tatsächlichen Fensterbreite/-höhe ab und würden sonst bis
+// zum nächsten Tab/Such/Filter-Wechsel veraltet bleiben. Debounced, da
+// resize sehr häufig feuern kann; nur aktiv, wenn die Waldansicht sichtbar ist.
+let forestResizeTimer = null;
+window.addEventListener('resize', () => {
+  const wrap = document.getElementById('project-forest-wrap');
+  if (!wrap || wrap.style.display === 'none') return;
+  // Sofort (nicht erst nach dem 150ms-Debounce unten) auf 0 zurücksetzen —
+  // reale Mobilbrowser feuern kurz nach dem Laden/Scrollen ein resize
+  // (Adressleiste ein-/ausblenden), das die Scroll-Position von
+  // #project-forest-wrap verschieben kann; ohne diese sofortige Korrektur
+  // wären Titel/Archiv/Neues-Projekt-Buttons (.forest-overlay-top) bis zum
+  // fertigen Re-Render kurz abgeschnitten (siehe renderForest() oben).
+  wrap.scrollTop = 0;
+  clearTimeout(forestResizeTimer);
+  forestResizeTimer = setTimeout(renderForest, 150);
+});
+
+// Detailseite bei Größenänderung neu rendern — der Baum-Breitendeckel in
+// updateDetailTreeElements() (project-tree.js) misst die Hero-Breite live
+// und muss beim Wechsel zwischen Desktop-3-Spalten- und gestapelter
+// Mobile/Tablet-Ansicht (1024px-Grenze) neu berechnet werden.
+let pdtResizeTimer = null;
+window.addEventListener('resize', () => {
+  const detailEl = document.getElementById('view-project-detail');
+  if (!detailEl || detailEl.style.display === 'none' || !currentDetailProject) return;
+  clearTimeout(pdtResizeTimer);
+  pdtResizeTimer = setTimeout(() => updateDetailTreeElements(currentDetailProject), 150);
+});
+
 const pdtMenuBtn = document.getElementById('proj-detail-menu-btn');
 if (pdtMenuBtn) {
   pdtMenuBtn.addEventListener('click', (e) => {
@@ -836,6 +1071,7 @@ if (pdtMenuBtn) {
     const finishLabel = p.archived ? '↩ Projekt reaktivieren' : '🍂 Projekt beenden (Herbstmodus)';
     menu.innerHTML = `
       <button type="button" class="b-header-dropdown-item" id="pdt-menu-edit">✏️ Bearbeiten</button>
+      <button type="button" class="b-header-dropdown-item" id="pdt-menu-customizing">🎨 Customizing</button>
       <button type="button" class="b-header-dropdown-item" id="pdt-menu-finish">${finishLabel}</button>
       <button type="button" class="b-header-dropdown-item" id="pdt-menu-delete">🗑 Projekt löschen</button>
     `;
@@ -847,6 +1083,10 @@ if (pdtMenuBtn) {
     document.getElementById('pdt-menu-edit').addEventListener('click', () => {
       closePdtMenu();
       if (currentDetailProject) openProjectModal(currentDetailProject);
+    });
+    document.getElementById('pdt-menu-customizing').addEventListener('click', () => {
+      closePdtMenu();
+      if (currentDetailProject) openCustomizingModal(currentDetailProject);
     });
     document.getElementById('pdt-menu-finish').addEventListener('click', () => {
       closePdtMenu();
@@ -892,3 +1132,104 @@ if (pdtMenuBtn) {
     });
   });
 }
+
+// =========================
+// CUSTOMIZING-MODAL — welche Obst-/Blumensorten Haupt- bzw. Extraaufgaben
+// beim Erledigen auf dem Baum erzeugen (project.customizing, siehe
+// DECOR_REGISTRY/getCustomizingPool()/ensureTaskDecor() in project-tree.js).
+// Zwei Ebenen Akkordeon (Aufgabenart -> Obst/Blumen), darin je eine
+// Checkbox-Zeile pro DECOR_REGISTRY-Eintrag — komplett datengetrieben, eine
+// neue Sorte in DECOR_REGISTRY taucht hier automatisch mit auf.
+// =========================
+const CUSTOMIZING_TASK_CATEGORIES  = [
+  { key: 'core',  label: 'Hauptaufgaben' },
+  { key: 'extra', label: 'Extraaufgaben' },
+];
+const CUSTOMIZING_DECOR_CATEGORIES = [
+  { key: 'obst',   label: 'Obst' },
+  { key: 'blumen', label: 'Blumen' },
+];
+
+function renderCustomizingModal(project) {
+  if (!project.customizing) project.customizing = {};
+  const registryByCategory = {};
+  Object.values(DECOR_REGISTRY).forEach(entry => {
+    (registryByCategory[entry.category] || (registryByCategory[entry.category] = [])).push(entry);
+  });
+
+  const container = document.getElementById('customizing-sections');
+  container.innerHTML = CUSTOMIZING_TASK_CATEGORIES.map(taskCat => {
+    // Rohe (noch nicht auf einen Default zurückgefallene) Auswahl fürs UI —
+    // ist project.customizing[key] nicht gesetzt, zeigen wir den Default
+    // vorausgewählt an, ohne ihn schon fest zu speichern.
+    const rawSelection = Array.isArray(project.customizing[taskCat.key])
+      ? project.customizing[taskCat.key]
+      : DEFAULT_CUSTOMIZING[taskCat.key];
+
+    const groups = CUSTOMIZING_DECOR_CATEGORIES.map(decorCat => {
+      const items = registryByCategory[decorCat.key] || [];
+      if (!items.length) return '';
+      const rows = items.map(item => `
+        <label class="cust-row">
+          <span class="cust-row-preview"><img src="${item.src}" alt="" draggable="false"/></span>
+          <span class="cust-row-name">${escapeXml(item.label)}</span>
+          <input type="checkbox" class="project-task-cb" data-task-cat="${taskCat.key}" data-decor-id="${item.id}" ${rawSelection.includes(item.id) ? 'checked' : ''}/>
+        </label>
+      `).join('');
+      return `
+        <div class="cust-subgroup">
+          <div class="cust-subgroup-head" data-cust-toggle="subgroup">
+            <span class="cust-chevron">▸</span><span>${decorCat.label}</span>
+          </div>
+          <div class="cust-subgroup-body">${rows}</div>
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <div class="cust-section">
+        <div class="cust-section-head" data-cust-toggle="section">
+          <span>${taskCat.label}</span>
+          <span class="cust-chevron">▸</span>
+        </div>
+        <div class="cust-section-body">${groups}</div>
+      </div>
+    `;
+  }).join('');
+
+  container.querySelectorAll('[data-cust-toggle="section"]').forEach(head => {
+    head.addEventListener('click', () => head.closest('.cust-section').classList.toggle('open'));
+  });
+  container.querySelectorAll('[data-cust-toggle="subgroup"]').forEach(head => {
+    head.addEventListener('click', () => head.closest('.cust-subgroup').classList.toggle('open'));
+  });
+  container.querySelectorAll('.cust-row input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const taskCat = cb.dataset.taskCat;
+      const decorId = cb.dataset.decorId;
+      // Default erst beim ersten Bearbeiten in eine eigene, speicherbare
+      // Liste "materialisieren" — vorher zeigt die UI nur den Default an,
+      // ohne project.customizing unnötig mit Default-Werten vollzuschreiben.
+      if (!Array.isArray(project.customizing[taskCat])) {
+        project.customizing[taskCat] = [...DEFAULT_CUSTOMIZING[taskCat]];
+      }
+      const arr = project.customizing[taskCat];
+      const idx = arr.indexOf(decorId);
+      if (cb.checked && idx === -1) arr.push(decorId);
+      if (!cb.checked && idx !== -1) arr.splice(idx, 1);
+      saveProjects();
+    });
+  });
+}
+
+function openCustomizingModal(project) {
+  renderCustomizingModal(project);
+  document.getElementById('project-customizing-modal-overlay').classList.remove('hidden');
+}
+function closeCustomizingModal() {
+  document.getElementById('project-customizing-modal-overlay').classList.add('hidden');
+}
+document.getElementById('customizing-modal-close').addEventListener('click', closeCustomizingModal);
+document.getElementById('project-customizing-modal-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('project-customizing-modal-overlay')) closeCustomizingModal();
+});

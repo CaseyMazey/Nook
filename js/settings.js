@@ -18,6 +18,10 @@ function renderThemeSettings(){
   picker.querySelectorAll('.theme-picker-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.themeValue === theme);
   });
+  // Eigene Themes + Hintergrundbild (Theme-Builder) — eigenständiges Modul,
+  // gleiches Muster wie renderColorLibrary() unten für die persönlichen Farben.
+  if (typeof renderCustomThemeButtons === 'function') renderCustomThemeButtons();
+  if (typeof renderBgImageSettings === 'function') renderBgImageSettings();
 }
 
 // =========================
@@ -184,6 +188,8 @@ const BACKUP_SHAPE_CHECKS = {
   budgetGoals:     Array.isArray,
   budgetDebts:     Array.isArray,
   deskCards:       Array.isArray,
+  customThemes:    Array.isArray,
+  themeBackgrounds: v => v !== null && typeof v === 'object' && !Array.isArray(v),
 };
 
 document.getElementById('backup-file-input').addEventListener('change', e => {
@@ -257,5 +263,11 @@ function escHtml(str) {
 // =========================
 
 updateHeader();
-showView('today');
+// Reload soll auf der zuletzt geöffneten View landen statt immer auf "today"
+// (siehe URL-Hash-Sync in main.js#showView) — "mehr" ist nur ein mobiles
+// Overlay und daher kein gültiges Ziel für den Initial-Load.
+{
+  const initialView = location.hash.replace(/^#/, '');
+  showView((initialView && initialView !== 'mehr' && viewMap[initialView]) ? initialView : 'today');
+}
 initGames();

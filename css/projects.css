@@ -39,6 +39,10 @@
 .archive-project-row:last-child { border-bottom: none; }
 .archive-project-info { flex: 1; min-width: 0; }
 
+.archive-project-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.archive-project-restore-btn { font-size: 12px; }
+.archive-project-delete-btn { font-size: 12px; color: var(--prio-1); border-color: var(--prio-1); }
+
 /* =========================
    PROJEKTWALD CONTAINER — Vollbild-Landschaft
    Das Hintergrundbild (img/forest.png) füllt die gesamte verfügbare Fläche
@@ -150,16 +154,27 @@
 /* Reiner Layout-Wrapper — kein gemeinsamer Hintergrundbalken mehr. Jedes
    Control (Tabs, Suche, Filter-Button) trägt sein eigenes "Glas"-Pill und
    schwebt einzeln über der Landschaft, statt in einem langen Balken zu
-   stecken. */
+   stecken.
+   flex-wrap:nowrap + overflow-x:auto statt wrap: die Baum-Positionen
+   (FOREST_SLOTS, forest.js) sind fest auf die Lichtungen im
+   Hintergrundbild abgestimmt und dürfen sich nie verschieben — bricht die
+   Toolbar auf schmalen Screens in mehrere Zeilen um, wächst sie in die
+   Baumfläche hinein. Bleibt sie stattdessen immer genau eine Zeile hoch
+   und scrollt bei Bedarf seitlich weg, bleibt die Baum-Lichtung-Zuordnung
+   auf jeder Breite unangetastet. */
 .forest-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
+.forest-toolbar::-webkit-scrollbar { display: none; }
 
-.forest-tabs { display: flex; gap: 10px; flex-wrap: wrap; }
+.forest-tabs { display: flex; gap: 10px; flex-wrap: nowrap; flex-shrink: 0; }
 .forest-tab {
   display: flex;
   align-items: center;
@@ -182,7 +197,7 @@
 .forest-tab.active .forest-tab-count { color: var(--sage-fg); opacity: 0.85; }
 .forest-tab-count { font-family: var(--mono); font-size: 11px; color: var(--text-3); }
 
-.forest-toolbar-right { display: flex; align-items: center; gap: 10px; }
+.forest-toolbar-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 
 .forest-search-wrap {
   position: relative;
@@ -392,7 +407,18 @@
 .pdt-action-btn:hover { color: var(--text); }
 .pdt-menu-btn { padding: 7px 11px; }
 
-/* ── HERO ── */
+/* "i"-Infobutton — öffnet auf Mobile das Projektinfos-Modal (siehe
+   RESPONSIVE weiter unten + placePdtInfoCard()/proj-detail-info-modal-*
+   in forest.js). Auf Desktop steht die Infokarte bereits permanent daneben
+   (.pdt-info-card), daher hier unconditional ausgeblendet — sichtbar wird
+   er ausschließlich über das display:flex in der ≤1024px-Media-Query. */
+.pdt-info-btn { display: none; padding: 7px 11px; }
+
+/* ── HERO ──
+   Desktop: klassisches 3-Spalten-Layout (Projektinfo-Text / Baum / Info-
+   Karte) — siehe RESPONSIVE weiter unten für die schmalere Variante (Baum
+   bleibt wie auf Desktop vollflächig & zentriert, Infokarte wandert in ein
+   Modal statt daneben/darunter zu liegen). */
 .pdt-hero {
   position: relative;
   display: grid;
@@ -468,6 +494,7 @@
   line-height: 1.7; margin: 0;
   max-width: 280px;
 }
+.pdt-project-desc:empty { display: none; }
 
 /* Fortschritt */
 .pdt-progress-section { display: flex; flex-direction: column; gap: 4px; margin-top: 2px; }
@@ -609,6 +636,20 @@
   padding: 16px 18px 10px;
 }
 
+/* Akkordeon-Kopf (nur Unterprojekt-Kacheln — die Hauptaufgaben-Kachel
+   bleibt unabhängig davon immer aufgeklappt, siehe buildMainTasksTile()). */
+.detail-tile-head--toggle { cursor: pointer; user-select: none; border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
+.detail-tile-head--toggle:hover { background: var(--bg); }
+.detail-tile-title-wrap { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.detail-tile-chevron {
+  flex-shrink: 0; width: 12px; text-align: center;
+  font-size: 10px; color: var(--text-3);
+}
+.detail-tile.collapsed .detail-tile-tasks { display: none; }
+/* Fortschrittsbalken bleibt auch eingeklappt sichtbar — Zustand des
+   Unterprojekts soll auf einen Blick erkennbar bleiben. */
+.detail-tile.collapsed .detail-tile-bar-wrap { margin-bottom: 16px; }
+
 /* Breitere, sichtbarere Progressbar */
 .detail-tile-bar-wrap {
   height: 5px; background: var(--bg);
@@ -674,6 +715,58 @@
 .task-cl-label { flex: 1; font-size: 13px; color: var(--text); }
 .task-cl-row.done .task-cl-label { text-decoration: line-through; color: var(--text-3); }
 
+/* ── CUSTOMIZING-MODAL — Obst-/Blumenauswahl je Aufgabenart ──
+   Zwei Ebenen Akkordeon: .cust-section (Hauptaufgaben/Extraaufgaben) enthält
+   .cust-subgroup (Obst/Blumen), darin je eine Checkbox-Zeile pro Sorte
+   (.cust-row). Aufklappen per .open-Klasse (JS, siehe renderCustomizingModal()
+   in forest.js) statt :checked-Hack, damit mehrere Ebenen unabhängig
+   voneinander offen bleiben können. */
+.cust-section {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.cust-section-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px;
+  font-size: 13.5px; font-weight: 600; color: var(--text);
+  cursor: pointer; user-select: none;
+}
+.cust-section-head:hover { background: var(--bg); }
+.cust-section-body { display: none; padding: 0 16px 12px; }
+.cust-section.open > .cust-section-body { display: block; }
+.cust-section.open > .cust-section-head { border-bottom: 1px solid var(--border); }
+
+.cust-chevron { font-size: 10px; color: var(--text-3); transition: transform 150ms ease; display: inline-block; }
+.cust-section.open > .cust-section-head .cust-chevron,
+.cust-subgroup.open > .cust-subgroup-head .cust-chevron { transform: rotate(90deg); }
+
+.cust-subgroup { margin-top: 6px; }
+.cust-subgroup:first-child { margin-top: 10px; }
+.cust-subgroup-head {
+  display: flex; align-items: center; gap: 7px;
+  padding: 7px 4px;
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em;
+  color: var(--text-3);
+  cursor: pointer; user-select: none;
+}
+.cust-subgroup-body { display: none; padding: 2px 0 4px; }
+.cust-subgroup.open .cust-subgroup-body { display: block; }
+
+.cust-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 6px; border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.cust-row:hover { background: var(--bg); }
+.cust-row-preview {
+  width: 26px; height: 26px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.cust-row-preview img { width: 24px; height: 24px; object-fit: contain; }
+.cust-row-name { flex: 1; font-size: 13px; color: var(--text); }
+
 /* ── WALD ── */
 /* #project-forest-Größe -> aspect-ratio-Regel weiter oben in dieser Datei
    (hält das Seitenverhältnis von img/forest.png ein, siehe Kommentar dort) */
@@ -691,32 +784,285 @@
 /* =============================================================
    RESPONSIVE
    .pdt-tiles-grid nutzt bereits auto-fill/minmax und braucht keine
-   Breakpoints. Die Hero (28%/44%/28%-Spalten,
-   ~60vh Höhe) verträgt sich dagegen nicht mit schmaleren Breiten — die
-   stapeln wir stattdessen (Höhe dann content-getrieben statt 60vh).
+   Breakpoints. Der Hero dagegen: Basisregeln oben sind reines DESKTOP-
+   Layout (3 Spalten: Text / Baum / Info-Karte, siehe .pdt-hero) — das
+   verträgt sich nicht mit schmaleren Breiten. UNTERHALB von 1024px
+   verlassen .pdt-left/.pdt-info-card die Hero komplett (sie werden per JS
+   in ein Modal umgehängt, siehe placePdtInfoCard() in forest.js) — der
+   Baum bleibt als einziger Hero-Inhalt exakt bei der Desktop-Mechanik
+   (absolut, zentriert, siehe project-tree.css, dort KEIN Mobile-Override).
+   WICHTIG: alles hier drin gilt NUR unterhalb des Breakpoints — Desktop
+   bleibt dadurch exakt bei den Basisregeln oben.
 ============================================================= */
 @media (max-width: 1024px) {
-  .pdt-hero { grid-template-columns: 1fr; height: auto; min-height: 0; }
-  .pdt-left { padding: 22px 24px 8px; }
-  .pdt-project-name { font-size: 38px; }
-  /* Die volle-Hero-Überlagerung der Baumspalte (siehe project-tree.css) gilt
-     nur für das 3-Spalten-Desktop-Layout — hier wird wieder normal gestapelt.
-     .pdt-tree-col hat dann keine definierte Höhe mehr (normaler Fluss statt
-     inset:0 auf die Hero) — height:100% auf Wrap/Bild würde sich sonst auf
-     "auto" zurückfallen (Prozenthöhe gegen unbestimmte Elternhöhe) und die
-     Bild-Originalgröße rendern. Deshalb hier zurück auf breitenbasiert. */
-  .pdt-tree-col { position: relative; inset: auto; align-items: center; min-height: 260px; padding: 0; }
-  .pdt-tree-wrap { height: auto; width: min(400px, 85%); }
-  .pdt-tree-img { height: auto; width: 100%; }
-  .pdt-info-card { grid-column: 1; margin: 0 24px 22px; max-width: none; width: auto; }
+  /* .view-Padding sinkt hier auf 20px/16px (36px gesamt, main.css) — die
+     Wald-/Detailhöhe war fest auf den Desktop-Wert (44px) gerechnet und
+     damit hier zu hoch: Waldbäume + Legende ragten über den sichtbaren
+     Bereich hinaus (nur per Scroll erreichbar, Toolbar scrollte mit weg). */
+  .dash-content.forest-active { height: calc(100vh - 36px); }
+  .dash-content.pdt-active { min-height: calc(100vh - 36px); }
+
+  /* ── HERO (mobil/schmal) ──
+     Einzige Änderung ggü. Desktop: die Hero-Höhe selbst (Baummechanik
+     bleibt unangetastet). Auf Desktop ist die Hero deutlich breiter als
+     hoch (60vh in einer 1000px+ breiten Spalte) — dieselbe vh-Höhe würde
+     auf einem schmalen Hochformat-Handy den Baum (Seitenverhältnis der
+     PNGs: ~1.09, minimal breiter als hoch) BREITER als den Viewport
+     machen und mit dem geerbten overflow:hidden seitlich zuschneiden.
+     min(70vh, 91vw) deckelt die Höhe deshalb zusätzlich an der Viewport-
+     BREITE (91vw statt 100vw als kleine Sicherheitsmarge) — die
+     Baumbreite kann den Viewport dadurch rechnerisch nie überschreiten.
+     Ergebnis: großer, randnaher, aber garantiert vollständig sichtbarer
+     Baum, exakt zentriert wie auf Desktop — nicht vergrößert (folgt weiter
+     nur dem Seitenverhältnis), nicht verschoben (gleiches align/justify
+     wie Desktop), nicht zugeschnitten. */
+  .pdt-hero {
+    height: min(70vh, 91vw);
+    min-height: 0;
+    max-height: none;
+  }
+
+  /* Der neue "i"-Button in der Toolbar öffnet das Projektinfos-Modal
+     (siehe .pdt-info-btn oben + DETAIL VIEW EVENTS in forest.js). */
+  .pdt-info-btn { display: flex; }
+
+  /* ── PROJEKTINFOS-MODAL-INHALT ──
+     .pdt-left/.pdt-info-card bleiben zwei eigene DOM-Elemente (fürs
+     Desktop-Grid oben nötig), werden aber per placePdtInfoCard() in
+     #pdt-info-modal-slot umgehängt (index.html/forest.js) statt in der
+     Hero zu stehen. .modal-backdrop/.modal-box (main.css) sind die
+     normale App-Modal-Komponente inkl. max-height:90vh + overflow-y:auto
+     — hier daher nur der Innenlook: EINE zusammenhängende Karte statt
+     zwei getrennter Blöcke, ohne die Desktop-Glasoptik (im Modal gibt es
+     kein Baumbild mehr, das durchscheinen müsste). */
+  .pdt-left, .pdt-info-card {
+    grid-column: auto;
+    width: auto;
+    max-width: none;
+    margin: 0;
+    background: none;
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
+    padding: 0;
+  }
+  .pdt-left { padding-bottom: 12px; border-bottom: 1px solid var(--border); gap: 8px; }
+  .pdt-info-card { padding-top: 12px; }
+
+  .pdt-status-badge { font-size: 9px; padding: 2px 10px; }
+  .pdt-project-name { font-size: 24px; text-shadow: none; }
+  .pdt-project-desc { max-width: none; font-size: 13px; line-height: 1.5; }
+  .pdt-project-desc:empty { display: none; }
+  .pdt-progress-section { margin-top: 0; }
+  .pdt-progress-pct-wrap { max-width: 100%; }
+
+  .pdt-info-card-title { margin-bottom: 6px; }
+  .pdt-info-item { padding: 6px 0; }
+  .pdt-info-divider { margin: 8px 0; }
+  .pdt-info-quote { font-size: 12px; }
 }
 
 @media (max-width: 480px) {
+  /* .view-Padding wächst hier auf 20px oben + (56px Bottom-Nav + Safe-Area
+     + 16px) unten (main.css) — muss hier gegengerechnet werden, sonst
+     derselbe Effekt wie oben (≤1024px), nur zusätzlich hinter der fixen
+     Bottom-Nav statt nur außerhalb des Viewports verborgen. */
+  .dash-content.forest-active {
+    height: calc(100vh - 92px - env(safe-area-inset-bottom, 0px));
+  }
+  .dash-content.pdt-active {
+    min-height: calc(100vh - 92px - env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Toolbar-Header kompakter. Die Basisregel macht .forest-toolbar
+     einzeilig + seitlich scrollbar (nowrap), damit sie auf Tablet/
+     Zwischenbreiten (481-1024px, dort noch Desktop-Lichtungen-Layout)
+     nicht in die Baumfläche hineinwächst. Auf Mobile (hier) liegt die
+     Toolbar dank der Rasteransicht unten aber bereits in normalem
+     Fluss VOR dem Baumraster (position:static) — Umbrechen kann dort
+     also nichts mehr überlappen. Deshalb hier zurück auf zweizeiliges
+     Umbrechen statt seitlichem Scrollen (auf Wunsch besser bedienbar
+     als Sidescroll durch die Tabs). */
+  .forest-toolbar { flex-wrap: wrap; overflow-x: visible; }
+  .forest-tabs { flex-wrap: wrap; gap: 6px; }
+  /* Enger gepackt und höher: Header (nur noch der Titel — Archiv/Neues-
+     Projekt sitzen hier unten in der Toolbar, siehe .forest-action-icon-btn)
+     und Tabs/Suche saßen zusammen recht weit unten/nahmen viel Höhe ein —
+     weniger Innenabstand rückt alles näher an den oberen Rand. */
+  .forest-overlay-top { padding: 8px 10px; gap: 4px; }
+  .forest-overlay-header-row { gap: 6px; }
+  .forest-overlay-title { font-size: 19px; }
+  .forest-overlay-subtitle { display: none; }
+  .forest-tab { padding: 6px 10px; font-size: 12px; }
+  .forest-search-input { width: 120px; padding: 7px 10px 7px 30px; }
+
+  /* Archiv/Neues-Projekt als kompakte Icon-Buttons neben dem Prioritäts-
+     Filter (.forest-filter-btn, gleiche 34x34-Glas-Button-Größe) statt als
+     Text-Pills in der Titelzeile — per JS (placeForestActionButtons() in
+     forest.js) hierher umgehängt. Farben bleiben die von .btn-ghost/
+     .btn-primary (unverändert, nur hier neu zugeschnitten). */
+  .forest-action-icon-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border-radius: var(--radius-lg);
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  /* =========================================================
+     WALD-RASTERANSICHT (MOBILE) — eigenes Layout statt der Desktop-
+     Lichtungen-Positionierung (siehe isMobileForestLayout()/
+     MOBILE_FOREST_BREAKPOINT in forest.js — MUSS mit diesem 480px-Wert
+     übereinstimmen). Grund: die feste Baum/Lichtung-Zuordnung lässt sich
+     auf schmalen Screens nicht gleichzeitig mit einer bedienbaren
+     Toolbar UND zuverlässig anklickbaren Bäumen halten. Ab hier daher
+     ein eigenes 2-Spalten-Raster, das vertikal scrollt statt alle 14
+     Bäume ins Fenster zu quetschen — Bäume bleiben dabei groß/gleich
+     statt kleiner zu werden.
+
+     #project-forest-wrap wird zum Scroll-Viewport (bleibt fix hoch,
+     siehe .dash-content.forest-active oben), #project-forest zur
+     intrinsisch hohen Fläche darin. Dadurch deckt .forest-bg
+     (position:absolute; inset:0) automatisch die GESAMTE scrollbare
+     Höhe ab statt nur den anfangs sichtbaren Ausschnitt — inset:0 einer
+     absolut positionierten Ebene bezieht sich auf die Boxhöhe des
+     nächsten positionierten Vorfahren (hier #project-forest), und dessen
+     Höhe hängt jetzt am Inhalt (Toolbar + Raster + Legende) statt fix zu
+     sein.
+  ========================================================= */
+  #project-forest-wrap {
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    /* Ohne dies verschiebt "Scroll Anchoring" des Browsers die Scroll-
+       Position automatisch nach unten, sobald sich die Höhe des Rasters
+       oberhalb des sichtbaren Bereichs ändert (z.B. Adressleiste ein-/
+       ausblenden, Drehung, kurze Bildschirmhöhen) — dadurch rutschten
+       "Projektwald"-Titel + Toolbar (.forest-overlay-top, erstes Element im
+       Scroll-Fluss) aus dem sichtbaren Bereich, obwohl scrollTop eigentlich
+       0 sein sollte. */
+    overflow-anchor: none;
+  }
+  #project-forest {
+    height: auto;
+    min-height: 100%;
+    overflow: visible;
+  }
+  /* position:relative statt static — layoutmäßig identisch (kein eigener
+     top/left/right/bottom-Versatz), aber .forest-overlay-top bleibt dadurch
+     ein "positioniertes" Element. Mit position:static rendert Chrome
+     Inhalte, die NACH dem ersten Paint innerhalb dieses Containers
+     verändert werden (Flex-Umbruch bei schmalem Titel+Buttons, per JS
+     umgehängte/neu erzeugte Elemente wie die Icon-Buttons unten), nicht
+     mehr — Layout/Klickbarkeit bleiben dabei korrekt, nur die Pixel fehlen.
+     position:relative behebt das zuverlässig, ohne am Layout etwas zu
+     ändern (mehrfach reproduziert/verifiziert). */
+  #project-forest .forest-overlay-top { position: relative; }
+
+  /* Feste, gleichmäßige Rasterplätze statt Lichtungen-Positionen —
+     width:100% je Baum füllt seine Spalte (buildForestTree() setzt bei
+     slot===null keine Inline-Position/-Größe mehr, siehe forest.js). */
+  #forest-trees-layer.forest-grid-mobile {
+    position: static;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    align-items: start;
+    justify-items: center;
+    gap: 34px 14px;
+    padding: 20px 16px 8px;
+  }
+  #forest-trees-layer.forest-grid-mobile .forest-tree-wrap {
+    position: relative;
+    left: auto; top: auto; z-index: auto;
+    width: 100%;
+    transform: none;
+  }
+  #forest-trees-layer.forest-grid-mobile .forest-tree-wrap:hover,
+  #forest-trees-layer.forest-grid-mobile .forest-tree-wrap:active {
+    transform: translateY(-4px);
+    z-index: 2;
+  }
+  #forest-trees-layer.forest-grid-mobile .forest-empty {
+    position: static;
+    top: auto; left: auto; transform: none;
+    grid-column: 1 / -1;
+    padding: 40px 12px;
+  }
+
+  /* Pfeile/Legende/Punkte fließen jetzt unterhalb des Rasters statt über
+     dem Bild zu schweben — gleiche Bedienung (Waldstück weiter/zurück),
+     nur nicht mehr als floatende Overlays. */
+  #project-forest .forest-page-arrow {
+    position: static;
+    top: auto; left: auto; right: auto; transform: none;
+    width: calc(100% - 32px);
+    height: 44px;
+    border-radius: var(--radius-lg);
+    margin: 0 16px 10px;
+  }
+  #project-forest .forest-legend {
+    position: static;
+    left: auto; bottom: auto; transform: none;
+    width: auto; max-width: none;
+    margin: 4px 16px 16px;
+  }
+  #project-forest .forest-page-dots {
+    position: static;
+    left: auto; bottom: auto; transform: none;
+    justify-content: center;
+    margin: 4px 0 14px;
+  }
+
   .pdt-hero { border-radius: var(--radius-lg); }
-  .pdt-left { padding: 18px 16px 6px; }
-  .pdt-project-name { font-size: 28px; }
-  .pdt-project-desc { max-width: none; }
-  .pdt-info-card { margin: 0 16px 18px; }
+  .pdt-project-name { font-size: 22px; }
+  .pdt-project-desc { font-size: 12.5px; }
   .pdt-tasks-section { padding: 20px 16px 32px; }
   .pdt-tasks-header { flex-wrap: wrap; gap: 10px; }
+
+  /* ── ARCHIV-MODAL — Projektzeilen ──
+     Die Basisregel (oben) stellt Name/Meta und die beiden Aktions-Buttons
+     nebeneinander in einer Zeile (align-items:center) — auf schmalen
+     Screens reicht die Breite dafür nicht, der Meta-Text (mehrere
+     Kennzahlen durch "·" getrennt) bricht auf mehrere Zeilen um, während
+     die vertikal zentrierten Buttons mittig darüber schweben und den Text
+     verdecken. Auf Mobile deshalb gestapelt: Info oben, Buttons darunter
+     als eigene volle Zeile (align-items:stretch, damit .archive-project-
+     actions die ganze Breite bekommt und die Buttons sich per flex:1
+     gleichmäßig darauf verteilen können) statt sich den Platz zu teilen.
+     Mit #project-archive-list vorangestellt (statt nur .archive-project-row)
+     — höhere Spezifität, damit diese Regel unabhängig von der Reihenfolge
+     verschiedener Stylesheets sicher vor der Basisregel gewinnt. */
+  #project-archive-list .archive-project-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 14px 0;
+  }
+  #project-archive-list .archive-project-actions { gap: 8px; }
+  #project-archive-list .archive-project-restore-btn,
+  #project-archive-list .archive-project-delete-btn {
+    flex: 1;
+    text-align: center;
+    font-size: 12.5px;
+    padding: 8px 10px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TOUCH — Umbenennen/Verschieben/Löschen je Aufgabenzeile sind rein
+   hover-gesteuert (opacity:0, erst bei Zeilen-Hover sichtbar). Auf
+   Geräten ohne Hover war das nicht nur unsichtbar, sondern unbedienbar
+   (gleiches Problem wie zuvor bei Pinnwand-Karten, siehe pinboard.css).
+   @media(hover:none) statt einer Breitenschwelle, weil die eigentliche
+   Bedingung "kein Hover verfügbar" ist, nicht "schmaler Viewport".
+═══════════════════════════════════════════════════════════ */
+@media (hover: none) {
+  .detail-tile-task-actions { opacity: 0.55; }
+  .detail-tile-task-row:active .detail-tile-task-actions { opacity: 1; }
 }

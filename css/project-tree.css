@@ -139,15 +139,11 @@
    DETAILBAUM-SPALTE (PNG-Baum, dieselbe Variante wie im Projektwald)
 ========================= */
 .pdt-tree-col {
-  /* Absolut über die GESAMTE Hero gelegt (nicht die 44%-Grid-Spalte) —
-     dadurch zentriert sich der Baum immer exakt auf 50% der kompletten
-     Baumkachel inkl. Projektinfos-Spalte, unabhängig von deren tatsächlich
-     gerenderter Breite (Grid-Tracks können durch Inhalt/min-content breiter
-     werden als ihr %-Wert). .pdt-left/.pdt-info-card bekommen dafür feste
-     grid-column-Plätze (siehe projects.css), da sie durch das Herausnehmen
-     der Baumspalte aus dem Grid-Fluss sonst nachrücken würden. Rein
-     dekorativ (Baum + Deko haben pointer-events:none) -> Klicks auf
-     Projektinfos/Textbereich bleiben unangetastet.
+  /* Absolut über die GESAMTE Hero gelegt -> der Baum zentriert sich immer
+     exakt auf 50% der Hero, unabhängig von der Glaskarte (.pdt-info-card,
+     projects.css), die separat und unten drüber liegt. Rein dekorativ
+     (Baum + Deko haben pointer-events:none) -> Klicks auf der Karte
+     bleiben unangetastet.
   */
   position: absolute;
   inset: 0;
@@ -173,6 +169,11 @@
 
 .pdt-tree-wrap { position: relative; height: 100%; }
 .pdt-tree-img {
+  /* Füllt die volle Hero-Höhe (berührt oben+unten den Rand), Breite folgt
+     dem Seitenverhältnis -> "groß und vollständig sichtbar", unabhängig
+     von der Glaskarte darüber (die liegt bewusst ÜBER dem unteren
+     Baumbereich, siehe .pdt-info-card in projects.css, statt den Baum zu
+     verdrängen). */
   height: 100%;
   width: auto;
   display: block;
@@ -180,9 +181,11 @@
   filter: drop-shadow(0 16px 16px rgba(30,25,10,0.25));
 }
 
-/* Äpfel/Blüten-Deko — rein dekorativ, oben auf der Baumkrone platziert
-   (Positionen: APPLE_SLOTS/BLOSSOM_SLOTS in project-tree.js). Die eigentliche
-   Interaktion (abhaken, Details) läuft über die Äste-Kacheln darunter. */
+/* Obst-/Blumen-Deko — rein dekorativ, oben auf der Baumkrone platziert
+   (Positionen: generateCanopySlots() in project-tree.js). Welches konkrete
+   Objekt (Apfel, Kirschblüte, ...) das ist, kommt aus DECOR_REGISTRY/
+   task.decorId (ebenfalls project-tree.js) — die Interaktion selbst
+   (abhaken, Details) läuft weiterhin über die Äste-Kacheln darunter. */
 .pdt-tree-decor { position: absolute; inset: 0; pointer-events: none; }
 .pdt-tree-decor-item {
   position: absolute;
@@ -192,4 +195,15 @@
   object-fit: contain;
   filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
 }
-.pdt-tree-decor-flower { width: 20px; height: 20px; }
+/* Blumen (category:'blumen' in DECOR_REGISTRY) etwas kleiner als Obst —
+   optisch näher an der Größe einer echten Blüte. */
+.pdt-tree-decor-blumen { width: 20px; height: 20px; }
+
+/* Kein Mobile-Override mehr für .pdt-tree-col/.pdt-tree-img — der Baum
+   bleibt auf JEDER Breite exakt die Desktop-Mechanik oben (absolut,
+   inset:0, Höhe=100% der Hero, Breite folgt dem Seitenverhältnis). Die
+   Infokarte liegt auf Mobile nicht mehr im selben Bereich (sie wandert
+   per JS in ein Modal, siehe placePdtInfoCard() in forest.js) und kann
+   den Baum daher nicht mehr verdecken — die Hero-Höhe allein (projects.css)
+   steuert, wie groß/dominant der Baum auf Mobile wirkt.
+========================= */
