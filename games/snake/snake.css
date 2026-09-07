@@ -4,6 +4,55 @@
 ========================= */
 
 .snake-wrap { display: flex; flex-direction: column; align-items: center; gap: 12px; }
-.snake-canvas { border-radius: var(--radius); border: 1.5px solid var(--border-strong); }
+.snake-canvas {
+  border-radius: var(--radius);
+  border: 1.5px solid var(--border-strong);
+  max-width: 100%;
+  height: auto;
+  display: block;
+  touch-action: none; /* Swipe-Gesten auf dem Canvas steuern statt Scrollen/Zoomen */
+}
 .snake-status { font-size: 14px; font-weight: 600; color: var(--text-2); min-height: 20px; }
 .snake-hint { font-size: 12px; color: var(--text-3); }
+
+/* =========================
+   TOUCH-STEUERKREUZ
+   Nur auf Geräten ohne präzisen Zeiger (Touch) sichtbar — auf dem Desktop
+   steuert man mit Pfeiltasten/WASD, das Kreuz wäre dort nur Ballast.
+========================= */
+
+.snake-touch-controls {
+  display: none;
+  grid-template-columns: repeat(3, 52px);
+  grid-template-rows: repeat(2, 52px);
+  grid-template-areas:
+    ".    up    ."
+    "left down right";
+  gap: 8px;
+}
+
+@media (pointer: coarse) {
+  .snake-touch-controls { display: grid; }
+}
+
+/* Fallback für Geräte, bei denen "pointer: coarse" nicht zuverlässig
+   greift (z.B. manche Hybrid-Tablets/In-App-Browser) — snake.js erkennt
+   Touch-Unterstützung zusätzlich per JS und setzt diese Klasse. */
+.snake-wrap.has-touch .snake-touch-controls { display: grid; }
+
+.snake-touch-btn {
+  border-radius: var(--radius);
+  border: 1.5px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 20px;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background var(--transition), border-color var(--transition);
+}
+.snake-touch-btn:active { background: var(--sage-bg); border-color: var(--sage); }
+
+.snake-touch-up    { grid-area: up; }
+.snake-touch-left  { grid-area: left; }
+.snake-touch-down  { grid-area: down; }
+.snake-touch-right { grid-area: right; }

@@ -122,20 +122,49 @@
     });
   }
 
+  // Gemeinsamer Richtungswechsel für Tastatur, Touch-Kreuz und Swipe-Gesten.
+  // Eine 180°-Wende wird ignoriert (state.nextDir bleibt unverändert), aber
+  // das Spiel muss trotzdem starten — sonst bleibt ein erster Tap auf die
+  // "Gegenrichtung" (z.B. "Links" direkt nach dem Öffnen, während die
+  // Schlange nach rechts startet) wirkungslos, ohne jedes Feedback.
+  function setDirection(nd) {
+    if (!nd) return;
+    const reversed = nd.x === -state.dir.x && nd.y === -state.dir.y;
+    if (!reversed) state.nextDir = nd;
+    if (!state.running) start();
+  }
+
+  const DIR_MAP = { up: { x: 0, y: -1 }, down: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } };
+
   function handleKey(e) {
     const map = {
-      ArrowUp: { x: 0, y: -1 }, ArrowDown: { x: 0, y: 1 }, ArrowLeft: { x: -1, y: 0 }, ArrowRight: { x: 1, y: 0 },
-      w: { x: 0, y: -1 }, s: { x: 0, y: 1 }, a: { x: -1, y: 0 }, d: { x: 1, y: 0 },
-      W: { x: 0, y: -1 }, S: { x: 0, y: 1 }, A: { x: -1, y: 0 }, D: { x: 1, y: 0 }
+      ArrowUp: DIR_MAP.up, ArrowDown: DIR_MAP.down, ArrowLeft: DIR_MAP.left, ArrowRight: DIR_MAP.right,
+      w: DIR_MAP.up, s: DIR_MAP.down, a: DIR_MAP.left, d: DIR_MAP.right,
+      W: DIR_MAP.up, S: DIR_MAP.down, A: DIR_MAP.left, D: DIR_MAP.right
     };
     if (e.key === ' ') { e.preventDefault(); if (!state.running) start(); return; }
     if (map[e.key]) {
       e.preventDefault();
-      const nd = map[e.key];
-      if (nd.x === -state.dir.x && nd.y === -state.dir.y) return;
-      state.nextDir = nd;
-      if (!state.running) start();
+      setDirection(map[e.key]);
     }
+  }
+
+  // Swipe-Erkennung auf dem Canvas selbst — die Achse mit der größeren
+  // Auslenkung bestimmt die Richtung, kurze Taps (< 20px) werden ignoriert.
+  let touchStart = null;
+
+  function handleTouchStart(e) {
+    const t = e.changedTouches[0];
+    touchStart = { x: t.clientX, y: t.clientY };
+  }
+
+  function handleTouchEnd(e) {
+    if (!touchStart) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - touchStart.x, dy = t.clientY - touchStart.y;
+    touchStart = null;
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < 20) return;
+    setDirection(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? DIR_MAP.right : DIR_MAP.left) : (dy > 0 ? DIR_MAP.down : DIR_MAP.up));
   }
 
   // ---- Lifecycle (wird vom Hub aufgerufen) ----
@@ -145,7 +174,13 @@
       <div class="snake-wrap">
         <canvas id="snake-canvas-el" width="${SIZE}" height="${SIZE}" class="snake-canvas"></canvas>
         <div class="snake-status" id="snake-status-el"></div>
-        <div class="snake-hint" id="snake-hint-el">Leertaste oder Pfeiltasten zum Starten</div>
+        <div class="snake-hint" id="snake-hint-el">Leertaste/Pfeiltasten zum Starten, auf dem Handy wischen oder das Kreuz nutzen</div>
+        <div class="snake-touch-controls">
+          <button class="snake-touch-btn snake-touch-up" data-dir="up" aria-label="Hoch">▲</button>
+          <button class="snake-touch-btn snake-touch-left" data-dir="left" aria-label="Links">◀</button>
+          <button class="snake-touch-btn snake-touch-down" data-dir="down" aria-label="Runter">▼</button>
+          <button class="snake-touch-btn snake-touch-right" data-dir="right" aria-label="Rechts">▶</button>
+        </div>
         <button class="game-action-btn" id="snake-reset-el">Neu starten</button>
       </div>
     `;
@@ -158,7 +193,20 @@
     state.canvas = els.canvas;
     state.ctx = els.canvas.getContext('2d');
 
+    // "pointer: coarse" allein erkennt Touch nicht auf jedem Gerät zuverlässig
+    // (siehe snake.css) — zusätzlich per JS prüfen und das Touch-Kreuz notfalls
+    // erzwingen, sonst haben Nutzer ohne Tastatur keinerlei Steuerung.
+    if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+      container.querySelector('.snake-wrap').classList.add('has-touch');
+    }
+
     container.querySelector('#snake-reset-el').addEventListener('click', () => { stop(); reset(); draw(); });
+
+    els.canvas.addEventListener('touchstart', handleTouchStart, { passive: true });
+    els.canvas.addEventListener('touchend', handleTouchEnd, { passive: true });
+    container.querySelectorAll('.snake-touch-btn').forEach(btn => {
+      btn.addEventListener('click', () => setDirection(DIR_MAP[btn.dataset.dir]));
+    });
 
     // Tastatur-Listener nur, solange Snake im Modal offen ist (siehe destroy()).
     keyHandler = handleKey;

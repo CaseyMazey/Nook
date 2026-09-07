@@ -49,7 +49,11 @@
     els.board.innerHTML = '';
     const total = state.pairs * 2;
     const cols = total <= 6 ? 3 : total <= 12 ? 4 : 5;
-    els.board.style.gridTemplateColumns = `repeat(${cols}, 70px)`;
+    // 70px ist die Idealgröße pro Karte auf großen Screens — auf schmalen
+    // Viewports (Handy) schrumpft das Board stattdessen auf 100% Breite,
+    // die Karten bleiben über aspect-ratio quadratisch (siehe memory.css).
+    els.board.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+    els.board.style.width = `min(${cols * 70 + (cols - 1) * 10}px, 100%)`;
 
     state.cards.forEach((card, idx) => {
       const el = document.createElement('div');

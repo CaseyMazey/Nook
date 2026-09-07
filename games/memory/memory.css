@@ -11,9 +11,9 @@
 
 .memory-slider { width: 100%; }
 
-.memory-board { display: grid; gap: 10px; justify-content: center; }
+.memory-board { display: grid; gap: 10px; justify-content: center; margin: 0 auto; }
 
-.mem-card { width: 70px; height: 70px; perspective: 600px; cursor: pointer; }
+.mem-card { container-type: inline-size; aspect-ratio: 1; perspective: 600px; cursor: pointer; touch-action: manipulation; }
 .mem-card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.35s; transform-style: preserve-3d; }
 .mem-card.flipped .mem-card-inner { transform: rotateY(180deg); }
 
@@ -25,7 +25,7 @@
   justify-content: center;
   border-radius: var(--radius);
   backface-visibility: hidden;
-  font-size: 26px;
+  font-size: clamp(14px, 42cqw, 26px);
 }
 
 .mem-card-front { background: var(--surface-3); border: 1.5px solid var(--border-strong); color: var(--text-3); }

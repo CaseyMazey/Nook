@@ -36,6 +36,18 @@
   // window-Listener, die nicht automatisch verschwinden, wenn
   // der Container aus dem DOM entfernt wird).
   let onCanvasMouseMove, onCanvasClick, onSettingsClick, onKeyDown, onKeyUp;
+  let onCanvasTouchStart, onCanvasTouchMove, onCanvasTouchEnd;
+
+  // Virtueller Joystick fürs Touch-Steuern (siehe onCanvasTouchStart/-Move):
+  // touchOrigin ist der Startpunkt des Drags, touchVec die daraus abgeleitete
+  // Richtung+Stärke (Länge 0..1), analog zu den digitalen WASD-Richtungen,
+  // aber mit analoger Abstufung nahe der Totzone.
+  let touchActive = false;
+  let touchOrigin = { x: 0, y: 0 };
+  let touchCurrent = { x: 0, y: 0 };
+  let touchVec = { x: 0, y: 0 };
+  const TOUCH_DEADZONE = 6;
+  const TOUCH_MAX_RADIUS = 60;
 
   /* =========================================================
      HELPER-FUNKTIONEN
@@ -863,16 +875,25 @@
       /* -------------------------
         SPIELER-BEWEGUNG
         ------------------------- */
-      const up    = keys.has("w") || keys.has("arrowup");
-      const down  = keys.has("s") || keys.has("arrowdown");
-      const left  = keys.has("a") || keys.has("arrowleft");
-      const right = keys.has("d") || keys.has("arrowright");
+      let ax, ay;
 
-      let ax = (right ? 1 : 0) - (left ? 1 : 0);
-      let ay = (down  ? 1 : 0) - (up   ? 1 : 0);
+      if (touchActive && (touchVec.x !== 0 || touchVec.y !== 0)) {
+        // Touch-Joystick liefert bereits eine normierte Richtung mit
+        // analoger Stärke (0..1 je nach Auslenkung) — nicht erneut auf
+        // Länge 1 normalisieren, sonst geht die Analog-Abstufung verloren.
+        ax = touchVec.x; ay = touchVec.y;
+      } else {
+        const up    = keys.has("w") || keys.has("arrowup");
+        const down  = keys.has("s") || keys.has("arrowdown");
+        const left  = keys.has("a") || keys.has("arrowleft");
+        const right = keys.has("d") || keys.has("arrowright");
 
-      const len = Math.hypot(ax, ay) || 1;
-      ax /= len; ay /= len;
+        ax = (right ? 1 : 0) - (left ? 1 : 0);
+        ay = (down  ? 1 : 0) - (up   ? 1 : 0);
+
+        const len = Math.hypot(ax, ay) || 1;
+        ax /= len; ay /= len;
+      }
 
       const speed =
         player.baseSpeed *
@@ -1282,6 +1303,30 @@
     }
 
     /* -------------------------
+       TOUCH-JOYSTICK (nur sichtbar während eines aktiven Drags)
+       ------------------------- */
+    if (touchActive) {
+      ctx.save();
+      ctx.globalAlpha = 0.35;
+      ctx.strokeStyle = "#8aa7ff";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(touchOrigin.x, touchOrigin.y, TOUCH_MAX_RADIUS, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.globalAlpha = 0.6;
+      ctx.fillStyle = "#8aa7ff";
+      ctx.beginPath();
+      ctx.arc(
+        touchOrigin.x + touchVec.x * TOUCH_MAX_RADIUS,
+        touchOrigin.y + touchVec.y * TOUCH_MAX_RADIUS,
+        16, 0, Math.PI * 2
+      );
+      ctx.fill();
+      ctx.restore();
+    }
+
+    /* -------------------------
        HUD (Text oben)
        ------------------------- */
       hud.textContent =
@@ -1651,6 +1696,7 @@ function mount(container){
           <div class="nd-side nd-side-left">
             <div class="nd-panel" id="neon-dodge-perma-panel"></div>
             <div class="nd-hint">
+              <div class="nd-touch-hint">Auf dem Spielfeld ziehen, um zu steuern &middot; Menüs per Antippen bedienen.</div>
               <div>
                 Steuerung:
                 <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> /
@@ -1693,6 +1739,17 @@ function mount(container){
   canvasResizeObserver = new ResizeObserver(() => fitCanvasToContainer());
   canvasResizeObserver.observe(canvas.parentElement);
 
+  // Rechnet Client-Koordinaten (z.B. e.clientX/Y oder Touch.clientX/Y) in
+  // den festen Logik-Koordinatenraum LOGICAL_W/H um — siehe Kommentar in
+  // onCanvasMouseMove weiter unten. Gemeinsam genutzt von Maus UND Touch.
+  function toLogicalCoords(clientX, clientY){
+    const r = canvas.getBoundingClientRect();
+    return {
+      x: (clientX - r.left) * (LOGICAL_W / r.width),
+      y: (clientY - r.top)  * (LOGICAL_H / r.height)
+    };
+  }
+
   onCanvasMouseMove = (e) => {
     const r = canvas.getBoundingClientRect();
     // Canvas wird per CSS auf Modal-Größe skaliert, die interne Zeichnung
@@ -1732,6 +1789,45 @@ function mount(container){
     handleCanvasClick(x, y);
   };
 
+  // Touch-Steuerung: Bei offenem Menü übernimmt der normale Click-Handler
+  // (Tap löst synthetisch "click" aus) — hier NICHT preventDefault(en), sonst
+  // würde dieses Click-Event unterdrückt. Läuft das Spiel, spannt der Drag
+  // stattdessen einen virtuellen Joystick auf (siehe touchOrigin/touchVec).
+  onCanvasTouchStart = (e) => {
+    if (isMenuOpen()) return;
+    e.preventDefault();
+    const t = e.changedTouches[0];
+    const p = toLogicalCoords(t.clientX, t.clientY);
+    touchActive = true;
+    touchOrigin = p;
+    touchCurrent = p;
+    touchVec = { x: 0, y: 0 };
+  };
+
+  onCanvasTouchMove = (e) => {
+    if (!touchActive) return;
+    e.preventDefault();
+    const t = e.changedTouches[0];
+    touchCurrent = toLogicalCoords(t.clientX, t.clientY);
+
+    const dx = touchCurrent.x - touchOrigin.x;
+    const dy = touchCurrent.y - touchOrigin.y;
+    const d = Math.hypot(dx, dy);
+
+    if (d < TOUCH_DEADZONE) {
+      touchVec = { x: 0, y: 0 };
+    } else {
+      const clamped = Math.min(d, TOUCH_MAX_RADIUS);
+      const mag = clamped / TOUCH_MAX_RADIUS;
+      touchVec = { x: (dx / d) * mag, y: (dy / d) * mag };
+    }
+  };
+
+  onCanvasTouchEnd = (e) => {
+    touchActive = false;
+    touchVec = { x: 0, y: 0 };
+  };
+
   onSettingsClick = () => {
     showSettings = true;
     showMainMenu = false;
@@ -1741,7 +1837,18 @@ function mount(container){
 
   canvas.addEventListener("mousemove", onCanvasMouseMove);
   canvas.addEventListener("click", onCanvasClick);
+  canvas.addEventListener("touchstart", onCanvasTouchStart, { passive: false });
+  canvas.addEventListener("touchmove", onCanvasTouchMove, { passive: false });
+  canvas.addEventListener("touchend", onCanvasTouchEnd, { passive: false });
+  canvas.addEventListener("touchcancel", onCanvasTouchEnd, { passive: false });
   settingsBtnEl.addEventListener("click", onSettingsClick);
+
+  // "pointer: coarse" (siehe neon-dodge.css) erkennt Touch nicht auf jedem
+  // Gerät zuverlässig — zusätzlich per JS prüfen, damit der Touch-Hinweis
+  // im Steuerungstext auch dort erscheint.
+  if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+    container.querySelector('.neon-dodge-root').classList.add('has-touch');
+  }
 
   // Window-Listener: bewusst auf window (nicht Canvas), damit WASD/Pfeile
   // auch ohne Fokus auf dem Canvas funktionieren — destroy() entfernt sie
@@ -1775,6 +1882,10 @@ function destroy(){
   if (canvas) {
     canvas.removeEventListener("mousemove", onCanvasMouseMove);
     canvas.removeEventListener("click", onCanvasClick);
+    canvas.removeEventListener("touchstart", onCanvasTouchStart);
+    canvas.removeEventListener("touchmove", onCanvasTouchMove);
+    canvas.removeEventListener("touchend", onCanvasTouchEnd);
+    canvas.removeEventListener("touchcancel", onCanvasTouchEnd);
   }
   if (settingsBtnEl) {
     settingsBtnEl.removeEventListener("click", onSettingsClick);
@@ -1788,6 +1899,12 @@ function destroy(){
   }
 
   canvas = ctx = hud = settingsBtnEl = permaPanelEl = runPanelEl = null;
+
+  // Verhindert, dass ein beim Schließen unterbrochener Drag (kein touchend
+  // mehr feuert nach dem Entfernen aus dem DOM) beim nächsten Öffnen als
+  // "noch aktiver Joystick" hängen bleibt.
+  touchActive = false;
+  touchVec = { x: 0, y: 0 };
 }
 
 /* =========================================================
@@ -1811,6 +1928,11 @@ function fitCanvasToContainer(){
   const availH = wrap.clientHeight;
   if (availW <= 0 || availH <= 0) return;
 
+  // Schmale Hochkant-Screens bekommen den Landscape-Lock (siehe
+  // .games-play-modal-box[data-game="neon-dodge"] in games.css) — das
+  // Modal (und damit .nd-canvas-wrap) ist dort bereits als Querformat-Box
+  // aufgespannt, wodurch die normale 16:9-Passung unten auch dort die
+  // größtmögliche, unverzerrte Fläche ergibt. Kein Sonderfall mehr nötig.
   const ratio = LOGICAL_W / LOGICAL_H;
   let w = availW;
   let h = w / ratio;

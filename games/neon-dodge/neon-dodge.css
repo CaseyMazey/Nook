@@ -69,6 +69,12 @@
   padding: 6px 8px;
   cursor: pointer;
   font-size: 16px;
+  touch-action: manipulation;
+}
+
+@media (pointer: coarse) {
+  /* Größeres Tap-Ziel (Empfehlung ~44px) statt der knappen Desktop-Größe. */
+  .nd-settings-btn { padding: 12px 14px; font-size: 20px; }
 }
 
 .nd-settings-btn:hover {
@@ -127,6 +133,7 @@
     );
   border-radius: 16px;
   box-shadow: 0 10px 30px rgba(0,0,0,.45);
+  touch-action: none; /* Drag-Joystick/Taps steuern statt Scrollen/Zoomen */
 }
 
 /* =========================
@@ -168,6 +175,16 @@
   opacity: .75;
 }
 
+/* Nur auf Touch-Geräten sichtbar — auf dem Desktop steuert man mit
+   WASD/Pfeilen + Maus, der Hinweis wäre dort nur Ballast. Zusätzlich zur
+   Media Query setzt neon-dodge.js .has-touch, falls "pointer: coarse" auf
+   einem Gerät nicht zuverlässig greift (siehe mount()). */
+.nd-touch-hint { display: none; }
+@media (pointer: coarse) {
+  .nd-touch-hint { display: block; }
+}
+.neon-dodge-root.has-touch .nd-touch-hint { display: block; }
+
 .neon-dodge-root kbd {
   background: #1d2433;
   border: 1px solid #2c364b;
@@ -176,7 +193,11 @@
   border-radius: 6px;
 }
 
-@media (max-width: 820px) {
+/* Nur für schmale Screens, die BEREITS im Querformat sind (Handy manuell
+   gedreht, kleines Quer-Tablet) — echtes Hochkant nutzt stattdessen den
+   Landscape-Lock (games.css, .games-play-modal-box[data-game="neon-dodge"]),
+   der das ganze Modal dreht statt hier nur intern zu stapeln. */
+@media (max-width: 820px) and (orientation: landscape) {
   /* Auf sehr kleinen Screens reicht die Höhe oft nicht für Header + beide
      Seitenbereiche + Canvas übereinander — hier bewusst wieder scrollbar
      statt Inhalte abzuschneiden. Der Normalfall (Desktop, siehe oben)

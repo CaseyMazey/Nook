@@ -10,25 +10,27 @@
 
 .ttt-board {
   display: grid;
-  grid-template-columns: 96px 96px 96px;
-  grid-template-rows: 96px 96px 96px;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
   gap: 8px;
-  width: 304px; /* 3 × 96px + 2 × 8px Gap */
+  width: min(304px, 100%);
+  aspect-ratio: 1;
   margin: 0 auto;
 }
 
 .ttt-cell {
-  width: 96px;
-  height: 96px;
+  width: 100%;
+  height: 100%;
   border-radius: var(--radius);
   border: 1.5px solid var(--border-strong);
   background: var(--surface-2);
-  font-size: 32px;
+  font-size: clamp(20px, 8vw, 32px);
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  touch-action: manipulation;
   transition: background var(--transition), border-color var(--transition);
 }
 
@@ -91,18 +93,19 @@
 
 .ttt-ultimate-board {
   display: grid;
-  grid-template-columns: repeat(3, 138px);
-  grid-template-rows: repeat(3, 138px);
-  gap: 10px;
-  width: 434px;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: min(10px, 2vw);
+  width: min(434px, 100%);
+  aspect-ratio: 1;
   margin: 0 auto;
 }
 
 .ttt-mini-board {
   position: relative;
-  width: 138px;
-  height: 138px;
-  padding: 6px;
+  width: 100%;
+  height: 100%;
+  padding: min(6px, 1.5vw);
   border-radius: var(--radius);
   border: 2px solid var(--border-strong);
   background: var(--surface-2);
@@ -140,12 +143,13 @@
   border-radius: calc(var(--radius) * 0.5);
   border: 1px solid var(--border-strong);
   background: var(--surface);
-  font-size: 16px;
+  font-size: clamp(11px, 3.2vw, 16px);
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  touch-action: manipulation;
   transition: background var(--transition), border-color var(--transition);
 }
 
@@ -164,10 +168,10 @@
   border-radius: calc(var(--radius) * 0.7);
   background: var(--surface);
   opacity: 0.95;
-  font-size: 48px;
+  font-size: clamp(26px, 9vw, 48px);
   font-weight: 800;
 }
 
 .ttt-mini-overlay.x-cell { color: var(--prio-1); }
 .ttt-mini-overlay.o-cell { color: var(--sage); }
-.ttt-mini-overlay.draw { color: var(--text-3); font-size: 30px; font-weight: 700; }
+.ttt-mini-overlay.draw { color: var(--text-3); font-size: clamp(18px, 6vw, 30px); font-weight: 700; }

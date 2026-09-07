@@ -526,6 +526,12 @@ async function openGamePlayModal(gameId) {
     game.modalSize || "normal"
   );
 
+  // Erlaubt Spiel-spezifisches CSS am Modal-Rahmen selbst (siehe z.B. den
+  // Landscape-Lock für Neon Dodge auf schmalen Hochkant-Screens in
+  // games.css) — die Spiele-CSS bleibt dabei weiterhin unter ihrer eigenen
+  // Root gescoped, nur dieses Attribut lebt am Hub-Element.
+  modalBox.dataset.game = gameId;
+
   document.getElementById('games-play-modal-icon').textContent = game.icon || '🎮';
   document.getElementById('games-play-modal-name').textContent = game.title;
 
@@ -569,6 +575,7 @@ function closeGamePlayModal() {
 
   document.getElementById('games-play-modal-overlay').classList.add('hidden');
   document.getElementById('games-play-modal-body').innerHTML = '';
+  document.querySelector('.games-play-modal-box').removeAttribute('data-game');
   window.GameHub.activeGame = null;
 
   if (gamesPlayModalPrevBodyOverflow !== null) {
