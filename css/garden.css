@@ -1,0 +1,413 @@
+/* =============================================================
+   GARDEN.CSS — Basis (Phase 1), siehe AI documentation/garden.md
+============================================================= */
+
+/* ── Kopfzeile: Titel + Sub-Tab-Umschalter auf einer Zeile, so kompakt wie
+   möglich, damit auf Desktop unter der Kopfzeile möglichst viel Höhe für
+   Szene + Anzuchtfeld + Pflanzenstand übrig bleibt (siehe gardenFitLayout()
+   in js/garden.js und garden.md). Nur für die Garten-Unteransicht — die
+   Pflanzendex-Ansicht braucht das nicht, darf normal scrollen. ────────── */
+.garden-view-header { margin-bottom: 10px; }
+.garden-view-header-left { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.garden-view-header .view-title { font-size: 19px; }
+/* Weniger Rahmen-Padding oben/unten als der generische .view/.dash-content-
+   Standard — Desktop-Optimierung, siehe garden.md. Nur die Garten-
+   Unteransicht ist betroffen (#garden-panel-dex bleibt unverändert). */
+#view-garden { padding-top: 14px; padding-bottom: 10px; }
+#garden-panel-garden { padding: 10px 16px 12px; }
+.garden-subtab-switch {
+  display: inline-flex;
+  background: var(--surface-2);
+  border: 1.5px solid var(--border-strong);
+  border-radius: 99px;
+  padding: 3px;
+  gap: 2px;
+}
+.garden-subtab-btn {
+  padding: 6px 16px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-3);
+  transition: all var(--transition);
+}
+.garden-subtab-btn.active { background: var(--surface); color: var(--sage-dark); box-shadow: var(--shadow-xs); }
+.garden-subtab-btn:not(.active):hover { color: var(--text); }
+
+/* ── Garten-Fläche ───────────────────────────────────────────── */
+/* garden1.png (1807×870, Seitenverhältnis ~2.077) ist die vollständige
+   Garten-Szene — der Container übernimmt exakt dieses Seitenverhältnis,
+   damit background-size:cover das Bild weder zuschneidet noch verzerrt
+   (bei identischem Container-/Bild-Verhältnis deckt "cover" die Fläche
+   pixelgenau ab). Gilt unverändert in beiden Themes — ein Foto-Hintergrund
+   braucht keine Theme-Einfärbung. */
+.garden-canvas {
+  position: relative;
+  aspect-ratio: 1807 / 870;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--dash-border);
+  background-image: url('../img/garden/garden1.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.garden-canvas-plants { position: absolute; inset: 0; }
+
+.garden-plant {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.garden-plant.garden-plant-dragging { cursor: grabbing; z-index: 5; filter: drop-shadow(0 6px 10px rgba(0,0,0,0.18)); }
+
+/* ── Pflanzen-Visual: generischer Körper + Blüte/Frucht darauf ─────────
+   (gardenComposeVisualHTML() in js/garden.js — die meisten img/decor/-
+   Dateien sind nur Blüte/Frucht, kein vollständiger Pflanzenkörper, siehe
+   garden.md). Gemeinsam für Garten-Fläche und Anzuchtfeld-Vorschau. ── */
+.garden-plant-visual { position: relative; display: block; }
+.garden-plant-body {
+  width: 100%;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 3px 5px rgba(30,25,10,0.18));
+  pointer-events: none;
+}
+.garden-plant-bloom {
+  position: absolute;
+  height: auto;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 2px rgba(30,25,10,0.15));
+}
+.garden-plant-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: 9px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+.garden-plant:hover .garden-plant-remove,
+.garden-plant:focus-within .garden-plant-remove { opacity: 1; }
+
+.garden-discovery-note {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translate(-50%, -8px);
+  background: var(--surface);
+  border: 1px solid var(--sage-border);
+  color: var(--sage-dark);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 99px;
+  box-shadow: var(--shadow-sm);
+  opacity: 0;
+  transition: opacity 400ms ease, transform 400ms ease;
+  pointer-events: none;
+}
+.garden-discovery-note-visible { opacity: 1; transform: translate(-50%, 0); }
+
+/* ── Anzuchtfeld — unterer Streifen des Gartens, siehe garden.md
+     Abschnitt B. Samen -> Keimling -> junge Pflanze wachsen hier still vor
+     sich hin (echte verstrichene Zeit); ausgewachsene Pflanzen werden per
+     Drag nach oben in die Wiese "umgepflanzt" (siehe bindGardenNurseryDrag
+     in garden.js). ────────────────────────────────────────────────────── */
+/* Anzuchtfeld (breit) + Pflanzenstand (schmal) nebeneinander, wie im
+   Mockup — auf schmalen Breiten stapelt die Zeile automatisch. */
+.garden-nursery-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-top: 14px;
+}
+/* "cultivation plot.png" (2170×725, Seitenverhältnis ~2.993) ist die
+   vollständige Anzuchtfeld-Szene — eigener Container (kein Ausschnitt mehr
+   innerhalb von #garden-canvas), gleiches Cover/Aspect-Ratio-Prinzip wie
+   oben bei .garden-canvas. */
+.garden-nursery {
+  position: relative;
+  flex: 3.4 1 0%;
+  aspect-ratio: 2170 / 725;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--dash-border);
+  background-image: url('../img/garden/cultivation plot.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  overflow: hidden;
+  touch-action: none;
+}
+.garden-nursery-label {
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-2);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  padding: 3px 9px;
+  pointer-events: none;
+}
+.garden-nursery-items { position: absolute; inset: 0; }
+.garden-nursery-item {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+  user-select: none;
+}
+.garden-nursery-seedling { display: block; height: auto; pointer-events: none; }
+.garden-nursery-countdown {
+  position: absolute;
+  top: -17px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text-2);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  padding: 1px 5px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.garden-nursery-stage-grown { cursor: grab; }
+.garden-nursery-stage-grown.garden-nursery-dragging {
+  cursor: grabbing;
+  z-index: 6;
+  filter: drop-shadow(0 6px 10px rgba(0,0,0,0.2));
+}
+
+/* ── Pflanzenstand — Drop-Zone für die optionalen Gartenrätsel, KEIN
+   zweites Pflanzenlager (siehe garden.md). "stall.png" (1671×941,
+   Seitenverhältnis ~1.776) ist die vollständige Szene — gleiches Cover/
+   Aspect-Ratio-Prinzip wie bei .garden-canvas/.garden-nursery oben, damit
+   das Bild weder zugeschnitten noch verzerrt wird. Der Inhalt (Rätseltext
+   + Slots) liegt als eigener Layer auf der Theke des Bildes — Text/Slots
+   bewusst in warmen, festen Holz-/Cremetönen statt Theme-Variablen, damit
+   sie über dem Foto immer lesbar bleiben (Foto ist selbst nicht
+   theme-abhängig, siehe garden.md). ──────────────────────────────────── */
+.garden-stand {
+  position: relative;
+  flex: 1 1 0%;
+  min-width: 160px;
+  aspect-ratio: 1671 / 941;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--dash-border);
+  background-image: url('../img/garden/stall.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  overflow: hidden;
+}
+.garden-stand-content {
+  position: absolute;
+  left: 9%;
+  right: 9%;
+  bottom: 6%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  text-align: center;
+}
+.garden-stand-head {
+  font-size: 11px;
+  font-weight: 700;
+  color: #3b2a17;
+  background: rgba(255,250,240,0.85);
+  border-radius: 99px;
+  padding: 2px 10px;
+}
+.garden-stand-quest {
+  font-size: 9.5px;
+  color: #4a3822;
+  background: rgba(255,250,240,0.75);
+  border-radius: 8px;
+  padding: 2px 8px;
+  line-height: 1.3;
+}
+.garden-stand-slots { display: flex; gap: 6px; margin-top: 2px; }
+.garden-stand-slot {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  border: 1.5px dashed rgba(80,55,25,0.55);
+  background: rgba(255,250,240,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(60,40,20,0.6);
+  font-size: 11px;
+}
+.garden-stand-slot img { width: 100%; height: 100%; object-fit: contain; padding: 2px; }
+.garden-stand-slot-filled { border-style: solid; border-color: var(--sage-border); background: rgba(255,255,255,0.88); }
+
+/* Schwebender Ghost beim Ziehen eines Palette-Items zum Pflanzenstand
+   (bindGardenTrayItem() in garden.js) — folgt dem Zeiger, nimmt selbst nie
+   Klicks/Zeigerereignisse entgegen. */
+.garden-tray-drag-ghost {
+  position: fixed;
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 999;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.25));
+}
+
+@media (max-width: 720px) {
+  .garden-nursery-row { flex-direction: column; }
+  .garden-nursery { aspect-ratio: 2170 / 725; flex: none; }
+  .garden-stand { flex: none; width: 100%; }
+}
+
+/* ── Pflanzen-Tray (Katalog) ─────────────────────────────────── */
+.garden-tray { margin-top: 18px; }
+.garden-tray-group { margin-bottom: 16px; }
+.garden-tray-group-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--text-3);
+  margin-bottom: 8px;
+}
+.garden-tray-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.garden-tray-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 76px;
+  padding: 8px 4px 7px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  transition: all var(--transition);
+}
+.garden-tray-item:hover { border-color: var(--sage-border); background: var(--sage-bg); }
+.garden-tray-item img { width: 34px; height: 34px; object-fit: contain; }
+.garden-tray-item span {
+  font-size: 10.5px;
+  color: var(--text-2);
+  text-align: center;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+/* ── Pflanzendex ─────────────────────────────────────────────── */
+.garden-dex-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 12px;
+}
+.garden-dex-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 8px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  text-align: center;
+}
+.garden-dex-thumb {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.garden-dex-thumb img { width: 100%; height: 100%; object-fit: contain; }
+.garden-dex-tile-unknown { border-style: dashed; opacity: 0.55; }
+.garden-dex-tile-unknown .garden-dex-thumb {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-3);
+}
+.garden-dex-label { font-size: 12.5px; font-weight: 600; color: var(--text); }
+.garden-dex-meta { display: flex; flex-direction: column; gap: 1px; font-size: 10.5px; color: var(--text-3); }
+
+@media (max-width: 640px) {
+  .garden-tray-item { width: 70px; }
+  .garden-dex-grid { grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); }
+}
+
+/* ── Debug: Wachstumszeiten (vorübergehendes Test-Werkzeug, siehe
+   garden.md) — bewusst optisch abgesetzt (gestrichelter Rand, Mono-Font,
+   Bernstein-Ton) statt dem übrigen Garten-Look zu folgen, damit klar
+   erkennbar bleibt: das ist Debug-UI, kein richtiges Garten-Feature. ── */
+.garden-debug { margin-top: 14px; }
+.garden-debug-toggle {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #a8791f;
+  background: none;
+  border: 1px dashed #a8791f;
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  opacity: 0.75;
+}
+.garden-debug-toggle:hover { opacity: 1; }
+.garden-debug-panel {
+  margin-top: 8px;
+  padding: 12px 14px;
+  border: 1px dashed #a8791f;
+  border-radius: var(--radius);
+  background: rgba(168, 121, 31, 0.06);
+}
+.garden-debug-hint { font-family: var(--mono); font-size: 10.5px; color: var(--text-3); margin: 0 0 10px; line-height: 1.5; }
+.garden-debug-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.garden-debug-label { flex: 1; font-family: var(--mono); font-size: 11.5px; color: var(--text-2); }
+.garden-debug-input {
+  width: 64px;
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 4px 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+}
+.garden-debug-unit {
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 4px 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+}
+.garden-debug-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+.garden-debug-actions .btn-primary,
+.garden-debug-actions .btn-ghost { font-size: 12px; padding: 6px 14px; }

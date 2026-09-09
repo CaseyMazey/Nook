@@ -18,6 +18,7 @@
   <link rel="stylesheet" href="css/guides.css" />
   <link rel="stylesheet" href="css/projects.css" />
   <link rel="stylesheet" href="css/project-tree.css" />
+  <link rel="stylesheet" href="css/garden.css" />
   <link rel="stylesheet" href="css/today.css" />
   <link rel="stylesheet" href="css/pinboard.css" />
   <link rel="stylesheet" href="css/settings.css" />
@@ -185,6 +186,10 @@
         <li><button class="nav-btn" data-view="projects">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="12" rx="1.5" stroke="currentColor" stroke-width="1.4" fill="none" opacity=".7"/><rect x="9" y="2" width="5" height="7" rx="1.5" stroke="currentColor" stroke-width="1.4" fill="none" opacity=".7"/><rect x="9" y="11" width="5" height="3" rx="1" fill="currentColor" opacity=".4"/></svg>
           Projekte
+        </button></li>
+        <li><button class="nav-btn" data-view="garden">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 14V7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" opacity=".7"/><path d="M8 9C8 9 4 8.5 4 5C7 5 8 7 8 9Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" fill="none" opacity=".7"/><path d="M8 7C8 7 12 6.5 12 3C9 3 8 5 8 7Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" fill="none" opacity=".7"/></svg>
+          Garten
         </button></li>
         <li><button class="nav-btn" data-view="flashcards">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="9" rx="2" stroke="currentColor" stroke-width="1.5" fill="none" opacity=".7"/><path d="M5 7h6M5 9.5h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
@@ -542,7 +547,88 @@
           </div>
         </div>
       </section>
- 
+
+      <!-- GARTEN — Basis (Phase 1), siehe AI documentation/garden.md.
+           Zwei Sub-Tabs innerhalb der View: freie Pflanz-Fläche + das
+           Pflanzendex-Sammel-Tagebuch. Logik in js/garden.js,
+           Katalog/Assets-Zuordnung in js/garden-catalog.js. -->
+      <section id="view-garden" class="view">
+        <!-- Kompakte Einzeilen-Kopfzeile (Titel + Sub-Tab-Switch nebeneinander
+             statt gestapelt) — Garden soll auf Desktop möglichst ohne
+             vertikales Scrollen passen, siehe garden.md. -->
+        <div class="view-header garden-view-header">
+          <div class="garden-view-header-left">
+            <h1 class="view-title">Garten</h1>
+            <div class="garden-subtab-switch" id="garden-subtab-switch">
+              <button class="garden-subtab-btn active" id="garden-subtab-btn-garden" data-subtab="garden">Garten</button>
+              <button class="garden-subtab-btn" id="garden-subtab-btn-dex" data-subtab="dex">Pflanzendex</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="dash-content" id="garden-panel-garden">
+          <!-- garden1.png = vollständige Garten-Szene als Hintergrund (siehe
+               garden.md) — Pflanzen liegen als einzelne Elemente darüber,
+               das Bild selbst wird nie verändert/eingebrannt. -->
+          <div id="garden-canvas" class="garden-canvas">
+            <div id="garden-canvas-plants" class="garden-canvas-plants"></div>
+            <div id="garden-discovery-note" class="garden-discovery-note hidden"></div>
+          </div>
+
+          <!-- Anzuchtfeld (links, breit) + Pflanzenstand (rechts, schmal) in
+               einer Zeile, wie im Mockup (mockups/garden.png). "cultivation
+               plot.png" = vollständige Anzuchtfeld-Szene, eigener Container
+               (kein Ausschnitt mehr innerhalb von #garden-canvas). Der
+               Pflanzenstand ist reine Drop-Zone für die optionalen
+               Gartenrätsel (siehe garden.md), KEIN zweites Pflanzenlager —
+               das Pflanzen-Inventar bleibt die Palette darunter. -->
+          <div class="garden-nursery-row">
+            <div id="garden-nursery" class="garden-nursery">
+              <div class="garden-nursery-label">🌱 Anzuchtfeld</div>
+              <div id="garden-nursery-items" class="garden-nursery-items"></div>
+            </div>
+            <div id="garden-stand" class="garden-stand"></div>
+          </div>
+
+          <div class="garden-tray" id="garden-tray"></div>
+
+          <!-- GARTEN-DEBUG: Wachstumszeiten — vorübergehendes Debug-Werkzeug
+               zum schnellen Testen des Wachstumssystems (siehe
+               AI documentation/garden.md, Abschnitt "Debug: Wachstumszeiten"),
+               kein Teil des eigentlichen Garten-Designs. Eingeklappt per
+               Default, ändert nichts an Layout/Look des restlichen Gartens. -->
+          <div class="garden-debug">
+            <button type="button" class="garden-debug-toggle" id="garden-debug-toggle">🐛 Debug: Wachstumszeiten</button>
+            <div class="garden-debug-panel hidden" id="garden-debug-panel">
+              <p class="garden-debug-hint">Nur lokal bei dir gespeichert, wirkt sofort auch auf bereits wachsende Pflanzen. Nicht Teil des eigentlichen Gartens.</p>
+              <div class="garden-debug-row">
+                <span class="garden-debug-label">Samen → Keimling</span>
+                <input type="number" min="1" step="1" class="garden-debug-input" id="garden-debug-seed-value"/>
+                <select class="garden-debug-unit" id="garden-debug-seed-unit"><option value="s">Sek.</option><option value="m">Min.</option></select>
+              </div>
+              <div class="garden-debug-row">
+                <span class="garden-debug-label">Keimling → nächste Stufe</span>
+                <input type="number" min="1" step="1" class="garden-debug-input" id="garden-debug-sprout-value"/>
+                <select class="garden-debug-unit" id="garden-debug-sprout-unit"><option value="s">Sek.</option><option value="m">Min.</option></select>
+              </div>
+              <div class="garden-debug-row">
+                <span class="garden-debug-label">nächste Stufe → ausgewachsen</span>
+                <input type="number" min="1" step="1" class="garden-debug-input" id="garden-debug-young-value"/>
+                <select class="garden-debug-unit" id="garden-debug-young-unit"><option value="s">Sek.</option><option value="m">Min.</option></select>
+              </div>
+              <div class="garden-debug-actions">
+                <button type="button" class="btn-ghost" id="garden-debug-reset">Zurücksetzen</button>
+                <button type="button" class="btn-primary" id="garden-debug-apply">Übernehmen</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dash-content hidden" id="garden-panel-dex">
+          <div class="garden-dex-grid" id="garden-dex-grid"></div>
+        </div>
+      </section>
+
       <!-- FLASHCARDS -->
       <section id="view-flashcards" class="view">
         <div class="view-header">
@@ -1226,6 +1312,10 @@
             <button class="nav-btn" data-view="projects">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="12" rx="1.5" stroke="currentColor" stroke-width="1.4" fill="none" opacity=".7"/><rect x="9" y="2" width="5" height="7" rx="1.5" stroke="currentColor" stroke-width="1.4" fill="none" opacity=".7"/><rect x="9" y="11" width="5" height="3" rx="1" fill="currentColor" opacity=".4"/></svg>
               Projekte
+            </button>
+            <button class="nav-btn" data-view="garden">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 14V7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" opacity=".7"/><path d="M8 9C8 9 4 8.5 4 5C7 5 8 7 8 9Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" fill="none" opacity=".7"/><path d="M8 7C8 7 12 6.5 12 3C9 3 8 5 8 7Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" fill="none" opacity=".7"/></svg>
+              Garten
             </button>
             <button class="nav-btn" data-view="flashcards">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="9" rx="2" stroke="currentColor" stroke-width="1.5" fill="none" opacity=".7"/><path d="M5 7h6M5 9.5h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
@@ -2860,6 +2950,8 @@
   <script src="js/projects.js"></script>
   <script src="js/project-tree.js"></script>
   <script src="js/forest.js"></script>
+  <script src="js/garden-catalog.js"></script>
+  <script src="js/garden.js"></script>
   <!-- Spiele: games.js ist der Hub, games-list.js die einzige Stelle,
        die beim Hinzufügen/Entfernen eines Spiels angepasst werden muss -->
   <script src="js/games.js"></script>
