@@ -426,7 +426,7 @@ function buildMiniCal(refDate) {
     const cellStyle  = rangeColor ? ` style="background:${hexToRgba(rangeColor, (isRS || isRE) ? 0.22 : 0.14)}"` : '';
     const numStyle   = rangeColor ? ` style="color:${rangeColor}"` : '';
 
-    cells += `<div class="${cls}" data-date="${key}" data-day="${d}"${cellStyle}><span${numStyle}>${d}</span><span class="mini-cal-dot"${dotStyle}></span></div>`;
+    cells += `<div class="${cls}" data-date="${key}" data-day="${d}"${cellStyle}><span class="mini-cal-daynum"${numStyle}>${d}</span><span class="mini-cal-dot"${dotStyle}></span></div>`;
   }
 
   const total     = startDow + daysInMonth;
