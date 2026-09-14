@@ -26,7 +26,7 @@ Für Funktionen, die einen sicheren Browser-Kontext brauchen (Google-Calendar-An
 - 📅 Kalender mit Termin-/Countdownsystem und optionaler Google-Calendar-Anbindung (in Bearbeitung)
 - 💰 Budgetverwaltung mit Liquiditätsvorschau, Sparplaner (Szenarien, Zeitstrahl, Was-wäre-wenn) und optionaler Taschengeld-Automatik
 - 🌱 Finanzgarten zur Visualisierung von Sparzielen
-- 🪴 Garten — ein ruhiger Bilderbuch-Garten mit über 70 sammelbaren Pflanzenarten
+- 🪴 Garten — ein ruhiger Bilderbuch-Garten mit über 70 sammelbaren Pflanzenarten (ganz früher Entwicklungsstand, bisher nur Anpflanzen & Verteilen)
 - 📚 Karteikarten mit Leitner-System und Lernstatistiken
 - 📝 Persönliches Markdown-Wiki
 - 📁 Projektverwaltung mit vollständigem Projektwald (Baum-Customizing, URL-Routing)
@@ -70,9 +70,9 @@ Monatsdashboard, die Finanzierungs-Engine „Jedem Euro einen Job“, Sparprogno
 Kontostand und Sparziele als wachsende Pflanzen, direkt in Budget — rein zur Motivation, ohne Bestrafung.
 → [Wiki: Finanzgarten](https://github.com/CaseyMazey/Nook/wiki/Finanzgarten)
 
-### 🪴 Garten
+### 🪴 Garten *(ganz früher Entwicklungsstand)*
 
-Ein eigenständiger, ruhiger Bilderbuch-Garten zum Sammeln — über 70 Pflanzenarten, Anzuchtfeld, Pflanzendex und optionale Gartenrätsel.
+Ein eigenständiger, ruhiger Bilderbuch-Garten zum Sammeln, über 70 Pflanzenarten geplant. Aktuell funktioniert ausschließlich das Anpflanzen im Anzuchtfeld und das Verteilen ausgewachsener Pflanzen im Garten — Pflanzendex und Pflanzenstand existieren noch nicht.
 → [Wiki: Garten](https://github.com/CaseyMazey/Nook/wiki/Garten)
 
 ### 📚 Karteikarten
@@ -238,14 +238,14 @@ Nook befindet sich weiterhin in aktiver Entwicklung.
 
 ## Geplant
 
-- **Garten**: Beau (die Gartenkatze), seltene Ereignisse (Schmetterlinge, Wetter, Fee/Shiny-Verwandlung), Mystery-Samen, Laden & Münzen, Tageszeit-/Wetterstimmung, weitere Gartenbereiche
+- **Garten** *(ganz früher Entwicklungsstand — bisher funktioniert nur Anpflanzen im Anzuchtfeld und Verteilen der Pflanzen im Garten)*: Pflanzendex, Pflanzenstand/Gartenrätsel, Beau (die Gartenkatze), seltene Ereignisse (Schmetterlinge, Wetter, Fee/Shiny-Verwandlung), Mystery-Samen, Laden & Münzen, Tageszeit-/Wetterstimmung, weitere Gartenbereiche
 - **Projekte**: Meilensteine, Aufgaben-Abhängigkeiten, Vorlagen, Tags, Notizen, Dateianhänge
 - **Kalender**: Wochen-/Jahresansicht, Drag & Drop für Termine, ICS-Import/Export, weitere externe Kalender-Anbieter (z. B. Outlook/CalDAV) neben Google
 - **Budget**: Diagramme, Kategorien, CSV-Import/Export, Jahresübersicht, mehrere Konten
-- **Spiele**: Debug Hero und Flashcard Battle fertigstellen, weitere spielübergreifende Cozy-Home-Haustiere, Spielzeitstatistiken
+- **Spiele**: Debug Hero und Flashcard Battle sind bisher nur als Platzhalter angelegt, noch keine Spiellogik; weitere spielübergreifende Cozy-Home-Haustiere, Spielzeitstatistiken
 - **Tools**: Signallaufzeiten-Rechner, Netzwerktechnik/IPv4/Subnetting-Modul
 - **Karteikarten**: Karten-Import, Bilder auf Karteikarten, Markdown-Unterstützung
 
 ## Laufend
 
-- Aufräumen ungenutzter Altlasten (Dead-Code-Audit)
+- Projekte-Tab: weitere Optimierungen
