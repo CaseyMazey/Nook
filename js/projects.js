@@ -29,6 +29,22 @@ function migrateProject(p) {
     if (!sp.tasks)     sp.tasks     = [];
     if (sp.collapsed === undefined) sp.collapsed = true;
   });
+  // img/cherryblossom.png -> img/appleblossom.png umbenannt (DECOR_REGISTRY-
+  // Id in project-tree.js ebenfalls) — bereits gespeicherte Zuweisungen
+  // (task.decorId) und Customizing-Auswahl (p.customizing) migrieren, statt
+  // sie ensureTaskDecor() als ungültig verwerfen und NEU würfeln zu lassen:
+  // eine schon gewachsene Blüte darf durch die Umbenennung nicht plötzlich
+  // zu einer anderen Sorte werden.
+  [...p.tasks, ...p.subprojects.flatMap(sp => sp.tasks)].forEach(t => {
+    if (t.decorId === 'cherryblossom') t.decorId = 'appleblossom';
+  });
+  if (p.customizing) {
+    ['core', 'extra'].forEach(cat => {
+      if (Array.isArray(p.customizing[cat])) {
+        p.customizing[cat] = p.customizing[cat].map(id => id === 'cherryblossom' ? 'appleblossom' : id);
+      }
+    });
+  }
   return p;
 }
 

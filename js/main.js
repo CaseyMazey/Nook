@@ -177,6 +177,12 @@ let generalTodos     = DB.get('generalTodos', []);
 let shoppingList     = DB.get('shoppingList', []);
 let subjects         = DB.get('subjects', []);
 let collapsedGroups  = new Set(DB.get('collapsedGroups', []));
+// Vom Nutzer ausgeblendete Tabs (Einstellungen -> "Sichtbare Tabs", siehe
+// TAB_VISIBILITY_CONFIG/applyTabVisibility() unten) — Liste von View-Namen
+// (wie data-view), nicht die eigentlichen Daten des Tabs, die bleiben
+// unangetastet erhalten.
+let hiddenTabs        = DB.get('hiddenTabs', []);
+function saveHiddenTabs(){ DB.set('hiddenTabs', hiddenTabs); }
 
 document.documentElement.setAttribute('data-theme', theme);
 document.documentElement.setAttribute('data-theme-family', themeFamily);
@@ -375,6 +381,91 @@ let currentView='today';
 // den Aktiv-Zustand.
 const BOTTOM_NAV_VIEWS = ['today', 'calendar', 'budget', 'games'];
 
+// =========================
+// TAB-SICHTBARKEIT (Einstellungen -> "Sichtbare Tabs")
+// Einzige Quelle für: welche Tabs überhaupt ausgeblendet werden dürfen
+// (TAB_VISIBILITY_CONFIG, von settings.js zum Rendern der Toggle-Liste
+// wiederverwendet) + das tatsächliche Ein-/Ausblenden in allen drei
+// Nav-Stellen (Sidebar, Mobile-Bottom-Nav, "Mehr"-Seite — alle drei nutzen
+// dieselbe .nav-btn[data-view]-Struktur, siehe showView() oben).
+// "today" und "settings" sind bewusst NICHT toggelbar: ohne Settings käme
+// man nicht mehr an diese Einstellung heran, "today" ist der feste
+// Reload-/Fallback-Zielpunkt (siehe initialView-Logik in settings.js).
+// =========================
+const TAB_VISIBILITY_CONFIG = [
+  { id: 'pinboard',   label: 'Pinnwand' },
+  { id: 'calendar',   label: 'Kalender' },
+  { id: 'projects',   label: 'Projekte' },
+  { id: 'garden',     label: 'Garten' },
+  { id: 'flashcards', label: 'Karteikarten' },
+  { id: 'guides',     label: 'Anleitungen' },
+  { id: 'budget',     label: 'Budget' },
+  { id: 'games',      label: 'Spiele' },
+  { id: 'tools',      label: 'Tools' },
+];
+
+function applyTabVisibility() {
+  TAB_VISIBILITY_CONFIG.forEach(tab => {
+    const hidden = hiddenTabs.includes(tab.id);
+    document.querySelectorAll(`.nav-btn[data-view="${tab.id}"]`).forEach(btn => {
+      // Sidebar-Buttons stecken in <li>, Bottom-Nav/"Mehr"-Buttons sind
+      // direkte Kinder ihres Containers -> jeweils die richtige Hülle
+      // ausblenden, nicht nur den Button selbst.
+      (btn.closest('li') || btn).classList.toggle('nav-item-hidden', hidden);
+    });
+  });
+  // Ist die gerade aktive View jetzt ausgeblendet (z.B. während man selbst
+  // in den Einstellungen den eigenen aktuellen Tab abwählt), auf Today
+  // zurückfallen statt eine unsichtbare View aktiv zu lassen.
+  if (hiddenTabs.includes(currentView)) showView('today');
+}
+
+// Vom Nutzer wählbare Reihenfolge der togglebaren Tabs (Einstellungen ->
+// "Sichtbare Tabs", Auf/Ab-Pfeile) — Liste von View-Namen aus
+// TAB_VISIBILITY_CONFIG. "today" und "settings" sind fest an erster/letzter
+// Stelle (siehe applyTabVisibility()-Kommentar oben) und daher nicht Teil
+// dieser Liste. Neu hinzugekommene Tabs (Config wächst über Zeit) werden
+// beim Laden ans Ende gehängt, entfernte Tabs rausgefiltert — sonst bliebe
+// eine alte gespeicherte Reihenfolge irgendwann inkonsistent zur Config.
+let tabOrder = DB.get('tabOrder', null);
+{
+  const validIds = TAB_VISIBILITY_CONFIG.map(t => t.id);
+  if (!Array.isArray(tabOrder)) tabOrder = validIds.slice();
+  else {
+    tabOrder = tabOrder.filter(id => validIds.includes(id));
+    validIds.forEach(id => { if (!tabOrder.includes(id)) tabOrder.push(id); });
+  }
+}
+function saveTabOrder(){ DB.set('tabOrder', tabOrder); }
+
+// Ordnet die Elemente einer Nav-Gruppe (Sidebar-<li>s oder die Buttons
+// einer "Mehr"-Gruppe) gemäß tabOrder neu an. Elemente, deren data-view
+// nicht in tabOrder steckt (today/settings/andere "Mehr"-Gruppen), werden
+// nicht angefasst — nur die Teilmenge, die tatsächlich in tabOrder steht,
+// wird an der Stelle des ersten betroffenen Elements neu eingefügt.
+function reorderNavGroup(container, itemSelector, getViewId) {
+  if (!container) return;
+  const map = {};
+  container.querySelectorAll(itemSelector).forEach(el => {
+    const id = getViewId(el);
+    if (id) map[id] = el;
+  });
+  const relevant = tabOrder.filter(id => map[id]);
+  if (relevant.length < 2) return;
+  const anchor = document.createComment('tab-order-anchor');
+  map[relevant[0]].parentNode.insertBefore(anchor, map[relevant[0]]);
+  relevant.forEach(id => container.insertBefore(map[id], anchor));
+  anchor.remove();
+}
+
+function applyTabOrder() {
+  reorderNavGroup(document.getElementById('nav-list'), 'li', li => li.querySelector('.nav-btn')?.dataset.view);
+  // Erste ".mehr-group" in der "Mehr"-Seite ist die "Organisieren"-Gruppe
+  // (Pinnwand/Projekte/Garten/Karteikarten/Anleitungen) — Tools und
+  // Einstellungen stecken in eigenen Einzel-Gruppen und bleiben unberührt.
+  reorderNavGroup(document.querySelector('#view-mehr .mehr-group'), '.nav-btn', btn => btn.dataset.view);
+}
+
 function showView(name) {
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
@@ -396,13 +487,15 @@ function showView(name) {
 document.querySelectorAll('.nav-btn').forEach(btn=>{
   btn.addEventListener('click',()=>showView(btn.dataset.view));
 });
+applyTabOrder();
+applyTabVisibility();
 
 // Erlaubt Direktlinks/Browser-Navigation über den Hash (z.B. manuell
 // editierte URL); löst nicht durch showView() selbst aus, da dieses
 // history.replaceState() statt location.hash=… verwendet.
 window.addEventListener('hashchange', () => {
   const name = location.hash.replace(/^#/, '');
-  if (name && name !== currentView && name !== 'mehr' && viewMap[name]) showView(name);
+  if (name && name !== currentView && name !== 'mehr' && viewMap[name] && !hiddenTabs.includes(name)) showView(name);
 });
 
 // ── Mobile "Mehr"-Seite (≤480px, siehe css/main.css) ────────────────
@@ -449,4 +542,5 @@ function renderView(name) {
   if(name==='tools')     { initTools(); }
   if(name==='settings')  { renderSettings(); }
   if(name==='projects')  { renderProjects(); }
+  if(name==='garden')    { renderGarden(); }
 }

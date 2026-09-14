@@ -462,6 +462,11 @@ body.has-bg-image .dash-content {
 }
 .nav-btn.active svg { opacity: 1; color: var(--sage-fg); }
 
+/* Vom Nutzer ausgeblendeter Tab (Einstellungen -> "Sichtbare Tabs", siehe
+   TAB_VISIBILITY_CONFIG/applyTabVisibility() in main.js) — trifft je nach
+   Stelle das <li> (Sidebar) oder den .nav-btn selbst (Bottom-Nav/"Mehr"). */
+.nav-item-hidden { display: none; }
+
 #sidebar-footer {
   padding: 14px 18px;
   border-top: 1px solid var(--border);

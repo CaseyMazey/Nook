@@ -21,8 +21,8 @@ let forestPage = 0;
 //   getOrAssignTreeVariant(project)    -> 1..TREE_PNG_COUNT, dieselbe Variante
 //                                          wie im Projektwald (buildForestTree())
 // Sowohl der kleine Waldbaum als auch der große Detailbaum sind PNGs
-// (img/tree_<n>.png / tree_<n>_fall.png) — keine generierte SVG-Baumstruktur
-// mehr.
+// (img/trees/tree_<n>.png / tree_<n>_fall.png) — keine generierte
+// SVG-Baumstruktur mehr.
 // =================================================
 
 
@@ -235,8 +235,8 @@ function buildForestTree(project, slot, containerWidth) {
   const isDone     = !!project.archived;
   const variant    = getOrAssignTreeVariant(project);
   const season     = isDone ? '_fall' : '';
-  const primarySrc  = `img/tree_${variant}${season}.png`;
-  const fallbackSrc = `img/tree_1${season}.png`;
+  const primarySrc  = `img/trees/tree_${variant}${season}.png`;
+  const fallbackSrc = `img/trees/tree_1${season}.png`;
 
   const wrap = document.createElement('div');
   wrap.className = 'forest-tree-wrap' + (isDone ? ' archived' : '');
@@ -311,7 +311,7 @@ function buildForestTree(project, slot, containerWidth) {
 // beim Neurendern unangetastet stehen.
 //
 // WICHTIG: Die Slot-Positionen (FOREST_SLOTS) sind fest auf die
-// Lichtungen im Hintergrundbild (img/forest.png) abgestimmt — die
+// Lichtungen im Hintergrundbild (img/forest/forest.png) abgestimmt — die
 // Baum-Ebene der DESKTOP/TABLET-Ansicht darf deshalb nie verschoben/
 // skaliert werden. Unter MOBILE_FOREST_BREAKPOINT wird stattdessen
 // komplett auf das Lichtungen-Layout verzichtet und ein eigenes,
@@ -1137,9 +1137,15 @@ if (pdtMenuBtn) {
 // CUSTOMIZING-MODAL — welche Obst-/Blumensorten Haupt- bzw. Extraaufgaben
 // beim Erledigen auf dem Baum erzeugen (project.customizing, siehe
 // DECOR_REGISTRY/getCustomizingPool()/ensureTaskDecor() in project-tree.js).
-// Zwei Ebenen Akkordeon (Aufgabenart -> Obst/Blumen), darin je eine
-// Checkbox-Zeile pro DECOR_REGISTRY-Eintrag — komplett datengetrieben, eine
-// neue Sorte in DECOR_REGISTRY taucht hier automatisch mit auf.
+// Zwei Ebenen Akkordeon (Aufgabenart -> Obst/Blumen), darin je ein Grid mit
+// einer Checkbox-Kachel pro DECOR_REGISTRY-Eintrag — komplett datengetrieben,
+// eine neue Sorte in DECOR_REGISTRY taucht hier automatisch mit auf.
+//
+// Auswahl wird NICHT mehr pro Checkbox-Klick sofort gespeichert, sondern
+// erst in einen lokalen Entwurf (customizingDraft) übernommen — sichtbar
+// gespeichert wird erst per "Speichern"-Button (siehe saveCustomizingDraft()
+// unten), der erscheint, sobald sich der Entwurf vom zuletzt gespeicherten
+// Stand unterscheidet (customizingDirty).
 // =========================
 const CUSTOMIZING_TASK_CATEGORIES  = [
   { key: 'core',  label: 'Hauptaufgaben' },
@@ -1150,30 +1156,52 @@ const CUSTOMIZING_DECOR_CATEGORIES = [
   { key: 'blumen', label: 'Blumen' },
 ];
 
+let customizingProject = null;
+let customizingDraft   = null; // { core: string[], extra: string[] } — Arbeitskopie, siehe oben
+let customizingDirty   = false;
+
+// Spaltenzahl fürs Auswahl-Grid einer Unterkategorie, abhängig von ihrer
+// Item-Anzahl (nicht von der Dialogbreite — die sorgt separat per CSS-
+// Media-Query dafür, dass auf schmalen Bildschirmen automatisch weniger
+// Spalten verwendet werden, siehe .cust-subgroup-body in projects.css).
+function customizingGridCols(itemCount) {
+  if (itemCount <= 4) return 1;
+  if (itemCount <= 10) return 2;
+  return 3;
+}
+
 function renderCustomizingModal(project) {
-  if (!project.customizing) project.customizing = {};
+  customizingProject = project;
   const registryByCategory = {};
   Object.values(DECOR_REGISTRY).forEach(entry => {
     (registryByCategory[entry.category] || (registryByCategory[entry.category] = [])).push(entry);
   });
 
+  // Entwurf aus der tatsächlich gespeicherten Auswahl (bzw. Default-
+  // Fallback, wenn das Projekt noch keine eigene hat) initialisieren —
+  // eigene Arrays, damit Häkchen im Entwurf project.customizing nicht
+  // versehentlich mit-mutieren, bevor "Speichern" geklickt wird.
+  const stored = project.customizing || {};
+  customizingDraft = {
+    core:  [...(Array.isArray(stored.core)  ? stored.core  : DEFAULT_CUSTOMIZING.core)],
+    extra: [...(Array.isArray(stored.extra) ? stored.extra : DEFAULT_CUSTOMIZING.extra)],
+  };
+  customizingDirty = false;
+  updateCustomizingSaveBar();
+
   const container = document.getElementById('customizing-sections');
   container.innerHTML = CUSTOMIZING_TASK_CATEGORIES.map(taskCat => {
-    // Rohe (noch nicht auf einen Default zurückgefallene) Auswahl fürs UI —
-    // ist project.customizing[key] nicht gesetzt, zeigen wir den Default
-    // vorausgewählt an, ohne ihn schon fest zu speichern.
-    const rawSelection = Array.isArray(project.customizing[taskCat.key])
-      ? project.customizing[taskCat.key]
-      : DEFAULT_CUSTOMIZING[taskCat.key];
+    const selection = customizingDraft[taskCat.key];
 
     const groups = CUSTOMIZING_DECOR_CATEGORIES.map(decorCat => {
       const items = registryByCategory[decorCat.key] || [];
       if (!items.length) return '';
+      const cols = customizingGridCols(items.length);
       const rows = items.map(item => `
         <label class="cust-row">
-          <span class="cust-row-preview"><img src="${item.src}" alt="" draggable="false"/></span>
+          <span class="cust-row-preview"><img src="${item.variants[0]}" alt="" draggable="false"/></span>
           <span class="cust-row-name">${escapeXml(item.label)}</span>
-          <input type="checkbox" class="project-task-cb" data-task-cat="${taskCat.key}" data-decor-id="${item.id}" ${rawSelection.includes(item.id) ? 'checked' : ''}/>
+          <input type="checkbox" class="project-task-cb" data-task-cat="${taskCat.key}" data-decor-id="${item.id}" ${selection.includes(item.id) ? 'checked' : ''}/>
         </label>
       `).join('');
       return `
@@ -1181,7 +1209,7 @@ function renderCustomizingModal(project) {
           <div class="cust-subgroup-head" data-cust-toggle="subgroup">
             <span class="cust-chevron">▸</span><span>${decorCat.label}</span>
           </div>
-          <div class="cust-subgroup-body">${rows}</div>
+          <div class="cust-subgroup-body" style="--cust-cols:${cols};">${rows}</div>
         </div>
       `;
     }).join('');
@@ -1207,19 +1235,48 @@ function renderCustomizingModal(project) {
     cb.addEventListener('change', () => {
       const taskCat = cb.dataset.taskCat;
       const decorId = cb.dataset.decorId;
-      // Default erst beim ersten Bearbeiten in eine eigene, speicherbare
-      // Liste "materialisieren" — vorher zeigt die UI nur den Default an,
-      // ohne project.customizing unnötig mit Default-Werten vollzuschreiben.
-      if (!Array.isArray(project.customizing[taskCat])) {
-        project.customizing[taskCat] = [...DEFAULT_CUSTOMIZING[taskCat]];
-      }
-      const arr = project.customizing[taskCat];
+      const arr = customizingDraft[taskCat];
       const idx = arr.indexOf(decorId);
       if (cb.checked && idx === -1) arr.push(decorId);
       if (!cb.checked && idx !== -1) arr.splice(idx, 1);
-      saveProjects();
+      customizingDirty = true;
+      updateCustomizingSaveBar();
     });
   });
+}
+
+function updateCustomizingSaveBar() {
+  const bar = document.getElementById('customizing-save-bar');
+  if (bar) bar.classList.toggle('hidden', !customizingDirty);
+}
+
+// Übernimmt den Entwurf in project.customizing, speichert, schließt das
+// Modal und aktualisiert die Detailseite sofort (renderProjectDetail() ->
+// updateDetailTreeElements() würfelt dabei automatisch alle Aufgaben neu,
+// deren bisherige Dekoration im neuen Pool nicht mehr enthalten ist, siehe
+// ensureTaskDecor() in project-tree.js) — kein Zurück zur Übersicht, kein
+// manuelles Neuladen nötig. Funktioniert auch ohne Änderungen sicher (der
+// Button erscheint zwar nur bei customizingDirty, ein Klick — z.B. per
+// erneutem Aufruf — speichert aber trotzdem einfach den aktuellen Entwurf).
+function saveCustomizingDraft() {
+  if (!customizingProject || !customizingDraft) return;
+  const btn = document.getElementById('customizing-save-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Speichert …'; }
+  customizingProject.customizing = {
+    core:  [...customizingDraft.core],
+    extra: [...customizingDraft.extra],
+  };
+  saveProjects();
+  // Kurzer sichtbarer Speicher-Zustand, damit der Klick sich nicht "totstellt"
+  // (siehe Anforderung: mehrfaches Klicken soll unnötig sein) — die
+  // eigentliche Speicherung oben ist synchron und längst fertig.
+  const savedProjectId = customizingProject.id;
+  setTimeout(() => {
+    if (btn) { btn.disabled = false; btn.textContent = 'Speichern'; }
+    customizingDirty = false;
+    closeCustomizingModal();
+    if (currentDetailProject && currentDetailProject.id === savedProjectId) renderProjectDetail();
+  }, 220);
 }
 
 function openCustomizingModal(project) {
@@ -1228,8 +1285,12 @@ function openCustomizingModal(project) {
 }
 function closeCustomizingModal() {
   document.getElementById('project-customizing-modal-overlay').classList.add('hidden');
+  customizingProject = null;
+  customizingDraft = null;
+  customizingDirty = false;
 }
 document.getElementById('customizing-modal-close').addEventListener('click', closeCustomizingModal);
 document.getElementById('project-customizing-modal-overlay').addEventListener('click', e => {
   if (e.target === document.getElementById('project-customizing-modal-overlay')) closeCustomizingModal();
 });
+document.getElementById('customizing-save-btn').addEventListener('click', saveCustomizingDraft);

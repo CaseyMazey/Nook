@@ -1697,12 +1697,12 @@ function mount(container){
             <div class="nd-panel" id="neon-dodge-perma-panel"></div>
             <div class="nd-hint">
               <div class="nd-touch-hint">Auf dem Spielfeld ziehen, um zu steuern &middot; Menüs per Antippen bedienen.</div>
-              <div>
+              <div class="nd-kbd-hint">
                 Steuerung:
                 <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> /
                 Pfeile · Pause: <kbd>Leertaste</kbd> · Neustart: <kbd>R</kbd> · Statistik <kbd>T</kbd>
               </div>
-              <div>
+              <div class="nd-kbd-hint">
                 Menüs: <kbd>↑</kbd><kbd>↓</kbd> wählen · <kbd>Enter</kbd> bestätigen · <kbd>Esc</kbd> zurück
               </div>
               <div>Ziel: Sammle die gelben Coins ein, weiche allem anderen aus.</div>

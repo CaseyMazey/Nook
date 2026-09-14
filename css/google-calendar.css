@@ -1,0 +1,75 @@
+/* =========================
+   GOOGLE CALENDAR INTEGRATION
+   Zwei Bereiche: (1) Einstellungen-Panel (js/google-calendar-settings.js),
+   (2) Kennzeichnung von Google-Terminen in der bestehenden Monatsansicht/
+   im Tagesmodal (js/calendar.js) — bewusst zurückhaltend/monochrom statt
+   Googles Markenfarben, passend zum Cozy-Designprinzip aus
+   AI documentation/calendar.md ("Nicht wie Google Calendar").
+========================= */
+
+#gcal-settings-body.collapsed { display: none; }
+
+.gcal-hint { font-size: 12px; color: var(--text-3); line-height: 1.5; margin: 0 0 10px; }
+.gcal-hint code { font-size: 11.5px; background: var(--accent-soft); padding: 1px 5px; border-radius: 4px; }
+
+.gcal-setup-details { margin-bottom: 12px; }
+.gcal-setup-details summary { cursor: pointer; font-size: 12.5px; color: var(--sage-dark); user-select: none; }
+.gcal-setup-details ol { margin: 8px 0 0; padding-left: 20px; font-size: 12px; color: var(--text-3); line-height: 1.7; }
+
+.gcal-connect-row { display: flex; gap: 8px; align-items: center; }
+.gcal-connect-row input { flex: 1; }
+
+#gcal-connect-error, #gcal-sync-error {
+  font-size: 12px; color: var(--prio-1); margin-top: 8px; display: none;
+}
+
+.gcal-account-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--border);
+}
+.gcal-account-email { font-size: 13.5px; color: var(--text); font-weight: 500; }
+
+.gcal-subhead {
+  font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-3); margin: 14px 0 8px;
+}
+.gcal-subhead:first-child { margin-top: 0; }
+
+.gcal-calendar-list { display: flex; flex-direction: column; gap: 2px; }
+.gcal-calendar-row {
+  display: flex; align-items: center; gap: 9px; padding: 6px 2px; cursor: pointer; font-size: 13px; color: var(--text);
+}
+.gcal-calendar-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.gcal-calendar-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.gcal-sync-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; }
+
+/* =========================
+   Kalenderansicht — Google-Termine
+   Bewusst KEINE neue Pill-Variante — Kennzeichnung folgt demselben
+   Präfix-Muster wie bei wiederkehrenden Terminen ('↻ ', siehe calendar.js),
+   hier 'Ⓖ ' vor dem Titel. Termine sehen dadurch aus wie jeder andere
+   Nook-Termin (inkl. Farbe aus dem jeweiligen Google-Kalender), nur der
+   Tagesmodal-Badge unten und der Link statt Bearbeiten/Löschen
+   unterscheiden sie zusätzlich — analog zu den bereits bestehenden
+   Badges dort (.cal-day-ev-status/.cal-day-ev-range).
+========================= */
+
+.cal-day-ev-google-badge {
+  font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--text-3); border: 1px solid var(--border); border-radius: 4px;
+  padding: 0 4px; margin-left: 6px; display: inline-block; vertical-align: middle;
+}
+
+.cal-day-ev-google-link {
+  font-size: 12px; color: var(--sage-dark); background: none; border: none; cursor: pointer;
+  white-space: nowrap; flex-shrink: 0;
+}
+.cal-day-ev-google-link:hover { text-decoration: underline; }
+
+/* =============================================================
+   RESPONSIVE — gleiches Muster wie .settings-row in css/settings.css
+============================================================= */
+@media (max-width: 480px) {
+  .gcal-connect-row, .gcal-account-row, .gcal-sync-actions { flex-wrap: wrap; }
+}

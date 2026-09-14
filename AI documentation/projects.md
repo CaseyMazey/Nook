@@ -251,7 +251,7 @@ Jeder Bereich besitzt:
 
 Der Projektwald ist die einzige Übersichtsansicht (siehe Hauptbereiche oben).
 
-Er visualisiert jedes Projekt als Baum vor einer illustrierten Waldlandschaft (`img/forest.png`).
+Er visualisiert jedes Projekt als Baum vor einer illustrierten Waldlandschaft (`img/forest/forest.png`).
 
 Implementiert in `forest.js` (Projektwald-Ansicht, Projektdetailseite) und `project-tree.js` (PNG-Baumvarianten-Zuweisung + Detailbaum-Rendering) — `projects.js` selbst rendert keine Übersicht mehr, siehe Zuständigkeiten unten.
 
@@ -263,9 +263,9 @@ Die Wald-Übersicht hat keinen gemeinsamen Hintergrundbalken mehr: Tabs (Alle/Ak
 
 Waldübersicht und Projektdetailseite zeigen **denselben** PNG-Baum pro Projekt — kein separates SVG-System mehr für die Detailseite.
 
-PNG-Bäume aus `img/tree_<n>.png` (aktives Projekt) bzw. `img/tree_<n>_fall.png` (abgeschlossenes/archiviertes Projekt), `n` = 1–5. Jedes Projekt bekommt beim ersten Rendern per `getOrAssignTreeVariant()` (`project-tree.js`) dauerhaft eine der 5 Varianten zugewiesen (`project.treeVariant`) und behält sie — dieselbe Variante wird von `buildForestTree()` (Waldübersicht) und `updateDetailTreeElements()` (Detailseite) verwendet. Fehlt eine PNG-Datei, fällt der `<img>`-`onerror`-Handler automatisch auf Variante 1 zurück — weitere Varianten lassen sich also einfach durch Ablegen zusätzlicher PNGs ergänzen.
+PNG-Bäume aus `img/trees/tree_<n>.png` (aktives Projekt) bzw. `img/trees/tree_<n>_fall.png` (abgeschlossenes/archiviertes Projekt), `n` = 1–5. Jedes Projekt bekommt beim ersten Rendern per `getOrAssignTreeVariant()` (`project-tree.js`) dauerhaft eine der 5 Varianten zugewiesen (`project.treeVariant`) und behält sie — dieselbe Variante wird von `buildForestTree()` (Waldübersicht) und `updateDetailTreeElements()` (Detailseite) verwendet. Fehlt eine PNG-Datei, fällt der `<img>`-`onerror`-Handler automatisch auf Variante 1 zurück — weitere Varianten lassen sich also einfach durch Ablegen zusätzlicher PNGs ergänzen.
 
-Auf der Detailseite (Hero, ca. 60vh hoch, Baum ca. 50% größer als in der Waldübersicht und mittig im sichtbaren Bereich der Baumspalte zentriert) werden erledigte Aufgaben als Deko auf die Baumkrone gelegt: 🍎 für erledigte Kernaufgaben, 🌸 für erledigte Extraaufgaben. Die Positionen streuen deterministisch (Seed = Projekt-ID) innerhalb einer Ellipse, die konservativ innerhalb der Krone aller 5 Varianten bleibt (`CANOPY_ELLIPSE`, `generateCanopySlots()`) — Stamm/Boden bleiben immer frei. Gedeckelt bei je 8 Stück; rein dekorativ, nicht 1:1 mit einzelnen Aufgaben klickbar.
+Auf der Detailseite (Hero, ca. 60vh hoch, Baum ca. 50% größer als in der Waldübersicht und mittig im sichtbaren Bereich der Baumspalte zentriert) werden erledigte Aufgaben als Deko auf die Baumkrone gelegt: Obst für erledigte Kernaufgaben, Blumen für erledigte Extraaufgaben (welche Sorte je Aufgabenart wählbar ist, konfiguriert das Customizing-Modal, `DECOR_REGISTRY`/`DECOR_META`/`DECOR_FILES` in `project-tree.js` — Dateien nach dem Muster `{name}_{farbe}.png` werden dort automatisch als Farbvarianten einer Sorte gruppiert). Die Positionen streuen deterministisch (Seed = Aufgaben-ID, nicht Projekt-ID — bleibt dadurch stabil, wenn andere Aufgaben (ab)gehakt werden) innerhalb einer Ellipse, die konservativ innerhalb der Krone aller 5 Varianten bleibt (`CANOPY_ELLIPSE`, `pickCanopySlot()`), mit Mindestabstand zwischen gleichzeitig sichtbaren Objekten (`DECOR_MIN_DIST`) gegen Überlappungen — Stamm/Boden bleiben immer frei. Gedeckelt bei je 8 Stück; rein dekorativ, nicht 1:1 mit einzelnen Aufgaben klickbar.
 
 Die eigentliche Aufgaben-Interaktion (abhaken, Details öffnen, Unterprojekte/„Äste" verwalten) läuft ausschließlich über die Kacheln im Aufgabenbereich (`renderDetailTiles()`), nicht über den Baum.
 

@@ -7,30 +7,35 @@ Nook läuft komplett lokal im Browser und kombiniert Organisation, Lernen, Finan
 Keine Installation. Kein Server. Keine Cloud-Pflicht.
 
 ```bash
-git clone https://github.com/CaseyMazey/Personal-HUB.git
-cd Personal-HUB
+git clone https://github.com/CaseyMazey/Nook.git
+cd Nook
 ```
 
-Anschließend einfach `index.html` öffnen.
+Anschließend einfach `index.html` öffnen — oder den Ordner mit einem beliebigen statischen Server bereitstellen.
+
+Für Funktionen, die einen sicheren Browser-Kontext brauchen (Google-Calendar-Anmeldung, Installierbarkeit/Offline-Zugriff als PWA), muss Nook über `https://` oder `http://localhost` laufen, nicht per direktem Öffnen der Datei — dafür gibt es eine laufende Deploy-Version.
 
 ---
 
 # ✨ Highlights
 
-- 🏠 Persönliches Dashboard für den Alltag
+- 🏠 Persönliches Dashboard für den Alltag, inkl. Gruppenpflichten-Planer
 - 📌 Pinnwand mit freien Karten (Notizen, Checklisten, Code, Zitate u.v.m.)
-- 📅 Kalender mit Termin- und Countdownsystem
-- 💰 Budgetverwaltung mit Liquiditätsvorschau und Sparplaner (Szenarien, Zeitstrahl, Was-wäre-wenn-Simulator)
+- 📅 Kalender mit Termin-/Countdownsystem und optionaler Google-Calendar-Anbindung
+- 💰 Budgetverwaltung mit Liquiditätsvorschau, Sparplaner (Szenarien, Zeitstrahl, Was-wäre-wenn) und optionaler Taschengeld-Automatik
 - 🌱 Finanzgarten zur Visualisierung von Sparzielen
+- 🪴 Garten — ein ruhiger Bilderbuch-Garten mit über 70 sammelbaren Pflanzenarten
 - 📚 Karteikarten mit Leitner-System und Lernstatistiken
 - 📝 Persönliches Markdown-Wiki
-- 📁 Projektverwaltung mit Projektwald
+- 📁 Projektverwaltung mit vollständigem Projektwald (Baum-Customizing, URL-Routing)
 - 🧰 Werkzeugkasten (Taschenrechner, Focus Timer, Converter, Datenübertragungsraten-Rechner mit Lernmodus, Notenmanager)
-- 🎮 Modularer Spiele-Hub inkl. virtuellem Haustier-System
+- 🎮 Modularer Spiele-Hub inkl. spielübergreifendem virtuellem Haustier-System
 - 🌟 Tägliche Positivity-Erinnerungen
 - 🌤 Wetterwidget mit Standortauswahl
 - 🎉 National-Day-Widget
-- 💾 Vollständig lokale Datenspeicherung
+- 🎨 6 eingebaute Themes + eigener Theme-Builder für individuelle Farbschemata
+- 💾 Lokale Datenspeicherung mit optionalem Geräte-Sync
+- 📲 Installierbar als PWA mit Offline-Zugriff (bei Nutzung über `https://`)
 
 ---
 
@@ -48,39 +53,37 @@ Die Startseite dient als persönliches Kontrollzentrum.
 
 ### Aufgaben der Woche
 
-- Priorisierte Wochenaufgaben
+- Priorisierte Wochenaufgaben mit dreistufigem Status (offen / in Bearbeitung / abgeschlossen)
 - Schnelles Erstellen neuer Aufgaben
-- Statusverwaltung
+
+### Gruppenpflichten
+
+Eigenständiges Rotationsplanungssystem für geteilte Pflichten (z. B. Wohnheim-/WG-Dienste):
+
+- Beliebig viele "Pflichten" mit Personen oder Gruppen als Teilnehmer
+- Automatische faire Rotation oder feste zyklische Reihenfolge
+- Verknüpfte Pflichten verhindern, dass dieselbe Person in derselben Woche doppelt eingeteilt wird
+- Planung wird dauerhaft gespeichert (nicht bei jedem Laden neu gewürfelt); Bearbeitungen wirken nur auf zukünftige Wochen
 
 ### Mini-Kalender
 
-- Monatsansicht
-- Direkte Terminanzeige
-- Neue Termine erstellen
-- Navigation zwischen Monaten
+- Monatsansicht mit normalen, mehrtägigen und wiederkehrenden Terminen
+- Direkte Terminanzeige und -erstellung
+- Nutzt ausschließlich Daten aus dem Kalender-Modul, keine eigene Terminverwaltung
 
 ### Wetter
 
-- Wetterdaten für frei wählbaren Ort
+- Wetterdaten für frei wählbaren Ort (Open-Meteo)
 - Optional automatische Standorterkennung
-- Anzeige aktueller Bedingungen
+- Zeigt nur die aktuellen Bedingungen, keine Vorhersage
 
 ### Schnellnotiz
 
-- Permanente lokale Notizen
-- Ideal für spontane Ideen
+- Eine permanente lokale Notiz für spontane Ideen
 
 ### National Day Widget
 
-Zeigt den aktuellen internationalen Aktionstag an.
-
-Beispiele:
-
-- Weltumwelttag
-- Weltmeertag
-- National Repeat Day
-
-Per Klick kann die Beschreibung direkt ausgeklappt werden.
+Zeigt den aktuellen internationalen Aktionstag an, Beschreibung per Klick ausklappbar.
 
 ### Positivity
 
@@ -93,20 +96,13 @@ Zeigt täglich eine kurze, positive Erinnerung an.
 
 ### Countdown-System
 
-Persönliche Ereignisse mit Resttagen.
-
-Beispiele:
-
-- Ferien
-- Praktikum
-- Prüfungen
-- Geburtstage
+Persönliche Ereignisse mit Resttagen (Ferien, Praktikum, Prüfungen, Geburtstage, …).
 
 ---
 
 # 📌 Pinnwand
 
-Eigenständiger Bereich für freie Karten – früher Teil von „Heute“, jetzt ein eigener Tab mit mehr Platz.
+Eigenständiger Bereich für freie Karten — früher Teil von „Heute“, jetzt ein eigener Tab mit mehr Platz.
 
 ## Features
 
@@ -119,16 +115,10 @@ Eigenständiger Bereich für freie Karten – früher Teil von „Heute“, jetz
   - **Code** – für Code und Terminalbefehle, mit Copy-Funktion
   - **Checkliste** – Kästchen zum Abhaken mit Fortschrittsanzeige
   - **Zitat** – ein einzelner, groß gesetzter Satz
+- Eigener Kachel-Designer für benutzerdefinierte Karten (Hintergrundfarbe, Washi Tape, Büroklammer, abgeknickte Ecke)
 - Farbe, Spalte und Stil frei editierbar
 
-Ideal für:
-
-- To-Dos
-- Einkaufslisten
-- Berichtsheft
-- Definitionen
-- Unterrichtsfragen
-- Eigene Kategorien
+Ideal für: To-Dos, Einkaufslisten, Berichtsheft, Definitionen, Unterrichtsfragen, eigene Kategorien.
 
 ---
 
@@ -138,16 +128,14 @@ Lernsystem für Ausbildung, Schule oder Studium.
 
 ## Features
 
-- Fächer und Themengruppen 
-- Lernkarten 
-- Leitner-System 
-- Lernsessions 
-- Lernfortschritt und Statistiken 
-- Lernserien (Streaks) 
-- Schwierige Karten markieren 
-- Kartenexport 
-- Lokale Speicherung 
-- Einklappbare Bereiche 
+- Fächer und Themengruppen
+- Leitner-System (5 Boxen, automatisch wachsende Wiederholungsintervalle)
+- Lernsessions mit Live-Statistik, Motivationsnachrichten und Abschlusszusammenfassung
+- Lernfortschritt und Statistiken je Themengruppe
+- Lernserien (Streaks) und Tagesstatistiken
+- Schwierige Karten markieren
+- Kartenexport als JSON (Import ist geplant)
+- Lokale Speicherung
 
 ---
 
@@ -157,51 +145,46 @@ Persönliches Wissensarchiv mit Markdown-Unterstützung.
 
 ## Features
 
-- Kategorien
-- Favoriten
+- Kategorien und Favoriten
 - Volltextsuche
-- Markdown
-- Syntax Highlighting
+- Markdown mit Syntax Highlighting
 - Codeblöcke mit Copy-Funktion
-- Tabellen
-- Listen
+- Tabellen und Listen
 - Export & Import
 
-Ideal für:
-
-- Git-Befehle
-- Linux-Kommandos
-- Programmiernotizen
-- Dokumentationen
-- Tutorials
+Ideal für: Git-Befehle, Linux-Kommandos, Programmiernotizen, Dokumentationen, Tutorials.
 
 ---
 
 # 📅 Kalender
 
-Vollständige Terminverwaltung.
+Vollständige Terminverwaltung — die alleinige Quelle für Terminverwaltung im Hub.
 
 ## Features
 
-- Monatsansicht
-- Tagesansicht
+- Monatsansicht und Tagesansicht
 - ISO-Kalenderwochen
-- Countdown-Ereignisse
-- Wiederkehrende Termine
-- Notizen
+- Countdown-Termine
+- Wiederkehrende Termine (täglich/wöchentlich/monatlich/jährlich, eigenes Intervall, mehrere Wochentage, Serienbearbeitung mit Ausnahmen)
+- Individuelle Terminfarben
+- Geburtstage (eigenes System, automatische jährliche Wiederholung) und offline berechnete Feiertage (bundesweit + Bundesland)
+- Monatsziele und automatische Monatsstatistik
+- Mondphase und Wetter im saisonalen Hero
 
 ## Mehrtägige Termine
 
-Termine können über mehrere Tage laufen.
+Termine können über mehrere Tage laufen (Ferien, Praktika, Urlaube, …) und werden automatisch als durchgehender Balken über den gesamten Zeitraum dargestellt.
 
-Beispiele:
+## Google Calendar (optional)
 
-- Ferien
-- Praktika
-- Projekte
-- Urlaube
+Google-Kalender lassen sich optional verbinden (Einstellungen → „Google Calendar“):
 
-Diese werden automatisch über den gesamten Zeitraum dargestellt.
+- Anmeldung mit einer eigenen, kostenlos erstellbaren Google-Client-ID (OAuth) — funktioniert nur über `https://`/`http://localhost`, nicht beim direkten Öffnen von `index.html`
+- Auswahl, welche Google-Kalender in Nook angezeigt werden
+- Automatischer Abgleich inkl. Löschungen, wahlweise in festem Intervall oder manuell per Klick
+- Google-Termine sind klar als solche erkennbar (eigenes Präfix statt neuer Optik) und bleiben ein reiner Nur-Lese-Spiegel, getrennt von Nooks eigenen Terminen gespeichert — bearbeitet werden sie weiterhin in Google
+- Optional: einzelne oder mehrtägige Nook-Termine zu Google übertragen (Terminserien werden aktuell nicht exportiert)
+- Architektur bewusst offen für weitere externe Kalender-Anbieter neben Google
 
 ---
 
@@ -211,112 +194,64 @@ Persönliche Finanzübersicht mit Fokus auf Ausbildung und Alltag.
 
 ## Monatsübersicht
 
-### Einnahmen
-
-Zeigt:
-
-- offene Einnahmen
-- bereits erhaltene Einnahmen
-- Monatssumme
-
-### Ausgaben
-
-Unterteilt in:
-
-- 🔴 Muss
-- 🟡 Brauche
-- 🟢 Möchte
-
-Ausgaben können direkt als bezahlt markiert werden.
-
-### Freies Budget
-
-Berechnet automatisch:
-
-```text
-Kontostand
-- Offene Ausgaben
-----------------
-Verbleibend
-```
+Zeigt Einnahmen (offen/erhalten), Ausgaben (🔴 Muss / 🟡 Brauche / 🟢 Möchte, direkt als bezahlt markierbar) und das freie Budget (Kontostand − offene Ausgaben).
 
 ## Liquiditätsvorschau
 
-Zeigt:
+Zeigt Startkapital des nächsten Monats, Ausgaben vor Gehaltseingang, Puffer und kritische Zeiträume — rechnet immer ab dem heutigen Tag.
 
-- Startkapital des nächsten Monats
-- Ausgaben vor Gehaltseingang
-- Puffer nach Ausgaben
-- Kritische Zeiträume
+## Finanzierung — „Jedem Euro einen Job“
 
-## Sparplaner
+Zentrale Engine, über die Einnahmen konkret Sparzielen, Schulden oder Ausgaben zugeordnet werden. Interaktiver Geldfluss-Planer per Drag & Drop, inklusive Kapazitätsgrenzen je Karte.
 
-Eigener Unterbereich innerhalb von Budget zur langfristigen Sparplanung, basierend auf den wiederkehrenden Ein- und Ausgaben.
+## Sparplaner (Sub-Tabs Prognose & Sparpläne)
 
-### Szenarien
+- **Sparprognose**: berechnet aus wiederkehrenden Posten drei Sparraten-Szenarien (🔒 Garantiert, 📊 Realistisch, 🚀 Optimistisch), inkl. Zeitstrahl und „Was-wäre-wenn?“-Simulator
+- **Sparpläne**: eigenständige, vom Nutzer angelegte Spar-Vorhaben mit Zielbetrag, Zieldatum und Einzahlungs-Einträgen, optional mit einem Sparziel verknüpft
 
-Berechnet aus den wiederkehrenden Posten drei mögliche monatliche Sparraten:
+## Schulden & Raten
 
-- 🔒 Garantiert – nur feste, sichere Beträge
-- 📊 Realistisch – inkl. Durchschnitt variabler Posten
-- 🚀 Optimistisch – bester Fall
+Getrennt von Sparzielen verwaltet (eine Schuld wird getilgt, nicht gespart), ebenfalls über die Finanzierung-Engine aus Einnahmen bedienbar.
 
-Jeder wiederkehrende Posten kann einzeln von der Sparplan-Berechnung ausgeschlossen werden.
+## Taschengeld (optional)
 
-### Zeitstrahl
-
-Zeigt anhand des gewählten Szenarios, wann Sparziele voraussichtlich erreicht werden.
-
-### 🔮 Was-wäre-wenn?
-
-Simulator zum Durchspielen einer frei wählbaren monatlichen Sparrate, ohne das eigentliche Szenario zu verändern.
-
-### Weitere Funktionen
-
-- Übersicht aller Einnahmen/Ausgaben, die in die Berechnung einfließen
-- Direkter Soll-Vergleich mit den Sparzielen
-- Zusammenfassung als kompakte Kennzahlen
+Automatische Tagegeld-Berechnung, z. B. für Ausbildungsberufe mit wechselnden Praxis-/Schulphasen: unterschiedliche Sätze für Wochentag/Samstag/Sonntag/Feiertag, Berücksichtigung eines festen Heimfahrt-Wochentags sowie Abwesenheiten. Läuft als virtuelle Einnahme automatisch in Monatsübersicht, Finanzstatus und Liquiditätsvorschau ein.
 
 ---
 
 # 🌱 Finanzgarten
 
-Gamifizierte Darstellung von Kontostand und Sparzielen.
+Gamifizierte Darstellung von Kontostand und Sparzielen, direkt in Budget.
 
 ## Finanzbaum
 
-Der Finanzbaum wächst mit deinem Kontostand.
-
-Wachstumsstufen:
-
-```text
-Samen
-Keimling
-Kleine Pflanze
-Mittlere Pflanze
-Großer Baum
-Blühender Baum
-```
+Wächst mit dem Kontostand, unabhängig von einzelnen Sparzielen: Samen → Keimling → Kleine Pflanze → Mittlere Pflanze → Großer Baum → Blühender Baum.
 
 ## Sparziel-Pflanzen
 
-Jedes Sparziel kann eine eigene Pflanze besitzen:
+Jedes Sparziel kann eine eigene Pflanze besitzen (🌻 Sonnenblume, 🌵 Kaktus, 🌳 Bonsai, 🪴 Zimmerpflanze, 🌸 Kirschblüte), live mit dem jeweiligen Fortschritt verknüpft. Keine Bestrafung bei Ausgaben — rein positive Motivation.
 
-- 🌻 Sonnenblume
-- 🌵 Kaktus
-- 🌳 Bonsai
-- 🪴 Zimmerpflanze
-- 🌸 Kirschblüte
+> Der Finanzgarten ist unabhängig vom separaten Garten-Tab entstanden — beide sind eigenständige, ähnliche Wachstums-Visualisierungen für unterschiedliche Daten.
 
-Jede Pflanzenart besitzt eigene SVG-Grafiken und individuelle Wachstumsstufen.
+---
 
-### Besonderheiten
+# 🪴 Garten
 
-- Live-Verknüpfung mit Sparzielen
-- Fortschrittsanzeige
-- Automatische Aktualisierung
-- Keine Bestrafung bei Ausgaben
-- Fokus auf positive Motivation
+Ein ruhiger, illustrierter „Bilderbuch-Garten“ zum Sammeln und Anschauen — kein Farming- oder Idle-Game. Leitidee: „Show the moments, not the movement“ — Zustände wechseln sichtbar, aber selten und in klaren Sprüngen statt flüssiger Animation.
+
+## Anzuchtfeld
+
+Neue Pflanzen wachsen zunächst im Anzuchtfeld, in vier sichtbaren Stufen: Samen → Keimling → junge Pflanze → ausgewachsen (insgesamt ca. 30 Minuten reale Zeit, läuft auch weiter, während der Garten geschlossen ist). Erst ausgewachsene Pflanzen lassen sich per Drag in den Garten umpflanzen und dort frei verschieben.
+
+## Pflanzen & Pflanzendex
+
+Über 70 Pflanzenarten (Blumen, Obst, Nüsse) — mehrere davon mit unterschiedlichen Farbvarianten und seltenen „Shiny“-Varianten. Jede erstmals platzierte Pflanze bzw. Farbvariante wird automatisch im Pflanzendex festgehalten (Bild, Name, entdeckte Varianten, Erstentdeckungsdatum).
+
+## Pflanzenstand
+
+Optionale, rein tag-basierte Gartenrätsel: passende Pflanzen (z. B. nach Farbe, Jahreszeit oder „essbar“) in eine Drop-Zone ziehen, um ein Rätsel zu lösen und ein neues freizuschalten.
+
+Kein Verwelken, kein Zeitdruck, keine Pflicht wiederzukommen — Garten ist bewusst frei von jeder Art von FOMO oder Gamification-Zwang.
 
 ---
 
@@ -366,21 +301,23 @@ Verwaltung von Schul- und Ausbildungsnoten über mehrere Ausbildungsjahre hinweg
 
 # 📁 Projekte
 
-Bereich für langfristige Planung.
+Bereich für langfristige Planung — Softwareprojekte, Ausbildungsthemen, Roadmaps, Ideen, langfristige Ziele.
 
-## Geeignet für
+## Projektwald
 
-- Softwareprojekte
-- Ausbildungsthemen
-- Roadmaps
-- Ideen
-- Langfristige Ziele
+Der Projektwald ist die alleinige Übersichtsansicht — eine separate Kartenliste gibt es nicht mehr. Jedes Projekt wächst als eigener PNG-Baum vor einer illustrierten Waldlandschaft, gestaffelt in vier Tiefenreihen (hinten kleiner und enger, vorne größer, mit mehr Abstand). Tabs (Alle/Aktiv/Abgeschlossen) zeigen die jeweilige Projektanzahl direkt im Label; Suche und Prioritätsfilter sind schwebende Pills über der Landschaft.
 
-## Projektwald (WIP)
+## Projektbaum & Customizing
 
-Zusätzlich zur klassischen Kartenansicht gibt es eine Waldansicht: Jedes Projekt wächst als eigener Baum, der mit dem Projektfortschritt größer wird. Zwischen Karten- und Waldansicht kann jederzeit umgeschaltet werden.
+Jedes Projekt bekommt dauerhaft eine von 5 Baumvarianten zugewiesen; abgeschlossene/archivierte Projekte zeigen eine herbstliche Version. Auf der Projekt-Detailseite wachsen erledigte Kernaufgaben als Obst, erledigte Extraaufgaben als Blüten in die Baumkrone — über 70 Frucht-/Blumensorten stehen im Customizing-Modal zur Auswahl.
 
-Abgeschlossene bzw. inaktive Projekte lassen sich archivieren, ohne den Wald zu überladen.
+## Weitere Funktionen
+
+- URL-Routing: Projekte und ihre Detailseite sind direkt verlinkbar
+- Eigenständige mobile Detailansicht
+- Kern- und Extra-Aufgaben (Extras beeinflussen den Hauptfortschritt nicht), Unterprojekte, automatische Fortschrittsberechnung
+- Archivierung abgeschlossener/inaktiver Projekte (jederzeit wiederherstellbar), ohne den Wald zu überladen
+- Inline-Bearbeitung von Aufgaben per Doppelklick
 
 ---
 
@@ -392,8 +329,8 @@ Lokaler Cozy-Game-Hub mit modularer Plugin-Architektur.
 
 - Tic-Tac-Toe
 - Memory
-- Snake
-- Neon Dodge (wip)
+- Snake (bringt ein eigenes Cozy-Home-Haustier mit)
+- Neon Dodge
 - Flashcard Battle (wip)
 - Debug Hero (wip)
 - Cozy Home (virtuelles Haustier)
@@ -430,10 +367,12 @@ Ein eigenständiges Spiel im Games Hub, das gleichzeitig als spielübergreifende
 
 Andere Spiele können eigene Haustiere beisteuern, ohne dass Cozy Home sie kennt:
 
-- Jedes Spiel definiert optionale Haustiere in seinem eigenen `manifest.js`
+- Jedes Spiel definiert optionale Haustiere in seinem eigenen `manifest.js` (aktuell z. B. Snake)
 - Cozy Home durchsucht `window.GameHub.registry` und führt fremde Haustiere automatisch in seine Haustier-Liste zusammen
 - Der Shop trennt automatisch zwischen Standard-Artikeln und spielübergreifenden Artikeln
 - Fremde Assets (Bilder etc.) bleiben immer im Ordner des jeweiligen Spiels – Cozy Home übernimmt oder verlinkt sie nur
+
+Futter, Spielzeug und Vorlieben-Level sind dagegen rein interne Cozy-Home-Registries — nicht von anderen Spielen deklarierbar.
 
 ### Live-Pet-Karte im Games Hub
 
@@ -442,7 +381,6 @@ In der Seitenleiste des Games Hub erscheint automatisch eine Live-Karte des akti
 - Zeigt dasselbe Zimmer (Jahreszeit, Tageszeit, Wetter) wie in Cozy Home
 - Wohlbefinden-Anzeige (Mittelwert aus Hunger, Energie, Zuneigung)
 - Direkte Aktionen: Streicheln, Füttern, Spielen – ohne das Spiel öffnen zu müssen
-- Aktualisiert sich live über `window.cozyHome.onUpdate()`
 
 Cozy Home ist rein datengetrieben aufgebaut: neue Haustiere, Futter- oder Spielzeugarten erfordern ausschließlich neue Registry-Einträge, keine Codeänderungen.
 
@@ -520,25 +458,36 @@ window.registerGame({
 
 Konfiguration des gesamten Hubs.
 
-## Enthalten
+## Darstellung
 
-- Unterrichtsblöcke
-- Wetterstandort
-- Positivity-Kategorien verwalten
-- Backup & Restore
-- Datenexport
-- Datenimport
+- 6 eingebaute Themes (Hell, Dunkel, Midnight, Forest, Espresso, OLED), umschaltbar direkt über die Navigation
+- Eigener Theme-Builder für individuelle Farbschemata (Hintergrund/Fläche/Text/Akzent) inklusive eigenem Hintergrundbild
+- Persönliche Farbbibliothek für Termine, Karten u. a. — automatisch theme-gerecht für Hell/Dunkel abgeleitet, keine feste Palette
 
-## Dark Mode
+## Tabs
 
-Der Dark Mode kann direkt über das Symbol in der Navigation umgeschaltet werden.
+- Sichtbarkeit einzelner Tabs ein-/ausblenden
+- Eigene Reihenfolge in Sidebar/Navigation per Pfeiltasten festlegen
+
+## Google Calendar
+
+Verbinden/Trennen, Auswahl der in Nook angezeigten Google-Kalender, Sync-Intervall und optionaler Termin-Export — Details siehe Abschnitt „Kalender“.
+
+## Geräte-Sync (optional)
+
+Per E-Mail-Login (Magic Link) lassen sich Daten geräteübergreifend synchronisieren. Ohne Anmeldung bleibt Nook exakt wie gewohnt rein lokal nutzbar — Sync ist ein rein additives Extra, nie Voraussetzung.
+
+## Weitere Einstellungen
+
+- Unterrichtsblöcke, Wetterstandort, Positivity-Kategorien
+- Backup: vollständiger Export/Import aller Daten als JSON-Datei
+- Spieldaten (inkl. Cozy Home) zurücksetzen
 
 ---
 
 # 🎨 Design
 
 Nook nutzt ein gemütliches, papierinspiriertes Design.
-
 
 ## Designziele
 
@@ -549,39 +498,31 @@ Nook nutzt ein gemütliches, papierinspiriertes Design.
 - Lokale Nutzung
 - Produktivität ohne Überforderung
 
-Inspiriert von:
+Inspiriert von: Notion, Cozy Productivity Apps, Nintendo Switch UI, Animal Crossing, digitalen Notizbüchern.
 
-- Notion
-- Cozy Productivity Apps
-- Nintendo Switch UI
-- Animal Crossing
-- Digitale Notizbücher
+Jeder größere Bereich (Kalender, Budget, Projekte, Garten, Games, …) hat zusätzlich sein eigenes, ausführliches Design-/Architekturkonzept unter `AI documentation/`.
 
-Die Design- und Architekturprinzipien Nooks sind zusätzlich im **Personal Hub Handbook** dokumentiert (Komponenten-Bibliothek, UX-Guidelines, Coding Standards).
+---
+
+# 🏗 Architektur
+
+Ein paar technische Grundentscheidungen, die für die Weiterentwicklung relevant sind:
+
+- **Kein Build-Schritt, kein Bundler.** Reine `<script src="...">`-Tags in fester Reihenfolge in `index.html`, ein gemeinsamer globaler Scope, keine ES-Module. Größere Bereiche sind auf mehrere Dateien mit fest dokumentierter Ladereihenfolge aufgeteilt (z. B. Budget: 8 Dateien, Google-Calendar-Integration: separate Dateien für Anmeldung/API/Sync/Einstellungen-UI).
+- **Eine einzige Persistenzschicht.** Alle Daten laufen über einen zentralen `DB`-Wrapper auf `localStorage` (`DB.get`/`DB.set`) — jedes Feature bekommt einen eigenen Key. Änderungen am Datenformat laufen über einmalige Migrationen beim Laden, nie über stillschweigendes Verwerfen alter Daten.
+- **Läuft direkt über `file://`.** Für Funktionen, die einen sicheren Browser-Kontext brauchen (Google-Calendar-Anmeldung, Installierbarkeit/Offline-Cache als PWA), muss Nook stattdessen über `https://`/`http://localhost` laufen — die App bleibt dabei überall sonst unverändert nutzbar.
+- **Selbstregistrierende Plugin-Architekturen** für Erweiterbarkeit: Spiele (`games/<id>/`) und externe Kalender-Anbieter registrieren sich jeweils selbst bei ihrem Hub, der keine einzelnen Implementierungen kennen muss — neue Spiele/Anbieter erfordern keine Änderung am jeweiligen Hub.
+- **Optionale externe Anbindungen bleiben additiv.** Geräte-Sync (Supabase) und Google Calendar funktionieren beide nur nach ausdrücklicher Anmeldung und verändern nichts an Nooks lokalem Grundverhalten, solange man sie nicht aktiv nutzt.
 
 ---
 
 # 💾 Speicherung
 
-Alle Daten werden lokal gespeichert.
+Alle Daten werden primär lokal gespeichert, es wird kein Server benötigt.
 
-Es werden keine Server benötigt.
+Gespeichert werden unter anderem: Termine, Aufgaben, Gruppenpflichten, Budgetdaten, Sparziele, Finanzgarten, Garten (Pflanzen, Pflanzendex), Karteikarten, Projekte, Anleitungen, Pinnwand-Karten, Notenmanager-Daten, Positivity-Karten und -Kategorien, Spielstände (inkl. Cozy Home), Theme-Einstellungen und persönliche Farben, Google-Calendar-Verbindungseinstellungen, allgemeine Einstellungen.
 
-Gespeichert werden unter anderem:
-
-- Termine
-- Aufgaben
-- Budgetdaten
-- Sparziele
-- Finanzgarten
-- Karteikarten
-- Projekte
-- Anleitungen
-- Pinnwand-Karten
-- Notenmanager-Daten (Ausbildungsjahre, Fächer, Kategorien, Zeugnisse)
-- Positivity-Karten und -Kategorien
-- Spielstände (inkl. Cozy Home)
-- Einstellungen
+Optional lassen sich diese Daten geräteübergreifend synchronisieren (siehe „Einstellungen → Geräte-Sync“) — ganz ohne Anmeldung bleibt Nook trotzdem vollständig lokal nutzbar.
 
 ---
 
@@ -589,11 +530,16 @@ Gespeichert werden unter anderem:
 
 Nook befindet sich weiterhin in aktiver Entwicklung.
 
-Geplante Erweiterungen:
+## Geplant
 
-- Weitere Spiele-Plugins mit eigenen Cozy-Home-Haustieren (z. B. Snake)
-- Zusätzliche Finanzgarten-Pflanzen
-- Erweiterte Projektverwaltung
-- `inDevelopment`-Kartenstatus für Spiele in Arbeit
-- Tools-Module „Signallaufzeiten“ und „Netzwerktechnik/IPv4/Subnetting“
-- Aufräumen ungenutzter Altlasten (laufender Dead-Code-Audit)
+- **Garten**: Beau (die Gartenkatze), seltene Ereignisse (Schmetterlinge, Wetter, Fee/Shiny-Verwandlung), Mystery-Samen, Laden & Münzen, Tageszeit-/Wetterstimmung, weitere Gartenbereiche
+- **Projekte**: Meilensteine, Aufgaben-Abhängigkeiten, Vorlagen, Tags, Notizen, Dateianhänge
+- **Kalender**: Wochen-/Jahresansicht, Drag & Drop für Termine, ICS-Import/Export, weitere externe Kalender-Anbieter (z. B. Outlook/CalDAV) neben Google
+- **Budget**: Diagramme, Kategorien, CSV-Import/Export, Jahresübersicht, mehrere Konten
+- **Spiele**: Debug Hero und Flashcard Battle fertigstellen, weitere spielübergreifende Cozy-Home-Haustiere, Spielzeitstatistiken
+- **Tools**: Signallaufzeiten-Rechner, Netzwerktechnik/IPv4/Subnetting-Modul
+- **Karteikarten**: Karten-Import, Bilder auf Karteikarten, Markdown-Unterstützung
+
+## Laufend
+
+- Aufräumen ungenutzter Altlasten (Dead-Code-Audit)

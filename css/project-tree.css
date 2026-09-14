@@ -182,22 +182,23 @@
 }
 
 /* Obst-/Blumen-Deko — rein dekorativ, oben auf der Baumkrone platziert
-   (Positionen: generateCanopySlots() in project-tree.js). Welches konkrete
-   Objekt (Apfel, Kirschblüte, ...) das ist, kommt aus DECOR_REGISTRY/
+   (Positionen: pickCanopySlot() in project-tree.js). Welches konkrete
+   Objekt (Apfel, Apfelblüte, ...) das ist, kommt aus DECOR_REGISTRY/
    task.decorId (ebenfalls project-tree.js) — die Interaktion selbst
    (abhaken, Details) läuft weiterhin über die Äste-Kacheln darunter. */
 .pdt-tree-decor { position: absolute; inset: 0; pointer-events: none; }
 .pdt-tree-decor-item {
   position: absolute;
   transform: translate(-50%, -50%);
-  width: 22px;
-  height: 22px;
+  /* 28.8/26.4px statt 24/22px -> nochmal 20% größer (auf Wunsch). */
+  width: 28.8px;
+  height: 28.8px;
   object-fit: contain;
   filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
 }
 /* Blumen (category:'blumen' in DECOR_REGISTRY) etwas kleiner als Obst —
    optisch näher an der Größe einer echten Blüte. */
-.pdt-tree-decor-blumen { width: 20px; height: 20px; }
+.pdt-tree-decor-blumen { width: 26.4px; height: 26.4px; }
 
 /* Kein Mobile-Override mehr für .pdt-tree-col/.pdt-tree-img — der Baum
    bleibt auf JEDER Breite exakt die Desktop-Mechanik oben (absolut,

@@ -2,6 +2,9 @@
 .wrangler/
 node_modules/
 
+# Claude Code Session-/Tooling-Verzeichnis (lokal, kein App-Code)
+.claude/
+
 # Android-Signing-Keystore (Phase 4, Bubblewrap) — enthält das einzige
 # Zertifikat, mit dem sich die Play-Store-App je aktualisieren lässt.
 # Gehört niemals ins Repo, wird separat gesichert.
@@ -14,3 +17,4 @@ js/sync-config.js
 
 # Persönliche Referenzdatei (nicht Teil der App)
 Müll-Wasser.xlsx
+Nook Garten.docx

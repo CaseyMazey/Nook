@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="css/main.css" />
   <link rel="stylesheet" href="css/budget.css" />
   <link rel="stylesheet" href="css/calendar.css" />
+  <link rel="stylesheet" href="css/google-calendar.css" />
   <link rel="stylesheet" href="css/flashcards.css" />
   <link rel="stylesheet" href="css/games.css" />
   <link rel="stylesheet" href="css/guides.css" />
@@ -346,7 +347,7 @@
           <div id="project-forest-wrap" style="display:none;">
             <div id="project-forest">
               <div class="forest-bg">
-                <img src="img/forest.png" alt="" class="forest-bg-img" draggable="false" />
+                <img src="img/forest/forest.png" alt="" class="forest-bg-img" draggable="false" />
               </div>
 
               <div class="forest-overlay-top">
@@ -420,7 +421,7 @@
             <div class="pdt-hero">
               <!-- Hintergrundbild (optional, wenn vorhanden) -->
               <div class="pdt-hero-bg">
-                <img src="img/tree.png" alt="" class="pdt-landscape" onerror="this.style.display='none'"/>
+                <img src="img/forest/tree.png" alt="" class="pdt-landscape" onerror="this.style.display='none'"/>
                 <div class="pdt-hero-overlay"></div>
               </div>
 
@@ -1258,7 +1259,91 @@
                 <button class="btn-ghost" id="reset-highscores-btn" style="font-size:13px;color:var(--prio-1);border-color:var(--prio-1);">Alles zurücksetzen</button>
               </div>
             </div>
- 
+
+            <div class="panel settings-panel">
+              <div class="panel-header panel-header-toggle" id="gcal-settings-header">
+                <span class="panel-label">Google Calendar</span>
+                <span class="panel-chevron" id="gcal-settings-chevron">▶</span>
+              </div>
+              <div id="gcal-settings-body" class="collapsed">
+                <div style="padding:0 18px 14px;">
+
+                  <p class="gcal-hint hidden" id="gcal-unsupported-hint">
+                    Google-Anmeldung funktioniert nur, wenn Nook über <code>https://</code> (oder <code>http://localhost</code>) aufgerufen wird — nicht beim direkten Öffnen von <code>index.html</code> als Datei. Öffne dafür die deployte Version von Nook.
+                  </p>
+
+                  <div id="gcal-connect-block">
+                    <p class="gcal-hint">Verbinde ein Google-Konto, um Google-Kalender in Nook anzuzeigen und optional Nook-Termine dorthin zu übertragen. Dafür wird einmalig eine eigene, kostenlose Google-Client-ID benötigt.</p>
+                    <details class="gcal-setup-details">
+                      <summary>Wie bekomme ich eine Client-ID?</summary>
+                      <ol>
+                        <li>In der <strong>Google Cloud Console</strong> (console.cloud.google.com) ein Projekt anlegen (oder ein bestehendes nutzen).</li>
+                        <li><strong>APIs &amp; Dienste → Bibliothek</strong> → „Google Calendar API“ aktivieren.</li>
+                        <li><strong>APIs &amp; Dienste → OAuth-Zustimmungsbildschirm</strong> einrichten (Nutzertyp „Extern“ reicht, Testnutzer = deine eigene E-Mail-Adresse).</li>
+                        <li><strong>APIs &amp; Dienste → Anmeldedaten → Anmeldedaten erstellen → OAuth-Client-ID</strong>, Typ „Webanwendung“.</li>
+                        <li>Bei „Autorisierte JavaScript-Quellen“ die Nook-URL eintragen (z.B. <code>https://nook-ci7.pages.dev</code>).</li>
+                        <li>Die erzeugte Client-ID hier unten eintragen.</li>
+                      </ol>
+                    </details>
+                    <div class="gcal-connect-row">
+                      <input type="text" class="modal-input" id="gcal-clientid-input" placeholder="Google-Client-ID (…apps.googleusercontent.com)" autocomplete="off"/>
+                      <button class="btn-primary" id="gcal-connect-btn" style="flex-shrink:0;">Verbinden</button>
+                    </div>
+                    <p id="gcal-connect-error"></p>
+                  </div>
+
+                  <div id="gcal-connected-block" class="hidden">
+                    <div class="gcal-account-row">
+                      <span class="gcal-account-email" id="gcal-account-email"></span>
+                      <button class="btn-ghost" id="gcal-disconnect-btn" style="font-size:13px;">Trennen</button>
+                    </div>
+
+                    <div class="gcal-subhead">Kalender in Nook anzeigen</div>
+                    <div id="gcal-calendar-list" class="gcal-calendar-list"></div>
+                    <button class="btn-ghost" id="gcal-refresh-calendars-btn" style="font-size:12px;margin-top:8px;">Kalenderliste aktualisieren</button>
+
+                    <div class="gcal-subhead">Synchronisation</div>
+                    <div class="settings-row">
+                      <div><div class="settings-row-title">Automatisch aktualisieren</div><div class="settings-row-sub">Google-Termine/-Löschungen in diesem Intervall abholen</div></div>
+                      <select id="gcal-autosync-select" class="modal-select" style="width:auto;">
+                        <option value="0">Nur manuell</option>
+                        <option value="5">Alle 5 Minuten</option>
+                        <option value="15">Alle 15 Minuten</option>
+                        <option value="30">Alle 30 Minuten</option>
+                        <option value="60">Stündlich</option>
+                      </select>
+                    </div>
+                    <div class="settings-row">
+                      <div><div class="settings-row-title">Neue Nook-Termine zu Google übertragen</div><div class="settings-row-sub">Nur einmalige/mehrtägige Termine — Terminserien werden aktuell nicht übertragen</div></div>
+                      <label class="toggle"><input type="checkbox" id="gcal-export-toggle"/><span class="toggle-slider"></span></label>
+                    </div>
+                    <div class="settings-row" id="gcal-export-calendar-row">
+                      <div><div class="settings-row-title">Ziel-Kalender</div><div class="settings-row-sub">Wohin übertragene Nook-Termine angelegt werden</div></div>
+                      <select id="gcal-export-calendar-select" class="modal-select" style="width:auto;"></select>
+                    </div>
+
+                    <div class="gcal-sync-actions">
+                      <span class="settings-row-sub" id="gcal-last-sync-sub"></span>
+                      <button class="btn-ghost" id="gcal-sync-now-btn" style="font-size:13px;">Jetzt synchronisieren</button>
+                    </div>
+                    <p id="gcal-sync-error"></p>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+
+            <div class="panel settings-panel">
+              <div class="panel-header panel-header-toggle" id="tab-visibility-header">
+                <span class="panel-label">Sichtbare Tabs</span>
+                <span class="panel-chevron" id="tab-visibility-chevron">▶</span>
+              </div>
+              <div id="tab-visibility-body" class="collapsed">
+                <div class="settings-row-sub" style="padding:0 18px 12px;">Blende Tabs aus, die du nicht brauchst — sie verschwinden aus der Navigation, deine Daten bleiben dabei erhalten.</div>
+                <div id="tab-visibility-list"></div>
+              </div>
+            </div>
+
           </div>
  
           <div class="settings-col">
@@ -1372,6 +1457,13 @@
       if (!name || name === 'mehr' || name === 'today') return;
       var target = document.getElementById('view-' + name);
       if (!target) return;
+      // Vom Nutzer ausgeblendeter Tab (Einstellungen -> "Sichtbare Tabs",
+      // main.js: hiddenTabs) -> bei "today" bleiben, das echte Redirect
+      // übernimmt gleich applyTabVisibility() (main.js).
+      try {
+        var hidden = JSON.parse(localStorage.getItem('hiddenTabs') || '[]');
+        if (hidden.indexOf(name) !== -1) return;
+      } catch (e) {}
       var current = document.getElementById('view-today');
       if (current) current.classList.remove('active');
       target.classList.add('active');
@@ -1477,6 +1569,10 @@
       <div class="modal-row modal-row-inline">
         <div><div class="settings-row-title">In Agenda anzeigen</div><div class="settings-row-sub">Erscheint in Terminlisten</div></div>
         <label class="toggle"><input type="checkbox" id="event-modal-agenda" checked/><span class="toggle-slider"></span></label>
+      </div>
+      <div class="modal-row modal-row-inline hidden" id="event-modal-google-row">
+        <div><div class="settings-row-title">Zu Google Calendar übertragen</div><div class="settings-row-sub">Nur bei einmaligen/mehrtägigen Terminen möglich</div></div>
+        <label class="toggle"><input type="checkbox" id="event-modal-google-push"/><span class="toggle-slider"></span></label>
       </div>
       <div class="modal-actions"><button id="event-modal-cancel" class="btn-ghost">Abbrechen</button><button id="event-modal-save" class="btn-primary">Speichern</button></div>
     </div>
@@ -2509,13 +2605,21 @@
        (project-tree.js) + project.customizing gefüllt, siehe
        renderCustomizingModal() in forest.js. -->
   <div id="project-customizing-modal-overlay" class="modal-backdrop hidden">
-    <div class="modal-box" style="width:460px;max-height:82vh;overflow-y:auto;">
+    <div class="modal-box cust-modal-box" style="width:680px;max-height:82vh;overflow:hidden;">
       <div class="modal-head">
         <span>Customizing</span>
         <button class="modal-x" id="customizing-modal-close">✕</button>
       </div>
       <p class="modal-hint">Lege fest, welche Früchte/Blumen erledigte Haupt- bzw. Extraaufgaben auf dem Baum erzeugen. Bei mehreren ausgewählten Objekten wird bei jeder neu erledigten Aufgabe zufällig eines davon (gleich wahrscheinlich) gewählt.</p>
-      <div id="customizing-sections"></div>
+      <div class="cust-modal-scroll">
+        <div id="customizing-sections"></div>
+      </div>
+      <!-- Nur sichtbar, solange der Entwurf vom gespeicherten Stand abweicht
+           (customizingDirty, siehe renderCustomizingModal()/updateCustomizingSaveBar()
+           in forest.js) — Checkbox-Änderungen speichern nicht mehr sofort. -->
+      <div id="customizing-save-bar" class="cust-save-bar hidden">
+        <button type="button" class="btn-primary" id="customizing-save-btn">Speichern</button>
+      </div>
     </div>
   </div>
 
@@ -2934,6 +3038,16 @@
   <script src="js/sync-config.js"></script>
   <script src="js/sync.js"></script>
   <script src="js/calendar.js"></script>
+  <!-- Google Identity Services (GIS) wird NICHT hier statisch eingebunden,
+       sondern nur bei tatsächlichem Bedarf dynamisch nachgeladen (Muster wie
+       das Lazy-Loading einzelner Spiele in games.js) — siehe
+       loadGoogleIdentityScript() in google-calendar-auth.js. So laden
+       Nutzer, die diese Integration nie anfassen, das Google-Skript gar
+       nicht erst. -->
+  <script src="js/google-calendar-auth.js"></script>
+  <script src="js/google-calendar-api.js"></script>
+  <script src="js/google-calendar-sync.js"></script>
+  <script src="js/google-calendar-settings.js"></script>
   <script src="js/today.js"></script>
   <script src="js/gruppendienste.js"></script>
   <script src="js/pinboard.js"></script>

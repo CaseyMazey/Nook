@@ -45,7 +45,7 @@
 
 /* =========================
    PROJEKTWALD CONTAINER — Vollbild-Landschaft
-   Das Hintergrundbild (img/forest.png) füllt die gesamte verfügbare Fläche
+   Das Hintergrundbild (img/forest/forest.png) füllt die gesamte verfügbare Fläche
    (object-fit:cover) — Titel, Tabs, Suche, Filter und Legende liegen als
    Overlays direkt darauf. Der Projektwald ist die einzige Übersicht,
    .forest-active ist daher dauerhaft aktiv (siehe forest.js).
@@ -752,12 +752,27 @@
   cursor: pointer; user-select: none;
 }
 .cust-subgroup-body { display: none; padding: 2px 0 4px; }
-.cust-subgroup.open .cust-subgroup-body { display: block; }
+/* Spaltenzahl kommt aus --cust-cols (inline, per Item-Anzahl in
+   customizingGridCols(), forest.js) — auf schmaleren Dialogbreiten wird
+   sie unten per Media-Query zusätzlich gedeckelt, nie erhöht. Kein
+   horizontales Scrollen: minmax(0, 1fr) statt fester Spaltenbreite. */
+.cust-subgroup.open .cust-subgroup-body {
+  display: grid;
+  grid-template-columns: repeat(var(--cust-cols, 1), minmax(0, 1fr));
+  gap: 2px 12px;
+}
+@media (max-width: 640px) {
+  .cust-subgroup.open .cust-subgroup-body { grid-template-columns: repeat(min(2, var(--cust-cols, 1)), minmax(0, 1fr)); }
+}
+@media (max-width: 420px) {
+  .cust-subgroup.open .cust-subgroup-body { grid-template-columns: 1fr; }
+}
 
 .cust-row {
-  display: flex; align-items: center; gap: 10px;
-  padding: 6px 6px; border-radius: var(--radius-sm);
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px; border-radius: var(--radius-sm);
   cursor: pointer;
+  min-width: 0;
 }
 .cust-row:hover { background: var(--bg); }
 .cust-row-preview {
@@ -765,11 +780,26 @@
   display: flex; align-items: center; justify-content: center;
 }
 .cust-row-preview img { width: 24px; height: 24px; object-fit: contain; }
-.cust-row-name { flex: 1; font-size: 13px; color: var(--text); }
+.cust-row-name { flex: 1; min-width: 0; font-size: 13px; color: var(--text); }
+
+/* ── Customizing-Modal: scrollbarer Bereich + fest sichtbare Speichern-Leiste
+   (nur bei ungespeicherten Änderungen eingeblendet, siehe
+   updateCustomizingSaveBar() in forest.js) — der Rest des Modals
+   (.modal-box) bleibt unverändert, hier wird nur der mittlere Bereich
+   scrollbar statt der ganzen Box, damit die Leiste immer sichtbar bleibt. */
+.cust-modal-box { overflow: hidden; }
+.cust-modal-scroll { overflow-y: auto; min-height: 0; flex: 1; margin: 0 -28px; padding: 0 28px; }
+.cust-save-bar {
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid var(--border);
+  margin: 0 -28px -28px;
+  padding: 14px 28px;
+}
 
 /* ── WALD ── */
 /* #project-forest-Größe -> aspect-ratio-Regel weiter oben in dieser Datei
-   (hält das Seitenverhältnis von img/forest.png ein, siehe Kommentar dort) */
+   (hält das Seitenverhältnis von img/forest/forest.png ein, siehe Kommentar dort) */
 
 /* .forest-tree-img/.forest-tree-card, PNG-Detailbaum + Deko -> project-tree.css */
 

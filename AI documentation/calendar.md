@@ -361,6 +361,8 @@ Nicht verantwortlich für:
 - Spiele
 - Bibliothek
 
+Die Google-Calendar-Integration (siehe Abschnitt „Google Calendar Integration“) liegt in eigenen `google-calendar-*.js`-Dateien, nicht in calendar.js.
+
 ---
 
 # Datenmodell
@@ -425,6 +427,27 @@ Er ist die primäre Quelle für Kalenderdaten.
 
 ---
 
+# Google Calendar Integration
+
+Nook kann optional mit einem Google-Konto verbunden werden (Einstellungen → „Google Calendar“).
+
+Eigene Dateien (`js/google-calendar-auth.js`, `js/google-calendar-api.js`, `js/google-calendar-sync.js`, `js/google-calendar-settings.js`, `css/google-calendar.css`), bewusst getrennt von `calendar.js` — dieses ruft die Integration nur über optionale `typeof`-Prüfungen auf und funktioniert unverändert, wenn sie fehlt oder nicht verbunden ist.
+
+Architektur (vier Schichten, damit später weitere Anbieter als eigenes Datei-Set neben Google ergänzt werden können):
+
+- **auth**: OAuth-Verbindungsaufbau (Google Identity Services). Funktioniert nur über `https://`/`http://localhost`, nicht über `file://` (Google-seitige Einschränkung).
+- **api**: reiner REST-Zugriff auf die Google Calendar API.
+- **sync**: hält importierte Google-Termine als eigenen, von `events`/`eventSeries` getrennten Nur-Lese-Spiegel (`googleCalCache`). Inkrementeller Abgleich inkl. Löschungen über Googles `syncToken`.
+- **settings**: das Einstellungen-Panel (Verbinden/Trennen, Kalenderauswahl, Sync-Intervall, optionaler Export).
+
+Google-Termine erscheinen read-only in Monatsansicht/Tagesmodal (gestrichelter Rand + „Google“-Badge, Link „In Google öffnen“ statt Bearbeiten/Löschen) — bearbeitet werden sie weiterhin in Google, Änderungen zieht Nook beim nächsten Sync nach.
+
+Optional können einmalige/mehrtägige Nook-Termine zu Google übertragen werden (Termin-Modal → „Zu Google Calendar übertragen“). Terminserien werden bewusst NICHT exportiert (Nooks Serien-Engine müsste dafür in Googles RRULE-Format inkl. Ausnahmen übersetzt werden — eigenständiges Folge-Feature).
+
+Der Kalender bleibt dadurch weiterhin die alleinige Quelle für Nook-eigene Terminverwaltung — Google-Termine sind ein zusätzlicher, klar unterscheidbarer Anzeige-Layer, keine zweite Terminverwaltung.
+
+---
+
 # Zukunft
 
 Geplante Erweiterungen:
@@ -438,7 +461,7 @@ Geplante Erweiterungen:
 - Kalenderfreigaben
 - Import und Export (ICS)
 - Zeitleistenansicht
-- Synchronisation mit externen Kalendern (optional)
+- Weitere externe Kalender-Anbieter (z.B. Outlook/CalDAV) neben Google
 
 ---
 

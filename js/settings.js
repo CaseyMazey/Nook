@@ -8,7 +8,87 @@ function renderSettings(){
   renderBlockSettings();
   renderWeatherSettings();
   renderColorSettings();
+  renderTabVisibilitySettings();
   if (typeof renderPositivitySettings === 'function') renderPositivitySettings();
+  if (typeof renderGoogleCalendarSettings === 'function') renderGoogleCalendarSettings();
+}
+
+// =========================
+// SICHTBARE TABS + REIHENFOLGE
+// Rein UI-seitig — der eigentliche Zustand (hiddenTabs, tabOrder) und die
+// Liste toggelbarer Tabs (TAB_VISIBILITY_CONFIG) leben in main.js, weil sie
+// auch von applyTabVisibility()/applyTabOrder() (Sidebar/Bottom-Nav/"Mehr")
+// gebraucht werden. Die Zeilen hier werden in tabOrder-Reihenfolge
+// gerendert, mit Auf/Ab-Pfeilen statt Drag&Drop — robuster auf Touch und
+// ohne zusätzliche Library.
+//
+// Das Panel selbst ist ein Akkordion (Standard: zugeklappt) — die Liste
+// nimmt sonst dauerhaft viel Platz in den Einstellungen weg, obwohl sie
+// nur selten angefasst wird. Offen/zu-Zustand bleibt über DB erhalten,
+// gleiches Muster wie notenOpenYears in tools-notenmanager.js.
+// =========================
+let tabVisibilityOpen = DB.get('tabVisibilityOpen', false);
+function saveTabVisibilityOpen(){ DB.set('tabVisibilityOpen', tabVisibilityOpen); }
+
+function applyTabVisibilityAccordion(){
+  document.getElementById('tab-visibility-body')?.classList.toggle('collapsed', !tabVisibilityOpen);
+  const chevron = document.getElementById('tab-visibility-chevron');
+  if (chevron) chevron.textContent = tabVisibilityOpen ? '▼' : '▶';
+}
+document.getElementById('tab-visibility-header')?.addEventListener('click', () => {
+  tabVisibilityOpen = !tabVisibilityOpen;
+  saveTabVisibilityOpen();
+  applyTabVisibilityAccordion();
+});
+
+function renderTabVisibilitySettings(){
+  applyTabVisibilityAccordion();
+  const list = document.getElementById('tab-visibility-list');
+  if (!list) return;
+  const tabsById = {};
+  TAB_VISIBILITY_CONFIG.forEach(t => { tabsById[t.id] = t; });
+  list.innerHTML = tabOrder.map((id, i) => {
+    const tab = tabsById[id];
+    if (!tab) return '';
+    return `
+    <div class="settings-row tab-order-row">
+      <div class="tab-order-controls">
+        <button type="button" class="icon-btn tab-order-up" data-tab="${tab.id}" ${i === 0 ? 'disabled' : ''} aria-label="${escHtml(tab.label)} nach oben">▲</button>
+        <button type="button" class="icon-btn tab-order-down" data-tab="${tab.id}" ${i === tabOrder.length - 1 ? 'disabled' : ''} aria-label="${escHtml(tab.label)} nach unten">▼</button>
+      </div>
+      <div class="settings-row-title">${escHtml(tab.label)}</div>
+      <label class="toggle">
+        <input type="checkbox" class="tab-visibility-cb" data-tab="${tab.id}" ${hiddenTabs.includes(tab.id) ? '' : 'checked'}/>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+  `;
+  }).join('');
+  list.querySelectorAll('.tab-visibility-cb').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const id = cb.dataset.tab;
+      if (cb.checked) hiddenTabs = hiddenTabs.filter(t => t !== id);
+      else if (!hiddenTabs.includes(id)) hiddenTabs.push(id);
+      saveHiddenTabs();
+      applyTabVisibility();
+    });
+  });
+  list.querySelectorAll('.tab-order-up').forEach(btn => {
+    btn.addEventListener('click', () => moveTabOrder(btn.dataset.tab, -1));
+  });
+  list.querySelectorAll('.tab-order-down').forEach(btn => {
+    btn.addEventListener('click', () => moveTabOrder(btn.dataset.tab, 1));
+  });
+}
+
+function moveTabOrder(id, dir){
+  const i = tabOrder.indexOf(id);
+  const j = i + dir;
+  if (i < 0 || j < 0 || j >= tabOrder.length) return;
+  [tabOrder[i], tabOrder[j]] = [tabOrder[j], tabOrder[i]];
+  saveTabOrder();
+  applyTabOrder();
+  renderTabVisibilitySettings();
 }
 
 // ── Theme-Auswahl (Phase 2 Theme-Engine) ─────────────────────────────────
@@ -190,6 +270,8 @@ const BACKUP_SHAPE_CHECKS = {
   deskCards:       Array.isArray,
   customThemes:    Array.isArray,
   themeBackgrounds: v => v !== null && typeof v === 'object' && !Array.isArray(v),
+  googleCalSettings: v => v !== null && typeof v === 'object' && !Array.isArray(v),
+  googleCalCache:    v => v !== null && typeof v === 'object' && !Array.isArray(v),
 };
 
 document.getElementById('backup-file-input').addEventListener('change', e => {
@@ -268,6 +350,7 @@ updateHeader();
 // Overlay und daher kein gültiges Ziel für den Initial-Load.
 {
   const initialView = location.hash.replace(/^#/, '');
-  showView((initialView && initialView !== 'mehr' && viewMap[initialView]) ? initialView : 'today');
+  const canShow = initialView && initialView !== 'mehr' && viewMap[initialView] && !hiddenTabs.includes(initialView);
+  showView(canShow ? initialView : 'today');
 }
 initGames();

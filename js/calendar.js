@@ -10,6 +10,9 @@
 //
 // Helper: getEventsForDay(date) — returns all events visible on a given day
 // including multi-day spans that cross through it AND recurring occurrences.
+// Für mehrere Tage auf einmal (Monatsansicht/Statistik): getEventsForRange(start, end)
+// weiter unten — liefert dieselben Einträge gebucketed als Map<dateKey, entries[]>,
+// aber mit jeder Datenquelle nur einmal für den ganzen Bereich statt pro Tag berechnet.
 //
 // Jeder Termin (egal ob einmalig oder Serie) kann außerdem eine individuelle
 // `color`-Eigenschaft (Hex-String) besitzen. Fehlt sie, greift die bisherige
@@ -199,41 +202,99 @@ function getSeriesOccurrencesInRange(rangeStart, rangeEnd) {
 }
 
 // =========================
-// HELPER: all events visible on a given calendar day
+// HELPER: all events visible in a date range (bucketed per day)
 // =========================
+//
+// getEventsForRange(start, end) liefert eine Map<dateKey, entries[]> für
+// JEDEN Tag im (inklusiven) Bereich [start, end] — jeder Eintrag hat exakt
+// dieselbe Form wie zuvor bei getEventsForDay() (siehe unten, das jetzt ein
+// dünner Wrapper darüber ist, damit bestehende Aufrufer unverändert
+// funktionieren).
+//
+// Grund für den Range-Ansatz: renderCalendar() rief vorher pro sichtbarem
+// Kalendertag (bis zu 42×) getEventsForDay() auf, das JEDES MAL komplett
+// über alle `events` iterierte (O(Tage × Termine)) UND
+// getSeriesOccurrencesInRange(date, date) aufrief, das wiederum
+// computeSeriesOccurrenceDates() PRO SERIE PRO TAG neu von vorne
+// durchrechnete. renderCalStatsCard() danach nochmal komplett von vorne.
+// Hier läuft jede Datenquelle stattdessen genau EINMAL über den ganzen
+// sichtbaren Bereich, gebucketed nach Tag — renderCalendar() und
+// renderCalStatsCard() teilen sich anschließend dieselbe Map.
+function getEventsForRange(startDate, endDate) {
+  const rs = new Date(startDate); rs.setHours(0,0,0,0);
+  const re = new Date(endDate);   re.setHours(0,0,0,0);
+  const map = new Map();
 
-function getEventsForDay(date) {
-  const dKey = dateKey(date);
-  const dTime = date.getTime();
-  const result = [];
+  function bucket(d) {
+    const k = dateKey(d);
+    let arr = map.get(k);
+    if (!arr) { arr = []; map.set(k, arr); }
+    return arr;
+  }
+  // Jeden Tag im Bereich vorbelegen, damit Aufrufer wie bisher immer ein
+  // (ggf. leeres) Array bekommen statt undefined prüfen zu müssen.
+  for (let d = new Date(rs); d.getTime() <= re.getTime(); d.setDate(d.getDate() + 1)) bucket(d);
 
+  // ── Einzel-/Mehrtagestermine — EINMAL über alle `events`, statt pro Tag ──
   Object.entries(events).forEach(([key, dayEvs]) => {
     (dayEvs || []).forEach(ev => {
       // Backward compat: if no endDate, treat as single-day stored at key
       if (!ev.endDate) {
-        if (key === dKey) result.push({ ev, key, isRange: false, isStart: true, isEnd: true });
+        const d = parseLocalDate(key); d.setHours(0,0,0,0);
+        if (d.getTime() < rs.getTime() || d.getTime() > re.getTime()) return;
+        bucket(d).push({ ev, key, isRange: false, isStart: true, isEnd: true });
         return;
       }
-      // Multi-day: check if date falls within [startDate, endDate]
+      // Multi-day: nur die Schnittmenge aus Termin-Spanne und Range
+      // durchlaufen (nicht den ganzen sichtbaren Bereich) — bleibt so auch
+      // bei sehr langen Terminen billig.
       const start = parseLocalDate(ev.startDate || key); start.setHours(0,0,0,0);
       const end   = parseLocalDate(ev.endDate);           end.setHours(0,0,0,0);
-      if (dTime >= start.getTime() && dTime <= end.getTime()) {
-        result.push({
+      const from  = start.getTime() > rs.getTime() ? start : rs;
+      const to    = end.getTime()   < re.getTime() ? end   : re;
+      if (from.getTime() > to.getTime()) return;
+      for (let d = new Date(from); d.getTime() <= to.getTime(); d.setDate(d.getDate() + 1)) {
+        bucket(d).push({
           ev, key,
           isRange: true,
-          isStart: dTime === start.getTime(),
-          isEnd:   dTime === end.getTime(),
+          isStart: d.getTime() === start.getTime(),
+          isEnd:   d.getTime() === end.getTime(),
         });
       }
     });
   });
 
-  // Wiederkehrende Vorkommen dieses Tages
-  getSeriesOccurrencesInRange(date, date).forEach(occ => {
-    result.push({ ev: occ.event, key: occ.event.occurrenceKey, isRange: false, isStart: true, isEnd: true, isRecurring: true });
+  // ── Wiederkehrende Termine — getSeriesOccurrencesInRange() rechnet
+  // computeSeriesOccurrenceDates() bereits nur EINMAL pro Serie für den
+  // übergebenen Bereich (limitEndDate) — vorher wurde das nur mit dem
+  // vollen Nutzen aufgerufen, wenn man ihm auch wirklich den vollen
+  // Bereich statt eines Einzeltags gibt, wie hier. ──
+  getSeriesOccurrencesInRange(rs, re).forEach(occ => {
+    bucket(occ.date).push({ ev: occ.event, key: occ.event.occurrenceKey, isRange: false, isStart: true, isEnd: true, isRecurring: true });
   });
 
-  return result;
+  // ── Google-Kalender-Termine (read-only Spiegel, siehe
+  // js/google-calendar-sync.js) — optionaler Cross-Modul-Aufruf über
+  // `typeof`, damit calendar.js nicht hart von der Google-Integration
+  // abhängt und unverändert funktioniert, wenn dieses Modul fehlt oder
+  // keine Verbindung besteht. Ebenfalls Range-basiert (ein Durchlauf statt
+  // einem pro Tag), analog zu obigem Muster. ──
+  if (typeof getGoogleEventsForRange === 'function') {
+    getGoogleEventsForRange(rs, re).forEach((entries, k) => {
+      const arr = map.get(k);
+      if (arr) entries.forEach(e => arr.push(e));
+    });
+  }
+
+  return map;
+}
+
+// Dünner Wrapper für bestehende (und neue) Einzeltag-Aufrufer — exakt
+// dasselbe Rückgabeformat wie zuvor. NICHT in Schleifen über mehrere Tage
+// verwenden (dafür getEventsForRange() direkt nutzen), sonst verpufft der
+// Performance-Gewinn oben wieder.
+function getEventsForDay(date) {
+  return getEventsForRange(date, date).get(dateKey(date)) || [];
 }
 
 // ── Status label for running events ──────────────────────────
@@ -289,6 +350,24 @@ function updateRecurCustomVisibility() {
   } else {
     customPanel.classList.add('hidden');
   }
+  updateGooglePushRowVisibility();
+}
+
+// Google-Push-Checkbox (siehe google-calendar-sync.js: pushNookEventToGoogle())
+// nur für einmalige/mehrtägige Termine anbieten — weder beim Bearbeiten
+// einer Terminserie (eventModalEditCtx gesetzt) noch sobald im offenen
+// Modal gerade eine Wiederholung ausgewählt wurde (Serien-Export ist
+// bewusst v1-Scope-Grenze, siehe Datei-Kopf google-calendar-sync.js).
+// Zusätzlich nur, wenn eine Google-Verbindung mit aktiviertem Export
+// besteht — sonst bleibt die Zeile wie bisher unsichtbar.
+function updateGooglePushRowVisibility() {
+  const googleRow = document.getElementById('event-modal-google-row');
+  if (!googleRow) return;
+  const recurVal = document.getElementById('event-modal-recur-select').value;
+  const available = !eventModalEditCtx && recurVal === 'none'
+    && typeof isGoogleCalendarConnected === 'function' && isGoogleCalendarConnected()
+    && typeof googleCalSettings !== 'undefined' && googleCalSettings.exportEnabled && googleCalSettings.exportCalendarId;
+  googleRow.classList.toggle('hidden', !available);
 }
 
 function resetRecurCustomUi() {
@@ -420,6 +499,8 @@ function openEventModal(key, day, existingEvent = null, editCtx = null) {
   document.getElementById('event-modal-countdown').checked   = existingEvent?.countdown || false;
   document.getElementById('event-modal-agenda').checked      = dataSrc.showInAgenda !== false;
   eventColorWidget.setValue(dataSrc.color || DEFAULT_EVENT_COLOR);
+  const googlePushCb = document.getElementById('event-modal-google-push');
+  if (googlePushCb) googlePushCb.checked = !!existingEvent?.googleSync;
 
   // ── Recurrence UI je nach Bearbeitungsmodus ──
   const recurSelect     = document.getElementById('event-modal-recur-select');
@@ -563,6 +644,12 @@ document.getElementById('event-modal-save').addEventListener('click', () => {
     if (state.editingEvent) {
       const oldKey = state.editingEvent.key;
       const oldEv  = state.editingEvent.event;
+      // Wird zur Serie umgewandelt und war zuvor zu Google gepusht (siehe
+      // pushNookEventToGoogle() in google-calendar-sync.js): Serien werden
+      // in v1 nicht exportiert (Datei-Kopf google-calendar-sync.js), also
+      // den verwaisten Google-Termin mit entfernen statt ihn dort
+      // hängen zu lassen.
+      if (typeof deleteGoogleEventIfSynced === 'function') deleteGoogleEventIfSynced(oldEv);
       events[oldKey] = (events[oldKey] || []).filter(e => e.id !== oldEv.id);
       if (countdownVisible[oldEv.id]) delete countdownVisible[oldEv.id];
       saveEvents(); DB.set('countdownVisible', countdownVisible);
@@ -582,6 +669,7 @@ document.getElementById('event-modal-save').addEventListener('click', () => {
 
   // ── Einmaliger Einzel-/Mehrtagestermin (bestehendes Verhalten + Farbe) ──
   const isRange = Boolean(endVal && endVal !== key);
+  let finalEv; // wird unten für den optionalen Google-Push gebraucht (siehe Ende dieses Handlers)
 
   if (state.editingEvent) {
     // Remove old event from old key
@@ -600,6 +688,7 @@ document.getElementById('event-modal-save').addEventListener('click', () => {
       delete updated.endDate;
     }
     events[key].push(updated);
+    finalEv = updated;
 
     if (countdown) countdownVisible[ev.id] = true;
     else           delete countdownVisible[ev.id];
@@ -615,11 +704,30 @@ document.getElementById('event-modal-save').addEventListener('click', () => {
       newEv.time = time;
     }
     events[key].push(newEv);
+    finalEv = newEv;
     if (countdown) countdownVisible[id] = true;
   }
 
   saveEvents();
   DB.set('countdownVisible', countdownVisible);
+
+  // ── Optionaler Google-Push (siehe google-calendar-sync.js) ──
+  // Fire-and-forget: blockiert nicht das Schließen des Modals. Bei Erfolg
+  // trägt pushNookEventToGoogle() die googleEventId per erneutem
+  // saveEvents() auf finalEv nach. Wird die Checkbox bei einem bereits zu
+  // Google übertragenen Termin abgewählt, wird der Google-Termin gelöscht
+  // und die Verknüpfung entfernt, statt still auseinanderzulaufen.
+  const googlePushCb = document.getElementById('event-modal-google-push');
+  if (typeof pushNookEventToGoogle === 'function' && !document.getElementById('event-modal-google-row').classList.contains('hidden')) {
+    if (googlePushCb.checked) {
+      pushNookEventToGoogle(finalEv, key, isRange ? endVal : null);
+    } else if (finalEv.googleSync) {
+      deleteGoogleEventIfSynced(finalEv);
+      delete finalEv.googleSync;
+      saveEvents();
+    }
+  }
+
   finishEventModalSave();
 });
 
@@ -756,6 +864,12 @@ function renderCalendar() {
   for (let d = 1; d <= remainder; d++)
     allDays.push({ date: new Date(year, month+1, d), otherMonth: true });
 
+  // Einmal für den GESAMTEN sichtbaren Bereich (inkl. Vor-/Nachmonats-
+  // Füllzeilen) berechnen statt pro Tag — siehe getEventsForRange()-Kommentar
+  // weiter oben. renderCalStatsCard() (unten via renderCalendarSidebar())
+  // bekommt dieselbe Map durchgereicht statt sie selbst nochmal zu bauen.
+  const monthEventsMap = getEventsForRange(allDays[0].date, allDays[allDays.length - 1].date);
+
   // ── Render weeks ───────────────────────────────────────────
   for (let i = 0; i < allDays.length; i += 7) {
     const week = allDays.slice(i, i+7);
@@ -767,8 +881,10 @@ function renderCalendar() {
       const key      = dateKey(date);
       const dateTime = new Date(date); dateTime.setHours(0,0,0,0);
 
-      // All events visible on this day (single + multi-day + recurring)
-      const dayEventEntries = getEventsForDay(dateTime);
+      // All events visible on this day (single + multi-day + recurring) —
+      // aus der einmal für den ganzen Monat berechneten Map (s.o.), nicht
+      // pro Tag neu berechnet.
+      const dayEventEntries = monthEventsMap.get(key) || [];
       let   dayTasks         = calendarSettings.showTasks ? getCalendarTasksForDay(date) : [];
       if (!calendarSettings.showDoneTasks) dayTasks = dayTasks.filter(t => !t.done);
 
@@ -823,7 +939,7 @@ function renderCalendar() {
       const singleEvs = dayEventEntries.filter(e => !e.isRange);
       const rangeEvs  = dayEventEntries.filter(e => e.isRange);
 
-      singleEvs.forEach(({ ev, isRecurring }) => {
+      singleEvs.forEach(({ ev, isRecurring, isGoogle }) => {
         if (shown >= 3) return; shown++;
         const pill = document.createElement('div');
         pill.className = 'cal-event-pill' + (ev.countdown ? ' countdown-pill' : '');
@@ -841,12 +957,12 @@ function renderCalendar() {
             pill.style.borderLeftColor = ev.color;
           }
         }
-        pill.textContent = (isRecurring ? '↻ ' : '') + (ev.time ? ev.time + ' ' : '') + ev.title;
+        pill.textContent = (isRecurring ? '↻ ' : '') + (isGoogle ? 'Ⓖ ' : '') + (ev.time ? ev.time + ' ' : '') + ev.title;
         pill.title = ev.notes || '';
         items.appendChild(pill);
       });
 
-      rangeEvs.forEach(({ ev, isStart, isEnd }) => {
+      rangeEvs.forEach(({ ev, isStart, isEnd, isGoogle }) => {
         if (shown >= 3) return; shown++;
         const pill = document.createElement('div');
         // Rundung richtet sich nach dem Abschnitt innerhalb dieser Kalenderzeile
@@ -872,7 +988,7 @@ function renderCalendar() {
             if (rowStart) pill.style.borderLeftColor = ev.color;
           }
         }
-        pill.textContent = isStart ? ev.title : (isEnd ? '↳ Ende' : '');
+        pill.textContent = isStart ? ((isGoogle ? 'Ⓖ ' : '') + ev.title) : (isEnd ? '↳ Ende' : '');
         pill.title = ev.title + (ev.notes ? ' — ' + ev.notes : '');
         items.appendChild(pill);
       });
@@ -900,7 +1016,7 @@ function renderCalendar() {
   }
 
   // ── Phase 1: Monatsplaner-Sidebar + Header aktualisieren ────
-  if (typeof renderCalendarSidebar === 'function') renderCalendarSidebar();
+  if (typeof renderCalendarSidebar === 'function') renderCalendarSidebar(monthEventsMap);
 }
 
 document.getElementById('cal-prev').addEventListener('click', () => { calDate.setMonth(calDate.getMonth()-1); renderCalendar(); });
@@ -942,7 +1058,7 @@ function openCalDayModal(key, date) {
   if (dayEventEntries.length > 0) {
     const head = document.createElement('div'); head.className = 'cal-day-section-head'; head.textContent = 'Termine';
     content.appendChild(head);
-    dayEventEntries.forEach(({ ev, key: evKey, isRange, isRecurring }) => {
+    dayEventEntries.forEach(({ ev, key: evKey, isRange, isRecurring, isGoogle }) => {
       const row  = document.createElement('div'); row.className = 'cal-day-ev-row';
       const left = document.createElement('div'); left.className = 'cal-day-ev-left';
 
@@ -973,24 +1089,39 @@ function openCalDayModal(key, date) {
       const tit = document.createElement('span'); tit.className = 'cal-day-ev-title';
       tit.textContent = (isRecurring ? '↻ ' : '') + ev.title;
       left.appendChild(tit);
+      if (isGoogle) { const b = document.createElement('span'); b.className = 'cal-day-ev-google-badge'; b.textContent = 'Google'; left.appendChild(b); }
       if (ev.notes) { const n = document.createElement('span'); n.className = 'cal-day-ev-notes'; n.textContent = ev.notes; left.appendChild(n); }
 
       const actions = document.createElement('div'); actions.style.cssText = 'display:flex;gap:4px;flex-shrink:0;';
-      const edit = document.createElement('button'); edit.className = 'task-delete'; edit.textContent = '✎';
-      edit.addEventListener('click', () => {
-        closeCalDayModal();
-        if (isRecurring) openEditScopeModal(ev, date, 'edit');
-        else openEventModal(evKey, date, ev);
-      });
-      const del = document.createElement('button'); del.className = 'task-delete'; del.textContent = '✕';
-      del.addEventListener('click', () => {
-        if (isRecurring) { openEditScopeModal(ev, date, 'delete'); return; }
-        events[evKey] = (events[evKey] || []).filter(e => e.id !== ev.id);
-        if (countdownVisible[ev.id]) delete countdownVisible[ev.id];
-        saveEvents(); DB.set('countdownVisible', countdownVisible);
-        updateCountdown(); renderCalendar(); openCalDayModal(key, date);
-      });
-      actions.append(edit, del); row.append(left, actions); content.appendChild(row);
+      // Google-Termine sind in Nook bewusst nur ein Nur-Lese-Spiegel (siehe
+      // Datei-Kopf google-calendar-sync.js) — statt Bearbeiten/Löschen gibt
+      // es hier nur einen Link zum Original in Google Calendar. Änderungen
+      // dort werden beim nächsten Sync automatisch nachgezogen.
+      if (isGoogle) {
+        const openLink = document.createElement('button');
+        openLink.className = 'cal-day-ev-google-link';
+        openLink.textContent = 'In Google öffnen ↗';
+        openLink.addEventListener('click', () => { if (ev.htmlLink) window.open(ev.htmlLink, '_blank', 'noopener'); });
+        actions.append(openLink);
+      } else {
+        const edit = document.createElement('button'); edit.className = 'task-delete'; edit.textContent = '✎';
+        edit.addEventListener('click', () => {
+          closeCalDayModal();
+          if (isRecurring) openEditScopeModal(ev, date, 'edit');
+          else openEventModal(evKey, date, ev);
+        });
+        const del = document.createElement('button'); del.className = 'task-delete'; del.textContent = '✕';
+        del.addEventListener('click', () => {
+          if (isRecurring) { openEditScopeModal(ev, date, 'delete'); return; }
+          if (typeof deleteGoogleEventIfSynced === 'function') deleteGoogleEventIfSynced(ev);
+          events[evKey] = (events[evKey] || []).filter(e => e.id !== ev.id);
+          if (countdownVisible[ev.id]) delete countdownVisible[ev.id];
+          saveEvents(); DB.set('countdownVisible', countdownVisible);
+          updateCountdown(); renderCalendar(); openCalDayModal(key, date);
+        });
+        actions.append(edit, del);
+      }
+      row.append(left, actions); content.appendChild(row);
     });
   }
 
@@ -1298,7 +1429,12 @@ function renderCalCountdownCard() {
 }
 
 // ── Sidebar: Monatsstatistik-Karte (vollständig automatisch berechnet) ──
-function renderCalStatsCard() {
+// `monthEventsMap` optional: von renderCalendar() durchgereichte, für den
+// ganzen Monat bereits berechnete Map (siehe getEventsForRange()) — spart
+// hier einen zweiten Voll-Scan über den Monat. Ohne Argument (z.B. bei
+// einem eigenständigen Aufruf) wird sie selbst berechnet, Verhalten bleibt
+// identisch.
+function renderCalStatsCard(monthEventsMap) {
   const card = document.getElementById('cal-card-stats');
   const list = document.getElementById('cal-stats-list');
   if (!card || !list) return;
@@ -1307,6 +1443,7 @@ function renderCalStatsCard() {
   const year = calDate.getFullYear(), month = calDate.getMonth();
   const daysInMonth = new Date(year, month+1, 0).getDate();
   const today = new Date(); today.setHours(0,0,0,0);
+  const eventsMap = monthEventsMap || getEventsForRange(new Date(year, month, 1), new Date(year, month, daysInMonth));
 
   const eventIds = new Set();
   const taskIds = new Set();
@@ -1315,7 +1452,7 @@ function renderCalStatsCard() {
 
   for (let d = 1; d <= daysInMonth; d++) {
     const date = new Date(year, month, d);
-    const dayEvs = getEventsForDay(date);
+    const dayEvs = eventsMap.get(dateKey(date)) || [];
     const dayTasks = (calendarSettings.showTasks && typeof getCalendarTasksForDay === 'function') ? getCalendarTasksForDay(date) : [];
     dayEvs.forEach(({ ev }) => eventIds.add(ev.id));
     dayTasks.forEach(t => { taskIds.add(t.id); if (t.done) doneTaskIds.add(t.id); });
@@ -1346,14 +1483,16 @@ function renderCalStatsCard() {
 }
 
 // ── Sidebar: Master-Funktion — wird am Ende von renderCalendar() aufgerufen ──
-function renderCalendarSidebar() {
+// `monthEventsMap` optional: siehe renderCalStatsCard()-Kommentar, wird nur
+// dorthin weitergereicht (die übrigen Sidebar-Karten brauchen sie nicht).
+function renderCalendarSidebar(monthEventsMap) {
   renderCalSeasonHeader();
   renderCalInfoCard();
   renderCalCountdownCard();
   renderCalBirthdaysCard();
   renderCalHolidaysCard();
   renderCalGoalsCard();
-  renderCalStatsCard();
+  renderCalStatsCard(monthEventsMap);
 }
 
 // =============================================================
