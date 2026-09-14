@@ -1272,22 +1272,14 @@
                     Google-Anmeldung funktioniert nur, wenn Nook über <code>https://</code> (oder <code>http://localhost</code>) aufgerufen wird — nicht beim direkten Öffnen von <code>index.html</code> als Datei. Öffne dafür die deployte Version von Nook.
                   </p>
 
+                  <p class="gcal-hint hidden" id="gcal-not-configured-hint">
+                    Diese Nook-Instanz hat noch keine Google-Client-ID hinterlegt, siehe <code>js/sync-config.example.js</code>.
+                  </p>
+
                   <div id="gcal-connect-block">
-                    <p class="gcal-hint">Verbinde ein Google-Konto, um Google-Kalender in Nook anzuzeigen und optional Nook-Termine dorthin zu übertragen. Dafür wird einmalig eine eigene, kostenlose Google-Client-ID benötigt.</p>
-                    <details class="gcal-setup-details">
-                      <summary>Wie bekomme ich eine Client-ID?</summary>
-                      <ol>
-                        <li>In der <strong>Google Cloud Console</strong> (console.cloud.google.com) ein Projekt anlegen (oder ein bestehendes nutzen).</li>
-                        <li><strong>APIs &amp; Dienste → Bibliothek</strong> → „Google Calendar API“ aktivieren.</li>
-                        <li><strong>APIs &amp; Dienste → OAuth-Zustimmungsbildschirm</strong> einrichten (Nutzertyp „Extern“ reicht, Testnutzer = deine eigene E-Mail-Adresse).</li>
-                        <li><strong>APIs &amp; Dienste → Anmeldedaten → Anmeldedaten erstellen → OAuth-Client-ID</strong>, Typ „Webanwendung“.</li>
-                        <li>Bei „Autorisierte JavaScript-Quellen“ die Nook-URL eintragen (z.B. <code>https://nook-ci7.pages.dev</code>).</li>
-                        <li>Die erzeugte Client-ID hier unten eintragen.</li>
-                      </ol>
-                    </details>
+                    <p class="gcal-hint">Verbinde ein Google-Konto, um Google-Kalender in Nook anzuzeigen und optional Nook-Termine dorthin zu übertragen.</p>
                     <div class="gcal-connect-row">
-                      <input type="text" class="modal-input" id="gcal-clientid-input" placeholder="Google-Client-ID (…apps.googleusercontent.com)" autocomplete="off"/>
-                      <button class="btn-primary" id="gcal-connect-btn" style="flex-shrink:0;">Verbinden</button>
+                      <button class="btn-primary" id="gcal-connect-btn">Verbinden</button>
                     </div>
                     <p id="gcal-connect-error"></p>
                   </div>

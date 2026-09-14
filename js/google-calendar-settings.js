@@ -29,24 +29,37 @@ document.getElementById('gcal-settings-header')?.addEventListener('click', () =>
 function renderGoogleCalendarSettings() {
   applyGoogleCalAccordion();
 
-  const unsupportedHint = document.getElementById('gcal-unsupported-hint');
-  const connectBlock    = document.getElementById('gcal-connect-block');
-  const connectedBlock  = document.getElementById('gcal-connected-block');
-  if (!unsupportedHint || !connectBlock || !connectedBlock) return;
+  const unsupportedHint   = document.getElementById('gcal-unsupported-hint');
+  const notConfiguredHint = document.getElementById('gcal-not-configured-hint');
+  const connectBlock      = document.getElementById('gcal-connect-block');
+  const connectedBlock    = document.getElementById('gcal-connected-block');
+  if (!unsupportedHint || !notConfiguredHint || !connectBlock || !connectedBlock) return;
 
-  if (!isGoogleCalendarSupported()) {
+  // Drei sich gegenseitig ausschließende Zustände vor "verbunden/nicht
+  // verbunden": file:// (unsupportedHint), fehlende GOOGLE_CLIENT_ID
+  // (notConfiguredHint, siehe js/sync-config.example.js), oder beides in
+  // Ordnung. "file://" hat Vorrang in der Anzeige, wenn beides zugleich
+  // zutrifft — eine hinterlegte Client-ID würde dort ohnehin nicht helfen.
+  if (!isGoogleCalendarProtocolAllowed()) {
     unsupportedHint.classList.remove('hidden');
+    notConfiguredHint.classList.add('hidden');
     connectBlock.classList.add('hidden');
     connectedBlock.classList.add('hidden');
     return;
   }
   unsupportedHint.classList.add('hidden');
 
+  if (!isGoogleCalendarConfigured()) {
+    notConfiguredHint.classList.remove('hidden');
+    connectBlock.classList.add('hidden');
+    connectedBlock.classList.add('hidden');
+    return;
+  }
+  notConfiguredHint.classList.add('hidden');
+
   if (!isGoogleCalendarConnected()) {
     connectBlock.classList.remove('hidden');
     connectedBlock.classList.add('hidden');
-    const idInput = document.getElementById('gcal-clientid-input');
-    if (idInput && !idInput.value) idInput.value = googleCalAccount?.clientId || '';
     return;
   }
 
@@ -157,12 +170,11 @@ async function refreshGoogleCalendarList() {
 document.getElementById('gcal-connect-btn')?.addEventListener('click', async () => {
   const btn = document.getElementById('gcal-connect-btn');
   const errorEl = document.getElementById('gcal-connect-error');
-  const clientId = document.getElementById('gcal-clientid-input').value;
   errorEl.style.display = 'none';
   btn.disabled = true;
   btn.textContent = 'Verbinde…';
   try {
-    await connectGoogleCalendar(clientId);
+    await connectGoogleCalendar();
     await refreshGoogleCalendarList();
     startGoogleCalAutoSync();
     renderGoogleCalendarSettings();

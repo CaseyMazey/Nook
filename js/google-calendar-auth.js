@@ -21,6 +21,16 @@
 // Prüfung zentral — alle anderen Module (Settings-UI, Sync) fragen NUR
 // diese Funktion, statt selbst location.protocol zu prüfen.
 //
+// Client-ID: kommt — wie SUPABASE_URL/SUPABASE_ANON_KEY (js/sync.js) —
+// aus der persönlichen, nicht versionierten js/sync-config.js (siehe
+// .gitignore + sync-config.example.js für die Einrichtung), als
+// GOOGLE_CLIENT_ID. Kein Eingabefeld im UI: fehlt die Konstante, gilt
+// Google Calendar für diese Nook-Instanz als "nicht konfiguriert" — ein
+// anderer Zustand als "nicht unterstützt" (file://), siehe
+// isGoogleCalendarConfigured()/isGoogleCalendarSupported() unten sowie
+// die entsprechend unterschiedlichen Hinweistexte in
+// google-calendar-settings.js.
+//
 // Token-Modell: GIS "Token Client" (implicit-ähnlicher Flow, kein
 // Client-Secret nötig — passt zu Nooks No-Backend-Architektur). Es gibt
 // dabei KEIN Refresh-Token, nur kurzlebige Access-Tokens (~1h). Der Token
@@ -52,8 +62,25 @@ let _googleCalTokenExpiry = 0; // ms epoch
 let _googleCalTokenClient = null;
 let _googleGisLoadPromise = null;
 
-function isGoogleCalendarSupported() {
+// Analog zum typeof-Check für SUPABASE_URL in js/sync.js: GOOGLE_CLIENT_ID
+// kommt aus js/sync-config.js und existiert schlicht nicht, wenn diese
+// Datei fehlt (z.B. frischer Fork ohne eigene Google-Client-ID) — kein
+// Fehlerzustand, nur "nicht konfiguriert".
+function isGoogleCalendarConfigured() {
+  return typeof GOOGLE_CLIENT_ID !== 'undefined' && !!GOOGLE_CLIENT_ID;
+}
+
+// Getrennt von isGoogleCalendarConfigured() gehalten, damit die
+// Einstellungen-UI (google-calendar-settings.js) "file://" und "keine
+// Client-ID hinterlegt" als die zwei unterschiedlichen Zustände erkennen
+// und je eigenen Hinweistext zeigen kann, statt beides hinter einem
+// einzigen Boolean zu verstecken.
+function isGoogleCalendarProtocolAllowed() {
   return location.protocol === 'https:' || location.hostname === 'localhost';
+}
+
+function isGoogleCalendarSupported() {
+  return isGoogleCalendarProtocolAllowed() && isGoogleCalendarConfigured();
 }
 
 function isGoogleCalendarConnected() {
@@ -141,24 +168,29 @@ async function fetchGoogleAccountEmail(accessToken) {
 
 // Vollständiger Verbindungsvorgang, ausgelöst durch echten Klick in den
 // Einstellungen (siehe google-calendar-settings.js) — deshalb hier
-// `interactive:true` fest verdrahtet, kein Parameter nötig.
-async function connectGoogleCalendar(clientId) {
+// `interactive:true` fest verdrahtet. Kein clientId-Parameter mehr: die
+// Client-ID kommt aus der Konfigurationsdatei (GOOGLE_CLIENT_ID), nicht
+// mehr aus einem Eingabefeld (siehe Datei-Kopf-Kommentar).
+async function connectGoogleCalendar() {
   if (!isGoogleCalendarSupported()) {
-    throw new Error('Google-Anmeldung funktioniert nur über https:// oder http://localhost, nicht beim direkten Öffnen von index.html.');
+    throw new Error(isGoogleCalendarConfigured()
+      ? 'Google-Anmeldung funktioniert nur über https:// oder http://localhost, nicht beim direkten Öffnen von index.html.'
+      : 'Diese Nook-Instanz hat noch keine Google-Client-ID hinterlegt (siehe js/sync-config.example.js).');
   }
-  const trimmedId = (clientId || '').trim();
-  if (!trimmedId) throw new Error('Bitte zuerst eine Google-Client-ID eintragen.');
 
   await loadGoogleIdentityScript();
   // Temporär setzen, DAMIT requestGoogleToken()/ensureGoogleTokenClient()
   // mit der richtigen Client-ID arbeiten — endgültig gespeichert wird erst
   // nach erfolgreichem Token-Erhalt unten (kein Teil-Zustand bei Abbruch).
+  // googleCalAccount speichert die Client-ID weiterhin mit (Rückwärts-
+  // kompatibilität für Bestandsnutzer, die noch mit einer früher manuell
+  // eingegebenen ID verbunden sind, siehe ensureGoogleAccessToken() oben).
   const prevAccount = googleCalAccount;
-  googleCalAccount = { email: '', clientId: trimmedId, connectedAt: Date.now() };
+  googleCalAccount = { email: '', clientId: GOOGLE_CLIENT_ID, connectedAt: Date.now() };
   try {
-    const token = await requestGoogleToken(trimmedId, true);
+    const token = await requestGoogleToken(GOOGLE_CLIENT_ID, true);
     const email = await fetchGoogleAccountEmail(token);
-    googleCalAccount = { email, clientId: trimmedId, connectedAt: Date.now() };
+    googleCalAccount = { email, clientId: GOOGLE_CLIENT_ID, connectedAt: Date.now() };
     saveGoogleCalAccount();
     return googleCalAccount;
   } catch (err) {
