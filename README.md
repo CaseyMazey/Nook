@@ -26,7 +26,7 @@ Für Funktionen, die einen sicheren Browser-Kontext brauchen (Google-Calendar-An
 - 📅 Kalender mit Termin-/Countdownsystem und optionaler Google-Calendar-Anbindung (in Bearbeitung)
 - 💰 Budgetverwaltung mit Liquiditätsvorschau, Sparplaner (Szenarien, Zeitstrahl, Was-wäre-wenn) und optionaler Taschengeld-Automatik
 - 🌱 Finanzgarten zur Visualisierung von Sparzielen
-- 🪴 Garten — ein ruhiger Bilderbuch-Garten mit über 70 sammelbaren Pflanzenarten (ganz früher Entwicklungsstand, bisher nur Anpflanzen & Verteilen)
+- 🪴 Garten — ein ruhiger Bilderbuch-Garten mit über 70 sammelbaren Pflanzenarten (ganz früher Entwicklungsstand, bisher Anpflanzen, Verteilen & rudimentärer Pflanzendex)
 - 📚 Karteikarten mit Leitner-System und Lernstatistiken
 - 📝 Persönliches Markdown-Wiki
 - 📁 Projektverwaltung mit vollständigem Projektwald (Baum-Customizing, URL-Routing)
@@ -72,7 +72,7 @@ Kontostand und Sparziele als wachsende Pflanzen, direkt in Budget — rein zur M
 
 ### 🪴 Garten *(ganz früher Entwicklungsstand)*
 
-Ein eigenständiger, ruhiger Bilderbuch-Garten zum Sammeln, über 70 Pflanzenarten geplant. Aktuell funktioniert ausschließlich das Anpflanzen im Anzuchtfeld und das Verteilen ausgewachsener Pflanzen im Garten — Pflanzendex und Pflanzenstand existieren noch nicht.
+Ein eigenständiger, ruhiger Bilderbuch-Garten zum Sammeln, über 70 Pflanzenarten geplant. Aktuell funktionieren das Anpflanzen im Anzuchtfeld, das Verteilen ausgewachsener Pflanzen im Garten sowie eine rudimentäre Grundversion des Pflanzendex — Pflanzenstand (Gartenrätsel) existiert noch nicht.
 → [Wiki: Garten](https://github.com/CaseyMazey/Nook/wiki/Garten)
 
 ### 📚 Karteikarten
@@ -238,7 +238,7 @@ Nook befindet sich weiterhin in aktiver Entwicklung.
 
 ## Geplant
 
-- **Garten** *(ganz früher Entwicklungsstand — bisher funktioniert nur Anpflanzen im Anzuchtfeld und Verteilen der Pflanzen im Garten)*: Pflanzendex, Pflanzenstand/Gartenrätsel, Beau (die Gartenkatze), seltene Ereignisse (Schmetterlinge, Wetter, Fee/Shiny-Verwandlung), Mystery-Samen, Laden & Münzen, Tageszeit-/Wetterstimmung, weitere Gartenbereiche
+- **Garten** *(ganz früher Entwicklungsstand — bisher funktionieren Anpflanzen im Anzuchtfeld, Verteilen der Pflanzen im Garten und eine rudimentäre Pflanzendex-Grundversion)*: Pflanzendex weiter ausbauen, Pflanzenstand/Gartenrätsel, Beau (die Gartenkatze), seltene Ereignisse (Schmetterlinge, Wetter, Fee/Shiny-Verwandlung), Mystery-Samen, Laden & Münzen, Tageszeit-/Wetterstimmung, weitere Gartenbereiche
 - **Projekte**: Meilensteine, Aufgaben-Abhängigkeiten, Vorlagen, Tags, Notizen, Dateianhänge
 - **Kalender**: Wochen-/Jahresansicht, Drag & Drop für Termine, ICS-Import/Export, weitere externe Kalender-Anbieter (z. B. Outlook/CalDAV) neben Google
 - **Budget**: Diagramme, Kategorien, CSV-Import/Export, Jahresübersicht, mehrere Konten
