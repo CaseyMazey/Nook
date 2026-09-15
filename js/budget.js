@@ -1896,9 +1896,22 @@ function renderFinanzgarten() {
   if (activeGoal && activeGoal.id !== activeGoalId) DB.set('gardenActiveGoalId', activeGoal.id);
 
   let goalPct = 0, goalStage = 'seed';
+  // Bei Sparzielen mit optionalen Posten (siehe budget-sparziele.js:
+  // goalItemsRequiredTotal/-FullTotal/-TrackFull) lässt sich hier wählen,
+  // ob der Finanzgarten nur die Pflicht-Posten oder alle Posten inkl.
+  // optionaler als Sparziel-Zielbetrag verfolgt (b-garden-track-btn unten).
+  // Ohne einen einzigen optionalen Posten sind beide Summen identisch —
+  // dann gibt es nichts auszuwählen, die Buttons bleiben ausgeblendet.
+  let goalHasOptionalSplit = false, goalRequiredTotal = 0, goalFullTotal = 0, goalTrackFull = true;
   if (activeGoal) {
     goalPct   = activeGoal.target > 0 ? Math.min(100, Math.round((activeGoal.current / activeGoal.target) * 100)) : 0;
     goalStage = getGoalStage(goalPct);
+    if (Array.isArray(activeGoal.items) && activeGoal.items.some(it => it.optional)) {
+      goalHasOptionalSplit = true;
+      goalRequiredTotal = typeof goalItemsRequiredTotal === 'function' ? goalItemsRequiredTotal(activeGoal) : 0;
+      goalFullTotal      = typeof goalItemsFullTotal === 'function' ? goalItemsFullTotal(activeGoal) : 0;
+      goalTrackFull      = typeof goalItemsTrackFull === 'function' ? goalItemsTrackFull(activeGoal) : true;
+    }
   }
   const plantType  = activeGoal?.plantType || 'sunflower';
   const plantEmoji = PLANT_EMOJIS[plantType] || '🌱';
@@ -1943,6 +1956,12 @@ function renderFinanzgarten() {
           <div class="b-garden-svg">${buildPlantSvg(goalStage, plantType)}</div>
           <div class="b-garden-plant-name">${activeGoal.name}</div>
           <div class="b-garden-plant-val">${activeGoal.current.toLocaleString('de-DE',{minimumFractionDigits:2})} / ${activeGoal.target.toLocaleString('de-DE',{minimumFractionDigits:2})} €</div>
+          ${goalHasOptionalSplit ? `
+            <div class="b-garden-track-toggle" title="Welcher Gesamtpreis als Sparziel verfolgt wird">
+              <button class="b-garden-track-btn${!goalTrackFull ? ' active' : ''}" data-track="required">Pflicht ${fmtEuro(goalRequiredTotal)}</button>
+              <button class="b-garden-track-btn${goalTrackFull ? ' active' : ''}" data-track="full">Alle ${fmtEuro(goalFullTotal)}</button>
+            </div>
+          ` : ''}
           <div class="b-garden-progress-bar">
             <div class="b-garden-progress-fill" style="width:${goalPct}%; background: linear-gradient(to right, ${getColors(plantType).leaf}, ${getColors(plantType).stem})"></div>
           </div>
@@ -2002,6 +2021,26 @@ function renderFinanzgarten() {
       setTimeout(() => document.addEventListener('click', closeDropdown), 10);
     });
   }
+
+  // Auswahl "Pflicht-Posten" vs. "Alle Posten" als verfolgter Zielbetrag —
+  // ändert goal.itemsTrackFull + goal.target direkt (kein eigenes Modal),
+  // gleiche Render-Kaskade wie andere Sparziel-Mutationen (z.B. goal-tx-save).
+  card.querySelectorAll('.b-garden-track-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!activeGoal) return;
+      const wantFull = btn.dataset.track === 'full';
+      activeGoal.itemsTrackFull = wantFull;
+      activeGoal.target = wantFull
+        ? (typeof goalItemsFullTotal === 'function' ? goalItemsFullTotal(activeGoal) : activeGoal.target)
+        : (typeof goalItemsRequiredTotal === 'function' ? goalItemsRequiredTotal(activeGoal) : activeGoal.target);
+      saveBudgetGoals();
+      renderFinanzgarten();
+      renderBudgetGoals();
+      if (typeof renderSparziele === 'function') renderSparziele();
+      if (typeof renderSparplaner === 'function') renderSparplaner();
+    });
+  });
 }
 
 // Kontostand Modal — bearbeitet kontostand direkt
@@ -2622,18 +2661,32 @@ function setGoalPriorityButtons(p) {
 // weiterhin das EINZIGE Feld, das Finanzgarten/Finanzierung/Sparprognose/
 // Sparpläne lesen — goal.items ist rein die (optionale) Herkunft dieser
 // Zahl, kein zusätzlicher Datenpfad für andere Module.
+// Ein Posten kann zusätzlich als "optional" markiert werden (goal-item-
+// optional-btn, z.B. für "wäre schön, aber nicht zwingend"). Welcher der
+// beiden Gesamtpreise (nur Pflicht-Posten vs. alle Posten) tatsächlich als
+// goal.target verfolgt wird, entscheidet NICHT dieses Modal, sondern der
+// Finanzgarten (renderFinanzgarten() in budget.js, siehe dortige
+// b-garden-track-btn-Buttons) — hier wird nur der aktuell aktive Modus
+// (editingGoalItemsTrackFull) angezeigt, nicht verändert.
+let editingGoalItemsTrackFull = true;
 function createGoalItemRow(item) {
   const row = document.createElement('div');
   row.className = 'goal-item-row';
   row.dataset.itemId = (item && item.id) || crypto.randomUUID();
   const nameVal  = item && item.name  ? item.name.replace(/"/g, '&quot;') : '';
   const priceVal = item && item.price ? item.price : '';
+  const isOptional = !!(item && item.optional);
   row.innerHTML = `
     <input type="text" class="modal-input goal-item-name" placeholder="Name" value="${nameVal}"/>
     <input type="number" class="modal-input goal-item-price" placeholder="0.00" step="0.01" min="0" value="${priceVal}"/>
+    <button type="button" class="sz-icon-btn goal-item-optional-btn${isOptional ? ' active' : ''}" title="Optional (zählt nur zum vollen Gesamtpreis)">★</button>
     <button type="button" class="sz-icon-btn goal-item-delete" title="Entfernen">&#10005;</button>`;
   row.querySelector('.goal-item-delete').addEventListener('click', () => { row.remove(); updateGoalItemsTotal(); });
   row.querySelector('.goal-item-price').addEventListener('input', updateGoalItemsTotal);
+  row.querySelector('.goal-item-optional-btn').addEventListener('click', (e) => {
+    e.currentTarget.classList.toggle('active');
+    updateGoalItemsTotal();
+  });
   return row;
 }
 function renderGoalItemsEditor(items) {
@@ -2643,18 +2696,39 @@ function renderGoalItemsEditor(items) {
   (items || []).forEach(it => list.appendChild(createGoalItemRow(it)));
   updateGoalItemsTotal();
 }
-// Summe der aktuell im DOM stehenden Preise, unabhängig davon, ob eine
+// Summen der aktuell im DOM stehenden Preise, unabhängig davon, ob eine
 // Zeile schon einen Namen hat (der Nutzer tippt Preis/Name in beliebiger
 // Reihenfolge) — Filterung auf "gültige" Posten passiert erst beim
 // tatsächlichen Speichern in readGoalItemsEditor().
+function goalItemsEditorSums() {
+  const list = document.getElementById('goal-items-list');
+  let required = 0, full = 0, hasOptional = false;
+  (list ? Array.from(list.querySelectorAll('.goal-item-row')) : []).forEach(row => {
+    const price = parseFloat(row.querySelector('.goal-item-price').value) || 0;
+    full += price;
+    if (row.querySelector('.goal-item-optional-btn').classList.contains('active')) hasOptional = true;
+    else required += price;
+  });
+  return { required: round2(required), full: round2(full), hasOptional };
+}
 function updateGoalItemsTotal() {
   const toggle = document.getElementById('goal-items-toggle');
   const targetInput = document.getElementById('goal-target');
-  const list = document.getElementById('goal-items-list');
-  if (!toggle || !targetInput || !list || !toggle.checked) return;
-  const sum = round2(Array.from(list.querySelectorAll('.goal-item-price'))
-    .reduce((s, inp) => s + (parseFloat(inp.value) || 0), 0));
-  targetInput.value = sum || '';
+  const summary = document.getElementById('goal-items-summary');
+  if (!toggle || !targetInput || !toggle.checked) return;
+  const { required, full, hasOptional } = goalItemsEditorSums();
+  const tracked = editingGoalItemsTrackFull ? full : required;
+  targetInput.value = tracked || '';
+  if (summary) {
+    if (hasOptional) {
+      const alt = editingGoalItemsTrackFull ? required : full;
+      summary.classList.remove('hidden');
+      summary.innerHTML = `Verfolgtes Ziel: <strong>${fmtEuro(tracked)}</strong> (${editingGoalItemsTrackFull ? 'alle Posten' : 'nur Pflicht-Posten'}) — ${editingGoalItemsTrackFull ? 'nur Pflicht-Posten' : 'alle Posten'} wären ${fmtEuro(alt)}. Auswahl im Finanzgarten.`;
+    } else {
+      summary.classList.add('hidden');
+      summary.innerHTML = '';
+    }
+  }
 }
 function readGoalItemsEditor() {
   const list = document.getElementById('goal-items-list');
@@ -2663,6 +2737,7 @@ function readGoalItemsEditor() {
     id: row.dataset.itemId,
     name: row.querySelector('.goal-item-name').value.trim(),
     price: round2(parseFloat(row.querySelector('.goal-item-price').value) || 0),
+    optional: row.querySelector('.goal-item-optional-btn').classList.contains('active'),
   })).filter(it => it.name || it.price > 0);
 }
 function setGoalItemsMode(active) {
@@ -2670,6 +2745,7 @@ function setGoalItemsMode(active) {
   document.getElementById('goal-target').readOnly = active;
   document.getElementById('goal-target').classList.toggle('goal-target-computed', active);
   if (active) updateGoalItemsTotal();
+  else { const s = document.getElementById('goal-items-summary'); if (s) { s.classList.add('hidden'); s.innerHTML = ''; } }
 }
 document.getElementById('goal-items-toggle').addEventListener('change', (e) => {
   const active = e.target.checked;
@@ -2721,6 +2797,7 @@ document.getElementById('add-goal-btn').addEventListener('click', () => {
     renderFundingEditor(document.getElementById('goal-funding-list'), [], null, 'goal-funding');
   }
   document.getElementById('goal-items-toggle').checked = false;
+  editingGoalItemsTrackFull = true;
   renderGoalItemsEditor([]);
   setGoalItemsMode(false);
   // Reset plant selector to first option
@@ -2752,6 +2829,7 @@ function openEditGoalModal(goal) {
   }
   const hasItems = Array.isArray(goal.items) && goal.items.length > 0;
   document.getElementById('goal-items-toggle').checked = hasItems;
+  editingGoalItemsTrackFull = goal.itemsTrackFull !== false;
   renderGoalItemsEditor(goal.items || []);
   setGoalItemsMode(hasItems);
   const radio = document.querySelector(`input[name="goal-plant"][value="${goal.plantType}"]`);
@@ -2781,7 +2859,9 @@ document.getElementById('goal-save').addEventListener('click', () => {
   if (!name) return;
   const itemsVal = document.getElementById('goal-items-toggle').checked ? readGoalItemsEditor() : [];
   const target = itemsVal.length
-    ? round2(itemsVal.reduce((s, it) => s + it.price, 0))
+    ? (editingGoalItemsTrackFull
+        ? round2(itemsVal.reduce((s, it) => s + it.price, 0))
+        : round2(itemsVal.filter(it => !it.optional).reduce((s, it) => s + it.price, 0)))
     : (parseFloat(document.getElementById('goal-target').value) || 0);
   const plantRadio = document.querySelector('input[name="goal-plant"]:checked');
   const plantType = plantRadio ? plantRadio.value : 'sunflower';
@@ -2800,6 +2880,7 @@ document.getElementById('goal-save').addEventListener('click', () => {
       goal.name = name;
       goal.target = target;
       goal.items = itemsVal;
+      goal.itemsTrackFull = editingGoalItemsTrackFull;
       goal.plantType = plantType;
       goal.eta = etaVal;
       goal.priority = goalPriority;
@@ -2813,7 +2894,7 @@ document.getElementById('goal-save').addEventListener('click', () => {
   } else {
     const current = parseFloat(document.getElementById('goal-current').value) || 0;
     budgetGoals.push({
-      id: crypto.randomUUID(), name, target, items: itemsVal, current, plantType, eta: etaVal, priority: goalPriority,
+      id: crypto.randomUUID(), name, target, items: itemsVal, itemsTrackFull: editingGoalItemsTrackFull, current, plantType, eta: etaVal, priority: goalPriority,
       category: categoryVal, description: descriptionVal, startDate: startDateVal,
       reserveActive: reserveActiveVal, funding: fundingVal,
     });

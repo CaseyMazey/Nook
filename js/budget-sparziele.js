@@ -47,6 +47,24 @@ function goalCompleted(goal){
   return goal.target > 0 && goal.current >= goal.target - 0.005;
 }
 
+// ── Optionale Posten ─────────────────────────────────────────────────
+// Ein Posten (goal.items[i]) kann als "optional" markiert werden (Editor
+// in budget.js, goal-item-optional-btn). Diese drei Helper liefern die
+// beiden möglichen Gesamtpreise sowie den aktuell VERFOLGTEN Modus —
+// welcher davon tatsächlich goal.target wird, entscheidet der Finanzgarten
+// (renderFinanzgarten() in budget.js, b-garden-track-btn), NICHT das
+// Sparziel-Modal selbst. Ohne goal.items bzw. ohne optionale Posten sind
+// beide Summen identisch, die Unterscheidung wirkt sich dann nirgends aus.
+function goalItemsRequiredTotal(goal){
+  return round2((goal.items || []).filter(it => !it.optional).reduce((s, it) => s + it.price, 0));
+}
+function goalItemsFullTotal(goal){
+  return round2((goal.items || []).reduce((s, it) => s + it.price, 0));
+}
+function goalItemsTrackFull(goal){
+  return goal.itemsTrackFull !== false; // Default true = Altverhalten (alle Posten zählen)
+}
+
 // ── Archiv ───────────────────────────────────────────────────────────
 // Archivieren blendet ein erfülltes Sparziel aus allen aktiven Ansichten
 // aus (Finanzierungs-Grid hier, Übersicht-Liste in budget.js, Geldfluss-
@@ -102,6 +120,7 @@ function buildSparzielCard(goal){
   const pct = goal.target > 0 ? Math.min(100, Math.round((goal.current / goal.target) * 100)) : 0;
   const emoji = PLANT_EMOJIS[goal.plantType] || '🌱';
   const hasItems = Array.isArray(goal.items) && goal.items.length > 0;
+  const optionalCount = hasItems ? goal.items.filter(it => it.optional).length : 0;
   const card = document.createElement('div'); card.className = 'sp-plan-card';
 
   // Bewusst minimal: Name, Priorität, Fortschritt, Wunschdatum — mehr
@@ -122,7 +141,7 @@ function buildSparzielCard(goal){
     </div>
     ${(goal.eta || hasItems) ? `<div class="sp-plan-card-meta">
       ${goal.eta ? `<span>Wunsch: ${goal.eta}</span>` : ''}
-      ${hasItems ? `<span>🧾 ${goal.items.length} Posten</span>` : ''}
+      ${hasItems ? `<span>🧾 ${goal.items.length} Posten${optionalCount ? ` (${optionalCount} optional)` : ''}</span>` : ''}
     </div>` : ''}
     <div class="sz-card-actions">
       <button class="sz-icon-btn" data-action="deposit" title="Einzahlen">+</button>

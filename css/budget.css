@@ -933,9 +933,32 @@
 .goal-item-row { display: flex; align-items: center; gap: 6px; }
 .goal-item-row .goal-item-name { flex: 1; min-width: 0; }
 .goal-item-row .goal-item-price { max-width: 90px; flex-shrink: 0; }
+.goal-item-row .goal-item-optional-btn,
 .goal-item-row .goal-item-delete { flex-shrink: 0; }
+/* Unmarkiert: blasser Umriss-Stern. Markiert (.active): kräftig gefüllt,
+   gleiche Sage-Farbsprache wie andere aktive Toggles im Hub. */
+.goal-item-optional-btn { color: var(--text-3); opacity: .5; }
+.goal-item-optional-btn.active { color: var(--sage-dark); opacity: 1; background: var(--sage-bg); border-color: var(--sage-border); }
 .goal-items-add-btn { margin-top: 8px; width: 100%; }
 #goal-target.goal-target-computed { background: var(--surface-2); color: var(--text-2); cursor: default; }
+.goal-items-summary { font-size: 12px; color: var(--text-3); margin-top: 8px; line-height: 1.5; }
+.goal-items-summary strong { color: var(--text-2); }
+
+/* ── Finanzgarten: Auswahl "Pflicht-Posten" vs. "Alle Posten" als
+   verfolgter Zielbetrag (nur sichtbar bei optionalen Posten) — budget.js ── */
+.b-garden-track-toggle { display: flex; gap: 4px; }
+.b-garden-track-btn {
+  font-size: 10px; font-weight: 600; color: var(--b-garden-select);
+  background: var(--b-garden-chip-bg);
+  border: 1px solid var(--b-garden-chip-border);
+  border-radius: 99px;
+  padding: 2px 8px;
+  cursor: pointer;
+  transition: background var(--transition);
+  white-space: nowrap;
+}
+.b-garden-track-btn:hover { background: var(--b-garden-chip-bg-hover); }
+.b-garden-track-btn.active { font-weight: 700; color: var(--sage-dark); background: var(--sage-bg); border-color: var(--sage-border); }
 
 /* ── Paid toggle ──────────────────────────────────────────── */
 .budget-paid-btn {
