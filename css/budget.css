@@ -928,6 +928,15 @@
 .fin-row-amount { max-width: 90px; flex-shrink: 0; }
 .fin-diff { font-size: 12px; margin-top: 6px; font-weight: 600; }
 
+/* ── Sparziel-Posten ("Aus Posten zusammensetzen") — budget.js ──────── */
+.goal-items-list { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; padding-right: 2px; }
+.goal-item-row { display: flex; align-items: center; gap: 6px; }
+.goal-item-row .goal-item-name { flex: 1; min-width: 0; }
+.goal-item-row .goal-item-price { max-width: 90px; flex-shrink: 0; }
+.goal-item-row .goal-item-delete { flex-shrink: 0; }
+.goal-items-add-btn { margin-top: 8px; width: 100%; }
+#goal-target.goal-target-computed { background: var(--surface-2); color: var(--text-2); cursor: default; }
+
 /* ── Paid toggle ──────────────────────────────────────────── */
 .budget-paid-btn {
   width: 21px; height: 21px;
@@ -1649,11 +1658,10 @@
   padding: 10px 12px; border-radius: var(--b-radius-xs); border: 1.5px dashed var(--border-strong);
   color: var(--text-3); font-size: 12.5px; margin-bottom: 6px;
 }
-.sp-template-item .badge-soon {
-  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
-  background: var(--sage-bg); color: var(--sage-dark); border-radius: 99px; padding: 2px 8px;
-}
-
+/* .badge-soon selbst ist jetzt hubweit generisch in css/main.css definiert
+   (siehe dortigen Kommentar) — .sp-template-item braucht dafür keine eigene
+   Regel mehr, justify-content: space-between oben positioniert ihn bereits
+   an den rechten Rand. */
 
 /* ── Rechenweg unter Szenario-Karten (Fix: Nachvollziehbarkeit) ── */
 .sp-scen-formula {

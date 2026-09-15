@@ -669,6 +669,10 @@
 .detail-tile-task-row:hover { background: var(--bg); }
 .detail-tile-task-row.done .detail-tile-task-label { text-decoration: line-through; color: var(--text-3); }
 .detail-tile-task-row.done { opacity: 0.58; }
+/* Extraaufgaben deutlicher von Kernaufgaben abheben (#7) — dezenter linker
+   Akzentstreifen statt nur des kleinen "✦"-Zeichens von vorher. */
+.detail-tile-task-row.extra { border-left: 2px solid var(--sage); padding-left: 16px; }
+.detail-tile-task-row.extra.done { border-left-color: var(--border); }
 
 .detail-tile-task-label {
   flex: 1; font-size: 13px; color: var(--text);
@@ -676,6 +680,16 @@
 }
 .detail-tile-task-label:hover { color: var(--sage-dark, #3d6b4a); }
 .detail-tile-extra-badge { font-size: 10px; color: var(--text-3); flex-shrink: 0; }
+.detail-tile-extra-row-badge {
+  font-size: 10px; font-weight: 600; color: var(--sage-dark); background: var(--sage-bg);
+  border-radius: 99px; padding: 1px 7px; flex-shrink: 0;
+}
+/* Aufgabenkategorie-Badge — bewusst neutral/einheitlich statt pro Kategorie
+   eingefärbt (siehe Absprache), damit die Aufgabenliste ruhig bleibt. */
+.detail-tile-category-badge {
+  font-size: 10px; color: var(--text-3); background: var(--surface-2);
+  border-radius: 4px; padding: 1px 6px; flex-shrink: 0;
+}
 .detail-task-has-detail { color: var(--text-3); margin-left: 4px; font-size: 15px; line-height: 1; vertical-align: middle; }
 
 /* Umbenennen/Verschieben/Löschen je Aufgabenzeile — nur bei Hover sichtbar,
@@ -694,6 +708,11 @@
   transition: background 100ms, color 100ms;
 }
 .detail-task-icon-btn:hover { background: var(--bg); color: var(--text); }
+
+/* Umbenennen/Löschen je Ast-Kopfzeile (#2) — gleiches Hover-Reveal-Prinzip
+   wie .detail-tile-task-actions oben, siehe auch @media(hover:none) unten. */
+.detail-tile-sub-actions { display: flex; gap: 2px; flex-shrink: 0; opacity: 0; transition: opacity 100ms; }
+.detail-tile-head:hover .detail-tile-sub-actions { opacity: 1; }
 
 .detail-tile-divider {
   font-size: 10px; color: var(--text-3); letter-spacing: 0.02em;
@@ -781,6 +800,20 @@
 }
 .cust-row-preview img { width: 24px; height: 24px; object-fit: contain; }
 .cust-row-name { flex: 1; min-width: 0; font-size: 13px; color: var(--text); }
+
+/* Baum-Auswahl im Customizing-Modal (#3) — kleine Thumbnail-Kacheln, wirkt
+   sofort per Klick (siehe renderTreePicker() in forest.js). */
+.cust-tree-picker { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 18px; }
+.cust-tree-option {
+  width: 60px; height: 60px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid transparent; border-radius: var(--radius-sm);
+  background: var(--surface-2); padding: 4px; cursor: pointer;
+  transition: border-color 100ms, background 100ms;
+}
+.cust-tree-option img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.cust-tree-option:hover { border-color: var(--border-strong); }
+.cust-tree-option.active { border-color: var(--sage); background: var(--sage-bg); }
 
 /* ── Customizing-Modal: scrollbarer Bereich + fest sichtbare Speichern-Leiste
    (nur bei ungespeicherten Änderungen eingeblendet, siehe
@@ -1095,4 +1128,6 @@
 @media (hover: none) {
   .detail-tile-task-actions { opacity: 0.55; }
   .detail-tile-task-row:active .detail-tile-task-actions { opacity: 1; }
+  .detail-tile-sub-actions { opacity: 0.55; }
+  .detail-tile-head:active .detail-tile-sub-actions { opacity: 1; }
 }

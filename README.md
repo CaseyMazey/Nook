@@ -60,7 +60,7 @@ Freie Karten (Notizen, Checklisten, Code, Zitate, …) in drei Masonry-Spalten, 
 Vollständige Terminverwaltung mit wiederkehrenden und mehrtägigen Terminen, Feiertagen/Geburtstagen sowie optionaler Google-Calendar-Anbindung *(in Bearbeitung)*.
 → [Wiki: Kalender](https://github.com/CaseyMazey/Nook/wiki/Kalender)
 
-### 💰 Budget
+### 💰 Budget 🔧 *Momentan in Bearbeitung*
 
 Monatsdashboard, die Finanzierungs-Engine „Jedem Euro einen Job“, Sparprognose & eigene Sparpläne sowie getrennte Schuldenverwaltung.
 → [Wiki: Übersicht](https://github.com/CaseyMazey/Nook/wiki/Budget-Übersicht) · [Finanzierung](https://github.com/CaseyMazey/Nook/wiki/Budget-Finanzierung) · [Sparplaner](https://github.com/CaseyMazey/Nook/wiki/Budget-Sparplaner) · [Schulden](https://github.com/CaseyMazey/Nook/wiki/Budget-Schulden)

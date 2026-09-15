@@ -24,6 +24,15 @@ function migrateProject(p) {
   if (p.archived === undefined) p.archived = false;
   if (!p.priority)    p.priority    = 'Mittel';
   if (!p.updatedAt)   p.updatedAt   = p.createdAt || Date.now();
+  // Aufgabenkategorien (optional, pro Projekt) — leeres Array + aktiviert,
+  // wirkt sich also für Bestandsprojekte erst aus, sobald tatsächlich eine
+  // Kategorie angelegt wird (siehe populateTaskCategorySelect() unten).
+  if (!p.taskCategories) p.taskCategories = [];
+  if (p.categoriesEnabled === undefined) p.categoriesEnabled = true;
+  // Anzeigename der "Hauptaufgaben"-Kachel — umbenennbar wie ein Ast (#2),
+  // bleibt aber strukturell der feste Container für project.tasks (siehe
+  // buildMainTasksTile() in forest.js).
+  if (!p.mainTasksLabel) p.mainTasksLabel = 'Hauptaufgaben';
   // dueDate bleibt undefined wenn nicht gesetzt
   p.subprojects.forEach(sp => {
     if (!sp.tasks)     sp.tasks     = [];
@@ -156,11 +165,14 @@ function renderProjects() {
   renderForest();
 }
 
-function startInlineEdit(labelEl, task, project, onDone) {
+// `field` erlaubt Wiederverwendung für andere umbenennbare Objekte als
+// Aufgaben (Standard 'text') — z.B. Unterprojekte, deren Titel in `title`
+// statt `text` steht (siehe renderDetailTiles() in forest.js).
+function startInlineEdit(labelEl, target, project, onDone, field = 'text') {
   if (labelEl.querySelector('input')) return;
   const input = document.createElement('input');
   input.type = 'text';
-  input.value = task.text;
+  input.value = target[field];
   input.className = 'project-task-inline-input';
   labelEl.textContent = '';
   labelEl.appendChild(input);
@@ -169,16 +181,158 @@ function startInlineEdit(labelEl, task, project, onDone) {
 
   const commit = () => {
     const val = input.value.trim();
-    if (val) task.text = val;
+    if (val) target[field] = val;
     saveProjects();
     if (typeof onDone === 'function') onDone(); else renderProjects();
   };
   input.addEventListener('blur', commit);
   input.addEventListener('keydown', e => {
     if (e.key === 'Enter') { e.preventDefault(); commit(); }
-    if (e.key === 'Escape') { input.value = task.text; input.blur(); }
+    if (e.key === 'Escape') { input.value = target[field]; input.blur(); }
   });
 }
+
+// =========================
+// AUFGABENKATEGORIEN (pro Projekt, optional)
+// Datenmodell: project.taskCategories = [{id, name}], project.categoriesEnabled
+// (Bool), task.categoryId (optional, verweist auf eine taskCategories-Id).
+// Verwaltung über das Kategorien-Modal (⋮-Menü in der Detailansicht ->
+// openCategoriesModal(), siehe forest.js). populateTaskCategorySelect() wird
+// sowohl von hier (Aufgabe-hinzufügen-Modal) als auch von forest.js
+// (Aufgaben-Detail-Modal) genutzt, damit beide Stellen exakt dieselbe
+// Sichtbarkeits-/Optionen-Logik haben.
+// =========================
+
+// Blendet die Kategorie-Auswahlzeile ein/aus (nur sichtbar, wenn das Projekt
+// Kategorien hat UND sie nicht deaktiviert sind) und füllt die Optionen.
+// `selectedId` vorbelegen (null/undefined -> "Keine Kategorie").
+function populateTaskCategorySelect(selectEl, rowEl, project, selectedId) {
+  if (!selectEl || !rowEl) return;
+  const show = !!project && project.categoriesEnabled !== false && (project.taskCategories || []).length > 0;
+  rowEl.classList.toggle('hidden', !show);
+  if (!show) {
+    // Leeren statt nur zu verstecken — sonst könnte beim nächsten Speichern
+    // (Zeile bleibt zwar versteckt, aber im DOM vorhanden) noch der
+    // ausgewählte Wert eines VORHER geöffneten, anderen Projekts hängen.
+    selectEl.innerHTML = '';
+    return;
+  }
+  selectEl.innerHTML = '<option value="">Keine Kategorie</option>' +
+    project.taskCategories.map(c => `<option value="${c.id}">${escapeXml(c.name)}</option>`).join('');
+  selectEl.value = selectedId || '';
+}
+
+let categoriesProject = null;
+
+function openCategoriesModal(project) {
+  categoriesProject = project;
+  document.getElementById('categories-enabled-toggle').checked = project.categoriesEnabled !== false;
+  renderCategoriesList();
+  document.getElementById('project-categories-modal-overlay').classList.remove('hidden');
+}
+function closeCategoriesModal() {
+  document.getElementById('project-categories-modal-overlay').classList.add('hidden');
+  categoriesProject = null;
+}
+
+// Nach jeder Änderung an project.categoriesEnabled/taskCategories die
+// gerade offene Detailseite mit aktualisieren (Badges/Auswahlfelder), falls
+// das bearbeitete Projekt dort gerade angezeigt wird — gleiches Muster wie
+// an anderen Stellen dieser Datei (z.B. openAddTaskModal-Save-Handler).
+function refreshDetailIfShowingProject(projectId) {
+  if (typeof currentDetailProject !== 'undefined' && currentDetailProject && currentDetailProject.id === projectId && typeof renderProjectDetail === 'function') {
+    renderProjectDetail();
+  }
+}
+
+function renderCategoriesList() {
+  const list = document.getElementById('categories-list');
+  list.innerHTML = '';
+  const project = categoriesProject;
+  if (!project) return;
+
+  if (project.taskCategories.length === 0) {
+    const hint = document.createElement('div');
+    hint.className = 'detail-tile-empty';
+    hint.textContent = 'Noch keine Kategorien angelegt.';
+    list.appendChild(hint);
+    return;
+  }
+
+  project.taskCategories.forEach(cat => {
+    const row = document.createElement('div');
+    row.className = 'detail-tile-task-row';
+
+    const label = document.createElement('span');
+    label.className = 'detail-tile-task-label';
+    label.style.cursor = 'default';
+    label.textContent = cat.name;
+
+    const actions = document.createElement('div');
+    actions.className = 'detail-tile-task-actions';
+
+    const renameBtn = document.createElement('button');
+    renameBtn.type = 'button';
+    renameBtn.className = 'detail-task-icon-btn';
+    renameBtn.title = 'Umbenennen';
+    renameBtn.textContent = '✎';
+    renameBtn.addEventListener('click', () => {
+      startInlineEdit(label, cat, project, () => { renderCategoriesList(); refreshDetailIfShowingProject(project.id); }, 'name');
+    });
+
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'detail-task-icon-btn';
+    delBtn.title = 'Löschen';
+    delBtn.textContent = '✕';
+    delBtn.addEventListener('click', () => {
+      openConfirmModal(
+        'Kategorie löschen?',
+        `„${cat.name}" wird gelöscht. Aufgaben mit dieser Kategorie bleiben erhalten, verlieren aber die Zuordnung.`,
+        'Löschen',
+        'danger',
+        () => {
+          project.taskCategories = project.taskCategories.filter(c => c.id !== cat.id);
+          // Verwaiste Zuordnungen aufräumen statt eine tote categoryId stehen zu lassen.
+          [...project.tasks, ...(project.subprojects || []).flatMap(sp => sp.tasks)].forEach(t => {
+            if (t.categoryId === cat.id) t.categoryId = null;
+          });
+          saveProjects();
+          renderCategoriesList();
+          refreshDetailIfShowingProject(project.id);
+        }
+      );
+    });
+
+    actions.append(renameBtn, delBtn);
+    row.append(label, actions);
+    list.appendChild(row);
+  });
+}
+
+document.getElementById('categories-enabled-toggle')?.addEventListener('change', e => {
+  if (!categoriesProject) return;
+  categoriesProject.categoriesEnabled = e.target.checked;
+  saveProjects();
+  refreshDetailIfShowingProject(categoriesProject.id);
+});
+
+document.getElementById('categories-add-btn')?.addEventListener('click', () => {
+  const input = document.getElementById('categories-new-input');
+  const name = input.value.trim();
+  if (!name || !categoriesProject) return;
+  categoriesProject.taskCategories.push({ id: crypto.randomUUID(), name });
+  input.value = '';
+  saveProjects();
+  renderCategoriesList();
+});
+document.getElementById('categories-new-input')?.addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('categories-add-btn').click();
+});
+document.getElementById('categories-modal-close')?.addEventListener('click', closeCategoriesModal);
+document.getElementById('project-categories-modal-overlay')?.addEventListener('click', e => {
+  if (e.target === document.getElementById('project-categories-modal-overlay')) closeCategoriesModal();
+});
 
 // =========================
 // ARCHIV MODAL
@@ -396,7 +550,17 @@ document.getElementById('project-modal-save').addEventListener('click', () => {
     });
   }
 
+  // Id VOR closeProjectModal() sichern — die setzt editingProject sofort auf
+  // null zurück (gleiches Prinzip wie beim Aufgabe-hinzufügen-Handler oben).
+  const savedEditingProjectId = editingProject ? editingProject.id : null;
   saveProjects(); closeProjectModal(); renderProjects();
+  // Wurde ein Projekt bearbeitet, während seine eigene Detailseite gerade
+  // offen ist (⋮-Menü -> Bearbeiten), muss die Detailseite selbst (Name,
+  // Beschreibung, Fälligkeitsdatum, ...) mit aktualisiert werden — sonst
+  // blieb sie bis zum manuellen Neuladen auf dem alten Stand (#1).
+  if (savedEditingProjectId && typeof currentDetailProject !== "undefined" && currentDetailProject && currentDetailProject.id === savedEditingProjectId) {
+    renderProjectDetail();
+  }
 });
 
 // =========================
@@ -419,6 +583,7 @@ function openAddTaskModal(projectId, isExtra, subprojectId) {
   }
   document.getElementById('project-task-modal-title').textContent = titleText;
   document.getElementById('project-task-input').value = '';
+  populateTaskCategorySelect(document.getElementById('project-task-category-select'), document.getElementById('project-task-category-row'), proj, null);
   document.getElementById('project-task-modal-overlay').classList.remove('hidden');
   setTimeout(() => document.getElementById('project-task-input').focus(), 50);
 }
@@ -445,7 +610,8 @@ document.getElementById('project-task-modal-save').addEventListener('click', () 
   if (!proj) return;
 
   const descVal = (document.getElementById("project-task-desc-input") || {value:""}).value.trim();
-  const newTask = { id: crypto.randomUUID(), text, description: descVal, done: false, isExtra: addTaskIsExtra, completedAt: null, checklist: [] };
+  const categoryVal = (document.getElementById("project-task-category-select") || {value:""}).value || null;
+  const newTask = { id: crypto.randomUUID(), text, description: descVal, done: false, isExtra: addTaskIsExtra, categoryId: categoryVal, completedAt: null, checklist: [] };
 
   if (addTaskTargetSubprojectId) {
     const sp = (proj.subprojects || []).find(s => s.id === addTaskTargetSubprojectId);
@@ -507,7 +673,16 @@ document.getElementById('proj-sub-modal-save').addEventListener('click', () => {
     tasks:     []
   });
   proj.updatedAt = Date.now();
+  // Id VOR closeAddSubprojectModal() sichern (setzt addSubprojectTargetId
+  // sofort auf null zurück).
+  const savedTargetId = addSubprojectTargetId;
   saveProjects(); closeAddSubprojectModal(); renderProjects();
+  // Neuer Ast war bisher auf der eigenen Detailseite unsichtbar, bis man die
+  // Seite manuell neu geladen hat — renderProjects()/renderForest() aktualisiert
+  // nur die (hier gerade unsichtbare) Wald-Übersicht, nicht die Detailseite (#1).
+  if (typeof currentDetailProject !== "undefined" && currentDetailProject && currentDetailProject.id === savedTargetId) {
+    renderProjectDetail();
+  }
 });
 
 // =========================

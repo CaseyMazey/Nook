@@ -1202,3 +1202,36 @@ body.has-bg-image .dash-content {
 .empty-state { font-size: 13px; color: var(--text-3); padding: 16px 18px; }
 .empty-state.full { text-align: center; padding: 44px; }
 .hidden { display: none !important; }
+
+/* Kleiner "noch nicht fertig"-Hinweis-Pill — hubweit wiederverwendbar
+   (ursprünglich .sp-template-item .badge-soon in budget.css, hierher
+   verallgemeinert, damit z.B. auch Panel-Header außerhalb von Budget ihn
+   nutzen können, ohne eine ähnliche Badge-Variante neu zu bauen). Text
+   frei wählbar ("Bald", "In Bearbeitung", ...). */
+.badge-soon {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+  background: var(--sage-bg); color: var(--sage-dark); border-radius: 99px; padding: 2px 8px;
+}
+
+/* Dezenter, hubweit wiederverwendbarer Hinweisblock — rein informativ,
+   bewusst NICHT die Optik einer Fehler-/Warnmeldung (siehe .gcal-hint-
+   Tonfall in google-calendar.css als Vorbild für Text/Farbe, dashed Border
+   wie .sp-template-item in budget.css als Vorbild für die Box). Aktuell
+   genutzt für den Entwicklungsstand-Hinweis im Einstellungen-Tab; generisch
+   gehalten für künftige ähnliche seitenweite Hinweise andernorts — einfach
+   entfernbar/wiederverwendbar, kein Baustein, der an eine einzelne Seite
+   gekoppelt ist. */
+.hub-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  margin-bottom: 18px;
+  border: 1.5px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--text-3);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.hub-notice > :first-child { flex-shrink: 0; }

@@ -323,28 +323,63 @@ function ensureTaskDecor(task, project) {
 // 1:1-Protokoll).
 //
 // Positionen werden nicht fest vorgegeben, sondern innerhalb einer Ellipse
-// gestreut, die die Baumkrone aller 5 PNG-Varianten sicher trifft (Krone
-// sitzt bei allen Varianten grob mittig oben, Stamm/Boden im unteren Drittel
-// — die Ellipse bleibt bewusst konservativ innerhalb der Blattmasse). Der
-// Seed hängt an der AUFGABEN-ID (nicht an ihrem Index in einer gefilterten
-// "erledigt"-Liste!) — eine einmal vergebene Position bleibt dadurch stabil,
-// auch wenn andere Aufgaben später (ab)gehakt werden. Würde eine Position
-// ein bereits platziertes Deko-Objekt überlappen (siehe DECOR_MIN_DIST),
-// sucht pickCanopySlot() innerhalb desselben, weiterhin pro Aufgabe
-// deterministischen Zufallsstroms nach einer freien Alternative — Kern- UND
-// Extraaufgaben werden dafür in EINEM gemeinsamen Durchlauf platziert
-// (siehe updateDetailTreeElements() unten), damit sich Deko-Objekte auch
-// über beide Aufgabenarten hinweg nie überlappen. Welches konkrete
-// Deko-Objekt (Apfel, Apfelblüte, ...) an einer Position sitzt, kommt
-// separat aus task.decorId/decorVariant.
+// gestreut. Die 5 PNG-Baumvarianten haben unterschiedlich breite/hohe Kronen
+// (1 und 3 deutlich breiter, 2/4/5 schmaler und dafür höher/konischer) — statt
+// einer einzigen, für die schmalste Krone kompromittierten Ellipse (die bei
+// den breiten Bäumen Platz verschenkt und bei den schmalen trotzdem über den
+// Blattrand hinausragen kann) bekommt jede Variante ihre eigene, aus dem PNG
+// grob abgeschätzte und bewusst konservativ verkleinerte Ellipse — siehe
+// CANOPY_ELLIPSES unten.
+//
+// Jede Position wird EINMALIG vergeben und dauerhaft auf der Aufgabe
+// gespeichert (task.decorSlot, siehe ensureTaskCanopySlots() unten) — nie
+// bei jedem Render neu berechnet. Ein rein von der Aufgaben-ID abhängiger
+// Seed allein reicht dafür NICHT aus: die Überlappungs-Vermeidung
+// (pickCanopySlot() gegen bereits platzierte Nachbarn, siehe DECOR_MIN_DIST)
+// macht die Position einer Aufgabe zusätzlich davon abhängig, welche
+// ANDEREN Aufgaben zum Zeitpunkt der ERSTEN Platzierung schon einen Platz
+// hatten — deshalb werden neue Aufgaben in der Reihenfolge ihres
+// Abschluss-Zeitpunkts (completedAt) einsortiert, nicht in
+// Aufgaben-Erstellungsreihenfolge, und einmal platzierte Aufgaben danach nie
+// wieder angefasst. Kern- UND Extraaufgaben laufen dafür durch EINEN
+// gemeinsamen Durchlauf (siehe updateDetailTreeElements() unten), damit sich
+// Deko-Objekte auch über beide Aufgabenarten hinweg nie überlappen. Welches
+// konkrete Deko-Objekt (Apfel, Apfelblüte, ...) an einer Position sitzt,
+// kommt separat aus task.decorId/decorVariant.
 // =========================
-const CANOPY_ELLIPSE = { cx: 50, cy: 34, rx: 38, ry: 28 };
+// Je Baumvariante (1-5, siehe TREE_PNG_COUNT/getOrAssignTreeVariant() oben)
+// eine eigene Kronenellipse. Werte NICHT mehr geschätzt, sondern per
+// Canvas-Pixelanalyse aus img/trees/tree_<n>.png ermittelt (Alpha-Kanal pro
+// Zeile im oberen Bilddrittel/-hälfte abgetastet, Kronenbreite über das 85.
+// Perzentil der Zeilenbreiten robust gegen einzelne Astspitzen bestimmt,
+// daraus eine Bounding-Box → Ellipse), anschließend um 10% nach innen
+// verkleinert als Sicherheitsabstand (Deko-Bilder haben selbst eine
+// Ausdehnung, ihr Zentrum darf daher nicht exakt auf dem Blattrand liegen).
+// Live per Overlay-Screenshot gegengeprüft (alle 5 Varianten). _fall-
+// Varianten teilen sich dieselbe Silhouette wie ihre normale Version (nur
+// andere Farbgebung), brauchen daher keinen eigenen Eintrag. Bei einer
+// künftigen 6. Variante hier ergänzen — ohne eigenen Eintrag würde sonst
+// kein Fallback existieren (siehe updateDetailTreeElements() unten).
+const CANOPY_ELLIPSES = {
+  1: { cx: 49.8, cy: 45.9, rx: 39.4, ry: 16.5 }, // breit, eher flach
+  2: { cx: 48.3, cy: 42.2, rx: 25.4, ry: 19.8 }, // schmal, konisch/hoch
+  3: { cx: 45.9, cy: 43.1, rx: 35.0, ry: 19.0 }, // breit
+  4: { cx: 49.4, cy: 39.0, rx: 25.8, ry: 20.3 }, // schmal
+  5: { cx: 51.1, cy: 42.2, rx: 27.3, ry: 19.8 }, // schmal, am höchsten
+};
 const DECOR_MAX = 8;
-const DECOR_MIN_DIST = 13; // Mindestabstand zwischen zwei Deko-Objekten, selbe Einheit wie x/y (%) — an die Bildgröße (project-tree.css, .pdt-tree-decor-item) gekoppelt, bei Größenänderung dort proportional mitziehen.
+const DECOR_MIN_DIST = 20.3125; // Mindestabstand zwischen zwei Deko-Objekten, selbe Einheit wie x/y (%) — an die Bildgröße (project-tree.css, .pdt-tree-decor-item) gekoppelt, proportional zur erneuten 25%-Vergrößerung dort mitskaliert (16.25 -> 20.3125).
 
-function pickCanopySlot(task, placed) {
+// Hängende Rankenblumen (form:'vine'/'hanging' im Garden-Katalog, siehe
+// js/garden-catalog.js GARDEN_PLANT_META) bekommen als Baum-Deko eine eigene,
+// etwas größere Darstellung (.pdt-tree-decor-hanging in project-tree.css)
+// statt der normalen Blumen-Größe — als dünne Ranke sonst zu klein/schwer
+// erkennbar. IDs entsprechen DECOR_META-Schlüsseln (= DECOR_REGISTRY-Ids).
+const DECOR_HANGING_IDS = new Set(['glyzinie', 'jade vine', 'passion flower', 'wisteria', 'bleeding heart', 'fuchsia']);
+
+function pickCanopySlot(task, placed, ellipse) {
   const rng = seededRand(idToSeed(task.id) + 5501);
-  const { cx, cy, rx, ry } = CANOPY_ELLIPSE;
+  const { cx, cy, rx, ry } = ellipse;
   let best = null, bestDist = -1;
   for (let attempt = 0; attempt < 30; attempt++) {
     const angle = rng() * Math.PI * 2;
@@ -359,6 +394,51 @@ function pickCanopySlot(task, placed) {
     if (minDist > bestDist) { bestDist = minDist; best = { x, y }; }
   }
   return best;
+}
+
+// Vergibt jeder übergebenen (bereits erledigten, für Deko vorgesehenen)
+// Aufgabe EINMALIG eine Position (task.decorSlot) und lässt sie danach für
+// immer unangetastet — ein bereits gewachsenes Deko-Objekt darf seinen
+// Platz nie wieder wechseln, egal wie viele weitere Aufgaben später
+// abgeschlossen werden. Neue Aufgaben werden in der Reihenfolge ihres
+// Abschluss-Zeitpunkts (completedAt) einsortiert, NICHT in Aufgaben-
+// Erstellungsreihenfolge — sonst würde die Überlappungs-Vermeidung
+// (pickCanopySlot() gegen `placed`) einer bereits sichtbaren, älteren Frucht
+// nachträglich einen neuen Platz zuweisen, nur weil eine andere, aber früher
+// ERSTELLTE Aufgabe gerade erst FERTIG wurde und dadurch vor ihr in die
+// Platzierungsreihenfolge rutschen würde.
+//
+// Eine Ausnahme von "nie wieder anfassen" gibt es: Liegt eine bereits
+// gespeicherte Position außerhalb der für DIESES Projekt geltenden Ellipse
+// (`ellipse`-Parameter, siehe CANOPY_ELLIPSES/updateDetailTreeElements()),
+// wird sie einmalig neu vergeben. Das greift z.B. wenn die Ellipsen-Werte
+// nachträglich korrigiert wurden (wie hier: vorher eine einzige, für schmale
+// Baumvarianten zu breite Ellipse) — bereits über den Kronenrand
+// hinausragende Deko wandert dadurch einmalig zurück in die Krone, statt
+// dauerhaft falsch stehen zu bleiben. Gibt true zurück, wenn dabei
+// mindestens eine Position (neu) vergeben wurde (Aufrufer speichert dann).
+function isSlotInsideEllipse(slot, ellipse) {
+  if (!slot || typeof slot.x !== 'number' || typeof slot.y !== 'number') return false;
+  const dx = (slot.x - ellipse.cx) / ellipse.rx;
+  const dy = (slot.y - ellipse.cy) / ellipse.ry;
+  return (dx * dx + dy * dy) <= 1;
+}
+
+function ensureTaskCanopySlots(tasks, ellipse) {
+  let changed = false;
+  const byCompletion = [...tasks].sort((a, b) => (a.completedAt || 0) - (b.completedAt || 0));
+  const placed = [];
+  byCompletion.forEach(task => {
+    if (isSlotInsideEllipse(task.decorSlot, ellipse)) {
+      placed.push(task.decorSlot);
+      return;
+    }
+    const slot = pickCanopySlot(task, placed, ellipse);
+    task.decorSlot = slot;
+    placed.push(slot);
+    changed = true;
+  });
+  return changed;
 }
 
 // =========================
@@ -388,27 +468,30 @@ function updateDetailTreeElements(p) {
   const coreDone  = coreDoneAll.slice(0, DECOR_MAX);
   const extraDone = extraDoneAll.slice(0, DECOR_MAX);
 
-  function decorImg(task, slot) {
+  // Position EINMALIG pro Aufgabe vergeben und dauerhaft speichern
+  // (task.decorSlot), statt bei jedem Render neu zu berechnen — sonst hing
+  // die Position eines bereits platzierten Deko-Objekts davon ab, welche
+  // ANDEREN Aufgaben gerade mit-gerendert werden (Überlappungs-Vermeidung
+  // gegen `placed`), und "sprang", sobald eine weitere Aufgabe fertig wurde.
+  // Siehe ensureTaskCanopySlots() unten für die Chronologie-Begründung.
+  // Ellipse richtet sich nach der tatsächlichen Baumvariante dieses Projekts
+  // (CANOPY_ELLIPSES) — Fallback auf Variante 1, falls `variant` aus
+  // irgendeinem Grund außerhalb 1..TREE_PNG_COUNT läge.
+  const canopyEllipse = CANOPY_ELLIPSES[variant] || CANOPY_ELLIPSES[1];
+  if (ensureTaskCanopySlots([...coreDone, ...extraDone], canopyEllipse) && typeof saveProjects === 'function') saveProjects();
+
+  function decorImg(task) {
     const entry = DECOR_REGISTRY[task.decorId] || DECOR_REGISTRY[DEFAULT_CUSTOMIZING[task.isExtra ? 'extra' : 'core'][0]];
     // Bereits gewürfelte Farbvariante (ensureTaskDecor() oben) verwenden;
     // variants[0] nur als Absicherung, falls task.decorVariant fehlt/
     // ungültig ist (sollte durch ensureTaskDecor() eigentlich nie vorkommen).
     const src = entry.variants.includes(task.decorVariant) ? task.decorVariant : entry.variants[0];
-    const cls = entry.category === 'blumen' ? 'pdt-tree-decor-blumen' : '';
+    const cls = DECOR_HANGING_IDS.has(entry.id) ? 'pdt-tree-decor-hanging' : (entry.category === 'blumen' ? 'pdt-tree-decor-blumen' : '');
+    const slot = task.decorSlot;
     return `<img class="pdt-tree-decor-item ${cls}" src="${src}" alt="${escapeXml(entry.label)}" draggable="false" style="left:${slot.x}%;top:${slot.y}%;" />`;
   }
 
-  // Ein gemeinsamer Platzierungsdurchlauf über Kern- UND Extraaufgaben
-  // (siehe pickCanopySlot()), damit sich Deko-Objekte auch über beide
-  // Aufgabenarten hinweg nie überlappen. Reihenfolge = ursprüngliche
-  // Aufgaben-Reihenfolge, nicht Fertig-Zeitpunkt — bleibt dadurch stabil,
-  // unabhängig davon, welche anderen Aufgaben gerade (ab)gehakt sind.
-  const placed = [];
-  const decor = [...coreDone, ...extraDone].map(task => {
-    const slot = pickCanopySlot(task, placed);
-    placed.push(slot);
-    return decorImg(task, slot);
-  }).join('');
+  const decor = [...coreDone, ...extraDone].map(decorImg).join('');
 
   // Keine Breitenbremse mehr nötig: der Baum ist die Hintergrundebene der
   // GESAMTEN Hero (project-tree.css), Titel/Projektinfos liegen als EINE

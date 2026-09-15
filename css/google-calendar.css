@@ -66,5 +66,9 @@
    RESPONSIVE — gleiches Muster wie .settings-row in css/settings.css
 ============================================================= */
 @media (max-width: 480px) {
+  /* "In Bearbeitung"-Badge im Panel-Header darf auf sehr schmalen Screens
+     umbrechen statt den Chevron aus dem Header zu drängen — nur dieser eine
+     Header, nicht alle .panel-header hubweit. */
+  #gcal-settings-header { flex-wrap: wrap; row-gap: 6px; }
   .gcal-connect-row, .gcal-account-row, .gcal-sync-actions { flex-wrap: wrap; }
 }

@@ -2615,6 +2615,83 @@ function setGoalPriorityButtons(p) {
   if (btn) btn.addEventListener('click', () => { goalPriority = p; setGoalPriorityButtons(p); });
 });
 
+// ── Sparziel-Posten ("Aus Posten zusammensetzen") ───────────────────
+// Alternative Eingabemethode für den Zielbetrag: Statt einer Zahl trägt
+// man einzelne Posten (Name + Preis) ein, deren Summe beim Speichern zu
+// goal.target wird (siehe goal-save unten). goal.target bleibt dadurch
+// weiterhin das EINZIGE Feld, das Finanzgarten/Finanzierung/Sparprognose/
+// Sparpläne lesen — goal.items ist rein die (optionale) Herkunft dieser
+// Zahl, kein zusätzlicher Datenpfad für andere Module.
+function createGoalItemRow(item) {
+  const row = document.createElement('div');
+  row.className = 'goal-item-row';
+  row.dataset.itemId = (item && item.id) || crypto.randomUUID();
+  const nameVal  = item && item.name  ? item.name.replace(/"/g, '&quot;') : '';
+  const priceVal = item && item.price ? item.price : '';
+  row.innerHTML = `
+    <input type="text" class="modal-input goal-item-name" placeholder="Name" value="${nameVal}"/>
+    <input type="number" class="modal-input goal-item-price" placeholder="0.00" step="0.01" min="0" value="${priceVal}"/>
+    <button type="button" class="sz-icon-btn goal-item-delete" title="Entfernen">&#10005;</button>`;
+  row.querySelector('.goal-item-delete').addEventListener('click', () => { row.remove(); updateGoalItemsTotal(); });
+  row.querySelector('.goal-item-price').addEventListener('input', updateGoalItemsTotal);
+  return row;
+}
+function renderGoalItemsEditor(items) {
+  const list = document.getElementById('goal-items-list');
+  if (!list) return;
+  list.innerHTML = '';
+  (items || []).forEach(it => list.appendChild(createGoalItemRow(it)));
+  updateGoalItemsTotal();
+}
+// Summe der aktuell im DOM stehenden Preise, unabhängig davon, ob eine
+// Zeile schon einen Namen hat (der Nutzer tippt Preis/Name in beliebiger
+// Reihenfolge) — Filterung auf "gültige" Posten passiert erst beim
+// tatsächlichen Speichern in readGoalItemsEditor().
+function updateGoalItemsTotal() {
+  const toggle = document.getElementById('goal-items-toggle');
+  const targetInput = document.getElementById('goal-target');
+  const list = document.getElementById('goal-items-list');
+  if (!toggle || !targetInput || !list || !toggle.checked) return;
+  const sum = round2(Array.from(list.querySelectorAll('.goal-item-price'))
+    .reduce((s, inp) => s + (parseFloat(inp.value) || 0), 0));
+  targetInput.value = sum || '';
+}
+function readGoalItemsEditor() {
+  const list = document.getElementById('goal-items-list');
+  if (!list) return [];
+  return Array.from(list.querySelectorAll('.goal-item-row')).map(row => ({
+    id: row.dataset.itemId,
+    name: row.querySelector('.goal-item-name').value.trim(),
+    price: round2(parseFloat(row.querySelector('.goal-item-price').value) || 0),
+  })).filter(it => it.name || it.price > 0);
+}
+function setGoalItemsMode(active) {
+  document.getElementById('goal-items-section').classList.toggle('hidden', !active);
+  document.getElementById('goal-target').readOnly = active;
+  document.getElementById('goal-target').classList.toggle('goal-target-computed', active);
+  if (active) updateGoalItemsTotal();
+}
+document.getElementById('goal-items-toggle').addEventListener('change', (e) => {
+  const active = e.target.checked;
+  const list = document.getElementById('goal-items-list');
+  // Beim erstmaligen Aktivieren mit einem bereits manuell eingetragenen
+  // Zielbetrag: diesen als ersten Posten übernehmen, statt ihn stillschweigend
+  // zu verwerfen — sonst "verschwindet" ein vorhandener Betrag beim Umschalten.
+  if (active && list && !list.children.length) {
+    const targetVal = parseFloat(document.getElementById('goal-target').value) || 0;
+    const nameVal = document.getElementById('goal-name').value.trim() || 'Position 1';
+    list.appendChild(createGoalItemRow(targetVal > 0 ? { name: nameVal, price: targetVal } : null));
+  }
+  setGoalItemsMode(active);
+});
+document.getElementById('goal-items-add').addEventListener('click', () => {
+  const list = document.getElementById('goal-items-list');
+  const row = createGoalItemRow(null);
+  list.appendChild(row);
+  updateGoalItemsTotal();
+  row.querySelector('.goal-item-name').focus();
+});
+
 const goalModal = wireModal('goal-modal-overlay', {
   closeIds: ['goal-modal-close', 'goal-cancel'],
   inputId: 'goal-name',
@@ -2643,6 +2720,9 @@ document.getElementById('add-goal-btn').addEventListener('click', () => {
   if (typeof renderFundingEditor === 'function') {
     renderFundingEditor(document.getElementById('goal-funding-list'), [], null, 'goal-funding');
   }
+  document.getElementById('goal-items-toggle').checked = false;
+  renderGoalItemsEditor([]);
+  setGoalItemsMode(false);
   // Reset plant selector to first option
   const firstRadio = document.querySelector('input[name="goal-plant"]');
   if (firstRadio) firstRadio.checked = true;
@@ -2670,6 +2750,10 @@ function openEditGoalModal(goal) {
     const suggestedTotal = typeof goalMonthlyReserveEquivalent === 'function' ? goalMonthlyReserveEquivalent(goal) : null;
     renderFundingEditor(document.getElementById('goal-funding-list'), goal.funding || [], suggestedTotal > 0 ? suggestedTotal : null, 'goal-funding');
   }
+  const hasItems = Array.isArray(goal.items) && goal.items.length > 0;
+  document.getElementById('goal-items-toggle').checked = hasItems;
+  renderGoalItemsEditor(goal.items || []);
+  setGoalItemsMode(hasItems);
   const radio = document.querySelector(`input[name="goal-plant"][value="${goal.plantType}"]`);
   if (radio) radio.checked = true;
   else { const firstRadio = document.querySelector('input[name="goal-plant"]'); if (firstRadio) firstRadio.checked = true; }
@@ -2695,7 +2779,10 @@ document.getElementById('goal-delete').addEventListener('click', () => {
 document.getElementById('goal-save').addEventListener('click', () => {
   const name = document.getElementById('goal-name').value.trim();
   if (!name) return;
-  const target    = parseFloat(document.getElementById('goal-target').value) || 0;
+  const itemsVal = document.getElementById('goal-items-toggle').checked ? readGoalItemsEditor() : [];
+  const target = itemsVal.length
+    ? round2(itemsVal.reduce((s, it) => s + it.price, 0))
+    : (parseFloat(document.getElementById('goal-target').value) || 0);
   const plantRadio = document.querySelector('input[name="goal-plant"]:checked');
   const plantType = plantRadio ? plantRadio.value : 'sunflower';
   const etaVal = document.getElementById('goal-eta').value || null;
@@ -2712,6 +2799,7 @@ document.getElementById('goal-save').addEventListener('click', () => {
     if (goal) {
       goal.name = name;
       goal.target = target;
+      goal.items = itemsVal;
       goal.plantType = plantType;
       goal.eta = etaVal;
       goal.priority = goalPriority;
@@ -2725,7 +2813,7 @@ document.getElementById('goal-save').addEventListener('click', () => {
   } else {
     const current = parseFloat(document.getElementById('goal-current').value) || 0;
     budgetGoals.push({
-      id: crypto.randomUUID(), name, target, current, plantType, eta: etaVal, priority: goalPriority,
+      id: crypto.randomUUID(), name, target, items: itemsVal, current, plantType, eta: etaVal, priority: goalPriority,
       category: categoryVal, description: descriptionVal, startDate: startDateVal,
       reserveActive: reserveActiveVal, funding: fundingVal,
     });

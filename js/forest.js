@@ -89,14 +89,15 @@ const FOREST_SLOTS = generateForestSlots(FOREST_ROW_COUNTS);
 // =========================
 // FILTER / TABS / SUCHE
 // =========================
+function projectMatchesForestFilter(p) {
+  if (forestFilterTab === 'active'   && p.archived)  return false;
+  if (forestFilterTab === 'archived' && !p.archived) return false;
+  if (forestPriorityFilter && (p.priority || 'Mittel') !== forestPriorityFilter) return false;
+  if (forestSearchQuery && !p.name.toLowerCase().includes(forestSearchQuery)) return false;
+  return true;
+}
 function getFilteredForestProjects() {
-  return projects.filter(p => {
-    if (forestFilterTab === 'active'   && p.archived)  return false;
-    if (forestFilterTab === 'archived' && !p.archived) return false;
-    if (forestPriorityFilter && (p.priority || 'Mittel') !== forestPriorityFilter) return false;
-    if (forestSearchQuery && !p.name.toLowerCase().includes(forestSearchQuery)) return false;
-    return true;
-  });
+  return projects.filter(projectMatchesForestFilter);
 }
 
 function updateForestTabCounts() {
@@ -372,18 +373,40 @@ function renderForest() {
   // der Desktop-Lichtungen-Anordnung als auch im Mobile-Raster (7 Reihen
   // x 2 Spalten dort). Überzählige Projekte landen auf weiteren
   // Waldseiten/-stücken statt optisch überlappend gequetscht zu werden.
-  const pageSize   = FOREST_SLOTS.length;
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  if (forestPage >= totalPages) forestPage = totalPages - 1;
-  if (forestPage < 0) forestPage = 0;
-
-  const pageItems = filtered.slice(forestPage * pageSize, forestPage * pageSize + pageSize);
+  const pageSize = FOREST_SLOTS.length;
   const containerWidth = container.clientWidth || 1200;
-  pageItems.forEach((project, i) => {
-    layer.appendChild(buildForestTree(project, mobileGrid ? null : FOREST_SLOTS[i], containerWidth));
-  });
 
-  renderForestPager(totalPages);
+  if (mobileGrid) {
+    // Mobile-Raster: reine scrollende Liste, keine feste Lichtung pro
+    // Projekt nötig — Filter dürfen die Liste hier ganz normal neu anordnen
+    // (kein "Platz"-Konzept wie in der Desktop-Waldansicht unten).
+    const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+    if (forestPage >= totalPages) forestPage = totalPages - 1;
+    if (forestPage < 0) forestPage = 0;
+    const pageItems = filtered.slice(forestPage * pageSize, forestPage * pageSize + pageSize);
+    pageItems.forEach(project => layer.appendChild(buildForestTree(project, null, containerWidth)));
+    renderForestPager(totalPages);
+  } else {
+    // Desktop/Tablet-Lichtungen: jedes Projekt bekommt seinen Slot nach der
+    // festen Position im UNGEFILTERTEN `projects`-Array, nicht nach Position
+    // in der gefilterten Liste — sonst rutschen beim Wechseln von Tab/Suche/
+    // Priorität alle sichtbaren Bäume in neue Plätze, weil sich ihr Index in
+    // der gefilterten Liste ändert. Mit fester Zuordnung bleibt jedes
+    // Projekt an "seinem" Platz; ausgefilterte Projekte lassen ihren Platz
+    // einfach leer statt dass Nachbarn nachrücken. Seitenzahl richtet sich
+    // deshalb ebenfalls nach der GESAMTEN Projektliste, nicht nach der
+    // gefilterten — ein Filter zeigt dadurch ggf. eine dünner besetzte Seite,
+    // statt Projekte auf eine andere Seite zu verschieben.
+    const totalPages = Math.max(1, Math.ceil(projects.length / pageSize));
+    if (forestPage >= totalPages) forestPage = totalPages - 1;
+    if (forestPage < 0) forestPage = 0;
+    const startGlobal = forestPage * pageSize;
+    projects.slice(startGlobal, startGlobal + pageSize).forEach((project, slotIdx) => {
+      if (!projectMatchesForestFilter(project)) return; // Platz bleibt leer, Nachbarn bleiben stehen
+      layer.appendChild(buildForestTree(project, FOREST_SLOTS[slotIdx], containerWidth));
+    });
+    renderForestPager(totalPages);
+  }
 }
 
 // =========================
@@ -448,8 +471,6 @@ function switchToForestView() {
   renderForest();
 }
 
-switchToForestView();
-
 // =========================
 // DETAILANSICHT
 // =========================
@@ -463,9 +484,22 @@ let collapsedSubprojects = new Set();
 // Kachel, daher reicht ein Boolean statt eines Sets).
 let mainTasksCollapsed = false;
 
+// Welches Projekt zuletzt in der Detailansicht offen war (#8) — bewusst
+// getrennt vom URL-Hash-Tab-Routing in main.js (das bleibt unangetastet,
+// nur "#projects" o.ä.), rein Projekte-intern. Ein manueller Browser-
+// Reload landete vorher immer auf der Wald-Übersicht, selbst wenn man
+// gerade eine Detailseite offen hatte — siehe Start-Aufruf am Ende dieses
+// Abschnitts.
+let lastOpenProjectDetailId = DB.get('lastOpenProjectDetailId', null);
+function saveLastOpenProjectDetailId(id) {
+  lastOpenProjectDetailId = id;
+  DB.set('lastOpenProjectDetailId', id);
+}
+
 function openProjectDetail(projectId) {
   currentDetailProject = projects.find(p => p.id === projectId);
   if (!currentDetailProject) return;
+  saveLastOpenProjectDetailId(projectId);
   detailSubLayer = 0;
   collapsedSubprojects = new Set();
   mainTasksCollapsed = false;
@@ -491,6 +525,16 @@ function closeProjectDetail() {
 
   document.getElementById('view-project-detail').style.display = 'none';
   currentDetailProject = null;
+  saveLastOpenProjectDetailId(null);
+  switchToForestView();
+}
+
+// Start: entweder die zuletzt offene Detailseite wiederherstellen (#8) oder,
+// falls keine gespeichert ist bzw. das Projekt inzwischen gelöscht wurde,
+// die gewohnte Wald-Übersicht zeigen.
+if (lastOpenProjectDetailId && projects.some(p => p.id === lastOpenProjectDetailId)) {
+  openProjectDetail(lastOpenProjectDetailId);
+} else {
   switchToForestView();
 }
 
@@ -592,11 +636,14 @@ function buildDetailTaskRow(task, project, subproject) {
   const renameBtn = document.createElement('button');
   renameBtn.type = 'button';
   renameBtn.className = 'detail-task-icon-btn';
-  renameBtn.title = 'Umbenennen';
+  renameBtn.title = 'Bearbeiten';
   renameBtn.textContent = '✎';
+  // Öffnet das vollständige Aufgaben-Detail (Titel, Beschreibung sichtbar +
+  // editierbar, Checkliste) statt nur den Titel inline zu bearbeiten — die
+  // Beschreibung war über dieses Icon vorher gar nicht erreichbar.
   renameBtn.addEventListener('click', e => {
     e.stopPropagation();
-    startInlineEdit(label, task, project, () => renderDetailTiles());
+    openTaskDetail(task, subproject, project);
   });
 
   const moveBtn = document.createElement('button');
@@ -628,14 +675,35 @@ function buildDetailTaskRow(task, project, subproject) {
 
   actions.append(renameBtn, moveBtn, delBtn);
 
-  if (task.isExtra) {
-    const badge = document.createElement('span');
-    badge.className = 'detail-tile-extra-badge';
-    badge.textContent = '✦';
-    row.append(cb, label, badge, actions);
-  } else {
-    row.append(cb, label, actions);
+  const rowChildren = [cb, label];
+
+  // Kategorie-Badge (optional, siehe populateTaskCategorySelect() in
+  // projects.js) — nur wenn das Projekt Kategorien hat, sie aktiviert sind
+  // UND die zugewiesene Kategorie noch existiert (kann durch Löschen der
+  // Kategorie verwaist sein, dann steht categoryId bereits wieder auf null,
+  // dieser Check ist zusätzliche Absicherung).
+  if (task.categoryId && project.categoriesEnabled !== false) {
+    const cat = (project.taskCategories || []).find(c => c.id === task.categoryId);
+    if (cat) {
+      const catBadge = document.createElement('span');
+      catBadge.className = 'detail-tile-category-badge';
+      catBadge.textContent = cat.name;
+      rowChildren.push(catBadge);
+    }
   }
+
+  if (task.isExtra) {
+    // Eigene Klasse statt .detail-tile-extra-badge (die auch für das
+    // Kern/Extra-Label im Aufgaben-Detail-Modal genutzt wird, siehe
+    // index.html #task-detail-type — eine sage-Einfärbung dort würde auch
+    // "◉ Kern" mitfärben, was nicht gewünscht ist).
+    const badge = document.createElement('span');
+    badge.className = 'detail-tile-extra-row-badge';
+    badge.textContent = '✦ Extra';
+    rowChildren.push(badge);
+  }
+  rowChildren.push(actions);
+  row.append(...rowChildren);
   return row;
 }
 
@@ -663,13 +731,29 @@ function buildMainTasksTile(p) {
   chevron.textContent = mainTasksCollapsed ? '▸' : '▾';
   const title = document.createElement('div');
   title.className = 'detail-tile-title';
-  title.textContent = 'Hauptaufgaben';
+  title.textContent = p.mainTasksLabel || 'Hauptaufgaben';
   titleWrap.append(chevron, title);
+
+  // Umbenennen (#2) — gleiches Icon/Muster wie bei Ästen (subActions oben).
+  // Kein Löschen-Icon: anders als ein Ast ist diese Kachel der feste
+  // Container für project.tasks, kein eigenständiges, entfernbares Objekt.
+  const mainActions = document.createElement('div');
+  mainActions.className = 'detail-tile-sub-actions';
+  const mainRenameBtn = document.createElement('button');
+  mainRenameBtn.type = 'button';
+  mainRenameBtn.className = 'detail-task-icon-btn';
+  mainRenameBtn.title = 'Umbenennen';
+  mainRenameBtn.textContent = '✎';
+  mainRenameBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    startInlineEdit(title, p, p, () => renderDetailTiles(), 'mainTasksLabel');
+  });
+  mainActions.append(mainRenameBtn);
 
   const meta = document.createElement('div');
   meta.className = 'detail-tile-meta';
   meta.textContent = `${mainDone}/${mainTotal}`;
-  head.append(titleWrap, meta);
+  head.append(titleWrap, mainActions, meta);
 
   const toggleMainCollapse = () => {
     mainTasksCollapsed = tile.classList.toggle('collapsed');
@@ -766,10 +850,47 @@ function renderDetailTiles() {
     title.textContent = sp.title;
     titleWrap.append(chevron, title);
 
+    // Umbenennen/Löschen für den Ast selbst (#2) — analog zu den Aufgaben-
+    // Icons in buildDetailTaskRow(). stopPropagation() nötig, damit ein
+    // Klick nicht zusätzlich den Akkordeon-Toggle des Kopfbereichs auslöst.
+    const subActions = document.createElement('div');
+    subActions.className = 'detail-tile-sub-actions';
+    const subRenameBtn = document.createElement('button');
+    subRenameBtn.type = 'button';
+    subRenameBtn.className = 'detail-task-icon-btn';
+    subRenameBtn.title = 'Ast umbenennen';
+    subRenameBtn.textContent = '✎';
+    subRenameBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      startInlineEdit(title, sp, p, () => renderDetailTiles(), 'title');
+    });
+    const subDeleteBtn = document.createElement('button');
+    subDeleteBtn.type = 'button';
+    subDeleteBtn.className = 'detail-task-icon-btn';
+    subDeleteBtn.title = 'Ast löschen';
+    subDeleteBtn.textContent = '✕';
+    subDeleteBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      openConfirmModal(
+        'Ast löschen?',
+        `„${sp.title}" wird mitsamt allen ${sp.tasks.length} Aufgabe${sp.tasks.length === 1 ? '' : 'n'} dauerhaft gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.`,
+        'Löschen',
+        'danger',
+        () => {
+          p.subprojects = p.subprojects.filter(s => s.id !== sp.id);
+          collapsedSubprojects.delete(sp.id);
+          saveProjects();
+          renderProjectDetail();
+          renderForest();
+        }
+      );
+    });
+    subActions.append(subRenameBtn, subDeleteBtn);
+
     const meta = document.createElement('div');
     meta.className = 'detail-tile-meta';
     meta.textContent = `${stats.done}/${stats.total}`;
-    head.append(titleWrap, meta);
+    head.append(titleWrap, subActions, meta);
 
     const toggleCollapse = () => {
       const nowCollapsed = tile.classList.toggle('collapsed');
@@ -829,6 +950,7 @@ function openTaskDetail(task, sp, project) {
   document.getElementById('task-detail-type').textContent  = task.isExtra ? '✦ Extra' : '◉ Kern';
   document.getElementById('task-detail-desc').value        = task.description || '';
   document.getElementById('task-detail-done-cb').checked   = task.done;
+  populateTaskCategorySelect(document.getElementById('task-detail-category-select'), document.getElementById('task-detail-category-row'), project, task.categoryId);
   renderTaskDetailChecklist();
   document.getElementById('task-detail-overlay').classList.remove('hidden');
 }
@@ -862,6 +984,13 @@ document.getElementById('task-detail-desc').addEventListener('input', () => {
   if (!currentTaskDetail) return;
   currentTaskDetail.task.description = document.getElementById('task-detail-desc').value;
   saveProjects();
+});
+
+document.getElementById('task-detail-category-select')?.addEventListener('change', () => {
+  if (!currentTaskDetail) return;
+  currentTaskDetail.task.categoryId = document.getElementById('task-detail-category-select').value || null;
+  saveProjects();
+  renderDetailTiles();
 });
 
 document.getElementById('task-detail-done-cb').addEventListener('change', () => {
@@ -931,6 +1060,7 @@ function openAddTaskModalFromDetail(projectId, subprojectId) {
   document.getElementById('task-type-core').classList.add('active');
   document.getElementById('task-type-extra').classList.remove('active');
   addTaskIsExtra = false;
+  populateTaskCategorySelect(document.getElementById('project-task-category-select'), document.getElementById('project-task-category-row'), proj, null);
   document.getElementById('project-task-modal-overlay').classList.remove('hidden');
   setTimeout(() => document.getElementById('project-task-input').focus(), 50);
 }
@@ -1072,6 +1202,7 @@ if (pdtMenuBtn) {
     menu.innerHTML = `
       <button type="button" class="b-header-dropdown-item" id="pdt-menu-edit">✏️ Bearbeiten</button>
       <button type="button" class="b-header-dropdown-item" id="pdt-menu-customizing">🎨 Customizing</button>
+      <button type="button" class="b-header-dropdown-item" id="pdt-menu-categories">🏷 Kategorien</button>
       <button type="button" class="b-header-dropdown-item" id="pdt-menu-finish">${finishLabel}</button>
       <button type="button" class="b-header-dropdown-item" id="pdt-menu-delete">🗑 Projekt löschen</button>
     `;
@@ -1087,6 +1218,10 @@ if (pdtMenuBtn) {
     document.getElementById('pdt-menu-customizing').addEventListener('click', () => {
       closePdtMenu();
       if (currentDetailProject) openCustomizingModal(currentDetailProject);
+    });
+    document.getElementById('pdt-menu-categories').addEventListener('click', () => {
+      closePdtMenu();
+      if (currentDetailProject) openCategoriesModal(currentDetailProject);
     });
     document.getElementById('pdt-menu-finish').addEventListener('click', () => {
       closePdtMenu();
@@ -1170,8 +1305,34 @@ function customizingGridCols(itemCount) {
   return 3;
 }
 
+// Baum-Auswahl (#3) — bewusst NICHT Teil des Entwurf/Speichern-Zyklus der
+// Deko-Auswahl unten (customizingDraft/customizingDirty): ein Baum ist ein
+// einzelner, sofort verständlicher Klick, kein Mehrfach-Auswahl-Formular —
+// wirkt daher sofort (saveProjects() + Detailbaum-Refresh direkt im Klick-
+// Handler), ohne eigenen Speichern-Button.
+function renderTreePicker(project) {
+  const picker = document.getElementById('customizing-tree-picker');
+  if (!picker) return;
+  const currentVariant = getOrAssignTreeVariant(project);
+  picker.innerHTML = Array.from({ length: TREE_PNG_COUNT }, (_, i) => i + 1).map(n => `
+    <button type="button" class="cust-tree-option${n === currentVariant ? ' active' : ''}" data-tree-variant="${n}">
+      <img src="img/trees/tree_${n}.png" alt="Baum ${n}" draggable="false"/>
+    </button>
+  `).join('');
+  picker.querySelectorAll('.cust-tree-option').forEach(btn => {
+    btn.addEventListener('click', () => {
+      project.treeVariant = parseInt(btn.dataset.treeVariant, 10);
+      saveProjects();
+      picker.querySelectorAll('.cust-tree-option').forEach(b => b.classList.toggle('active', b === btn));
+      if (currentDetailProject && currentDetailProject.id === project.id) updateDetailTreeElements(project);
+      renderForest();
+    });
+  });
+}
+
 function renderCustomizingModal(project) {
   customizingProject = project;
+  renderTreePicker(project);
   const registryByCategory = {};
   Object.values(DECOR_REGISTRY).forEach(entry => {
     (registryByCategory[entry.category] || (registryByCategory[entry.category] = [])).push(entry);

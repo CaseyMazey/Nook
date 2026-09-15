@@ -1153,6 +1153,10 @@
       <section id="view-settings" class="view">
         <div class="view-header"><h1 class="view-title">Einstellungen</h1></div>
         <div class="dash-content">
+        <div class="hub-notice">
+          <span aria-hidden="true">ℹ️</span>
+          <span>Nook befindet sich in aktiver Entwicklung — Funktionen, Darstellung und Verhalten können sich jederzeit noch ändern.</span>
+        </div>
         <div id="settings-layout">
  
           <div class="settings-col">
@@ -1262,7 +1266,10 @@
 
             <div class="panel settings-panel">
               <div class="panel-header panel-header-toggle" id="gcal-settings-header">
-                <span class="panel-label">Google Calendar</span>
+                <span style="display:flex;align-items:center;gap:8px;">
+                  <span class="panel-label">Google Calendar</span>
+                  <span class="badge-soon" title="Funktion ist voll nutzbar, Feinschliff/Live-Test stehen noch aus">In Bearbeitung</span>
+                </span>
                 <span class="panel-chevron" id="gcal-settings-chevron">▶</span>
               </div>
               <div id="gcal-settings-body" class="collapsed">
@@ -2036,6 +2043,15 @@
       <div class="modal-head"><span id="goal-modal-title">Neues Sparziel</span><button class="modal-x" id="goal-modal-close">&#10005;</button></div>
       <input type="text" class="modal-input" id="goal-name" placeholder="z.B. Urlaub, Laptop..." autocomplete="off"/>
       <div class="modal-row"><label>Zielbetrag (&#8364;)</label><input type="number" class="modal-input" id="goal-target" placeholder="500.00" step="0.01" min="0"/></div>
+      <div class="modal-row modal-row-inline">
+        <label>Aus Posten zusammensetzen <span style="font-size:11px;color:var(--text-3);font-weight:400;">Zielbetrag = Summe der Posten</span></label>
+        <label class="toggle"><input type="checkbox" id="goal-items-toggle"/><span class="toggle-slider"></span></label>
+      </div>
+      <div class="modal-row hidden" id="goal-items-section">
+        <label>Posten</label>
+        <div id="goal-items-list" class="goal-items-list"></div>
+        <button type="button" class="btn-ghost goal-items-add-btn" id="goal-items-add">+ Posten hinzufügen</button>
+      </div>
       <div class="modal-row" id="goal-current-row"><label>Aktueller Betrag (&#8364;)</label><input type="number" class="modal-input" id="goal-current" placeholder="0.00" step="0.01" min="0"/></div>
       <div class="modal-row"><label>Wunschtermin (ETA) <span style="font-size:11px;color:var(--text-3);font-weight:400;">optional — für die Sparprognose</span></label><input type="month" class="modal-input" id="goal-eta" style="max-width:160px;"/></div>
       <div class="modal-row"><label>Startdatum <span style="font-size:11px;color:var(--text-3);font-weight:400;">optional — Standardwert für Sparpläne</span></label><input type="date" class="modal-input" id="goal-startdate" style="max-width:170px;"/></div>
@@ -2509,6 +2525,12 @@
           <button class="toggle-select-btn" id="task-type-extra">✦ Extra</button>
         </div>
       </div>
+      <!-- Nur sichtbar, wenn das Projekt Kategorien hat UND sie aktiviert sind
+           (siehe populateTaskCategorySelect() in projects.js) -->
+      <div class="modal-row hidden" id="project-task-category-row">
+        <label>Kategorie <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-3)">(optional)</span></label>
+        <select class="modal-input" id="project-task-category-select" style="cursor:pointer;"></select>
+      </div>
       <div class="modal-actions">
         <button id="project-task-modal-cancel" class="btn-ghost">Abbrechen</button>
         <button id="project-task-modal-save" class="btn-primary">Hinzufügen</button>
@@ -2604,6 +2626,8 @@
       </div>
       <p class="modal-hint">Lege fest, welche Früchte/Blumen erledigte Haupt- bzw. Extraaufgaben auf dem Baum erzeugen. Bei mehreren ausgewählten Objekten wird bei jeder neu erledigten Aufgabe zufällig eines davon (gleich wahrscheinlich) gewählt.</p>
       <div class="cust-modal-scroll">
+        <p class="modal-hint" style="margin-top:0;">Baum für dieses Projekt</p>
+        <div id="customizing-tree-picker" class="cust-tree-picker"></div>
         <div id="customizing-sections"></div>
       </div>
       <!-- Nur sichtbar, solange der Entwurf vom gespeicherten Stand abweicht
@@ -2611,6 +2635,31 @@
            in forest.js) — Checkbox-Änderungen speichern nicht mehr sofort. -->
       <div id="customizing-save-bar" class="cust-save-bar hidden">
         <button type="button" class="btn-primary" id="customizing-save-btn">Speichern</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Kategorien-Modal (⋮-Menü in der Detailansicht -> "Kategorien") — pro
+       Projekt frei konfigurierbare, optionale Aufgabenkategorien. Liste wird
+       komplett per JS aus project.taskCategories gefüllt, siehe
+       renderCategoriesList() in projects.js. -->
+  <div id="project-categories-modal-overlay" class="modal-backdrop hidden">
+    <div class="modal-box" style="width:420px;max-height:70vh;display:flex;flex-direction:column;">
+      <div class="modal-head">
+        <span>Kategorien</span>
+        <button class="modal-x" id="categories-modal-close">✕</button>
+      </div>
+      <div class="modal-row" style="flex-direction:row;align-items:center;justify-content:space-between;">
+        <div>
+          <div class="settings-row-title" style="font-size:13px;">Kategorien für dieses Projekt</div>
+          <div class="settings-row-sub" style="font-size:11.5px;">Deaktiviert blendet Kategorien bei Aufgaben komplett aus, ohne sie zu löschen</div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="categories-enabled-toggle"/><span class="toggle-slider"></span></label>
+      </div>
+      <div id="categories-list" style="overflow-y:auto;flex:1;margin:8px 0;"></div>
+      <div style="display:flex;gap:6px;">
+        <input type="text" class="modal-input" id="categories-new-input" placeholder="Neue Kategorie, z.B. Bug-Fix..." autocomplete="off" style="flex:1;"/>
+        <button class="btn-ghost" id="categories-add-btn" style="flex-shrink:0;">+ Hinzufügen</button>
       </div>
     </div>
   </div>
@@ -2633,6 +2682,12 @@
         <input type="checkbox" id="task-detail-done-cb" class="project-task-cb" style="width:17px;height:17px;"/>
         <label for="task-detail-done-cb" style="font-size:13px;color:var(--text-2);cursor:pointer;">Erledigt</label>
         <span class="detail-tile-extra-badge" id="task-detail-type" style="margin-left:auto;"></span>
+      </div>
+      <!-- Nur sichtbar, wenn das Projekt Kategorien hat UND sie aktiviert sind
+           (siehe populateTaskCategorySelect() in projects.js) -->
+      <div class="modal-row hidden" id="task-detail-category-row">
+        <label>Kategorie</label>
+        <select class="modal-input" id="task-detail-category-select" style="cursor:pointer;"></select>
       </div>
       <div class="modal-row">
         <label>Beschreibung</label>
