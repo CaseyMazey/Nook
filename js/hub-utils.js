@@ -349,7 +349,10 @@ function renderCodeBlock(code, lang, opts = {}) {
 
 // Copy-Button-Handler (global, da onclick-Attribute ihn direkt aufrufen)
 window.copyCode = function(btn) {
-  const code = btn.closest('.guide-code-block').querySelector('code').textContent;
+  // Codeblöcke im Inhalt und das Featured Snippet der Guides-Seitenleiste
+  const block = btn.closest('.guide-code-block, .guide-snippet-block');
+  if (!block) return;
+  const code = block.querySelector('code').textContent;
   navigator.clipboard.writeText(code).then(() => {
     const orig = btn.innerHTML;
     btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Kopiert!`;
@@ -377,9 +380,12 @@ window.copyCode = function(btn) {
 //   inputId   {string}   Eingabefeld, in dem Enter das Speichern auslöst
 //   saveId    {string}   Button, der bei Enter im inputId-Feld geklickt wird
 //   escCloses {boolean}  Escape im inputId-Feld schließt das Modal (default: true)
+//   beforeClose {function} optional, vor nutzer-ausgelöstem Schließen gefragt;
+//                        false (oder Promise<false>) bricht das Schließen ab
+//                        (z.B. Rückfrage bei ungespeicherten Änderungen)
 // @returns {{open: function, close: function}}
 function wireModal(overlayId, opts = {}) {
-  const { closeIds = [], onClose, inputId, saveId, escCloses = true } = opts;
+  const { closeIds = [], onClose, inputId, saveId, escCloses = true, beforeClose } = opts;
   const overlay = document.getElementById(overlayId);
   if (!overlay) return { open() {}, close() {} };
 
@@ -390,18 +396,31 @@ function wireModal(overlayId, opts = {}) {
   function open() {
     overlay.classList.remove('hidden');
   }
+  // Nutzer-ausgelöstes Schließen (X/Abbrechen/Backdrop/Escape) fragt vorher
+  // beforeClose — ein programmatischer close()-Aufruf (z.B. nach Speichern)
+  // schließt dagegen immer direkt.
+  let closePending = false;
+  async function requestClose() {
+    if (closePending) return;
+    if (beforeClose) {
+      closePending = true;
+      try { if (!(await beforeClose())) return; }
+      finally { closePending = false; }
+    }
+    close();
+  }
 
   closeIds.forEach(id => {
     const btn = document.getElementById(id);
-    if (btn) btn.addEventListener('click', close);
+    if (btn) btn.addEventListener('click', requestClose);
   });
-  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+  overlay.addEventListener('click', e => { if (e.target === overlay) requestClose(); });
 
   if (inputId) {
     const input = document.getElementById(inputId);
     if (input) input.addEventListener('keydown', e => {
       if (e.key === 'Enter' && saveId) document.getElementById(saveId)?.click();
-      if (e.key === 'Escape' && escCloses) close();
+      if (e.key === 'Escape' && escCloses) requestClose();
     });
   }
 

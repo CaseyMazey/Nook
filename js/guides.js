@@ -74,7 +74,15 @@ function renderMarkdown(raw, guideId = null, categoryId = null, featuredBlockId 
 
   let html = escHtml(raw);
 
+  // Code (Blöcke + Inline) wird als Platzhalter aus dem Text genommen und erst
+  // ganz am Ende wieder eingesetzt — sonst greifen Überschriften, Listen,
+  // Fett/Kursiv, Markierungen und der Absatz-Split auch INNERHALB von Code
+  // (z.B. "# Kommentar" → Überschrift, Leerzeile → Block zerrissen).
+  const _codeHtml = [];
+  const _stash = h => `\u0000${_codeHtml.push(h) - 1}\u0000`;
+
   // Fenced code blocks  ```lang\n...\n```
+  // Eigener Absatz (Leerzeilen drumherum), damit er nie in ein <p> gerät.
   let _blockIndex = 0;
   html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
     const blockId  = guideId ? _rawBlockIds[_blockIndex++] : null;
@@ -91,11 +99,11 @@ function renderMarkdown(raw, guideId = null, categoryId = null, featuredBlockId 
       : '';
     // Codeblock-HTML kommt aus hub-utils.js (renderCodeBlock) — hub-weit geteilt,
     // damit z.B. der Schreibtisch-Kartenstil "Code" später dieselbe Darstellung nutzt.
-    return renderCodeBlock(code, lang, { blockId, bookmarked, bookmarkBtnHtml: bmBtn, featureBtnHtml: featBtn });
+    return '\n\n' + _stash(renderCodeBlock(code, lang, { blockId, bookmarked, bookmarkBtnHtml: bmBtn, featureBtnHtml: featBtn })) + '\n\n';
   });
 
   // Inline code `...`
-  html = html.replace(/`([^`]+)`/g, '<code class="guide-inline-code">$1</code>');
+  html = html.replace(/`([^`]+)`/g, (_, code) => _stash(`<code class="guide-inline-code">${code}</code>`));
 
   // Headings
   html = html.replace(/^### (.+)$/gm, '<h4 class="guide-h4">$1</h4>');
@@ -148,10 +156,14 @@ function renderMarkdown(raw, guideId = null, categoryId = null, featuredBlockId 
     .split(/\n{2,}/)
     .map(block => {
       if (/^<(h[234]|ul|ol|hr|div|table)/.test(block.trim())) return block;
+      if (/^\u0000\d+\u0000$/.test(block.trim())) return block.trim(); // reiner Codeblock-Platzhalter
       const wrapped = block.trim().replace(/\n/g, '<br>');
       return wrapped ? `<p class="guide-p">${wrapped}</p>` : '';
     })
     .join('\n');
+
+  // Platzhalter wieder durch das fertige Code-HTML ersetzen
+  html = html.replace(/\u0000(\d+)\u0000/g, (_, i) => _codeHtml[i]);
 
   return html;
 }
@@ -894,7 +906,10 @@ function renderGuideSearchResults() {
   main.appendChild(list);
 }
 
-function buildSearchChapterRow(guide, cat, number) {
+function buildSearchChapterRow(result, cat, number) {
+  // getAllGuides() liefert Kopien — Favorit/Statistik müssen am Original
+  // im guideCategories-Baum geändert werden, sonst speichert save nichts.
+  const guide = findGuide(result.id)?.guide || result;
   const row = document.createElement('div');
   row.className = 'guide-chapter-row';
   row.innerHTML = `
@@ -915,7 +930,7 @@ function buildSearchChapterRow(guide, cat, number) {
     guideSearchQuery = '';
     const input = document.getElementById('guide-search-input');
     if (input) input.value = '';
-    state.activeGuideCategoryId = guide.categoryId;
+    state.activeGuideCategoryId = result.categoryId;
     guide.lastOpened = new Date().toISOString();
     guide.openCount  = (guide.openCount || 0) + 1;
     saveGuideCategories();
@@ -941,6 +956,13 @@ function buildSearchChapterRow(guide, cat, number) {
 
 let guideModalCategoryId = null;
 let guideModalGuideId    = null;
+let guideModalSnapshot   = null; // Feldstand beim Öffnen, für die Rückfrage bei ungespeicherten Änderungen
+
+function getGuideModalSnapshot() {
+  return JSON.stringify(['title-input', 'desc-input', 'tags-input', 'content-input']
+    .map(id => document.getElementById('guide-modal-' + id).value)
+    .concat(document.getElementById('guide-modal-fav').checked));
+}
 
 function openGuideModal(categoryId, guideId = null) {
   guideModalCategoryId = categoryId;
@@ -951,6 +973,7 @@ function openGuideModal(categoryId, guideId = null) {
   const descIn  = document.getElementById('guide-modal-desc-input');
   const contIn  = document.getElementById('guide-modal-content-input');
   const tagsIn  = document.getElementById('guide-modal-tags-input');
+  const favIn   = document.getElementById('guide-modal-fav');
 
   title.textContent = guideId ? 'Anleitung bearbeiten' : 'Neue Anleitung';
 
@@ -960,12 +983,15 @@ function openGuideModal(categoryId, guideId = null) {
     descIn.value  = guide.description || '';
     contIn.value  = guide.content || '';
     tagsIn.value  = (guide.tags || []).join(', ');
+    favIn.checked = !!guide.favorite;
   } else {
     titleIn.value = '';
     descIn.value  = '';
     contIn.value  = '';
     tagsIn.value  = '';
+    favIn.checked = false;
   }
+  guideModalSnapshot = getGuideModalSnapshot();
 
   // Reset to editor tab
   setGuideModalTab('editor');
@@ -1085,7 +1111,16 @@ function initGuides() {
   guideModal = wireModal('guide-modal-overlay', {
     closeIds: ['guide-modal-close', 'guide-modal-cancel'],
     inputId: 'guide-modal-title-input',
-    onClose: () => { guideModalCategoryId = null; guideModalGuideId = null; },
+    onClose: () => { guideModalCategoryId = null; guideModalGuideId = null; guideModalSnapshot = null; },
+    // X/Abbrechen/Backdrop/Escape: bei Änderungen erst nachfragen, damit ein
+    // versehentlicher Klick daneben keinen langen Markdown-Text verwirft.
+    beforeClose: () => getGuideModalSnapshot() === guideModalSnapshot || hubConfirm({
+      title: 'Änderungen verwerfen?',
+      message: 'Die Anleitung hat ungespeicherte Änderungen. Beim Schließen gehen sie verloren.',
+      confirmText: 'Verwerfen',
+      cancelText: 'Weiter bearbeiten',
+      danger: true,
+    }),
   });
 
   // Modal save
@@ -1094,6 +1129,7 @@ function initGuides() {
     const desc    = document.getElementById('guide-modal-desc-input').value.trim();
     const content = document.getElementById('guide-modal-content-input').value.trim();
     const tagsRaw = document.getElementById('guide-modal-tags-input').value.trim();
+    const favorite = document.getElementById('guide-modal-fav').checked;
     if (!title || !guideModalCategoryId) return;
 
     const tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : [];
@@ -1107,6 +1143,7 @@ function initGuides() {
         guide.description = desc;
         guide.content     = content;
         guide.tags        = tags;
+        guide.favorite    = favorite;
         guide.updatedAt   = new Date().toISOString();
       }
     } else {
@@ -1116,21 +1153,23 @@ function initGuides() {
         description: desc,
         content,
         tags,
-        favorite:    false,
+        favorite,
         createdAt:   new Date().toISOString(),
         updatedAt:   new Date().toISOString(),
       });
     }
 
     saveGuideCategories();
+    // close() setzt guideModalGuideId zurück (onClose) — vorher sichern
+    const savedGuideId = guideModalGuideId;
     closeGuideModal();
 
-    if (guideModalGuideId && activeGuideId === guideModalGuideId) {
+    if (savedGuideId && activeGuideId === savedGuideId) {
       renderSingleGuide(activeGuideId);
       renderGuideShelf();
     } else {
       activeGuideId = activeGuideId || null;
-      if (!guideModalGuideId) state.activeGuideCategoryId = cat.id;
+      if (!savedGuideId) state.activeGuideCategoryId = cat.id;
       renderGuideContent();
     }
   });
