@@ -251,6 +251,14 @@ const DEFAULT_BUILDER_CORE = {
 // legt dann ein neues eigenes Theme an — das Preset selbst bleibt unverändert.
 // Neues Preset = ein weiterer Eintrag hier, sonst keine Code-Änderung.
 const PRESET_THEMES = [
+  // Kuros dunkles "Cozy" aus Core (Backup 2026-10-14) — ihre Schrift Darling
+  // Letter ist nicht frei lizenziert, daher Nook-Standardschrift und 100 %
+  // statt 125 %. Hintergrund = Cozy-Set-Bild (bei Kuro als eigenes Bild
+  // hochgeladen, identisches Motiv).
+  { id: 'preset_cozydark', name: 'Cozy Dark', family: 'dark',
+    coreColors: { bg: '#1d1a15', surface: '#30291f', nav: '#272219', modal: '#342c21', text: '#f0e5d2', border: '#a58a64', accent: '#78835c', font: DEFAULT_FONT_STACK },
+    cardOpacity: 90, fontSize: 100, bg: { source: 'cozy', size: 'cover', dim: 30 },
+    calendar: { imageTheme: 'cozy' }, startHeader: { banner: 'cozy' }, branding: { theme: 'cozy' }, graphics: { mode: 'theme', theme: 'cozy' } },
   { id: 'preset_cottoncandy', name: 'Cotton Candy', family: 'light',
     coreColors: { bg: '#e7f7f8', surface: '#fdfaf5', nav: '#fdfaf5', modal: '#fdfaf5', text: '#723776', border: '#723776', accent: '#f3e2ee', font: DEFAULT_FONT_STACK },
     cardOpacity: 100, fontSize: 100, bg: { source: 'none', size: 'cover', dim: 40 },
