@@ -255,6 +255,29 @@ const PRESET_THEMES = [
     coreColors: { bg: '#e7f7f8', surface: '#fdfaf5', nav: '#fdfaf5', modal: '#fdfaf5', text: '#723776', border: '#723776', accent: '#f3e2ee', font: DEFAULT_FONT_STACK },
     cardOpacity: 100, fontSize: 100, bg: { source: 'none', size: 'cover', dim: 40 },
     calendar: { imageTheme: 'cozy' }, startHeader: { banner: 'none' }, branding: { theme: 'none' }, graphics: { mode: 'custom' } },
+  // Grafik-Sets aus Core (Farben von Kuro). Schrift/Größe/Durchlässigkeit
+  // waren nicht Teil der Übergabe → Nook-Standardschrift, 100 %, 85 %
+  // (Empfehlung mit Hintergrundbild). Bild, Kalender, Banner, Icon = Set.
+  { id: 'preset_scifi', name: 'Sci-Fi', family: 'dark',
+    coreColors: { bg: '#07101b', surface: '#0c1928', nav: '#091522', modal: '#101e2e', text: '#dce9f3', border: '#547896', accent: '#397fb5', font: DEFAULT_FONT_STACK },
+    cardOpacity: 85, fontSize: 100, bg: { source: 'scifi', size: 'cover', dim: 40 },
+    calendar: { imageTheme: 'scifi' }, startHeader: { banner: 'scifi' }, branding: { theme: 'scifi' }, graphics: { mode: 'theme', theme: 'scifi' } },
+  { id: 'preset_forest', name: 'Forest', family: 'dark',
+    coreColors: { bg: '#101511', surface: '#1b231b', nav: '#161d17', modal: '#202920', text: '#ddd9c7', border: '#66745d', accent: '#71845a', font: DEFAULT_FONT_STACK },
+    cardOpacity: 85, fontSize: 100, bg: { source: 'forest', size: 'cover', dim: 40 },
+    calendar: { imageTheme: 'forest' }, startHeader: { banner: 'forest' }, branding: { theme: 'forest' }, graphics: { mode: 'theme', theme: 'forest' } },
+  { id: 'preset_royal', name: 'Royal', family: 'dark',
+    coreColors: { bg: '#180d0b', surface: '#291512', nav: '#21100e', modal: '#301815', text: '#e9dcc5', border: '#947354', accent: '#9a7650', font: DEFAULT_FONT_STACK },
+    cardOpacity: 85, fontSize: 100, bg: { source: 'royal', size: 'cover', dim: 40 },
+    calendar: { imageTheme: 'royal' }, startHeader: { banner: 'royal' }, branding: { theme: 'royal' }, graphics: { mode: 'theme', theme: 'royal' } },
+  { id: 'preset_cyberpunk', name: 'Cyberpunk', family: 'dark',
+    coreColors: { bg: '#080a13', surface: '#111323', nav: '#0c0e19', modal: '#15172a', text: '#e5e2f2', border: '#55456e', accent: '#b92daf', font: DEFAULT_FONT_STACK },
+    cardOpacity: 85, fontSize: 100, bg: { source: 'cyberpunk', size: 'cover', dim: 40 },
+    calendar: { imageTheme: 'cyberpunk' }, startHeader: { banner: 'cyberpunk' }, branding: { theme: 'cyberpunk' }, graphics: { mode: 'theme', theme: 'cyberpunk' } },
+  { id: 'preset_lab', name: 'Lab', family: 'dark',
+    coreColors: { bg: '#0e1211', surface: '#181d1b', nav: '#121715', modal: '#1c2220', text: '#d8dbd5', border: '#53635c', accent: '#477867', font: DEFAULT_FONT_STACK },
+    cardOpacity: 85, fontSize: 100, bg: { source: 'lab', size: 'cover', dim: 40 },
+    calendar: { imageTheme: 'lab' }, startHeader: { banner: 'lab' }, branding: { theme: 'lab' }, graphics: { mode: 'theme', theme: 'lab' } },
 ];
 
 // Eigene Themes, die einem Preset exakt entsprechen (gleicher Name, gleiche
