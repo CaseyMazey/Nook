@@ -6,11 +6,15 @@
 // Strategie:
 //   - App-Shell (/, index.html, manifest.json, Icons) wird bei der
 //     Installation fest vorgeladen.
-//   - Alle übrigen Same-Origin-Anfragen (css/js/games/assets) werden
-//     "cache-first, im Hintergrund aktualisiert" behandelt — beim ersten
-//     Besuch landen sie automatisch im Cache, kein hartcodiertes
-//     Datei-Verzeichnis nötig, das bei jeder neuen Datei gepflegt werden
-//     müsste (Nook wächst laufend um neue Spiele/Tabs).
+//   - Code (js/css/html/json) ist network-first mit Cache-Fallback: online
+//     immer die aktuelle Datei, offline die zuletzt gesehene. Früher war
+//     auch Code cache-first — nach jedem Deploy lief dann ein paar Ladevor-
+//     gänge lang eine Mischung aus alten und neuen Dateien (neue index.html
+//     + noch nie gecachte neue Dateien, aber alte main.js/css aus dem
+//     Cache), was z.B. eigene Themes beim Neuladen verschwinden ließ.
+//   - Übrige Same-Origin-Anfragen (Bilder, Schriften, Audio …) bleiben
+//     "cache-first, im Hintergrund aktualisiert" — groß, ändern sich selten.
+//     Beides ohne hartcodiertes Datei-Verzeichnis (Nook wächst laufend).
 //   - Navigationsanfragen (HTML) sind network-first mit Cache-Fallback,
 //     damit online immer die neueste Version geladen wird, offline aber
 //     trotzdem etwas angezeigt werden kann.
@@ -22,7 +26,7 @@
 // werden (siehe _headers in Phase 3), sonst kommen Updates nie an.
 // =========================
 
-const CACHE_VERSION = "nook-v4";
+const CACHE_VERSION = "nook-v5";
 const SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 const WEATHER_CACHE = `${CACHE_VERSION}-weather`;
@@ -34,6 +38,8 @@ const SHELL_URLS = [
   "/assets/icons/icon-192.png",
   "/assets/icons/icon-512.png",
 ];
+
+const CODE_EXTENSIONS = /\.(js|css|html|json|md)$/i;
 
 const WEATHER_HOSTS = ["api.open-meteo.com", "geocoding-api.open-meteo.com"];
 
@@ -80,7 +86,13 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Alles andere Same-Origin (css/js/games/assets): cache-first,
+  // Code: network-first, damit nie alte und neue Dateien gemischt laufen.
+  if (CODE_EXTENSIONS.test(url.pathname)) {
+    event.respondWith(networkFirst(request, RUNTIME_CACHE));
+    return;
+  }
+
+  // Alles andere Same-Origin (Bilder, Schriften …): cache-first,
   // Hintergrund-Aktualisierung für den nächsten Aufruf.
   event.respondWith(cacheFirst(request, RUNTIME_CACHE));
 });
