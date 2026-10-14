@@ -991,3 +991,8 @@ initBgImageSettings();
 // sauber auf Cozy zurück statt halb angewendeter Farben.
 if (!THEME_FAMILY[theme] && !getCustomTheme(theme)) setTheme('light');
 else applyThemeEngine(theme);
+// settings.js zeigt beim Laden bereits die zuletzt offene View an — ist das
+// die Einstellungsseite, wurde die Theme-Auswahl gezeichnet, BEVOR diese
+// Datei geladen war (also ohne Preset-/eigene Themes). Daher hier einmal
+// nachzeichnen.
+if (typeof renderThemeSettings === 'function') renderThemeSettings();
