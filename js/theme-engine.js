@@ -260,8 +260,11 @@ const PRESET_THEMES = [
     coreColors: { bg: '#1d1a15', surface: '#30291f', nav: '#272219', modal: '#342c21', text: '#f0e5d2', border: '#a58a64', accent: '#78835c', font: DEFAULT_FONT_STACK },
     cardOpacity: 90, fontSize: 100, bg: { source: 'cozy', size: 'cover', dim: 30 },
     calendar: { imageTheme: 'cozy' }, startHeader: { banner: 'cozy' }, branding: { theme: 'cozy' }, graphics: { mode: 'theme', theme: 'cozy' } },
+  // Cotton Candy: Rosa + Babyblau (Navigation). Überarbeitet, weil der
+  // ursprüngliche Akzent #f3e2ee auf hellem Grund kaum sichtbar war
+  // (Kontrast 1,1) — jetzt Beerenrosa mit 4,8 gegenüber Text darauf.
   { id: 'preset_cottoncandy', name: 'Cotton Candy', family: 'light',
-    coreColors: { bg: '#e7f7f8', surface: '#fdfaf5', nav: '#fdfaf5', modal: '#fdfaf5', text: '#723776', border: '#723776', accent: '#f3e2ee', font: DEFAULT_FONT_STACK },
+    coreColors: { bg: '#f8eef6', surface: '#fffbfd', nav: '#eef3fc', modal: '#fffbfd', text: '#4b2e55', border: '#c9a3c4', accent: '#a94a82', font: DEFAULT_FONT_STACK },
     cardOpacity: 100, fontSize: 100, bg: { source: 'none', size: 'cover', dim: 40 },
     calendar: { imageTheme: 'cozy' }, startHeader: { banner: 'none' }, branding: { theme: 'none' }, graphics: { mode: 'custom' } },
   // Grafik-Sets aus Core — Werte aus Kuros Themes (Core-Backup 2026-10-14).
