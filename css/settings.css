@@ -90,6 +90,141 @@
 }
 .bs-time:focus { border-color: var(--sage); background: var(--surface); }
 
+/* ── Drag Handle (Unterrichtsblöcke sortieren) — dasselbe Ziehpunkt-Symbol
+   (⠿) wie das bestehende Drag & Drop im Finanzgarten (.gf-drag-handle,
+   css/budget.css), hier aber immer sichtbar: die Zeile enthält mehrere
+   eigene interaktive Controls, deshalb darf Ziehen ausschließlich am
+   Handle starten — nie durch Klick auf die restliche Zeile. */
+.bs-drag-handle {
+  flex-shrink: 0;
+  width: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+  font-size: calc(14px * var(--core-font-scale));
+  line-height: 1;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.bs-drag-handle:hover { color: var(--text-2); }
+.bs-drag-handle:active { cursor: grabbing; }
+.block-settings-row.bs-dragging { opacity: 0.5; background: var(--surface-2); border-radius: var(--radius-sm); }
+
+/* ── 24h-Zeit-Dropdown zusätzlich zur freien HH:MM-Eingabe ────────────── */
+.bs-time-wrap { position: relative; display: flex; align-items: center; flex-shrink: 0; }
+.bs-time-wrap .bs-time { width: 78px; padding-right: 20px; }
+.bs-time-trigger {
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: none;
+  color: var(--text-3);
+  font-size: calc(9px * var(--core-font-scale));
+  padding: 2px;
+  cursor: pointer;
+  line-height: 1;
+}
+.bs-time-trigger:hover { color: var(--text); }
+
+/* Ein einziges, wiederverwendetes Panel (an body angehängt statt pro
+   Zeile in der Karte) — .panel hat overflow:hidden (main.css), ein
+   pro-Zeile absolut positioniertes Dropdown würde am Kartenrand
+   abgeschnitten. position:fixed + Koordinaten vom jeweiligen Trigger
+   (js/settings.js: openBlockTimePicker()) umgeht das zuverlässig.
+
+   Zwei-Wheel-Picker (Stunde/Minute) statt einer langen Liste vollständiger
+   Uhrzeiten — der native <input type="time"> wurde geprüft (auch mit
+   Browser-Locale "de-DE") und zeigt zuverlässig AM/PM, siehe Kommentar in
+   js/settings.js. Geometrie ist bewusst fest in px (nicht an
+   --core-font-scale gekoppelt): die Scroll-Snap-Mathematik in JS
+   (WHEEL_ITEM_H) muss exakt zur CSS-Höhe der Items passen. */
+.bs-time-panel {
+  position: fixed;
+  z-index: 500;
+  background: var(--surface-solid);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+  padding: 10px;
+  width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.bs-wheel-row {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  height: 150px; /* 5 sichtbare Zeilen à 30px */
+}
+.bs-wheel-band {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 60px; /* (150 - 30) / 2 */
+  height: 30px;
+  background: var(--accent-soft);
+  border-radius: 6px;
+  pointer-events: none;
+  z-index: 0;
+}
+.bs-wheel {
+  flex: 1;
+  position: relative;
+  z-index: 1;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  outline: none;
+}
+.bs-wheel::-webkit-scrollbar { display: none; }
+.bs-wheel-pad { height: 60px; } /* = 2 Items, siehe scrollTop-Herleitung */
+.bs-wheel-item {
+  display: block;
+  width: 100%;
+  height: 30px;
+  line-height: 30px;
+  border: none;
+  background: none;
+  color: var(--text-3);
+  font-family: var(--mono);
+  font-size: 14px;
+  text-align: center;
+  cursor: pointer;
+  scroll-snap-align: center;
+}
+.bs-wheel-item.active { color: var(--text); font-weight: 700; }
+.bs-wheel-colon {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  padding: 0 2px;
+  color: var(--text-2);
+  font-weight: 700;
+  font-family: var(--mono);
+}
+.bs-picker-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.bs-picker-btn {
+  padding: 5px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: calc(12px * var(--core-font-scale));
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.bs-picker-btn:hover { color: var(--text); }
+.bs-picker-ok { background: var(--sage); color: var(--sage-fg); border-color: var(--sage); }
+.bs-picker-ok:hover { color: var(--sage-fg); filter: brightness(1.05); }
+
+
 .bs-dash { color: var(--text-3); font-size: calc(12px * var(--core-font-scale)); flex-shrink: 0; }
 .bs-del  { color: var(--text-3); font-size: calc(13px * var(--core-font-scale)); flex-shrink: 0; }
 .bs-del:hover { color: var(--prio-1); }
