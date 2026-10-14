@@ -255,15 +255,18 @@ const PRESET_THEMES = [
     coreColors: { bg: '#e7f7f8', surface: '#fdfaf5', nav: '#fdfaf5', modal: '#fdfaf5', text: '#723776', border: '#723776', accent: '#f3e2ee', font: DEFAULT_FONT_STACK },
     cardOpacity: 100, fontSize: 100, bg: { source: 'none', size: 'cover', dim: 40 },
     calendar: { imageTheme: 'cozy' }, startHeader: { banner: 'none' }, branding: { theme: 'none' }, graphics: { mode: 'custom' } },
-  // Grafik-Sets aus Core (Farben von Kuro). Schrift/Größe/Durchlässigkeit
-  // waren nicht Teil der Übergabe → Nook-Standardschrift, 100 %, 85 %
-  // (Empfehlung mit Hintergrundbild). Bild, Kalender, Banner, Icon = Set.
+  // Grafik-Sets aus Core — Werte aus Kuros Themes (Core-Backup 2026-10-14).
+  // Abweichung: Royal, Cyberpunk und Lab nutzen in Core die Schriften
+  // Blackwood Castle / Shizuoka Cyberpunk / TechnicalStencilVP, die ohne
+  // geklärte Lizenz nicht in Nook liegen (assets/fonts/README.md) — dort
+  // daher Nook-Standardschrift und 100 % statt Kuros 130 %/135 % (die auf
+  // ihre Zierschriften abgestimmt sind). Bild, Kalender, Banner, Icon = Set.
   { id: 'preset_scifi', name: 'Sci-Fi', family: 'dark',
-    coreColors: { bg: '#07101b', surface: '#0c1928', nav: '#091522', modal: '#101e2e', text: '#dce9f3', border: '#547896', accent: '#397fb5', font: DEFAULT_FONT_STACK },
-    cardOpacity: 85, fontSize: 100, bg: { source: 'scifi', size: 'cover', dim: 40 },
+    coreColors: { bg: '#07101b', surface: '#0c1928', nav: '#091522', modal: '#101e2e', text: '#dce9f3', border: '#547896', accent: '#397fb5', font: "'Orbitron', sans-serif" },
+    cardOpacity: 90, fontSize: 100, bg: { source: 'scifi', size: 'cover', dim: 30 },
     calendar: { imageTheme: 'scifi' }, startHeader: { banner: 'scifi' }, branding: { theme: 'scifi' }, graphics: { mode: 'theme', theme: 'scifi' } },
   { id: 'preset_forest', name: 'Forest', family: 'dark',
-    coreColors: { bg: '#101511', surface: '#1b231b', nav: '#161d17', modal: '#202920', text: '#ddd9c7', border: '#66745d', accent: '#71845a', font: DEFAULT_FONT_STACK },
+    coreColors: { bg: '#101511', surface: '#1b231b', nav: '#161d17', modal: '#202920', text: '#ddd9c7', border: '#66745d', accent: '#71845a', font: "'Cinzel', serif" },
     cardOpacity: 85, fontSize: 100, bg: { source: 'forest', size: 'cover', dim: 40 },
     calendar: { imageTheme: 'forest' }, startHeader: { banner: 'forest' }, branding: { theme: 'forest' }, graphics: { mode: 'theme', theme: 'forest' } },
   { id: 'preset_royal', name: 'Royal', family: 'dark',
