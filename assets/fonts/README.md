@@ -15,8 +15,9 @@ Lizenz eine öffentliche Weitergabe erlaubt — Nook wird öffentlich deployed.
 | `cubic.ttf` | Cubic | frei verwendbar, Font selbst nicht verändern/umbenennen |
 
 Bewusst **nicht** übernommen (nur privater Gebrauch, keine öffentliche
-Auslieferung erlaubt): Shizuoka Cyberpunk (Chequered Ink), Technical Stencil VP
-— in Core für Cyberpunk bzw. Lab genutzt.
+Auslieferung erlaubt): Shizuoka Cyberpunk (Chequered Ink), Technical Stencil VP,
+Darling Letter (mjtype, kommerzielle Lizenz kostenpflichtig) — in Core für
+Cyberpunk, Lab bzw. Cozy Dark genutzt.
 
 ## Eine Datei hinzufügen
 
