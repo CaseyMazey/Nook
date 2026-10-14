@@ -250,7 +250,30 @@ const DEFAULT_BUILDER_CORE = {
 // gleich und nicht löschbar; ✎ öffnet den Editor mit ihren Werten, Speichern
 // legt dann ein neues eigenes Theme an — das Preset selbst bleibt unverändert.
 // Neues Preset = ein weiterer Eintrag hier, sonst keine Code-Änderung.
-const PRESET_THEMES = [];
+const PRESET_THEMES = [
+  { id: 'preset_cottoncandy', name: 'Cotton Candy', family: 'light',
+    coreColors: { bg: '#e7f7f8', surface: '#fdfaf5', nav: '#fdfaf5', modal: '#fdfaf5', text: '#723776', border: '#723776', accent: '#f3e2ee', font: DEFAULT_FONT_STACK },
+    cardOpacity: 100, fontSize: 100, bg: { source: 'none', size: 'cover', dim: 40 },
+    calendar: { imageTheme: 'cozy' }, startHeader: { banner: 'none' }, branding: { theme: 'none' }, graphics: { mode: 'custom' } },
+];
+
+// Eigene Themes, die einem Preset exakt entsprechen (gleicher Name, gleiche
+// Kernfarben — z.B. Cotton Candy, das vor seiner Aufnahme als Preset selbst
+// angelegt war), werden einmalig durch das Preset ersetzt, statt doppelt in
+// der Auswahl zu stehen. War die Kopie aktiv, ist danach das Preset aktiv.
+(function replaceCustomThemesMatchingPresets() {
+  const sameCore = (a, b) => ['bg', 'surface', 'nav', 'modal', 'text', 'border', 'accent']
+    .every(k => (a[k] || '').toLowerCase() === (b[k] || '').toLowerCase());
+  const replaced = {};
+  customThemes = customThemes.filter(ct => {
+    const preset = PRESET_THEMES.find(p => p.name === ct.name && ct.coreColors && sameCore(p.coreColors, ct.coreColors));
+    if (preset) replaced[ct.id] = preset.id;
+    return !preset;
+  });
+  if (!Object.keys(replaced).length) return;
+  saveCustomThemes();
+  if (replaced[theme]) { theme = replaced[theme]; DB.set('theme', theme); }
+})();
 
 // Hintergrundbilder der entfernten Dark-Varianten (REMOVED_BUILTIN_THEMES,
 // main.js): das erste gefundene wandert zu Classic Dark, falls das noch
