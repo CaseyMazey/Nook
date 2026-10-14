@@ -94,6 +94,7 @@ const THEME_WEB_FONTS_URL = 'https://fonts.googleapis.com/css2?family=Inter:wght
 // siehe assets/fonts/README.md. Keine automatische Erkennung (unter
 // file:// gibt es kein Verzeichnis-Listing), jede Datei einmal eintragen.
 const CUSTOM_FONT_FILES = [
+  { family: 'Blackwood Castle', source: 'assets/fonts/Blackwood-Castle.ttf', weight: '400', style: 'normal' },
   { family: "Coraline's Cat", source: 'assets/fonts/Coralines-Cat.ttf', weight: '400', style: 'normal' },
   { family: 'Cubic',          source: 'assets/fonts/cubic.ttf',         weight: '400', style: 'normal' },
   { family: 'Dune Rise',      source: 'assets/fonts/Dune_Rise.ttf',     weight: '400', style: 'normal' },
@@ -264,11 +265,11 @@ const PRESET_THEMES = [
     cardOpacity: 100, fontSize: 100, bg: { source: 'none', size: 'cover', dim: 40 },
     calendar: { imageTheme: 'cozy' }, startHeader: { banner: 'none' }, branding: { theme: 'none' }, graphics: { mode: 'custom' } },
   // Grafik-Sets aus Core — Werte aus Kuros Themes (Core-Backup 2026-10-14).
-  // Abweichung: Royal, Cyberpunk und Lab nutzen in Core die Schriften
-  // Blackwood Castle / Shizuoka Cyberpunk / TechnicalStencilVP, die ohne
-  // geklärte Lizenz nicht in Nook liegen (assets/fonts/README.md) — dort
-  // daher Nook-Standardschrift und 100 % statt Kuros 130 %/135 % (die auf
-  // ihre Zierschriften abgestimmt sind). Bild, Kalender, Banner, Icon = Set.
+  // Abweichung: Cyberpunk und Lab nutzen in Core Shizuoka Cyberpunk bzw.
+  // Technical Stencil VP — beide nur für privaten Gebrauch lizenziert und
+  // daher nicht in Nook (assets/fonts/README.md). Dort Nook-Standardschrift
+  // und 100 % statt Kuros 135 % (auf die Zierschrift abgestimmt).
+  // Bild, Kalender, Banner, Icon = Set.
   { id: 'preset_scifi', name: 'Sci-Fi', family: 'dark',
     coreColors: { bg: '#07101b', surface: '#0c1928', nav: '#091522', modal: '#101e2e', text: '#dce9f3', border: '#547896', accent: '#397fb5', font: "'Orbitron', sans-serif" },
     cardOpacity: 90, fontSize: 100, bg: { source: 'scifi', size: 'cover', dim: 30 },
@@ -278,8 +279,8 @@ const PRESET_THEMES = [
     cardOpacity: 85, fontSize: 100, bg: { source: 'forest', size: 'cover', dim: 40 },
     calendar: { imageTheme: 'forest' }, startHeader: { banner: 'forest' }, branding: { theme: 'forest' }, graphics: { mode: 'theme', theme: 'forest' } },
   { id: 'preset_royal', name: 'Royal', family: 'dark',
-    coreColors: { bg: '#180d0b', surface: '#291512', nav: '#21100e', modal: '#301815', text: '#e9dcc5', border: '#947354', accent: '#9a7650', font: DEFAULT_FONT_STACK },
-    cardOpacity: 85, fontSize: 100, bg: { source: 'royal', size: 'cover', dim: 40 },
+    coreColors: { bg: '#180d0b', surface: '#291512', nav: '#21100e', modal: '#301815', text: '#e9dcc5', border: '#947354', accent: '#9a7650', font: '"Blackwood Castle"' },
+    cardOpacity: 85, fontSize: 130, bg: { source: 'royal', size: 'cover', dim: 40 },
     calendar: { imageTheme: 'royal' }, startHeader: { banner: 'royal' }, branding: { theme: 'royal' }, graphics: { mode: 'theme', theme: 'royal' } },
   { id: 'preset_cyberpunk', name: 'Cyberpunk', family: 'dark',
     coreColors: { bg: '#080a13', surface: '#111323', nav: '#0c0e19', modal: '#15172a', text: '#e5e2f2', border: '#55456e', accent: '#b92daf', font: DEFAULT_FONT_STACK },

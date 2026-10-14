@@ -6,12 +6,17 @@ Lizenz eine öffentliche Weitergabe erlaubt — Nook wird öffentlich deployed.
 
 | Datei | Familie | Lizenz (laut Font-Metadaten) |
 |---|---|---|
+| `Blackwood-Castle.ttf` | Blackwood Castle | 1001Fonts Free For Commercial Use License (FFC), laut 1001fonts.com |
 | `Coralines-Cat.ttf` | Coraline's Cat | Freeware, privat + kommerziell |
 | `Dune_Rise.ttf` | Dune Rise | SIL Open Font License |
 | `HelpMe.ttf` | Help Me | SIL Open Font License 1.1 |
 | `Klaxon-Crunchy.otf` | Klaxon Crunchy | „100% free“ |
 | `Searle.ttf` | Searle | SIL Open Font License |
 | `cubic.ttf` | Cubic | frei verwendbar, Font selbst nicht verändern/umbenennen |
+
+Bewusst **nicht** übernommen (nur privater Gebrauch, keine öffentliche
+Auslieferung erlaubt): Shizuoka Cyberpunk (Chequered Ink), Technical Stencil VP
+— in Core für Cyberpunk bzw. Lab genutzt.
 
 ## Eine Datei hinzufügen
 
