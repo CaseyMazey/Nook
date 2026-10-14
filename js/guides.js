@@ -29,16 +29,47 @@ function findGuide(guideId) {
 
 // ── Code Bookmarks ────────────────────────────────────────
 let guideBookmarks = DB.get('guideBookmarks', {}); // { [guideId]: [blockId, ...] }
-let bookmarkNavIndex = 0; // current position in bookmark navigation
+let bookmarkNavIndex = 0;      // current position in bookmark navigation
+let bookmarkNavGuideId = null; // Kapitel, zu dem bookmarkNavIndex gehört
 
 function saveBookmarks() { DB.set('guideBookmarks', guideBookmarks); }
 
-// Stable block ID: hash of content + position index
-function makeBlockId(guideId, code, index) {
+// Fenced code block  ```lang\n...\n```  — Sprachname darf auch c++, c#,
+// objective-c, .net enthalten; Leerzeichen nach dem Sprachnamen sind erlaubt.
+const GUIDE_FENCE_SRC = '```([\\w+#.-]*)[ \\t]*\\n([\\s\\S]*?)```';
+
+// Windows-Zeilenenden (CRLF, z.B. aus importierten Dateien) vereinheitlichen —
+// alle Markdown-Regeln rechnen mit \n.
+function normalizeGuideNewlines(text) {
+  return String(text || '').replace(/\r\n?/g, '\n');
+}
+
+// Stabile Block-ID: Hash aus Kapitel + Codeanfang + "wievielter Block mit
+// genau diesem Anfang". Bewusst NICHT die Position im Kapitel — sonst ändern
+// sich alle IDs (und Bookmarks/Featured Snippet gehen verloren), sobald
+// weiter oben ein Codeblock eingefügt oder gelöscht wird.
+function makeBlockId(guideId, code, occurrence) {
   let hash = 0;
-  const str = guideId + index + code.slice(0, 80);
+  const str = guideId + '|' + code.slice(0, 80) + '|' + occurrence;
   for (let i = 0; i < str.length; i++) { hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0; }
   return 'cb-' + Math.abs(hash).toString(36);
+}
+
+// Alle Codeblöcke eines Kapitels mit ihren IDs (code = Rohinhalt, ungetrimmt).
+// Einzige Stelle, die IDs vergibt — Renderer, Seitenleiste und Bookmarks
+// rechnen alle hierüber, damit die IDs garantiert übereinstimmen.
+function listGuideCodeBlocks(content, guideId) {
+  const text = normalizeGuideNewlines(content);
+  const blocks = [];
+  const seen = {};
+  const re = new RegExp(GUIDE_FENCE_SRC, 'g');
+  let m;
+  while ((m = re.exec(text))) {
+    const key = m[2].slice(0, 80);
+    seen[key] = (seen[key] || 0) + 1;
+    blocks.push({ lang: m[1], code: m[2], id: makeBlockId(guideId, m[2], seen[key] - 1) });
+  }
+  return blocks;
 }
 
 function isBookmarked(guideId, blockId) {
@@ -53,24 +84,101 @@ function toggleBookmark(guideId, blockId) {
   saveBookmarks();
 }
 
+// Nach dem Bearbeiten eines Kapitels: Bookmarks + Featured Snippet auf die
+// neuen Block-IDs übertragen. Unveränderte Blöcke behalten ihre ID ohnehin;
+// hat sich nur der Codeanfang geändert, die Blockanzahl ist aber gleich
+// geblieben, wird über die Position zugeordnet. Nicht mehr vorhandene Blöcke
+// werden entfernt, statt als toter Eintrag liegen zu bleiben.
+function remapGuideBlockRefs(cat, guide, oldContent) {
+  const oldBlocks = listGuideCodeBlocks(oldContent, guide.id);
+  const newBlocks = listGuideCodeBlocks(guide.content, guide.id);
+  const newIds = new Set(newBlocks.map(b => b.id));
+  const mapId = id => {
+    if (newIds.has(id)) return id;
+    const i = oldBlocks.findIndex(b => b.id === id);
+    return (i !== -1 && oldBlocks.length === newBlocks.length) ? newBlocks[i].id : null;
+  };
+  if (guideBookmarks[guide.id]) {
+    const mapped = [...new Set(guideBookmarks[guide.id].map(mapId).filter(Boolean))];
+    if (mapped.length) guideBookmarks[guide.id] = mapped;
+    else delete guideBookmarks[guide.id];
+    saveBookmarks();
+  }
+  if (cat.featuredSnippet && cat.featuredSnippet.guideId === guide.id) {
+    const id = mapId(cat.featuredSnippet.blockId);
+    cat.featuredSnippet = id ? { guideId: guide.id, blockId: id } : null;
+  }
+}
+
+// Bookmarks gelöschter Kapitel mit aufräumen
+function forgetGuideBookmarks(guideIds) {
+  let changed = false;
+  guideIds.forEach(id => { if (guideBookmarks[id]) { delete guideBookmarks[id]; changed = true; } });
+  if (changed) saveBookmarks();
+}
+
+// Einmalige Migration: alte Block-IDs (Hash inkl. Position) → neue
+// positionsunabhängige IDs, CRLF-Inhalte → LF, verwaiste Bookmarks entfernen.
+(function migrateGuideBlockIdsIfNeeded() {
+  if (DB.get('guideBlockIdsV2', false)) return;
+  const legacyId = (guideId, code, index) => {
+    let hash = 0;
+    const str = guideId + index + code.slice(0, 80);
+    for (let i = 0; i < str.length; i++) { hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0; }
+    return 'cb-' + Math.abs(hash).toString(36);
+  };
+  const liveGuideIds = new Set();
+  guideCategories.forEach(cat => (cat.guides || []).forEach(g => liveGuideIds.add(g.id)));
+
+  guideCategories.forEach(cat => {
+    (cat.guides || []).forEach(guide => {
+      const oldContent = guide.content || '';
+      // Altes Schema: Regex nur mit \w* und direkt folgendem \n, ID mit Position
+      const oldBlocks = [];
+      const re = /```(\w*)\n([\s\S]*?)```/g;
+      let m, idx = 0;
+      while ((m = re.exec(oldContent))) oldBlocks.push({ id: legacyId(guide.id, m[2], idx++), code: normalizeGuideNewlines(m[2]) });
+
+      guide.content = normalizeGuideNewlines(oldContent);
+      const newBlocks = listGuideCodeBlocks(guide.content, guide.id);
+      const mapId = (oldId, used) => {
+        const ob = oldBlocks.find(b => b.id === oldId);
+        const nb = ob && newBlocks.find(b => b.code === ob.code && !used.has(b.id));
+        if (!nb) return null;
+        used.add(nb.id);
+        return nb.id;
+      };
+      if (guideBookmarks[guide.id]) {
+        const used = new Set();
+        const mapped = guideBookmarks[guide.id].map(id => mapId(id, used)).filter(Boolean);
+        if (mapped.length) guideBookmarks[guide.id] = mapped;
+        else delete guideBookmarks[guide.id];
+      }
+      if (cat.featuredSnippet && cat.featuredSnippet.guideId === guide.id) {
+        const id = mapId(cat.featuredSnippet.blockId, new Set());
+        cat.featuredSnippet = id ? { guideId: guide.id, blockId: id } : null;
+      }
+    });
+    if (cat.featuredSnippet && !liveGuideIds.has(cat.featuredSnippet.guideId)) cat.featuredSnippet = null;
+  });
+  Object.keys(guideBookmarks).forEach(id => { if (!liveGuideIds.has(id)) delete guideBookmarks[id]; });
+  saveGuideCategories();
+  saveBookmarks();
+  DB.set('guideBlockIdsV2', true);
+})();
+
 // ── Markdown + Code renderer ─────────────────────────────
 // Lightweight renderer: headings, bold, italic, code blocks,
-// inline code, lists, horizontal rules, links.
+// inline code, lists, tables, horizontal rules, links.
 
 function renderMarkdown(raw, guideId = null, categoryId = null, featuredBlockId = null) {
   if (!raw) return '';
+  raw = normalizeGuideNewlines(raw);
 
-  // Pre-compute stable block IDs from the RAW (unescaped) content so they always
-  // match the IDs produced by getCodeBlocksWithIds(). Computing them after escHtml()
-  // would alter the hash for any code containing <, >, & or " (e.g. comparisons,
-  // logical operators, string literals) causing a mismatch with stored IDs.
-  const _rawBlockIds = [];
-  if (guideId) {
-    let _ri = 0;
-    const _re = /```(\w*)\n([\s\S]*?)```/g;
-    let _m;
-    while ((_m = _re.exec(raw))) { _rawBlockIds.push(makeBlockId(guideId, _m[2], _ri++)); }
-  }
+  // Block-IDs aus dem ROHEN (unescapten) Inhalt, damit sie exakt den IDs aus
+  // listGuideCodeBlocks() entsprechen — nach escHtml() wäre der Hash für Code
+  // mit <, >, & oder " ein anderer.
+  const _rawBlockIds = guideId ? listGuideCodeBlocks(raw, guideId).map(b => b.id) : [];
 
   let html = escHtml(raw);
 
@@ -81,10 +189,10 @@ function renderMarkdown(raw, guideId = null, categoryId = null, featuredBlockId 
   const _codeHtml = [];
   const _stash = h => `\u0000${_codeHtml.push(h) - 1}\u0000`;
 
-  // Fenced code blocks  ```lang\n...\n```
+  // Fenced code blocks
   // Eigener Absatz (Leerzeilen drumherum), damit er nie in ein <p> gerät.
   let _blockIndex = 0;
-  html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
+  html = html.replace(new RegExp(GUIDE_FENCE_SRC, 'g'), (_, lang, code) => {
     const blockId  = guideId ? _rawBlockIds[_blockIndex++] : null;
     const bookmarked = guideId ? isBookmarked(guideId, blockId) : false;
     const bmIcon = bookmarked
@@ -105,10 +213,15 @@ function renderMarkdown(raw, guideId = null, categoryId = null, featuredBlockId 
   // Inline code `...`
   html = html.replace(/`([^`]+)`/g, (_, code) => _stash(`<code class="guide-inline-code">${code}</code>`));
 
+  // Block-Elemente werden mit Leerzeilen umgeben, damit der Absatz-Split sie
+  // immer als eigenen Block sieht — auch wenn sie direkt an Text anschließen
+  // (sonst landet z.B. eine Liste ohne Leerzeile davor in einem <p>).
+  const _block = h => `\n\n${h}\n\n`;
+
   // Headings
-  html = html.replace(/^### (.+)$/gm, '<h4 class="guide-h4">$1</h4>');
-  html = html.replace(/^## (.+)$/gm, '<h3 class="guide-h3">$1</h3>');
-  html = html.replace(/^# (.+)$/gm, '<h2 class="guide-h2">$1</h2>');
+  html = html.replace(/^### (.+)$/gm, (_, t) => _block(`<h4 class="guide-h4">${t}</h4>`));
+  html = html.replace(/^## (.+)$/gm,  (_, t) => _block(`<h3 class="guide-h3">${t}</h3>`));
+  html = html.replace(/^# (.+)$/gm,   (_, t) => _block(`<h2 class="guide-h2">${t}</h2>`));
 
   // Bold + Italic
   html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
@@ -116,39 +229,45 @@ function renderMarkdown(raw, guideId = null, categoryId = null, featuredBlockId 
   html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
 
   // Tables — detect block of lines starting with |
-  html = html.replace(/((?:^\|.+\|\n?)+)/gm, match => {
+  html = html.replace(/((?:^\|.+\|[ \t]*(?:\n|$))+)/gm, match => {
     const lines = match.trim().split('\n').filter(l => l.trim());
-    // filter out the separator row (|---|---|)
-    const rows = lines.filter(l => !/^\|[\s\-|:]+\|$/.test(l.trim()));
-    if (rows.length < 2) return match; // not enough rows, leave as-is
-    const toCell = (line, tag) =>
-      line.trim().replace(/^\||\|$/g, '').split('|')
-        .map(cell => `<${tag} class="guide-td">${cell.trim()}</${tag}>`).join('');
-    const head = `<thead><tr>${toCell(rows[0], 'th')}</tr></thead>`;
-    const body = rows.slice(1).map(r => `<tr>${toCell(r, 'td')}</tr>`).join('');
-    return `<table class="guide-table"><thead><tr>${toCell(rows[0], 'th')}</tr></thead><tbody>${body}</tbody></table>`;
+    const isSep = l => /^\|[\s\-|:]+\|$/.test(l.trim()) && l.includes('-');
+    const splitCells = line => line.trim().replace(/^\||\|$/g, '').split('|').map(c => c.trim());
+    // Trennzeile (|---|:---:|---:|) liefert die Spaltenausrichtung
+    const sepLine = lines.find(isSep);
+    const aligns = sepLine ? splitCells(sepLine).map(c =>
+      /^:-+:$/.test(c) ? 'center' : /^-+:$/.test(c) ? 'right' : /^:-+$/.test(c) ? 'left' : ''
+    ) : [];
+    const rows = lines.filter(l => !isSep(l));
+    // Ohne Trennzeile braucht es (wie bisher) mindestens Kopf + eine Zeile
+    if (rows.length < (sepLine ? 1 : 2)) return match;
+    const toCells = (line, tag) => splitCells(line)
+      .map((cell, i) => `<${tag} class="guide-td"${aligns[i] ? ` style="text-align:${aligns[i]}"` : ''}>${cell}</${tag}>`).join('');
+    const body = rows.slice(1).map(r => `<tr>${toCells(r, 'td')}</tr>`).join('');
+    return _block(`<table class="guide-table"><thead><tr>${toCells(rows[0], 'th')}</tr></thead>${body ? `<tbody>${body}</tbody>` : ''}</table>`);
   });
 
   // Unordered list lines  - item
   html = html.replace(/((?:^- .+$\n?)+)/gm, match => {
     const items = match.trim().split('\n').map(l => `<li>${l.replace(/^- /, '')}</li>`).join('');
-    return `<ul class="guide-ul">${items}</ul>`;
+    return _block(`<ul class="guide-ul">${items}</ul>`);
   });
 
   // Ordered list lines  1. item
   html = html.replace(/((?:^\d+\. .+$\n?)+)/gm, match => {
     const items = match.trim().split('\n').map(l => `<li>${l.replace(/^\d+\. /, '')}</li>`).join('');
-    return `<ol class="guide-ol">${items}</ol>`;
+    return _block(`<ol class="guide-ol">${items}</ol>`);
   });
 
   // Text marker ==text==
   html = html.replace(/==(.+?)==/g, '<mark class="guide-mark">$1</mark>');
 
   // Horizontal rule
-  html = html.replace(/^---$/gm, '<hr class="guide-hr">');
+  html = html.replace(/^---$/gm, () => _block('<hr class="guide-hr">'));
 
-  // Links [text](url)
-  html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g,
+  // Links [text](url) — http(s) und mailto; eine Klammerebene in der URL ist
+  // erlaubt (z.B. Wikipedia-Links wie .../Foo_(Bar)).
+  html = html.replace(/\[([^\]]+)\]\(((?:https?:\/\/|mailto:)(?:[^()\s]|\([^()\s]*\))+)\)/g,
     '<a class="guide-link" href="$2" target="_blank" rel="noopener">$1</a>');
 
   // Paragraphs: double newlines → <p>
@@ -187,27 +306,25 @@ window.handleFeatureClick = function(btn, categoryId, guideId, blockId) {
   const cat = guideCategories.find(c => c.id === categoryId);
   if (!cat) return;
   const cur = cat.featuredSnippet;
-  if (cur && cur.guideId === guideId && cur.blockId === blockId) {
-    cat.featuredSnippet = null; // toggle off
-  } else {
-    cat.featuredSnippet = { guideId, blockId };
-  }
+  const nowFeatured = !(cur && cur.guideId === guideId && cur.blockId === blockId);
+  cat.featuredSnippet = nowFeatured ? { guideId, blockId } : null;
   saveGuideCategories();
-  // Re-render so all star buttons + sidebar reflect the new state
-  renderGuideContent();
+  // Nur Sterne + Seitenleiste aktualisieren statt alles neu zu rendern —
+  // sonst springt die Leseposition im Kapitel.
+  document.querySelectorAll('#guide-main .guide-feature-btn').forEach(b => {
+    const active = nowFeatured && b === btn;
+    b.classList.toggle('active', active);
+    b.textContent = active ? '★' : '☆';
+    b.title = active ? 'Als Bibliothek-Snippet entfernen' : 'Als Bibliothek-Snippet verwenden';
+  });
+  const found = findGuide(guideId);
+  renderSidebarForCategory(cat, found ? found.guide : null);
 };
 
 // Returns all fenced code blocks of a guide together with their stable IDs
 function getCodeBlocksWithIds(content, guideId) {
-  if (!content) return [];
-  const blocks = [];
-  let idx = 0;
-  const re = /```(\w*)\n([\s\S]*?)```/g;
-  let m;
-  while ((m = re.exec(content))) {
-    blocks.push({ lang: m[1] || 'code', code: m[2].trimEnd(), id: makeBlockId(guideId, m[2], idx++) });
-  }
-  return blocks;
+  return listGuideCodeBlocks(content, guideId)
+    .map(b => ({ lang: b.lang || 'code', code: b.code.trimEnd(), id: b.id }));
 }
 
 function exportGuideAsMd(guideId) {
@@ -227,8 +344,23 @@ function exportGuideAsMd(guideId) {
   const a    = document.createElement('a');
   a.href     = URL.createObjectURL(blob);
   a.download = guide.title.replace(/[^a-z0-9äöüÄÖÜß ]/gi, '_') + '.md';
+  // Erst im DOM klicken und die URL verzögert freigeben — sofortiges
+  // revokeObjectURL bricht den Download in manchen Browsern ab.
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(a.href);
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+// Liest eine Datei als Text; Promise statt onload-Zähler, damit eine
+// fehlerhafte Datei die übrigen nicht blockiert.
+function readGuideFileAsText(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload  = e => resolve(e.target.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsText(file);
+  });
 }
 
 function importGuideFromMd(categoryId) {
@@ -236,45 +368,48 @@ function importGuideFromMd(categoryId) {
   input.type     = 'file';
   input.accept   = '.md,.markdown,text/markdown';
   input.multiple = true;
-  input.addEventListener('change', () => {
+  input.addEventListener('change', async () => {
     const cat = guideCategories.find(c => c.id === categoryId);
     if (!cat) return;
-    let imported = 0;
     const files = [...input.files];
-    files.forEach(file => {
-      const reader = new FileReader();
-      reader.onload = e => {
-        const text = e.target.result;
-        // Parse optional front matter
-        let title = file.name.replace(/\.md$/, '').replace(/_/g, ' ');
-        let description = '';
-        let tags = [];
-        let content = text;
-        const fmMatch = text.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
-        if (fmMatch) {
-          const fm = fmMatch[1];
-          content  = fmMatch[2].trimStart();
-          const t  = fm.match(/^title:\s*(.+)$/m);
-          const d  = fm.match(/^description:\s*(.+)$/m);
-          const tg = fm.match(/^tags:\s*(.+)$/m);
-          if (t)  title       = t[1].trim();
-          if (d)  description = d[1].trim();
-          if (tg) tags        = tg[1].split(',').map(s => s.trim()).filter(Boolean);
-        }
-        cat.guides.push({
-          id: crypto.randomUUID(), title, description, content, tags,
-          favorite: false,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        });
-        imported++;
-        if (imported === files.length) {
-          saveGuideCategories();
-          renderGuideContent();
-        }
-      };
-      reader.readAsText(file);
+    const results = await Promise.allSettled(files.map(readGuideFileAsText));
+    const failed = [];
+    results.forEach((res, i) => {
+      const file = files[i];
+      if (res.status !== 'fulfilled') { failed.push(file.name); return; }
+      // BOM entfernen + CRLF vereinheitlichen (Dateien aus Windows-Editoren)
+      const text = normalizeGuideNewlines(res.value).replace(/^﻿/, '');
+      // Parse optional front matter
+      let title = file.name.replace(/\.(md|markdown)$/i, '').replace(/_/g, ' ');
+      let description = '';
+      let tags = [];
+      let favorite = false;
+      let content = text;
+      const fmMatch = text.match(/^---\n([\s\S]*?)\n---(?:\n([\s\S]*))?$/);
+      if (fmMatch) {
+        const fm = fmMatch[1];
+        content  = (fmMatch[2] || '').trimStart();
+        const t  = fm.match(/^title:\s*(.+)$/m);
+        const d  = fm.match(/^description:\s*(.+)$/m);
+        const tg = fm.match(/^tags:\s*(.+)$/m);
+        const fv = fm.match(/^favorite:\s*(.+)$/m);
+        if (t)  title       = t[1].trim();
+        if (d)  description = d[1].trim();
+        if (tg) tags        = tg[1].split(',').map(s => s.trim()).filter(Boolean);
+        if (fv) favorite    = fv[1].trim().toLowerCase() === 'true';
+      }
+      cat.guides.push({
+        id: crypto.randomUUID(), title, description, content, tags,
+        favorite,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
     });
+    if (failed.length < files.length) {
+      saveGuideCategories();
+      renderGuideContent();
+    }
+    if (failed.length) alert(`Folgende Dateien konnten nicht gelesen werden:\n${failed.join('\n')}`);
   });
   input.click();
 }
@@ -391,6 +526,7 @@ function renderGuideShelf() {
       const count = cat.guides.length;
       if (!confirm(`Buch „${cat.name}" und alle ${count} Kapitel löschen?`)) return;
       guideCategories = guideCategories.filter(c => c.id !== cat.id);
+      forgetGuideBookmarks(cat.guides.map(g => g.id));
       if (state.activeGuideCategoryId === cat.id) {
         state.activeGuideCategoryId = null;
         activeGuideId = null;
@@ -440,6 +576,10 @@ function renderGuideContent() {
 
   const placeholder = document.getElementById('guide-placeholder');
   const grid        = document.getElementById('guide-detail-grid');
+
+  // Nach-oben-Button gehört nur zur Kapitelansicht — renderSingleGuide()
+  // blendet ihn wieder ein, alle anderen Ansichten lassen ihn versteckt.
+  hideGuideScrollBtn();
 
   // Search mode
   if (guideSearchQuery.trim().length >= 2) {
@@ -607,7 +747,7 @@ function renderSingleGuide(guideId) {
     </svg>
     ${escHtml(category.name)}
   `;
-  back.addEventListener('click', () => { hideGuideScrollBtn(); activeGuideId = null; renderGuideContent(); });
+  back.addEventListener('click', () => { activeGuideId = null; renderGuideContent(); });
 
   // Header
   const header = document.createElement('div');
@@ -673,6 +813,8 @@ function renderSingleGuide(guideId) {
     dropdown.classList.remove('open');
     if (!confirm(`Kapitel „${guide.title}" löschen?`)) return;
     category.guides = category.guides.filter(g => g.id !== guide.id);
+    forgetGuideBookmarks([guide.id]);
+    if (category.featuredSnippet && category.featuredSnippet.guideId === guide.id) category.featuredSnippet = null;
     activeGuideId = null;
     saveGuideCategories();
     renderGuideContent();
@@ -714,6 +856,9 @@ function renderSidebarBookmarks(guideId) {
   const body = document.getElementById('guide-bookmarks-body');
   if (!card || !body) return;
   card.classList.remove('hidden');
+
+  // Navigationsposition gehört zum Kapitel — beim Kapitelwechsel neu starten
+  if (bookmarkNavGuideId !== guideId) { bookmarkNavGuideId = guideId; bookmarkNavIndex = 0; }
 
   const ids = guideBookmarks[guideId] || [];
   const blocks = ids.map(id => document.getElementById(id)).filter(Boolean);
@@ -784,7 +929,9 @@ function showGuideScrollBtn() {
     btn.title = 'Nach oben';
     btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 12V4M4 7l4-4 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     btn.addEventListener('click', () => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      // Gescrollt wird #main (overflow-y:auto), nicht das Fenster —
+      // scrollIntoView trifft den richtigen Scroll-Container automatisch.
+      document.getElementById('view-guides')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
     document.body.appendChild(btn);
   }
@@ -1060,10 +1207,6 @@ function initGuides() {
   }
   _guidesInitialized = true;
 
-  // Force repaint to fix CSS variable resolution in light mode
-  const guideView = document.getElementById('view-guides');
-  if (guideView) { void guideView.offsetHeight; }
-
   // Category modal: geteiltes Farb-Picker-Widget aus hub-utils.js
   guideColorWidget = initColorPickerWidget(
     { pickerId: 'guide-color-picker', previewId: 'guide-color-preview', addBtnId: 'guide-color-add-btn', libraryId: 'guide-color-library' },
@@ -1139,12 +1282,14 @@ function initGuides() {
     if (guideModalGuideId) {
       const guide = cat.guides.find(g => g.id === guideModalGuideId);
       if (guide) {
+        const oldContent  = guide.content || '';
         guide.title       = title;
         guide.description = desc;
         guide.content     = content;
         guide.tags        = tags;
         guide.favorite    = favorite;
         guide.updatedAt   = new Date().toISOString();
+        remapGuideBlockRefs(cat, guide, oldContent);
       }
     } else {
       cat.guides.push({
@@ -1175,6 +1320,10 @@ function initGuides() {
   });
 
   // Insert snippet buttons in modal
+  // Markierter Text wird eingerahmt statt überschrieben; ohne Markierung wird
+  // ein Platzhalter eingefügt und direkt markiert, damit man ihn überschreiben
+  // kann. Zeilenbasierte Elemente (Überschrift, Liste, Codeblock, Trennlinie)
+  // beginnen immer am Zeilenanfang, sonst rendert der Markdown-Renderer sie nicht.
   document.querySelectorAll('.guide-snippet-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const textarea = document.getElementById('guide-modal-content-input');
@@ -1182,42 +1331,51 @@ function initGuides() {
       const start = textarea.selectionStart;
       const end   = textarea.selectionEnd;
       const before = textarea.value.substring(0, start);
-      const after  = textarea.value.substring(end);
-      let insert = '';
-      let cursorOffset = 0;
+      let after    = textarea.value.substring(end);
+      const sel   = textarea.value.substring(start, end);
+      // Zeilenumbruch voranstellen, falls die Einfügestelle mitten in einer Zeile liegt
+      const nl     = (before && !before.endsWith('\n')) ? '\n' : '';
+      // ...und dahinter, falls danach noch Text in derselben Zeile folgt
+      const nlAfter = (after && !after.startsWith('\n')) ? '\n' : '';
+      // Bei Zeilenelementen kein führendes Leerzeichen in die neue Folgezeile mitnehmen
+      const isLineSnippet = ['code', 'h2', 'h3', 'list', 'hr'].includes(snippet);
+      if (isLineSnippet && nlAfter) after = after.replace(/^[ \t]+/, '');
+
+      let prefix = '', text = '', suffix = '';
       switch (snippet) {
         case 'code':
-          insert = '```javascript\n\n```';
-          cursorOffset = 14;
+          prefix = nl + '```javascript\n'; text = sel; suffix = '\n```' + nlAfter;
           break;
         case 'h2':
-          insert = '## Überschrift';
-          cursorOffset = 15;
+          prefix = nl + '## '; text = sel || 'Überschrift'; suffix = nlAfter;
           break;
         case 'h3':
-          insert = '### Unterüberschrift';
-          cursorOffset = 20;
+          prefix = nl + '### '; text = sel || 'Unterüberschrift'; suffix = nlAfter;
           break;
         case 'bold':
-          insert = '**fett**';
-          cursorOffset = 2;
-          break;
-        case 'list':
-          insert = '- Punkt 1\n- Punkt 2\n- Punkt 3';
-          cursorOffset = 2;
-          break;
-        case 'hr':
-          insert = '\n---\n';
-          cursorOffset = 5;
+          prefix = '**'; text = sel || 'fett'; suffix = '**';
           break;
         case 'mark':
-          insert = '==markierter Text==';
-          cursorOffset = 2;
+          prefix = '=='; text = sel || 'markierter Text'; suffix = '==';
           break;
+        case 'list':
+          if (sel) {
+            prefix = nl; suffix = nlAfter;
+            text = sel.split('\n').map(l => l.replace(/^\s*(?:[-*+]|\d+\.)\s+/, '')).map(l => '- ' + l).join('\n');
+          } else {
+            prefix = nl + '- '; text = 'Punkt 1'; suffix = '\n- Punkt 2\n- Punkt 3' + nlAfter;
+          }
+          break;
+        case 'hr':
+          prefix = nl + '\n---\n' + (nlAfter ? '\n' : ''); text = ''; suffix = '';
+          break;
+        default:
+          return;
       }
-      textarea.value = before + insert + after;
+      textarea.value = before + prefix + text + suffix + after;
       textarea.focus();
-      textarea.selectionStart = textarea.selectionEnd = start + cursorOffset;
+      textarea.selectionStart = start + prefix.length;
+      textarea.selectionEnd   = start + prefix.length + text.length;
     });
   });
 

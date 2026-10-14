@@ -224,8 +224,8 @@
 .guide-table tbody tr:last-child td.guide-td { border-bottom: none; }
 .guide-table tbody tr:hover td.guide-td { background: var(--accent-soft); }
  
-.guide-mark { background: #f5e0b3; color: var(--text); border-radius: 3px; padding: 0 3px; }
-[data-theme-family="dark"] .guide-mark { background: #5c3d11; color: #fde8c0; }
+.guide-mark { background: color-mix(in srgb, var(--amber) 30%, transparent); color: var(--text); border-radius: 3px; padding: 0 3px; }
+[data-theme-family="dark"] .guide-mark { background: color-mix(in srgb, var(--amber) 40%, transparent); }
  
 /* ── Modal editor ─────────────────────────────────────────── */
 .guide-modal-box { width: 700px; max-width: calc(100vw - 40px); max-height: 92vh; }
@@ -302,7 +302,7 @@
 .guide-bookmark-btn:hover  { color: var(--amber); transform: scale(1.15); }
 .guide-bookmark-btn.active { color: var(--amber); }
 [data-theme-family="dark"] .guide-bookmark-btn:hover,
-[data-theme-family="dark"] .guide-bookmark-btn.active { color: #e8a96a; }
+[data-theme-family="dark"] .guide-bookmark-btn.active { color: color-mix(in srgb, var(--amber) 75%, white); }
 
 /* Highlighted (bookmarked) code block */
 .guide-code-block.bookmarked {
@@ -337,7 +337,7 @@
 .guide-feature-btn:hover  { color: var(--amber); transform: scale(1.15); }
 .guide-feature-btn.active { color: var(--amber); }
 [data-theme-family="dark"] .guide-feature-btn:hover,
-[data-theme-family="dark"] .guide-feature-btn.active { color: #f0c382; }
+[data-theme-family="dark"] .guide-feature-btn.active { color: color-mix(in srgb, var(--amber) 60%, white); }
 
 .guide-bm-nav {
   display: flex;
@@ -420,6 +420,8 @@
   z-index: 999;
 }
 #guide-scroll-top.visible { opacity: 1; pointer-events: auto; transform: translateY(0); }
+/* Der Button hängt am <body> — auf anderen Tabs nie anzeigen */
+body:not(:has(#view-guides.active)) #guide-scroll-top { display: none; }
 #guide-scroll-top:hover { background: var(--text); color: var(--surface); border-color: var(--text); }
  
 /* =============================================================

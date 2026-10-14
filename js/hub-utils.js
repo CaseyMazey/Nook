@@ -344,7 +344,7 @@ function renderCodeBlock(code, lang, opts = {}) {
   const featBtn = opts.featureBtnHtml || '';
   const langLabel = `<span class="guide-code-lang">${lang || 'code'}</span>`;
   const blockClass = 'guide-code-block' + (opts.bookmarked ? ' bookmarked' : '');
-  return `<div class="${blockClass}" ${idAttr}><div class="guide-code-header">${langLabel}<div class="guide-code-header-right">${featBtn}${bmBtn}<button class="guide-copy-btn" onclick="copyCode(this)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="5" y="5" width="9" height="9" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M3 11V3a2 2 0 0 1 2-2h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> Copy</button></div></div><pre class="guide-code-pre"><code>${code.trimEnd()}</code></pre></div>`;
+  return `<div class="${blockClass}" ${idAttr}><div class="guide-code-header">${langLabel}<div class="guide-code-header-right">${featBtn}${bmBtn}<button class="guide-copy-btn" onclick="copyCode(this)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="5" y="5" width="9" height="9" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M3 11V3a2 2 0 0 1 2-2h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> Kopieren</button></div></div><pre class="guide-code-pre"><code>${code.trimEnd()}</code></pre></div>`;
 }
 
 // Copy-Button-Handler (global, da onclick-Attribute ihn direkt aufrufen)
