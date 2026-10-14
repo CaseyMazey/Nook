@@ -1189,7 +1189,6 @@
               <div class="settings-row">
                 <div id="theme-picker" style="display:flex;flex-wrap:wrap;gap:6px;">
                   <button class="clock-type-btn theme-picker-btn" data-theme-value="light">Cozy</button>
-                  <button class="clock-type-btn theme-picker-btn" data-theme-value="dark">Classic Dark</button>
                   <!-- Eigene Themes (js/theme-engine.js) werden hier per JS
                        zwischen die eingebauten Buttons und diesen "+"-Button gerendert,
                        siehe renderCustomThemeButtons(). -->
@@ -1197,7 +1196,15 @@
                 </div>
               </div>
 
-              <!-- Hintergrundbild — nur für Cozy und Classic Dark, siehe
+              <!-- Tag/Nacht — nur bei Themes mit Tag- und Nachtversion (aktuell Cozy),
+                   blendet den Sonne/Mond-Knopf in der Sidebar ein/aus. Siehe
+                   DAYNIGHT_THEMES/dayNightToggle in js/main.js. -->
+              <div class="settings-row hidden" id="daynight-toggle-row">
+                <div><div class="settings-row-title">Tag/Nacht-Umschalter</div><div class="settings-row-sub">Zeigt Sonne/Mond in der Navigation, um zwischen Tag- und Nachtversion zu wechseln</div></div>
+                <label class="toggle"><input type="checkbox" id="setting-daynight-toggle"/><span class="toggle-slider"></span></label>
+              </div>
+
+              <!-- Hintergrundbild — nur für Cozy (Tag und Nacht je eigenes Bild), siehe
                    js/theme-engine.js (renderBgImageSettings). Eigene Themes bringen ihr
                    Bild direkt aus dem Theme-Editor mit, dann erscheint stattdessen der
                    Hinweis darunter. Bild wird vor dem Speichern client-seitig verkleinert

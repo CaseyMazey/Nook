@@ -159,7 +159,7 @@
    ist die Markenidentität und wird nicht pro Theme neu erfunden.
 ============================================================= */
 
-/* ── Classic Dark — neutralisiert (war zu braun) ─────────────── */
+/* ── Cozy Nacht (id "dark", früher "Classic Dark") — neutralisiert ── */
 [data-theme="dark"] {
   --bg:          #181817;
   --bg-2:        #1e1d1c;

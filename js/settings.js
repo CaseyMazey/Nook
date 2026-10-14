@@ -96,8 +96,14 @@ function renderThemeSettings(){
   const picker = document.getElementById('theme-picker');
   if (!picker) return;
   picker.querySelectorAll('.theme-picker-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.themeValue === theme);
+    btn.classList.toggle('active', btn.dataset.themeValue === themePickerId(theme));
   });
+  // Tag/Nacht-Schalter nur bei Themes mit Tag- und Nachtversion (main.js).
+  const dnRow = document.getElementById('daynight-toggle-row');
+  if (dnRow) {
+    dnRow.classList.toggle('hidden', !dayNightBase(theme));
+    document.getElementById('setting-daynight-toggle').checked = isDayNightToggleOn();
+  }
   // Eigene Themes + Hintergrundbild (Theme-Builder) — eigenständiges Modul,
   // gleiches Muster wie renderColorLibrary() unten für die persönlichen Farben.
   if (typeof renderCustomThemeButtons === 'function') renderCustomThemeButtons();
@@ -163,8 +169,17 @@ document.getElementById('setting-username').addEventListener('input', e => {
 document.getElementById('theme-picker')?.addEventListener('click', e => {
   const btn = e.target.closest('.theme-picker-btn');
   if (!btn) return;
-  setTheme(btn.dataset.themeValue);
+  // Klick auf das bereits aktive Tag/Nacht-Theme behält die aktuelle Version.
+  if (btn.dataset.themeValue !== themePickerId(theme)) setTheme(btn.dataset.themeValue);
   renderThemeSettings();
+});
+
+document.getElementById('setting-daynight-toggle')?.addEventListener('change', e => {
+  const base = dayNightBase(theme);
+  if (!base) return;
+  if (e.target.checked) delete dayNightToggle[base]; else dayNightToggle[base] = false;
+  saveDayNightToggle();
+  if (typeof updateThemeIcon === 'function') updateThemeIcon();
 });
 
 // ── Eigenes HH:MM-24h-Feld für Unterrichtsblock-Zeiten ──────────────────

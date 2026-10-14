@@ -142,16 +142,16 @@ let blocks           = DB.get('blocks', DEFAULT_BLOCKS);
 let countdownVisible = DB.get('countdownVisible', {});
 // ── Theme-Engine (Phase 2) ───────────────────────────────────────────────
 // THEME_FAMILY ordnet jedem fest in main.css definierten Theme seine
-// Farbfamilie zu: 'light' (in der Oberfläche "Cozy") und 'dark' ("Classic
-// Dark") — die IDs bleiben aus Kompatibilität mit gespeicherten Daten
-// unverändert. Alle weiteren Themes (feste Presets und eigene) kommen aus
-// js/theme-engine.js.
+// Farbfamilie zu: 'light' (Cozy, Tag) und 'dark' (Cozy, Nacht — früher
+// "Classic Dark") — die IDs bleiben aus Kompatibilität mit gespeicherten
+// Daten unverändert. Alle weiteren Themes (feste Presets und eigene) kommen
+// aus js/theme-engine.js.
 const THEME_FAMILY = {
   light: 'light',
   dark:  'dark',
 };
 // Entfernte eingebaute Dark-Varianten (Oktober 2026, durch die Theme-Engine
-// ersetzt) — wer eine davon gewählt hatte, landet bei Classic Dark.
+// ersetzt) — wer eine davon gewählt hatte, landet bei Cozy (Nacht).
 const REMOVED_BUILTIN_THEMES = ['midnight', 'forest', 'espresso', 'oled'];
 // Migration: altes darkMode-Boolean → theme-String (einmalig, dann bleibt
 // nur noch der 'theme'-Key maßgeblich).
@@ -223,18 +223,37 @@ function setTheme(name) {
   if (typeof renderGuideShelf === 'function') renderGuideShelf();
   // Eigene Farbwerte (inline CSS-Variablen), Hintergrundbild, Kalender-
   // bilder, Start-Banner und Icon des neuen Themes — siehe
-  // js/theme-engine.js. Für Cozy/Classic Dark (light/dark) kommen die Farben
+  // js/theme-engine.js. Für Cozy Tag/Nacht (light/dark) kommen die Farben
   // weiterhin allein über das data-theme-Attribut aus main.css.
   if (typeof applyThemeEngine === 'function') applyThemeEngine(theme);
 }
 
-// Schnellumschalter (Sidebar Sonne/Mond) — schaltet nur zwischen Light und
-// dem zuletzt aktiven Dark-Theme hin und her, ohne die übrigen Dark-Varianten
-// aus der Einstellungsseite zu berühren.
-let lastDarkTheme = themeFamily === 'dark' ? theme : 'dark';
+// ── Tag/Nacht-Themes ────────────────────────────────────────────────────
+// Ein Theme kann eine Tag- und eine Nachtversion haben, die in der Theme-
+// Auswahl als EIN Theme erscheinen (Button-Wert = Tag-ID). Aktuell nur Cozy
+// ('light' Tag / 'dark' Nacht); weitere Paare sind ein Eintrag hier.
+const DAYNIGHT_THEMES = { light: 'dark' };   // Tag-ID → Nacht-ID
+function dayNightBase(id) {
+  if (DAYNIGHT_THEMES[id]) return id;
+  return Object.keys(DAYNIGHT_THEMES).find(day => DAYNIGHT_THEMES[day] === id) || null;
+}
+// Theme-ID, unter der ein Theme in der Auswahl steht (Tag-ID bzw. eigene ID).
+function themePickerId(id) { return dayNightBase(id) || id; }
+
+// Sonne/Mond-Knopf in der Sidebar pro Tag/Nacht-Theme ein-/ausblendbar
+// (Einstellungen > Darstellung). Ohne Eintrag = eingeschaltet.
+let dayNightToggle = DB.get('dayNightToggle', {});   // { [Tag-ID]: false }
+function saveDayNightToggle() { DB.set('dayNightToggle', dayNightToggle); }
+function isDayNightToggleOn(id = theme) {
+  const base = dayNightBase(id);
+  return !!base && dayNightToggle[base] !== false;
+}
+
+// Sonne/Mond-Knopf: wechselt innerhalb des aktiven Tag/Nacht-Themes.
 function setDarkMode(dark) {
-  if (dark) { lastDarkTheme = themeFamily === 'dark' ? theme : lastDarkTheme; setTheme(lastDarkTheme); }
-  else      { setTheme('light'); }
+  const base = dayNightBase(theme);
+  if (!base) return;
+  setTheme(dark ? DAYNIGHT_THEMES[base] : base);
 }
 
 function applyColors() {

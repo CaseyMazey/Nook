@@ -16,7 +16,7 @@
 //    Prioritäts-, Budget- und Code-Panel-Farben bleiben bewusst
 //    themeübergreifend gleich (siehe "Markenidentität" in main.css).
 //  - Hintergrundbild pro Theme: eigene Themes tragen es selbst (ct.bg),
-//    Cozy/Classic Dark (light/dark) über themeBackgrounds[id]. Eigene Bilder
+//    Cozy Tag/Nacht (light/dark) über themeBackgrounds[id]. Eigene Bilder
 //    werden verkleinert als data-URL gespeichert (wie bisher in Nook) —
 //    bewusst NICHT in IndexedDB wie in Core, damit sie weiterhin im
 //    Backup/Export (settings.js) enthalten sind.
@@ -33,7 +33,7 @@
 //    würde. Bei Änderungen an den Grundfarben in main.css hier mitziehen.
 const THEME_REGISTRY = [
   { id: 'light', label: 'Cozy',         core: { bg: '#efebe3', surface: '#fdfaf5', nav: '#fdfaf5', modal: '#fdfaf5', text: '#24211c', border: '#786541', accent: '#6b7f58' } },
-  { id: 'dark',  label: 'Classic Dark', core: { bg: '#181817', surface: '#20201e', nav: '#20201e', modal: '#20201e', text: '#e6e3df', border: '#cbc8c2', accent: '#728460' } },
+  { id: 'dark',  label: 'Cozy (Nacht)', core: { bg: '#181817', surface: '#20201e', nav: '#20201e', modal: '#20201e', text: '#e6e3df', border: '#cbc8c2', accent: '#728460' } },
 ];
 
 // Alle CSS-Variablen, die ein eigenes Theme inline auf <html> setzt — zum
@@ -245,7 +245,7 @@ const DEFAULT_BUILDER_CORE = {
 })();
 
 // ── Feste Preset-Themes ──────────────────────────────────────────────────
-// Fertige Themes, die neben Cozy/Classic Dark in der Auswahl stehen, aber
+// Fertige Themes, die neben Cozy in der Auswahl stehen, aber
 // wie eigene Themes aus Kernfarben abgeleitet werden (gleiches Format wie
 // customThemes, ID-Präfix "preset_"). Sie sind fest im Code, auf jedem Gerät
 // gleich und nicht löschbar; ✎ öffnet den Editor mit ihren Werten, Speichern
@@ -311,7 +311,7 @@ const PRESET_THEMES = [
 })();
 
 // Hintergrundbilder der entfernten Dark-Varianten (REMOVED_BUILTIN_THEMES,
-// main.js): das erste gefundene wandert zu Classic Dark, falls das noch
+// main.js): das erste gefundene wandert zu Cozy (Nacht), falls das noch
 // keins hat — dorthin wurden Nutzer dieser Themes auch umgestellt.
 (function migrateRemovedThemeBackgrounds() {
   if (typeof REMOVED_BUILTIN_THEMES === 'undefined') return;
@@ -611,9 +611,6 @@ function deleteCustomTheme(id) {
   customThemes = customThemes.filter(t => t.id !== id);
   saveCustomThemes();
   if (theme === id) setTheme('light');
-  // Der Sonne/Mond-Schnellumschalter (main.js: setDarkMode()) merkt sich
-  // das zuletzt aktive Dark-Theme — nicht zu einem gelöschten zurückkehren.
-  if (typeof lastDarkTheme !== 'undefined' && lastDarkTheme === id) lastDarkTheme = 'dark';
   if (typeof renderThemeSettings === 'function') renderThemeSettings();
 }
 

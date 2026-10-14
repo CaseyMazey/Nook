@@ -1055,6 +1055,9 @@ function updateThemeIcon() {
   const sunIcon  = document.getElementById('theme-icon-sun');
   const moonIcon = document.getElementById('theme-icon-moon');
   if (!sunIcon || !moonIcon) return;
+  // Nur sichtbar, wenn das aktive Theme eine Tag/Nacht-Version hat und der
+  // Umschalter dafür in den Einstellungen an ist (main.js: isDayNightToggleOn).
+  document.getElementById('theme-toggle-btn')?.classList.toggle('hidden', !isDayNightToggleOn());
   sunIcon.style.display  = darkMode ? 'none'  : 'block';
   moonIcon.style.display = darkMode ? 'block' : 'none';
 }
