@@ -35,7 +35,7 @@ Für Funktionen, die einen sicheren Browser-Kontext brauchen (Google-Calendar-An
 - 🌟 Tägliche Positivity-Erinnerungen
 - 🌤 Wetterwidget mit Standortauswahl
 - 🎉 National-Day-Widget
-- 🎨 6 eingebaute Themes + Theme-Editor: eigene Farben, Schriftart/-größe, Kartendurchlässigkeit, Hintergrundbild und Grafik-Sets (Cozy, Sci-Fi, Forest, Royal, Cyberpunk, Lab) mit Kalenderbildern und Start-Banner im Tag/Nacht-Wechsel
+- 🎨 Themes Cozy und Classic Dark + Theme-Editor: eigene Farben, Schriftart/-größe, Kartendurchlässigkeit, Hintergrundbild und Grafik-Sets (Cozy, Sci-Fi, Forest, Royal, Cyberpunk, Lab) mit Kalenderbildern und Start-Banner im Tag/Nacht-Wechsel
 - 💾 Lokale Datenspeicherung mit optionalem Geräte-Sync
 - 📲 Installierbar als PWA mit Offline-Zugriff (bei Nutzung über `https://`)
 

@@ -141,24 +141,29 @@ let berichtsheft     = DB.get('berichtsheft', { betrieb: '', schule: '' });
 let blocks           = DB.get('blocks', DEFAULT_BLOCKS);
 let countdownVisible = DB.get('countdownVisible', {});
 // ── Theme-Engine (Phase 2) ───────────────────────────────────────────────
-// THEME_FAMILY ordnet jedem Theme-Namen seine Farbfamilie zu. Neue Themes
-// (Midnight, Forest, Espresso, OLED) nutzen in Phase 2 bewusst dieselbe
-// "dark"-Familie wie der bisherige Dark Mode — sie bekommen erst in Phase 3
-// eigene Farbwerte. Neue Themes werden hier einfach ergänzt.
+// THEME_FAMILY ordnet jedem fest in main.css definierten Theme seine
+// Farbfamilie zu: 'light' (in der Oberfläche "Cozy") und 'dark' ("Classic
+// Dark") — die IDs bleiben aus Kompatibilität mit gespeicherten Daten
+// unverändert. Alle weiteren Themes (feste Presets und eigene) kommen aus
+// js/theme-engine.js.
 const THEME_FAMILY = {
-  light:    'light',
-  dark:     'dark',
-  midnight: 'dark',
-  forest:   'dark',
-  espresso: 'dark',
-  oled:     'dark',
+  light: 'light',
+  dark:  'dark',
 };
+// Entfernte eingebaute Dark-Varianten (Oktober 2026, durch die Theme-Engine
+// ersetzt) — wer eine davon gewählt hatte, landet bei Classic Dark.
+const REMOVED_BUILTIN_THEMES = ['midnight', 'forest', 'espresso', 'oled'];
 // Migration: altes darkMode-Boolean → theme-String (einmalig, dann bleibt
 // nur noch der 'theme'-Key maßgeblich).
 let theme = DB.get('theme', null);
 if (theme === null) {
   theme = DB.get('darkMode', false) ? 'dark' : 'light';
   DB.set('theme', theme);
+}
+if (REMOVED_BUILTIN_THEMES.includes(theme)) {
+  theme = 'dark';
+  DB.set('theme', theme);
+  DB.set('themeFamily', 'dark');
 }
 // Eigene Themes (js/theme-engine.js) stehen nicht in
 // THEME_FAMILY — deren Familie wird beim Erstellen/Anwenden zusätzlich
@@ -194,14 +199,14 @@ document.documentElement.setAttribute('data-theme-family', themeFamily);
 // hub-utils.js), damit diese sofort statt erst beim nächsten Tab-Wechsel
 // aktualisiert werden.
 // Wird von der Theme-Auswahl in den Einstellungen (settings.js) aufgerufen.
-// Akzeptiert neben den 6 eingebauten Namen auch die ID eines eigenen
-// Themes (js/theme-engine.js) — dessen Familie steht
-// nicht in THEME_FAMILY, sondern wird aus customThemes nachgeschlagen,
-// falls dieses bereits geladen ist (siehe Skript-Ladereihenfolge unten).
+// Akzeptiert neben 'light'/'dark' auch die ID eines festen Presets oder
+// eigenen Themes (js/theme-engine.js) — dessen Familie steht nicht in
+// THEME_FAMILY, sondern wird über getCustomTheme() nachgeschlagen, falls
+// die Theme-Engine bereits geladen ist (siehe Skript-Ladereihenfolge).
 function setTheme(name) {
   let family = THEME_FAMILY[name];
-  if (!family && typeof customThemes !== 'undefined') {
-    const ct = customThemes.find(t => t.id === name);
+  if (!family && typeof getCustomTheme === 'function') {
+    const ct = getCustomTheme(name);
     if (ct) family = ct.family;
   }
   if (!family) { name = 'light'; family = 'light'; }
@@ -218,7 +223,7 @@ function setTheme(name) {
   if (typeof renderGuideShelf === 'function') renderGuideShelf();
   // Eigene Farbwerte (inline CSS-Variablen), Hintergrundbild, Kalender-
   // bilder, Start-Banner und Icon des neuen Themes — siehe
-  // js/theme-engine.js. Für die 6 eingebauten Themes kommen die Farben
+  // js/theme-engine.js. Für Cozy/Classic Dark (light/dark) kommen die Farben
   // weiterhin allein über das data-theme-Attribut aus main.css.
   if (typeof applyThemeEngine === 'function') applyThemeEngine(theme);
 }

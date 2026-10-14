@@ -1188,12 +1188,8 @@
               </div>
               <div class="settings-row">
                 <div id="theme-picker" style="display:flex;flex-wrap:wrap;gap:6px;">
-                  <button class="clock-type-btn theme-picker-btn" data-theme-value="light">Light</button>
+                  <button class="clock-type-btn theme-picker-btn" data-theme-value="light">Cozy</button>
                   <button class="clock-type-btn theme-picker-btn" data-theme-value="dark">Classic Dark</button>
-                  <button class="clock-type-btn theme-picker-btn" data-theme-value="midnight">Midnight</button>
-                  <button class="clock-type-btn theme-picker-btn" data-theme-value="forest">Forest</button>
-                  <button class="clock-type-btn theme-picker-btn" data-theme-value="espresso">Espresso</button>
-                  <button class="clock-type-btn theme-picker-btn" data-theme-value="oled">OLED</button>
                   <!-- Eigene Themes (js/theme-engine.js) werden hier per JS
                        zwischen die eingebauten Buttons und diesen "+"-Button gerendert,
                        siehe renderCustomThemeButtons(). -->
@@ -1201,14 +1197,14 @@
                 </div>
               </div>
 
-              <!-- Hintergrundbild — nur für die 6 eingebauten Themes, siehe
+              <!-- Hintergrundbild — nur für Cozy und Classic Dark, siehe
                    js/theme-engine.js (renderBgImageSettings). Eigene Themes bringen ihr
                    Bild direkt aus dem Theme-Editor mit, dann erscheint stattdessen der
                    Hinweis darunter. Bild wird vor dem Speichern client-seitig verkleinert
                    (Canvas), damit kein Foto direkt aus der Kamera das localStorage-Limit
                    sprengt. -->
               <div class="settings-row hidden" id="bg-image-custom-note">
-                <div><div class="settings-row-title">Hintergrundbild</div><div class="settings-row-sub">Bei eigenen Themes im Theme-Editor einstellbar (✎ am Theme-Button)</div></div>
+                <div><div class="settings-row-title">Hintergrundbild</div><div class="settings-row-sub">Dieses Theme bringt sein Hintergrundbild selbst mit — anpassbar im Theme-Editor (✎ am Theme-Button)</div></div>
               </div>
               <div class="settings-row" id="bg-image-section" style="flex-direction:column;align-items:flex-start;gap:12px;">
                 <div style="display:flex;align-items:center;justify-content:space-between;width:100%;gap:16px;">

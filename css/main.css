@@ -177,77 +177,9 @@
   --accent-soft: #262524;
 }
 
-/* ── Midnight — leicht bläulich ──────────────────────────────── */
-[data-theme="midnight"] {
-  --bg:          #121419;
-  --bg-2:        #16191f;
-  --surface-solid: #141925;
-  --surface:     color-mix(in srgb, var(--surface-solid) var(--core-card-opacity), transparent);
-  --surface-2:   color-mix(in srgb, #1a202c var(--core-card-opacity), transparent);
-  --surface-3:   color-mix(in srgb, #1e2432 var(--core-card-opacity), transparent);
-  --dash-bg:     #141924;
-  --dash-border: rgba(176,190,221,0.07);
-  --border:        rgba(176,190,221,0.10);
-  --border-strong: rgba(176,190,221,0.18);
-  --text:   #dde0e8;
-  --text-2: #878c97;
-  --text-3: #565a64;
-  --accent-soft: #1b1f29;
-}
 
-/* ── Forest — dunkles Grün ────────────────────────────────────── */
-[data-theme="forest"] {
-  --bg:          #131915;
-  --bg-2:        #181f1b;
-  --surface-solid: #16251b;
-  --surface:     color-mix(in srgb, var(--surface-solid) var(--core-card-opacity), transparent);
-  --surface-2:   color-mix(in srgb, #1c2c22 var(--core-card-opacity), transparent);
-  --surface-3:   color-mix(in srgb, #203227 var(--core-card-opacity), transparent);
-  --dash-bg:     #16241b;
-  --dash-border: rgba(181,217,194,0.07);
-  --border:        rgba(181,217,194,0.10);
-  --border-strong: rgba(181,217,194,0.18);
-  --text:   #dee7e1;
-  --text-2: #89958d;
-  --text-3: #58635c;
-  --accent-soft: #1d2a21;
-}
 
-/* ── Espresso — warmes Braun (entspricht ungefähr dem alten Dark) ─ */
-[data-theme="espresso"] {
-  --bg:          #1a1815;
-  --bg-2:        #201d1a;
-  --surface-solid: #252019;
-  --surface:     color-mix(in srgb, var(--surface-solid) var(--core-card-opacity), transparent);
-  --surface-2:   color-mix(in srgb, #2c2620 var(--core-card-opacity), transparent);
-  --surface-3:   color-mix(in srgb, #322c24 var(--core-card-opacity), transparent);
-  --dash-bg:     #241f19;
-  --dash-border: rgba(230,201,168,0.07);
-  --border:        rgba(230,201,168,0.11);
-  --border-strong: rgba(230,201,168,0.18);
-  --text:   #ede3d8;
-  --text-2: #9e9080;
-  --text-3: #6a5e50;
-  --accent-soft: #2a2520;
-}
 
-/* ── OLED — nahezu schwarz ─────────────────────────────────────── */
-[data-theme="oled"] {
-  --bg:          #070707;
-  --bg-2:        #080808;
-  --surface-solid: #090909;
-  --surface:     color-mix(in srgb, var(--surface-solid) var(--core-card-opacity), transparent);
-  --surface-2:   color-mix(in srgb, #0b0b0b var(--core-card-opacity), transparent);
-  --surface-3:   color-mix(in srgb, #0c0c0c var(--core-card-opacity), transparent);
-  --dash-bg:     #090908;
-  --dash-border: rgba(199,199,199,0.06);
-  --border:        rgba(199,199,199,0.08);
-  --border-strong: rgba(199,199,199,0.15);
-  --text:   #e3e3e2;
-  --text-2: #908f8e;
-  --text-3: #5e5d5c;
-  --accent-soft: #0a0a0a;
-}
 
 /* =============================================================
    RESET

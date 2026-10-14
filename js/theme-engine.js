@@ -16,7 +16,7 @@
 //    Prioritäts-, Budget- und Code-Panel-Farben bleiben bewusst
 //    themeübergreifend gleich (siehe "Markenidentität" in main.css).
 //  - Hintergrundbild pro Theme: eigene Themes tragen es selbst (ct.bg),
-//    die 6 eingebauten Themes über themeBackgrounds[id]. Eigene Bilder
+//    Cozy/Classic Dark (light/dark) über themeBackgrounds[id]. Eigene Bilder
 //    werden verkleinert als data-URL gespeichert (wie bisher in Nook) —
 //    bewusst NICHT in IndexedDB wie in Core, damit sie weiterhin im
 //    Backup/Export (settings.js) enthalten sind.
@@ -32,12 +32,8 @@
 //    ein gerade aktives eigenes Theme die ausgelesenen Werte verfälschen
 //    würde. Bei Änderungen an den Grundfarben in main.css hier mitziehen.
 const THEME_REGISTRY = [
-  { id: 'light',    label: 'Light',        core: { bg: '#efebe3', surface: '#fdfaf5', nav: '#fdfaf5', modal: '#fdfaf5', text: '#24211c', border: '#786541', accent: '#6b7f58' } },
-  { id: 'dark',     label: 'Classic Dark', core: { bg: '#181817', surface: '#20201e', nav: '#20201e', modal: '#20201e', text: '#e6e3df', border: '#cbc8c2', accent: '#728460' } },
-  { id: 'midnight', label: 'Midnight',     core: { bg: '#121419', surface: '#141925', nav: '#141925', modal: '#141925', text: '#dde0e8', border: '#b0bedd', accent: '#728460' } },
-  { id: 'forest',   label: 'Forest',       core: { bg: '#131915', surface: '#16251b', nav: '#16251b', modal: '#16251b', text: '#dee7e1', border: '#b5d9c2', accent: '#728460' } },
-  { id: 'espresso', label: 'Espresso',     core: { bg: '#1a1815', surface: '#252019', nav: '#252019', modal: '#252019', text: '#ede3d8', border: '#e6c9a8', accent: '#728460' } },
-  { id: 'oled',     label: 'OLED',         core: { bg: '#070707', surface: '#090909', nav: '#090909', modal: '#090909', text: '#e3e3e2', border: '#c7c7c7', accent: '#728460' } },
+  { id: 'light', label: 'Cozy',         core: { bg: '#efebe3', surface: '#fdfaf5', nav: '#fdfaf5', modal: '#fdfaf5', text: '#24211c', border: '#786541', accent: '#6b7f58' } },
+  { id: 'dark',  label: 'Classic Dark', core: { bg: '#181817', surface: '#20201e', nav: '#20201e', modal: '#20201e', text: '#e6e3df', border: '#cbc8c2', accent: '#728460' } },
 ];
 
 // Alle CSS-Variablen, die ein eigenes Theme inline auf <html> setzt — zum
@@ -247,7 +243,33 @@ const DEFAULT_BUILDER_CORE = {
   if (changed) { saveCustomThemes(); saveThemeBackgrounds(); }
 })();
 
-function getCustomTheme(id)  { return customThemes.find(t => t.id === id) || null; }
+// ── Feste Preset-Themes ──────────────────────────────────────────────────
+// Fertige Themes, die neben Cozy/Classic Dark in der Auswahl stehen, aber
+// wie eigene Themes aus Kernfarben abgeleitet werden (gleiches Format wie
+// customThemes, ID-Präfix "preset_"). Sie sind fest im Code, auf jedem Gerät
+// gleich und nicht löschbar; ✎ öffnet den Editor mit ihren Werten, Speichern
+// legt dann ein neues eigenes Theme an — das Preset selbst bleibt unverändert.
+// Neues Preset = ein weiterer Eintrag hier, sonst keine Code-Änderung.
+const PRESET_THEMES = [];
+
+// Hintergrundbilder der entfernten Dark-Varianten (REMOVED_BUILTIN_THEMES,
+// main.js): das erste gefundene wandert zu Classic Dark, falls das noch
+// keins hat — dorthin wurden Nutzer dieser Themes auch umgestellt.
+(function migrateRemovedThemeBackgrounds() {
+  if (typeof REMOVED_BUILTIN_THEMES === 'undefined') return;
+  let changed = false;
+  REMOVED_BUILTIN_THEMES.forEach(id => {
+    if (!themeBackgrounds[id]) return;
+    if (!themeBackgrounds.dark) themeBackgrounds.dark = themeBackgrounds[id];
+    delete themeBackgrounds[id];
+    changed = true;
+  });
+  if (changed) saveThemeBackgrounds();
+})();
+
+function getPresetTheme(id)  { return PRESET_THEMES.find(t => t.id === id) || null; }
+// Liefert Presets UND eigene Themes — alles, was über Kernfarben läuft.
+function getCustomTheme(id)  { return customThemes.find(t => t.id === id) || getPresetTheme(id); }
 function isCustomThemeId(id) { return !!getCustomTheme(id); }
 
 function getThemeCore(ct) { return Object.assign({}, DEFAULT_BUILDER_CORE, ct && ct.coreColors); }
@@ -527,7 +549,7 @@ function applyThemeEngine(id) {
 // =========================================================================
 
 function deleteCustomTheme(id) {
-  if (!getCustomTheme(id)) return;
+  if (!customThemes.some(t => t.id === id)) return;
   customThemes = customThemes.filter(t => t.id !== id);
   saveCustomThemes();
   if (theme === id) setTheme('light');
@@ -628,8 +650,9 @@ function fillThemeBuilderForm(t) {
 
 function openThemeBuilder(editId) {
   ensureThemeFontsLoaded();
-  _teBuilderEditId = editId || null;
   const existing = editId ? getCustomTheme(editId) : null;
+  const isPreset = !!(existing && getPresetTheme(editId));
+  _teBuilderEditId = isPreset ? null : (editId || null);
 
   renderGraphicsOptions('theme-builder-bg-source', 'Kein Bild');
   tbEl('bg-source').insertAdjacentHTML('beforeend', '<option value="custom">Eigenes Bild</option>');
@@ -639,9 +662,9 @@ function openThemeBuilder(editId) {
   renderGraphicsOptions('theme-builder-graphics-theme', null);
   renderThemeTemplateStrip();
 
-  tbEl('title').textContent = existing ? 'Theme bearbeiten' : 'Theme erstellen';
-  tbEl('name').value = existing ? existing.name : '';
-  tbEl('delete').style.display = existing ? '' : 'none';
+  tbEl('title').textContent = isPreset ? 'Theme erstellen' : (existing ? 'Theme bearbeiten' : 'Theme erstellen');
+  tbEl('name').value = isPreset ? existing.name + ' (eigen)' : (existing ? existing.name : '');
+  tbEl('delete').style.display = existing && !isPreset ? '' : 'none';
 
   if (existing) {
     fillThemeBuilderForm(existing);
@@ -709,7 +732,7 @@ function renderThemeTemplateStrip() {
       bg: themeBackgrounds[reg.id] || null,
       calendar: { imageTheme: 'cozy' }, startHeader: { banner: 'none' }, branding: { theme: 'none' },
     }))
-    .concat(customThemes);
+    .concat(PRESET_THEMES, customThemes);
   templates.forEach(t => {
     const btn = document.createElement('button');
     btn.type = 'button';
@@ -765,17 +788,19 @@ function saveThemeBuilder() {
   if (typeof renderThemeSettings === 'function') renderThemeSettings();
 }
 
-// ── Eigene Theme-Buttons im #theme-picker (Einstellungen) ────────────────
+// ── Preset- und eigene Theme-Buttons im #theme-picker (Einstellungen) ────
 // Von renderThemeSettings() (settings.js) aufgerufen. Auswahl läuft über
 // den delegierten Klick-Listener auf #theme-picker in settings.js — die
 // ✎/✕-Icons stoppen die Propagation, damit sie das Theme nicht auswählen.
+// Presets haben nur ✎ (öffnet eine Kopie im Editor), kein ✕.
 function renderCustomThemeButtons() {
   const picker = document.getElementById('theme-picker');
   const addBtn = document.getElementById('theme-builder-open-btn');
   if (!picker || !addBtn) return;
   picker.querySelectorAll('.theme-picker-btn-custom').forEach(el => el.remove());
 
-  customThemes.forEach(ct => {
+  PRESET_THEMES.concat(customThemes).forEach(ct => {
+    const isPreset = !!getPresetTheme(ct.id);
     const core = getThemeCore(ct);
     const btn = document.createElement('button');
     btn.className = 'clock-type-btn theme-picker-btn theme-picker-btn-custom' + (theme === ct.id ? ' active' : '');
@@ -783,13 +808,13 @@ function renderCustomThemeButtons() {
     btn.innerHTML = `
       <span class="theme-swatch-dot" style="background:${core.surface};border-color:${core.accent};"></span>
       <span>${escHtml(ct.name)}</span>
-      <span class="theme-picker-icon theme-picker-icon-edit" title="Bearbeiten">✎</span>
-      <span class="theme-picker-icon theme-picker-icon-del" title="Löschen">✕</span>`;
+      <span class="theme-picker-icon theme-picker-icon-edit" title="${isPreset ? 'Als eigenes Theme anpassen' : 'Bearbeiten'}">✎</span>
+      ${isPreset ? '' : '<span class="theme-picker-icon theme-picker-icon-del" title="Löschen">✕</span>'}`;
     btn.querySelector('.theme-picker-icon-edit').addEventListener('click', e => {
       e.stopPropagation();
       openThemeBuilder(ct.id);
     });
-    btn.querySelector('.theme-picker-icon-del').addEventListener('click', async e => {
+    btn.querySelector('.theme-picker-icon-del')?.addEventListener('click', async e => {
       e.stopPropagation();
       const ok = await hubConfirm({ title: 'Theme löschen?', message: `„${ct.name}" wird endgültig gelöscht.`, confirmText: 'Löschen', danger: true });
       if (ok) deleteCustomTheme(ct.id);
@@ -938,4 +963,8 @@ function initThemeBuilder() {
 // =========================================================================
 initThemeBuilder();
 initBgImageSettings();
-applyThemeEngine(theme);
+// Gespeichertes Theme existiert nicht mehr (eigenes Theme auf einem anderen
+// Gerät gelöscht und per Sync entfernt, Preset aus dem Code genommen) →
+// sauber auf Cozy zurück statt halb angewendeter Farben.
+if (!THEME_FAMILY[theme] && !getCustomTheme(theme)) setTheme('light');
+else applyThemeEngine(theme);
