@@ -23,6 +23,7 @@
   <link rel="stylesheet" href="css/today.css" />
   <link rel="stylesheet" href="css/pinboard.css" />
   <link rel="stylesheet" href="css/settings.css" />
+  <link rel="stylesheet" href="css/theme-engine.css" />
   <link rel="stylesheet" href="css/positivity.css" />
   <link rel="stylesheet" href="css/national_day.css" />
   <link rel="stylesheet" href="css/tools.css" />
@@ -769,7 +770,11 @@
           <div id="guide-detail-grid" class="guide-detail-grid hidden">
             <div id="guide-main" class="guide-main panel"></div>
             <div id="guide-sidebar" class="guide-sidebar">
-              <div class="panel guide-side-card">
+              <div class="panel guide-side-card guide-toc-card hidden" id="guide-toc-card">
+                <div class="panel-header"><span class="panel-label">Inhalt</span></div>
+                <nav id="guide-toc-body" class="guide-toc-body" aria-label="Inhaltsverzeichnis"></nav>
+              </div>
+              <div class="panel guide-side-card" id="guide-stats-card">
                 <div class="panel-header"><span class="panel-label">Statistiken</span></div>
                 <div id="guide-stats-body" class="guide-stats-body"></div>
               </div>
@@ -1189,18 +1194,23 @@
                   <button class="clock-type-btn theme-picker-btn" data-theme-value="forest">Forest</button>
                   <button class="clock-type-btn theme-picker-btn" data-theme-value="espresso">Espresso</button>
                   <button class="clock-type-btn theme-picker-btn" data-theme-value="oled">OLED</button>
-                  <!-- Eigene Themes (Theme-Builder, js/theme-builder.js) werden hier per JS
+                  <!-- Eigene Themes (js/theme-engine.js) werden hier per JS
                        zwischen die eingebauten Buttons und diesen "+"-Button gerendert,
                        siehe renderCustomThemeButtons(). -->
                   <button class="clock-type-btn" id="theme-builder-open-btn">+ Eigenes Theme</button>
                 </div>
               </div>
 
-              <!-- Hintergrundbild — gilt jeweils für das AKTUELL gewählte Theme (egal ob
-                   eingebaut oder eigenes), siehe js/theme-builder.js. Bild wird vor dem
-                   Speichern client-seitig verkleinert (Canvas), damit kein Foto direkt aus
-                   der Kamera das localStorage-Limit sprengt. -->
-              <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:12px;">
+              <!-- Hintergrundbild — nur für die 6 eingebauten Themes, siehe
+                   js/theme-engine.js (renderBgImageSettings). Eigene Themes bringen ihr
+                   Bild direkt aus dem Theme-Editor mit, dann erscheint stattdessen der
+                   Hinweis darunter. Bild wird vor dem Speichern client-seitig verkleinert
+                   (Canvas), damit kein Foto direkt aus der Kamera das localStorage-Limit
+                   sprengt. -->
+              <div class="settings-row hidden" id="bg-image-custom-note">
+                <div><div class="settings-row-title">Hintergrundbild</div><div class="settings-row-sub">Bei eigenen Themes im Theme-Editor einstellbar (✎ am Theme-Button)</div></div>
+              </div>
+              <div class="settings-row" id="bg-image-section" style="flex-direction:column;align-items:flex-start;gap:12px;">
                 <div style="display:flex;align-items:center;justify-content:space-between;width:100%;gap:16px;">
                   <div><div class="settings-row-title">Hintergrundbild</div><div class="settings-row-sub">Eigenes Bild hinter dem Hub, nur für das gerade gewählte Theme</div></div>
                   <label class="toggle"><input type="checkbox" id="setting-bg-image"/><span class="toggle-slider"></span></label>
@@ -1885,6 +1895,7 @@
         <label>Inhalt</label>
         <div class="guide-modal-tabs">
           <button class="guide-modal-tab active" id="guide-tab-edit">Bearbeiten</button>
+          <button class="guide-modal-tab" id="guide-tab-split" title="Editor und Live-Vorschau nebeneinander">Geteilt</button>
           <button class="guide-modal-tab" id="guide-tab-preview">Vorschau</button>
           <div class="guide-modal-snippets">
             <button class="guide-snippet-btn" data-snippet="h2" title="## Überschrift">H2</button>
@@ -1894,14 +1905,17 @@
             <button class="guide-snippet-btn" data-snippet="list" title="Liste">☰</button>
             <button class="guide-snippet-btn" data-snippet="hr" title="Trennlinie">—</button>
             <button class="guide-snippet-btn" data-snippet="mark" title="Text markieren ==text==">▐</button>
+            <button class="guide-snippet-btn" data-snippet="xref" title="Link zu einem anderen Kapitel [[Kapitelname]]">[[ ]]</button>
           </div>
         </div>
       </div>
-      <div id="guide-modal-editor-pane">
-        <textarea class="modal-textarea guide-modal-editor" id="guide-modal-content-input" placeholder="Inhalt in Markdown schreiben…"></textarea>
-      </div>
-      <div id="guide-modal-preview-pane" class="hidden">
-        <div id="guide-modal-preview-content" class="guide-detail-content guide-preview-box"></div>
+      <div id="guide-modal-panes" class="guide-modal-panes">
+        <div id="guide-modal-editor-pane">
+          <textarea class="modal-textarea guide-modal-editor" id="guide-modal-content-input" placeholder="Inhalt in Markdown schreiben…"></textarea>
+        </div>
+        <div id="guide-modal-preview-pane" class="hidden">
+          <div id="guide-modal-preview-content" class="guide-detail-content guide-preview-box"></div>
+        </div>
       </div>
       <div class="modal-actions">
         <button id="guide-modal-cancel" class="btn-ghost">Abbrechen</button>
@@ -2851,69 +2865,134 @@
     </div>
   </div>
 
-  <!-- Theme-Builder — eigenes Farbschema erstellen (Einstellungen > Darstellung).
-       Live-Vorschau: während die Felder unten geändert werden, wird das gewählte
-       Farbschema direkt auf den ganzen Hub angewendet (siehe js/theme-builder.js) —
-       Abbrechen stellt das vorherige Theme wieder her. -->
+  <!-- Theme-Editor — eigenes Theme erstellen/bearbeiten (Einstellungen >
+       Darstellung), Logik in js/theme-engine.js. Live-Vorschau: jede Änderung
+       wird sofort auf den ganzen Hub angewendet, Abbrechen stellt das aktive
+       Theme wieder her. Jede Farbe entspricht einem konkreten UI-Bereich
+       (siehe deriveThemeVars()). -->
   <div id="theme-builder-overlay" class="modal-backdrop hidden">
-    <div class="modal-box" style="width:460px;">
+    <div class="modal-box tb-modal-box">
       <div class="modal-head">
-        <span>Eigenes Theme erstellen</span>
+        <span id="theme-builder-title">Theme erstellen</span>
         <button class="modal-x" id="theme-builder-close">✕</button>
       </div>
 
-      <input type="text" class="modal-input" id="tb-name" placeholder="Name, z.B. Ozean, Rosé, Nacht…" maxlength="32" autocomplete="off"/>
-
       <div class="modal-row">
-        <label>Vorlage <span style="font-size:11px;color:var(--text-3);font-weight:400;">füllt die Felder unten vor</span></label>
-        <div class="tb-base-btns" id="tb-base-btns">
-          <button class="clock-type-btn tb-base-btn active" data-base="light">Light</button>
-          <button class="clock-type-btn tb-base-btn" data-base="dark">Classic Dark</button>
-          <button class="clock-type-btn tb-base-btn" data-base="midnight">Midnight</button>
-          <button class="clock-type-btn tb-base-btn" data-base="forest">Forest</button>
-          <button class="clock-type-btn tb-base-btn" data-base="espresso">Espresso</button>
-          <button class="clock-type-btn tb-base-btn" data-base="oled">OLED</button>
+        <label>Vorlage <span class="tb-label-hint">füllt die Felder unten vor</span></label>
+        <div class="tb-template-row" id="theme-builder-template-row"></div>
+      </div>
+      <div class="modal-row">
+        <label>Name</label>
+        <input type="text" class="modal-input" id="theme-builder-name" placeholder="Name, z.B. Ozean, Rosé, Nacht…" maxlength="32" autocomplete="off"/>
+      </div>
+
+      <div class="tb-group">
+        <span class="panel-label">Allgemein</span>
+        <div class="tb-color-fields">
+          <label class="tb-color-field"><input type="color" id="theme-builder-bg"/><span>Seitenhintergrund</span></label>
+          <label class="tb-color-field"><input type="color" id="theme-builder-text"/><span>Haupttext</span></label>
+          <label class="tb-color-field"><input type="color" id="theme-builder-accent"/><span>Akzent</span></label>
         </div>
       </div>
 
-      <div class="modal-row">
-        <label>Farben</label>
-        <div class="tb-fields">
-          <div class="tb-field">
-            <span class="tb-field-label">Hintergrund</span>
-            <div class="hub-color-picker-row">
-              <input type="color" class="hub-color-input" id="tb-bg"/>
-              <span class="tb-hex" id="tb-bg-hex"></span>
-            </div>
+      <div class="tb-group">
+        <span class="panel-label">Oberflächen</span>
+        <div class="tb-color-fields">
+          <label class="tb-color-field"><input type="color" id="theme-builder-surface"/><span>Karten</span></label>
+          <label class="tb-color-field"><input type="color" id="theme-builder-nav"/><span>Navigation</span></label>
+          <label class="tb-color-field"><input type="color" id="theme-builder-modal"/><span>Fenster</span></label>
+          <label class="tb-color-field"><input type="color" id="theme-builder-border"/><span>Rahmen</span></label>
+        </div>
+        <p class="modal-hint">Prioritäts-, Budget- und Systemfarben bleiben wie im Rest von Nook.</p>
+      </div>
+
+      <!-- Schriftart — eigenes Dropdown statt <select>, weil Browser
+           font-family auf <option> nicht zuverlässig darstellen. -->
+      <div class="tb-group">
+        <span class="panel-label">Schrift</span>
+        <div class="tb-font-picker">
+          <button type="button" class="modal-select tb-font-trigger" id="theme-builder-font-trigger">
+            <span id="theme-builder-font-trigger-label">Nook Standard (DM Sans)</span>
+            <span class="tb-font-trigger-arrow">▾</span>
+          </button>
+          <div class="tb-font-panel hidden" id="theme-builder-font-panel"></div>
+        </div>
+        <input type="hidden" id="theme-builder-font" value=""/>
+        <div class="tb-slider-row">
+          <span class="tb-slider-label">Schriftgröße: <span id="theme-builder-fontsize-label">100%</span></span>
+          <input type="range" id="theme-builder-fontsize" min="70" max="150" value="100" step="5"/>
+        </div>
+      </div>
+
+      <div class="tb-group">
+        <span class="panel-label">Hintergrund</span>
+        <div class="tb-bg-opt-row">
+          <span>Bild</span>
+          <select class="modal-select" id="theme-builder-bg-source" style="width:auto;"></select>
+        </div>
+        <div class="tb-bg-opt-row" id="theme-builder-bg-custom-row">
+          <span id="theme-builder-bg-filename" class="tb-bg-filename">Kein Bild ausgewählt</span>
+          <div style="display:flex;gap:6px;">
+            <button type="button" class="clock-type-btn" id="theme-builder-bg-pick-btn">Durchsuchen</button>
+            <button type="button" class="clock-type-btn" id="theme-builder-bg-clear-btn" title="Bild entfernen">✕</button>
           </div>
-          <div class="tb-field">
-            <span class="tb-field-label">Fläche</span>
-            <div class="hub-color-picker-row">
-              <input type="color" class="hub-color-input" id="tb-surface"/>
-              <span class="tb-hex" id="tb-surface-hex"></span>
-            </div>
+          <input type="file" id="theme-builder-bg-file-input" accept="image/*" style="display:none;"/>
+        </div>
+        <div class="tb-bg-options hidden" id="theme-builder-bg-options">
+          <div class="tb-bg-opt-row">
+            <span>Darstellung</span>
+            <select class="modal-select" id="theme-builder-bg-size" style="width:auto;">
+              <option value="cover">Ausfüllen</option>
+              <option value="contain">Einpassen</option>
+              <option value="center">Zentriert</option>
+            </select>
           </div>
-          <div class="tb-field">
-            <span class="tb-field-label">Text</span>
-            <div class="hub-color-picker-row">
-              <input type="color" class="hub-color-input" id="tb-text"/>
-              <span class="tb-hex" id="tb-text-hex"></span>
-            </div>
-          </div>
-          <div class="tb-field">
-            <span class="tb-field-label">Akzent</span>
-            <div class="hub-color-picker-row">
-              <input type="color" class="hub-color-input" id="tb-sage"/>
-              <span class="tb-hex" id="tb-sage-hex"></span>
-            </div>
+          <div class="tb-bg-opt-row">
+            <span>Tönung: <span id="theme-builder-bg-dim-label">40%</span></span>
+            <input type="range" id="theme-builder-bg-dim" min="0" max="90" value="40"/>
           </div>
         </div>
-        <p class="modal-hint">Prioritäts-, Budget- und Systemfarben bleiben wie im Rest von Nook — nur Hintergrund, Fläche, Text und Akzent sind hier frei wählbar.</p>
+        <div class="tb-slider-row">
+          <span class="tb-slider-label">Kartendurchlässigkeit: <span id="theme-builder-opacity-label">100%</span></span>
+          <input type="range" id="theme-builder-opacity" min="20" max="100" value="100" step="5"/>
+          <span class="tb-slider-hint">100% = deckend · mit Hintergrundbild empfohlen: ca. 85%</span>
+        </div>
+      </div>
+
+      <!-- Grafische Elemente — entweder ein Set (Cozy, Sci-Fi, …) für Kalender-
+           bilder, Start-Banner und Icon gemeinsam, oder jedes einzeln. Der
+           Hintergrund oben ist davon unabhängig. -->
+      <div class="tb-group">
+        <span class="panel-label">Grafische Elemente</span>
+        <div class="tb-template-row">
+          <button type="button" class="clock-type-btn" id="theme-builder-graphics-mode-theme">Ein Set für alles</button>
+          <button type="button" class="clock-type-btn" id="theme-builder-graphics-mode-custom">Einzeln anpassen</button>
+        </div>
+        <div class="tb-bg-opt-row" id="theme-builder-graphics-theme-row">
+          <span>Set</span>
+          <select class="modal-select" id="theme-builder-graphics-theme" style="width:auto;"></select>
+        </div>
+        <div id="theme-builder-graphics-detail">
+          <div class="tb-bg-opt-row">
+            <span>Kalenderbilder</span>
+            <select class="modal-select" id="theme-builder-calendar-image" style="width:auto;"></select>
+          </div>
+          <div class="tb-bg-opt-row">
+            <span>Start-Banner</span>
+            <select class="modal-select" id="theme-builder-start-header" style="width:auto;"></select>
+          </div>
+          <div class="tb-bg-opt-row">
+            <span>Icon</span>
+            <select class="modal-select" id="theme-builder-branding-theme" style="width:auto;"></select>
+          </div>
+        </div>
+        <p class="modal-hint">Das Start-Banner wechselt automatisch bei Sonnenauf- und -untergang (Standort aus dem Wetter-Widget).</p>
       </div>
 
       <div class="modal-actions">
-        <button class="btn-ghost" id="theme-builder-cancel">Abbrechen</button>
-        <button class="btn-primary" id="theme-builder-save">Speichern</button>
+        <button type="button" class="btn-ghost tb-delete-btn" id="theme-builder-delete">Löschen</button>
+        <button type="button" class="btn-ghost" id="theme-builder-cancel">Abbrechen</button>
+        <button type="button" class="btn-primary" id="theme-builder-save">Speichern</button>
       </div>
     </div>
   </div>
@@ -3119,7 +3198,9 @@
   <script src="js/games.js"></script>
   <script src="games/games-list.js"></script>
   <script src="js/settings.js"></script>
-  <script src="js/theme-builder.js"></script>
+  <!-- Theme-Engine: braucht DB/theme/setTheme/hexToRgba (main.js), mixHex/
+       hubConfirm (hub-utils.js) und escHtml (settings.js) -->
+  <script src="js/theme-engine.js"></script>
   <script src="js/positivity.js"></script>
   <script src="js/national_day.js"></script>
   <script src="js/tools.js"></script>

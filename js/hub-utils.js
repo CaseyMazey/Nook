@@ -335,6 +335,88 @@ function applyUserColorVars(el, hex) {
 // einen schlanken Block mit nur Sprache + Copy-Button (z.B. künftig der
 // Schreibtisch-Kartenstil "Code").
 //
+// Syntax-Highlighting: bewusst schlank und ohne externe Bibliothek (läuft
+// offline über file://). Erkennt nur Kommentare, Strings, Zahlen, Keywords
+// und je Sprachfamilie ein paar Extras — kein vollständiger Parser. Unbekannte
+// Sprachen bleiben einfach ungefärbt. Farben kommen aus .hl-*-Klassen
+// (guides.css), die nur auf Theme-Tokens aufbauen.
+const HL_C_KEYWORDS = 'abstract|as|async|await|break|case|catch|class|const|continue|debugger|default|delete|do|else|enum|export|extends|final|finally|fn|for|from|func|function|go|if|impl|implements|import|in|instanceof|interface|let|match|mod|module|mut|namespace|new|package|private|protected|public|pub|readonly|return|static|struct|super|switch|this|throw|throws|trait|try|type|typeof|use|using|var|void|where|while|with|yield|int|long|float|double|char|bool|boolean|string|auto|unsigned|signed|include|define';
+const HL_LANGS = {
+  clike: {
+    comment: /\/\/[^\n]*|\/\*[\s\S]*?\*\//,
+    string: /`(?:\\[\s\S]|[^\\`])*`|"(?:\\.|[^\\"\n])*"|'(?:\\.|[^\\'\n])*'/,
+    keyword: new RegExp(`\\b(?:${HL_C_KEYWORDS})\\b`),
+    literal: /\b(?:true|false|null|undefined|nil|None|NaN)\b/,
+  },
+  python: {
+    comment: /#[^\n]*/,
+    string: /(?:[rRbBfFuU]{0,2})(?:"""[\s\S]*?"""|'''[\s\S]*?'''|"(?:\\.|[^\\"\n])*"|'(?:\\.|[^\\'\n])*')/,
+    keyword: /\b(?:and|as|assert|async|await|break|class|continue|def|del|elif|else|except|finally|for|from|global|if|import|in|is|lambda|nonlocal|not|or|pass|raise|return|try|while|with|yield|self|print)\b/,
+    literal: /\b(?:True|False|None)\b/,
+  },
+  shell: {
+    comment: /(?<![^\s])#[^\n]*/, // # nur am Zeilen-/Wortanfang, nicht in ${#arr} o.ä.
+    string: /"(?:\\.|[^\\"])*"|'[^']*'/,
+    variable: /\$\{[^}\n]*\}|\$[A-Za-z_][\w]*|\$[0-9@#?*!$-]/,
+    keyword: /\b(?:if|then|else|elif|fi|for|while|until|do|done|case|esac|in|function|return|exit|export|local|readonly|source|alias|echo|cd|sudo|set|unset|shift|true|false|param|foreach|Write-Host|Get-ChildItem|Set-Location)\b/,
+  },
+  sql: {
+    comment: /--[^\n]*|\/\*[\s\S]*?\*\//,
+    string: /'(?:''|[^'])*'/,
+    keyword: /\b(?:select|from|where|and|or|not|insert|into|values|update|set|delete|create|table|drop|alter|add|join|left|right|inner|outer|on|group|by|order|having|limit|offset|as|distinct|union|all|primary|key|foreign|references|index|view|null|is|in|like|between|case|when|then|else|end|count|sum|avg|min|max|asc|desc|default|exists)\b/i,
+  },
+  css: {
+    comment: /\/\*[\s\S]*?\*\//,
+    string: /"(?:\\.|[^\\"\n])*"|'(?:\\.|[^\\'\n])*'/,
+    keyword: /@[\w-]+|![\w]+/,
+    attr: /[\w-]+(?=\s*:(?!:))/,
+  },
+  markup: {
+    comment: /<!--[\s\S]*?-->/,
+    tag: /<\/?[\w:-]+|\/?>/,
+    attr: /\b[\w:-]+(?==)/,
+    string: /"[^"]*"|'[^']*'/,
+  },
+  json: {
+    attr: /"(?:\\.|[^\\"\n])*"(?=\s*:)/,
+    string: /"(?:\\.|[^\\"\n])*"/,
+    literal: /\b(?:true|false|null)\b/,
+  },
+};
+const HL_ALIASES = {
+  js: 'clike', javascript: 'clike', jsx: 'clike', ts: 'clike', typescript: 'clike', tsx: 'clike', mjs: 'clike',
+  java: 'clike', c: 'clike', 'c++': 'clike', cpp: 'clike', h: 'clike', 'c#': 'clike', cs: 'clike', csharp: 'clike',
+  go: 'clike', rust: 'clike', rs: 'clike', php: 'clike', kotlin: 'clike', kt: 'clike', swift: 'clike', dart: 'clike', gdscript: 'python',
+  py: 'python', python: 'python',
+  bash: 'shell', sh: 'shell', shell: 'shell', zsh: 'shell', powershell: 'shell', ps1: 'shell', ps: 'shell', cmd: 'shell', bat: 'shell',
+  sql: 'sql', mysql: 'sql', postgres: 'sql', sqlite: 'sql',
+  css: 'css', scss: 'css', sass: 'css', less: 'css',
+  html: 'markup', xml: 'markup', svg: 'markup', vue: 'markup',
+  json: 'json',
+};
+const HL_NUMBER = /\b(?:0x[\da-fA-F]+|\d+(?:\.\d+)?(?:e[+-]?\d+)?)\b/;
+
+// Erwartet bereits HTML-escapeten Code (wie er aus dem Markdown-Renderer
+// kommt) und liefert HTML mit <span class="hl-…">-Tokens zurück.
+function highlightCode(escapedCode, lang) {
+  const def = HL_LANGS[HL_ALIASES[String(lang || '').toLowerCase()]];
+  if (!def) return escapedCode;
+  const raw = escapedCode.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+  const rules = Object.entries(def);
+  if (!def.number && !('tag' in def)) rules.push(['number', HL_NUMBER]);
+  const flags = rules.some(([, re]) => re.flags.includes('i')) ? 'gi' : 'g';
+  const master = new RegExp(rules.map(([, re]) => `(${re.source})`).join('|'), flags);
+  let out = '', last = 0, m;
+  while ((m = master.exec(raw))) {
+    if (!m[0]) { master.lastIndex++; continue; }
+    const groupIdx = m.slice(1).findIndex(g => g !== undefined);
+    out += escHtml(raw.slice(last, m.index));
+    out += `<span class="hl-${rules[groupIdx][0]}">${escHtml(m[0])}</span>`;
+    last = m.index + m[0].length;
+  }
+  return out + escHtml(raw.slice(last));
+}
+
 // @param {string} code
 // @param {string} lang
 // @param {object} opts { blockId, bookmarked, bookmarkBtnHtml, featureBtnHtml }
@@ -344,7 +426,7 @@ function renderCodeBlock(code, lang, opts = {}) {
   const featBtn = opts.featureBtnHtml || '';
   const langLabel = `<span class="guide-code-lang">${lang || 'code'}</span>`;
   const blockClass = 'guide-code-block' + (opts.bookmarked ? ' bookmarked' : '');
-  return `<div class="${blockClass}" ${idAttr}><div class="guide-code-header">${langLabel}<div class="guide-code-header-right">${featBtn}${bmBtn}<button class="guide-copy-btn" onclick="copyCode(this)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="5" y="5" width="9" height="9" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M3 11V3a2 2 0 0 1 2-2h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> Kopieren</button></div></div><pre class="guide-code-pre"><code>${code.trimEnd()}</code></pre></div>`;
+  return `<div class="${blockClass}" ${idAttr}><div class="guide-code-header">${langLabel}<div class="guide-code-header-right">${featBtn}${bmBtn}<button class="guide-copy-btn" onclick="copyCode(this)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="5" y="5" width="9" height="9" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M3 11V3a2 2 0 0 1 2-2h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> Kopieren</button></div></div><pre class="guide-code-pre"><code>${highlightCode(code.trimEnd(), lang)}</code></pre></div>`;
 }
 
 // Copy-Button-Handler (global, da onclick-Attribute ihn direkt aufrufen)

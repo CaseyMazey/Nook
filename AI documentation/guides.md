@@ -105,6 +105,8 @@ Beim Erstellen kann:
 
 Farben werden dauerhaft gespeichert und können für weitere Bücher wiederverwendet werden.
 
+Name und Farbe eines Buches lassen sich nachträglich über „Buch bearbeiten" in der Kapitelübersicht ändern.
+
 ---
 
 # Kapitel
@@ -149,6 +151,8 @@ Kapitel können:
 - gelöscht
 - exportiert werden.
 
+Die Reihenfolge der Kapitel lässt sich per Drag & Drop am Griff (⋮⋮) ändern — mit Maus, Touch oder Pfeiltasten.
+
 ---
 
 # Detailansicht
@@ -162,6 +166,10 @@ Die Ansicht enthält:
 - Tags
 - Metadaten
 - Markdown-Inhalt
+
+Ab zwei Überschriften erscheint ein Inhaltsverzeichnis (Seitenleiste; auf schmalen Bildschirmen über dem Inhalt).
+
+Über das Kapitelmenü kann das Kapitel gedruckt bzw. als PDF gespeichert werden. Gedruckt wird nur der Kapitelinhalt.
 
 ---
 
@@ -179,8 +187,21 @@ Guides unterstützt unter anderem:
 - Inline-Code
 - Codeblöcke
 - Trennlinien
+- Querverweise zwischen Kapiteln
 
 Markdown wird automatisch gerendert.
+
+---
+
+# Querverweise
+
+Kapitel können aufeinander verweisen:
+
+- `[[Kapitel]]` — sucht zuerst im aktuellen Buch, dann in allen Büchern
+- `[[Buch/Kapitel]]` — legt das Buch fest
+- `[[Kapitel|Anzeigetext]]` — eigener Linktext
+
+Verweise hängen am Titel. Existiert das Ziel nicht (mehr), wird der Verweis als „nicht gefunden" markiert.
 
 ---
 
@@ -196,6 +217,8 @@ Sie zeigen:
 - Featured-Snippet-Stern
 
 Codeblöcke werden automatisch erkannt.
+
+Gängige Sprachen (u. a. JavaScript/TypeScript, Python, Bash/PowerShell, HTML/XML, CSS, JSON, SQL, C-artige Sprachen) erhalten ein schlankes, eigenes Syntax-Highlighting ohne externe Bibliothek. Unbekannte Sprachen bleiben ungefärbt.
 
 ---
 
@@ -279,6 +302,8 @@ Gesucht wird in:
 
 Die Ergebnisse erscheinen sofort während der Eingabe.
 
+Die Seitenleiste zeigt währenddessen die Treffer je Buch sowie Codeblöcke, die den Suchbegriff enthalten — direkt kopierbar.
+
 ---
 
 # Favoriten
@@ -298,7 +323,10 @@ Kapitel werden in einem integrierten Markdown-Editor erstellt.
 Der Editor besitzt:
 
 - Bearbeitungsmodus
-- Live-Vorschau
+- geteilte Ansicht (Editor und Live-Vorschau nebeneinander)
+- Vorschau
+
+Die zuletzt genutzte Ansicht wird gemerkt. Ungespeicherte Änderungen werden vor dem Schließen abgefragt.
 
 Zusätzlich stehen Schnellbausteine zur Verfügung.
 
@@ -315,8 +343,9 @@ Folgende Elemente können per Klick eingefügt werden:
 - Fett
 - Markierung
 - Trennlinie
+- Querverweis
 
-Die Bausteine dienen ausschließlich als Schreibunterstützung.
+Markierter Text wird vom Baustein eingerahmt. Die Bausteine dienen ausschließlich als Schreibunterstützung.
 
 ---
 
@@ -337,9 +366,11 @@ Exportiert werden:
 - Titel
 - Beschreibung
 - Tags
+- Favorit
+- Erstellungs- und Änderungsdatum
 - Inhalt
 
-Die Metadaten werden als Front Matter gespeichert.
+Die Metadaten werden als Front Matter gespeichert und beim Import wieder übernommen.
 
 ---
 
@@ -455,14 +486,8 @@ Neue Funktionen sollen nicht:
 Geplante Erweiterungen:
 
 - Bilder in Markdown
-- Drag & Drop für Kapitel
 - Kapitel-Untergliederung
-- Inhaltsverzeichnis
-- Syntax Highlighting
-- PDF-Export
-- Druckansicht
 - Versionsverlauf
-- Verlinkungen zwischen Guides
 - Anhänge
 - Code-Ausführung für unterstützte Sprachen
 - Cloud-Synchronisation

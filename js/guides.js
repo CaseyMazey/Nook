@@ -167,9 +167,39 @@ function forgetGuideBookmarks(guideIds) {
   DB.set('guideBlockIdsV2', true);
 })();
 
+// ── Querverweise zwischen Kapiteln ───────────────────────
+// [[Kapiteltitel]] sucht zuerst im aktuellen Buch, dann in allen Büchern;
+// [[Buch/Kapitel]] legt das Buch explizit fest. Vergleich ohne Groß-/Kleinschreibung.
+// Verweise hängen am Titel — nach dem Umbenennen eines Kapitels zeigt der
+// alte Verweis als "nicht gefunden" an, statt still auf etwas anderes zu zeigen.
+function unescGuideHtml(s) {
+  return s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+}
+
+function resolveGuideXref(name, preferCategoryId = null) {
+  const norm = s => String(s || '').trim().toLowerCase();
+  let bookName = null, title = name;
+  const slash = name.indexOf('/');
+  if (slash > 0) {
+    const maybeBook = name.slice(0, slash);
+    if (guideCategories.some(c => norm(c.name) === norm(maybeBook))) {
+      bookName = maybeBook;
+      title = name.slice(slash + 1);
+    }
+  }
+  const cats = bookName
+    ? guideCategories.filter(c => norm(c.name) === norm(bookName))
+    : [...guideCategories].sort((a, b) => (b.id === preferCategoryId) - (a.id === preferCategoryId));
+  for (const category of cats) {
+    const guide = category.guides.find(g => norm(g.title) === norm(title));
+    if (guide) return { guide, category };
+  }
+  return null;
+}
+
 // ── Markdown + Code renderer ─────────────────────────────
 // Lightweight renderer: headings, bold, italic, code blocks,
-// inline code, lists, tables, horizontal rules, links.
+// inline code, lists, tables, horizontal rules, links, Querverweise.
 
 function renderMarkdown(raw, guideId = null, categoryId = null, featuredBlockId = null) {
   if (!raw) return '';
@@ -187,7 +217,10 @@ function renderMarkdown(raw, guideId = null, categoryId = null, featuredBlockId 
   // Fett/Kursiv, Markierungen und der Absatz-Split auch INNERHALB von Code
   // (z.B. "# Kommentar" → Überschrift, Leerzeile → Block zerrissen).
   const _codeHtml = [];
-  const _stash = h => `\u0000${_codeHtml.push(h) - 1}\u0000`;
+  // Block-Platzhalter (Codeblöcke) tragen ein B, damit der Absatz-Split sie
+  // von Inline-Platzhaltern (Inline-Code, Querverweise) unterscheiden kann —
+  // ein Absatz nur aus Inline-Code braucht trotzdem sein <p>.
+  const _stash = (h, block = false) => `\u0000${block ? 'B' : ''}${_codeHtml.push(h) - 1}\u0000`;
 
   // Fenced code blocks
   // Eigener Absatz (Leerzeilen drumherum), damit er nie in ein <p> gerät.
@@ -207,11 +240,21 @@ function renderMarkdown(raw, guideId = null, categoryId = null, featuredBlockId 
       : '';
     // Codeblock-HTML kommt aus hub-utils.js (renderCodeBlock) — hub-weit geteilt,
     // damit z.B. der Schreibtisch-Kartenstil "Code" später dieselbe Darstellung nutzt.
-    return '\n\n' + _stash(renderCodeBlock(code, lang, { blockId, bookmarked, bookmarkBtnHtml: bmBtn, featureBtnHtml: featBtn })) + '\n\n';
+    return '\n\n' + _stash(renderCodeBlock(code, lang, { blockId, bookmarked, bookmarkBtnHtml: bmBtn, featureBtnHtml: featBtn }), true) + '\n\n';
   });
 
   // Inline code `...`
   html = html.replace(/`([^`]+)`/g, (_, code) => _stash(`<code class="guide-inline-code">${code}</code>`));
+
+  // Querverweise [[Kapitel]], [[Buch/Kapitel]], [[Kapitel|Anzeigetext]]
+  html = html.replace(/\[\[([^\[\]\n|]+?)(?:\|([^\[\]\n]+?))?\]\]/g, (_, target, label) => {
+    const name = unescGuideHtml(target).trim();
+    const ref  = resolveGuideXref(name, categoryId);
+    const text = (label || target).trim(); // bereits escaped
+    return _stash(ref
+      ? `<a class="guide-link guide-xref" href="#" data-guide-xref="${ref.guide.id}" title="${escHtml(ref.category.name + ' · ' + ref.guide.title)}">${text}</a>`
+      : `<span class="guide-xref-missing" title="${escHtml(`Kein Kapitel „${name}" gefunden`)}">${text}</span>`);
+  });
 
   // Block-Elemente werden mit Leerzeilen umgeben, damit der Absatz-Split sie
   // immer als eigenen Block sieht — auch wenn sie direkt an Text anschließen
@@ -275,14 +318,14 @@ function renderMarkdown(raw, guideId = null, categoryId = null, featuredBlockId 
     .split(/\n{2,}/)
     .map(block => {
       if (/^<(h[234]|ul|ol|hr|div|table)/.test(block.trim())) return block;
-      if (/^\u0000\d+\u0000$/.test(block.trim())) return block.trim(); // reiner Codeblock-Platzhalter
+      if (/^\u0000B\d+\u0000$/.test(block.trim())) return block.trim(); // reiner Codeblock-Platzhalter
       const wrapped = block.trim().replace(/\n/g, '<br>');
       return wrapped ? `<p class="guide-p">${wrapped}</p>` : '';
     })
     .join('\n');
 
   // Platzhalter wieder durch das fertige Code-HTML ersetzen
-  html = html.replace(/\u0000(\d+)\u0000/g, (_, i) => _codeHtml[i]);
+  html = html.replace(/\u0000B?(\d+)\u0000/g, (_, i) => _codeHtml[i]);
 
   return html;
 }
@@ -337,6 +380,9 @@ function exportGuideAsMd(guideId) {
   lines.push('category: ' + category.name);
   if (guide.description) lines.push('description: ' + guide.description);
   if (guide.tags?.length)  lines.push('tags: ' + guide.tags.join(', '));
+  if (guide.favorite)      lines.push('favorite: true');
+  if (guide.createdAt)     lines.push('created: ' + guide.createdAt);
+  if (guide.updatedAt)     lines.push('updated: ' + guide.updatedAt);
   lines.push('---');
   lines.push('');
   lines.push(guide.content || '');
@@ -384,6 +430,8 @@ function importGuideFromMd(categoryId) {
       let description = '';
       let tags = [];
       let favorite = false;
+      const now = new Date().toISOString();
+      let createdAt = now, updatedAt = now;
       let content = text;
       const fmMatch = text.match(/^---\n([\s\S]*?)\n---(?:\n([\s\S]*))?$/);
       if (fmMatch) {
@@ -397,12 +445,18 @@ function importGuideFromMd(categoryId) {
         if (d)  description = d[1].trim();
         if (tg) tags        = tg[1].split(',').map(s => s.trim()).filter(Boolean);
         if (fv) favorite    = fv[1].trim().toLowerCase() === 'true';
+        // Datumsangaben aus einem früheren Export übernehmen (nur gültige Werte)
+        const isoOf = key => {
+          const mm = fm.match(new RegExp(`^${key}:\\s*(.+)$`, 'm'));
+          const d  = mm && new Date(mm[1].trim());
+          return d && !isNaN(d) ? d.toISOString() : null;
+        };
+        createdAt = isoOf('created') || createdAt;
+        updatedAt = isoOf('updated') || updatedAt;
       }
       cat.guides.push({
         id: crypto.randomUUID(), title, description, content, tags,
-        favorite,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        favorite, createdAt, updatedAt,
       });
     });
     if (failed.length < files.length) {
@@ -580,6 +634,9 @@ function renderGuideContent() {
   // Nach-oben-Button gehört nur zur Kapitelansicht — renderSingleGuide()
   // blendet ihn wieder ein, alle anderen Ansichten lassen ihn versteckt.
   hideGuideScrollBtn();
+  // Ebenso das Inhaltsverzeichnis (kann auf schmalen Screens in #guide-main
+  // hängen, das die Teil-Render gleich leeren)
+  hideGuideToc();
 
   // Search mode
   if (guideSearchQuery.trim().length >= 2) {
@@ -646,6 +703,13 @@ function renderGuideChapterList(cat) {
 
   const actions = header.querySelector('.guide-book-header-actions');
 
+  const editBookBtn = document.createElement('button');
+  editBookBtn.className = 'btn-ghost';
+  editBookBtn.title = 'Name und Farbe des Buches ändern';
+  editBookBtn.textContent = '✏️ Buch bearbeiten';
+  editBookBtn.addEventListener('click', () => openGuideCatModal(cat.id));
+  actions.appendChild(editBookBtn);
+
   const importBtn = document.createElement('button');
   importBtn.className = 'btn-ghost';
   importBtn.title = '.md Datei(en) importieren';
@@ -674,6 +738,7 @@ function renderGuideChapterList(cat) {
     cat.guides.forEach((guide, idx) => {
       list.appendChild(buildChapterRow(guide, cat, idx + 1));
     });
+    if (cat.guides.length > 1) enableGuideChapterReorder(list, cat);
   }
 
   main.appendChild(list);
@@ -688,14 +753,56 @@ function renderGuideChapterList(cat) {
   main.appendChild(footer);
 }
 
+// ── Gemeinsame Kapitel-Aktionen ───────────────────────────
+// Werden von Kapitelübersicht, Suche, Detailansicht und Querverweisen
+// gleichermaßen genutzt, damit Statistik/Aufräumen überall identisch laufen.
+
+function openGuideChapter(guideId) {
+  const found = findGuide(guideId);
+  if (!found) return;
+  const { guide, category } = found;
+  guideSearchQuery = '';
+  const input = document.getElementById('guide-search-input');
+  if (input) input.value = '';
+  guide.lastOpened = new Date().toISOString();
+  guide.openCount  = (guide.openCount || 0) + 1;
+  saveGuideCategories();
+  state.activeGuideCategoryId = category.id;
+  activeGuideId = guide.id;
+  renderGuideContent();
+}
+
+async function deleteGuideChapter(category, guide) {
+  const ok = await hubConfirm({
+    title: 'Kapitel löschen?',
+    message: `„${guide.title}" wird endgültig gelöscht.`,
+    confirmText: 'Löschen',
+    danger: true,
+  });
+  if (!ok) return;
+  category.guides = category.guides.filter(g => g.id !== guide.id);
+  forgetGuideBookmarks([guide.id]);
+  if (category.featuredSnippet && category.featuredSnippet.guideId === guide.id) category.featuredSnippet = null;
+  if (activeGuideId === guide.id) activeGuideId = null;
+  saveGuideCategories();
+  renderGuideContent();
+}
+
 function buildChapterRow(guide, cat, number) {
   const row = document.createElement('div');
   row.className = 'guide-chapter-row';
+  row.dataset.guideId = guide.id;
 
   row.innerHTML = `
+    <button class="guide-chapter-drag" title="Ziehen zum Umsortieren (oder Pfeiltasten)" aria-label="Kapitel verschieben">
+      <svg width="12" height="14" viewBox="0 0 12 14" fill="currentColor"><circle cx="3.5" cy="3" r="1.3"/><circle cx="8.5" cy="3" r="1.3"/><circle cx="3.5" cy="7" r="1.3"/><circle cx="8.5" cy="7" r="1.3"/><circle cx="3.5" cy="11" r="1.3"/><circle cx="8.5" cy="11" r="1.3"/></svg>
+    </button>
     <span class="guide-chapter-num">${number}</span>
     <span class="guide-chapter-title">${escHtml(guide.title)}</span>
     <div class="guide-chapter-actions">
+      <button class="guide-chapter-btn guide-chapter-edit" title="Bearbeiten">✏️</button>
+      <button class="guide-chapter-btn guide-chapter-export" title="Als Markdown exportieren">⬇</button>
+      <button class="guide-chapter-btn guide-chapter-delete" title="Löschen">🗑</button>
       <button class="guide-chapter-btn guide-chapter-fav" title="${guide.favorite ? 'Favorit entfernen' : 'Als Favorit markieren'}">${guide.favorite ? '★' : '☆'}</button>
       <button class="guide-chapter-open" title="Öffnen">
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -703,29 +810,89 @@ function buildChapterRow(guide, cat, number) {
     </div>
   `;
 
-  const openChapter = () => {
-    guide.lastOpened = new Date().toISOString();
-    guide.openCount  = (guide.openCount || 0) + 1;
-    saveGuideCategories();
-    activeGuideId = guide.id;
-    renderGuideContent();
-  };
-
   row.addEventListener('click', e => {
-    if (e.target.closest('.guide-chapter-actions')) return;
-    openChapter();
+    if (e.target.closest('.guide-chapter-actions, .guide-chapter-drag')) return;
+    openGuideChapter(guide.id);
   });
 
-  row.querySelector('.guide-chapter-open').addEventListener('click', e => { e.stopPropagation(); openChapter(); });
-
-  row.querySelector('.guide-chapter-fav').addEventListener('click', e => {
-    e.stopPropagation();
+  const on = (sel, fn) => row.querySelector(sel).addEventListener('click', e => { e.stopPropagation(); fn(); });
+  on('.guide-chapter-open',   () => openGuideChapter(guide.id));
+  on('.guide-chapter-edit',   () => openGuideModal(cat.id, guide.id));
+  on('.guide-chapter-export', () => exportGuideAsMd(guide.id));
+  on('.guide-chapter-delete', () => deleteGuideChapter(cat, guide));
+  on('.guide-chapter-fav',    () => {
     guide.favorite = !guide.favorite;
     saveGuideCategories();
     renderGuideContent();
   });
 
   return row;
+}
+
+// Kapitel umsortieren: Pointer-Events statt HTML5-Drag&Drop, damit es mit
+// Maus UND Touch funktioniert. Gezogen wird nur am Griff (⋮⋮), damit ein
+// normaler Klick/Scroll auf der Zeile unverändert bleibt. Pfeiltasten auf dem
+// Griff verschieben ebenfalls (Tastaturbedienung).
+function enableGuideChapterReorder(list, cat) {
+  const commitOrder = () => {
+    const order = [...list.querySelectorAll('.guide-chapter-row')].map(r => r.dataset.guideId);
+    const changed = order.some((id, i) => cat.guides[i] && cat.guides[i].id !== id);
+    if (changed) {
+      cat.guides.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+      saveGuideCategories();
+    }
+    return changed;
+  };
+
+  list.querySelectorAll('.guide-chapter-drag').forEach(handle => {
+    const row = handle.closest('.guide-chapter-row');
+
+    handle.addEventListener('pointerdown', e => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      handle.setPointerCapture(e.pointerId);
+      row.classList.add('dragging');
+      list.classList.add('reordering');
+
+      const onMove = ev => {
+        const target = [...list.querySelectorAll('.guide-chapter-row')].find(r => {
+          if (r === row) return false;
+          const b = r.getBoundingClientRect();
+          return ev.clientY >= b.top && ev.clientY <= b.bottom;
+        });
+        if (!target) return;
+        const b = target.getBoundingClientRect();
+        list.insertBefore(row, ev.clientY > b.top + b.height / 2 ? target.nextSibling : target);
+      };
+      const onEnd = () => {
+        handle.removeEventListener('pointermove', onMove);
+        handle.removeEventListener('pointerup', onEnd);
+        handle.removeEventListener('pointercancel', onEnd);
+        row.classList.remove('dragging');
+        list.classList.remove('reordering');
+        if (commitOrder()) renderGuideContent();
+      };
+      handle.addEventListener('pointermove', onMove);
+      handle.addEventListener('pointerup', onEnd);
+      handle.addEventListener('pointercancel', onEnd);
+    });
+
+    handle.addEventListener('click', e => e.stopPropagation());
+
+    handle.addEventListener('keydown', e => {
+      if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+      e.preventDefault();
+      const sibling = e.key === 'ArrowUp' ? row.previousElementSibling : row.nextElementSibling;
+      if (!sibling || !sibling.classList.contains('guide-chapter-row')) return;
+      list.insertBefore(row, e.key === 'ArrowUp' ? sibling : sibling.nextSibling);
+      if (commitOrder()) {
+        renderGuideContent();
+        // Fokus nach dem Neurendern auf dem Griff desselben Kapitels halten
+        document.querySelector(`#guide-main .guide-chapter-row[data-guide-id="${row.dataset.guideId}"] .guide-chapter-drag`)?.focus();
+      }
+    });
+  });
 }
 
 // ── Single guide detail (chapter view) ────────────────────
@@ -735,6 +902,7 @@ function renderSingleGuide(guideId) {
   if (!result) { activeGuideId = null; renderGuideContent(); return; }
   const { guide, category } = result;
 
+  hideGuideToc(); // Karte aus #guide-main retten, bevor es geleert wird
   const main = document.getElementById('guide-main');
   main.innerHTML = '';
 
@@ -811,16 +979,18 @@ function renderSingleGuide(guideId) {
   deleteItem.textContent = '🗑 Löschen';
   deleteItem.addEventListener('click', () => {
     dropdown.classList.remove('open');
-    if (!confirm(`Kapitel „${guide.title}" löschen?`)) return;
-    category.guides = category.guides.filter(g => g.id !== guide.id);
-    forgetGuideBookmarks([guide.id]);
-    if (category.featuredSnippet && category.featuredSnippet.guideId === guide.id) category.featuredSnippet = null;
-    activeGuideId = null;
-    saveGuideCategories();
-    renderGuideContent();
+    deleteGuideChapter(category, guide);
   });
 
-  dropdown.append(editItem, exportItem, deleteItem);
+  const printItem = document.createElement('button');
+  printItem.className = 'guide-detail-menu-item';
+  printItem.textContent = '🖨 Drucken / PDF';
+  printItem.addEventListener('click', () => {
+    dropdown.classList.remove('open');
+    printGuideChapter();
+  });
+
+  dropdown.append(editItem, exportItem, printItem, deleteItem);
 
   menuBtn.addEventListener('click', e => {
     e.stopPropagation();
@@ -845,8 +1015,80 @@ function renderSingleGuide(guideId) {
   main.append(back, header, content);
   showGuideScrollBtn();
 
+  renderGuideToc(content);
   renderSidebarForCategory(category, guide);
   renderSidebarBookmarks(guide.id);
+}
+
+// ── Inhaltsverzeichnis ────────────────────────────────────
+// Wird aus den gerenderten Überschriften des Kapitels gebaut (erst ab zwei
+// Überschriften, sonst lohnt es nicht). Desktop: Karte in der Seitenleiste;
+// schmal (Seitenleiste rutscht unter den Inhalt): dieselbe Karte wird über
+// den Kapitelinhalt umgehängt, damit sie vor dem Lesen erreichbar bleibt.
+const guideTocMobileQuery = window.matchMedia('(max-width: 980px)');
+
+function placeGuideToc() {
+  const card = document.getElementById('guide-toc-card');
+  const sidebar = document.getElementById('guide-sidebar');
+  if (!card || !sidebar) return;
+  const content = document.querySelector('#guide-main .guide-detail-content');
+  if (guideTocMobileQuery.matches && content) {
+    content.parentNode.insertBefore(card, content);
+    card.classList.add('guide-toc-inline');
+  } else if (card.parentNode !== sidebar) {
+    sidebar.insertBefore(card, sidebar.firstChild);
+    card.classList.remove('guide-toc-inline');
+  }
+}
+guideTocMobileQuery.addEventListener('change', placeGuideToc);
+
+function renderGuideToc(contentEl) {
+  const card = document.getElementById('guide-toc-card');
+  const body = document.getElementById('guide-toc-body');
+  if (!card || !body) return;
+  // Karte vor jedem Neurendern zurück in die Seitenleiste holen, weil
+  // #guide-main gleich per innerHTML geleert wird.
+  const sidebar = document.getElementById('guide-sidebar');
+  const headings = contentEl ? [...contentEl.querySelectorAll('.guide-h2, .guide-h3, .guide-h4')] : [];
+  if (headings.length < 2) {
+    card.classList.add('hidden');
+    if (sidebar && card.parentNode !== sidebar) sidebar.insertBefore(card, sidebar.firstChild);
+    return;
+  }
+  body.innerHTML = '';
+  headings.forEach((h, i) => {
+    h.id = 'guide-heading-' + i;
+    const level = h.classList.contains('guide-h2') ? 1 : h.classList.contains('guide-h3') ? 2 : 3;
+    const item = document.createElement('button');
+    item.className = 'guide-toc-item guide-toc-l' + level;
+    item.textContent = h.textContent;
+    item.addEventListener('click', () => h.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+    body.appendChild(item);
+  });
+  card.classList.remove('hidden');
+  placeGuideToc();
+}
+
+function hideGuideToc() {
+  const card = document.getElementById('guide-toc-card');
+  const sidebar = document.getElementById('guide-sidebar');
+  if (!card) return;
+  card.classList.add('hidden');
+  if (sidebar && card.parentNode !== sidebar) sidebar.insertBefore(card, sidebar.firstChild);
+}
+
+// ── Druckansicht ──────────────────────────────────────────
+// Druckt nur das offene Kapitel (über den Browser-Dialog auch als PDF
+// speicherbar). Die Klasse am <body> schaltet die @media-print-Regeln in
+// guides.css scharf, damit Drucken auf anderen Tabs unverändert bleibt.
+function printGuideChapter() {
+  document.body.classList.add('guide-printing');
+  const cleanup = () => {
+    document.body.classList.remove('guide-printing');
+    window.removeEventListener('afterprint', cleanup);
+  };
+  window.addEventListener('afterprint', cleanup);
+  window.print();
 }
 
 // ── Sidebar: statistics + code snippet ────────────────────
@@ -992,11 +1234,26 @@ function renderSidebarForCategory(cat, guide) {
         <span class="guide-code-lang">${escHtml(block.lang)}</span>
         <button class="guide-copy-btn" onclick="copyCode(this)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="5" y="5" width="9" height="9" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M3 11V3a2 2 0 0 1 2-2h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> Kopieren</button>
       </div>
-      <pre class="guide-code-pre guide-snippet-pre"><code>${escHtml(block.code)}</code></pre>
+      <pre class="guide-code-pre guide-snippet-pre"><code>${highlightCode(escHtml(block.code), block.lang)}</code></pre>
     </div>
     <div class="guide-snippet-ref">Kapitel: ${idx}. ${escHtml(snippetGuide.title)}</div>
   `;
 }
+
+function getGuideSearchResults() {
+  const q = guideSearchQuery.toLowerCase().trim();
+  return getAllGuides().filter(g =>
+    g.title.toLowerCase().includes(q) ||
+    (g.description || '').toLowerCase().includes(q) ||
+    (g.content || '').toLowerCase().includes(q) ||
+    (g.tags || []).some(t => t.toLowerCase().includes(q))
+  );
+}
+
+// Seitenleiste im Suchmodus: Treffer je Buch + Codeblöcke, die den Begriff
+// enthalten — so lässt sich ein gesuchtes Snippet direkt kopieren, ohne das
+// Kapitel erst zu öffnen.
+const GUIDE_SEARCH_CODE_HITS = 3;
 
 function renderSearchSidebar() {
   const statsBody   = document.getElementById('guide-stats-body');
@@ -1004,33 +1261,58 @@ function renderSearchSidebar() {
   const snippetLabel = document.getElementById('guide-snippet-label');
   if (!statsBody || !snippetBody) return;
   const q = guideSearchQuery.trim();
-  const results = getAllGuides().filter(g =>
-    g.title.toLowerCase().includes(q.toLowerCase()) ||
-    (g.description || '').toLowerCase().includes(q.toLowerCase()) ||
-    (g.content || '').toLowerCase().includes(q.toLowerCase()) ||
-    (g.tags || []).some(t => t.toLowerCase().includes(q.toLowerCase()))
-  );
+  const results = getGuideSearchResults();
+
+  const perBook = {};
+  results.forEach(g => { perBook[g.categoryName] = (perBook[g.categoryName] || 0) + 1; });
+  const bookRows = Object.entries(perBook)
+    .sort((a, b) => b[1] - a[1])
+    .map(([name, n]) => `<div class="b-free-row"><span class="b-free-label guide-stat-truncate" title="${escHtml(name)}">${escHtml(name)}</span><span class="b-free-val">${n}</span></div>`)
+    .join('');
+
   statsBody.innerHTML = `
-    <div class="b-free-row"><span class="b-free-label">Suchbegriff</span><span class="b-free-val">„${escHtml(q)}"</span></div>
+    <div class="b-free-row"><span class="b-free-label">Suchbegriff</span><span class="b-free-val guide-stat-truncate">„${escHtml(q)}"</span></div>
     <div class="b-free-row"><span class="b-free-label">Treffer</span><span class="b-free-val">${results.length}</span></div>
+    ${bookRows ? `<div class="b-free-divider"></div>${bookRows}` : ''}
   `;
-  snippetLabel.textContent = 'Code-Snippet aus diesem Guide';
-  snippetBody.innerHTML = `<p class="guide-snippet-empty">Wähle ein Ergebnis, um Details zu sehen.</p>`;
+
+  snippetLabel.textContent = 'Code-Treffer';
+  const ql = q.toLowerCase();
+  const hits = [];
+  for (const g of results) {
+    for (const b of getCodeBlocksWithIds(g.content, g.id)) {
+      if (b.code.toLowerCase().includes(ql)) hits.push({ guide: g, block: b });
+      if (hits.length >= GUIDE_SEARCH_CODE_HITS) break;
+    }
+    if (hits.length >= GUIDE_SEARCH_CODE_HITS) break;
+  }
+  if (!hits.length) {
+    snippetBody.innerHTML = `<p class="guide-snippet-empty">Kein Codeblock enthält „${escHtml(q)}".</p>`;
+    return;
+  }
+  snippetBody.innerHTML = hits.map(({ guide, block }) => `
+    <div class="guide-snippet-hit">
+      <div class="guide-snippet-block">
+        <div class="guide-snippet-header">
+          <span class="guide-code-lang">${escHtml(block.lang)}</span>
+          <button class="guide-copy-btn" onclick="copyCode(this)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="5" y="5" width="9" height="9" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M3 11V3a2 2 0 0 1 2-2h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> Kopieren</button>
+        </div>
+        <pre class="guide-code-pre guide-snippet-pre"><code>${highlightCode(escHtml(block.code), block.lang)}</code></pre>
+      </div>
+      <button class="guide-snippet-ref guide-snippet-ref-link" data-guide-open="${guide.id}">${escHtml(guide.categoryName)} · ${escHtml(guide.title)}</button>
+    </div>
+  `).join('');
+  snippetBody.querySelectorAll('[data-guide-open]').forEach(btn =>
+    btn.addEventListener('click', () => openGuideChapter(btn.dataset.guideOpen)));
 }
 
 // ── Search ────────────────────────────────────────────────
 
 function renderGuideSearchResults() {
   const main = document.getElementById('guide-main');
-  const q = guideSearchQuery.toLowerCase().trim();
   main.innerHTML = `<div class="guide-search-header">Suchergebnisse für „<strong>${escHtml(guideSearchQuery.trim())}</strong>"</div>`;
 
-  const results = getAllGuides().filter(g =>
-    g.title.toLowerCase().includes(q) ||
-    (g.description || '').toLowerCase().includes(q) ||
-    (g.content || '').toLowerCase().includes(q) ||
-    (g.tags || []).some(t => t.toLowerCase().includes(q))
-  );
+  const results = getGuideSearchResults();
 
   const list = document.createElement('div');
   list.className = 'guide-chapter-list';
@@ -1073,17 +1355,7 @@ function buildSearchChapterRow(result, cat, number) {
     </div>
   `;
 
-  const open = () => {
-    guideSearchQuery = '';
-    const input = document.getElementById('guide-search-input');
-    if (input) input.value = '';
-    state.activeGuideCategoryId = result.categoryId;
-    guide.lastOpened = new Date().toISOString();
-    guide.openCount  = (guide.openCount || 0) + 1;
-    saveGuideCategories();
-    activeGuideId = guide.id;
-    renderGuideContent();
-  };
+  const open = () => openGuideChapter(guide.id);
 
   row.addEventListener('click', e => {
     if (e.target.closest('.guide-chapter-actions')) return;
@@ -1140,8 +1412,8 @@ function openGuideModal(categoryId, guideId = null) {
   }
   guideModalSnapshot = getGuideModalSnapshot();
 
-  // Reset to editor tab
-  setGuideModalTab('editor');
+  // Zuletzt genutzte Editor-Ansicht wiederherstellen
+  setGuideModalTab(guideEditorMode);
   guideModal.open();
   setTimeout(() => titleIn.focus(), 50);
 }
@@ -1150,26 +1422,35 @@ function closeGuideModal() {
   guideModal.close();
 }
 
+// Editor-Modus: 'editor' | 'split' (Editor + Live-Vorschau nebeneinander) |
+// 'preview'. Die zuletzt gewählte Ansicht wird gemerkt.
+let guideEditorMode = DB.get('guideEditorMode', 'editor');
+let guidePreviewTimer = null;
+
+function renderGuideModalPreview() {
+  const raw = document.getElementById('guide-modal-content-input').value;
+  // categoryId ohne guideId: Querverweise lösen gegen das aktuelle Buch auf,
+  // Bookmark-/Snippet-Buttons gibt es in der Vorschau aber nicht.
+  document.getElementById('guide-modal-preview-content').innerHTML = renderMarkdown(raw, null, guideModalCategoryId);
+}
+
 function setGuideModalTab(tab) {
+  if (!['editor', 'split', 'preview'].includes(tab)) tab = 'editor';
+  guideEditorMode = tab;
+  DB.set('guideEditorMode', tab);
+
   const editorPane  = document.getElementById('guide-modal-editor-pane');
   const previewPane = document.getElementById('guide-modal-preview-pane');
-  const editorTab   = document.getElementById('guide-tab-edit');
-  const previewTab  = document.getElementById('guide-tab-preview');
+  const box         = document.querySelector('#guide-modal-overlay .guide-modal-box');
 
-  if (tab === 'editor') {
-    editorPane.classList.remove('hidden');
-    previewPane.classList.add('hidden');
-    editorTab.classList.add('active');
-    previewTab.classList.remove('active');
-  } else {
-    const raw = document.getElementById('guide-modal-content-input').value;
-    const previewEl = document.getElementById('guide-modal-preview-content');
-    previewEl.innerHTML = renderMarkdown(raw);
-    editorPane.classList.add('hidden');
-    previewPane.classList.remove('hidden');
-    editorTab.classList.remove('active');
-    previewTab.classList.add('active');
-  }
+  editorPane.classList.toggle('hidden', tab === 'preview');
+  previewPane.classList.toggle('hidden', tab === 'editor');
+  box.classList.toggle('split', tab === 'split');
+  document.getElementById('guide-tab-edit').classList.toggle('active', tab === 'editor');
+  document.getElementById('guide-tab-split').classList.toggle('active', tab === 'split');
+  document.getElementById('guide-tab-preview').classList.toggle('active', tab === 'preview');
+
+  if (tab !== 'editor') renderGuideModalPreview();
 }
 
 // ── Modal event wiring (runs after DOM ready) ─────────────
@@ -1180,10 +1461,23 @@ function setGuideModalTab(tab) {
 // selectedCatColor bleibt als schlanker Zugriffspunkt für den Save-Handler.
 let guideColorWidget = null;
 let selectedCatColor = HUB_PALETTE_HEX[0]; // hex string
+let guideCatModalEditId = null;     // null = neues Buch, sonst ID des bearbeiteten Buches
+let guideCatColorTouched = false;   // Farbe im Modal aktiv geändert?
 
-function openGuideCatModal() {
-  document.getElementById('guide-cat-name-input').value = '';
-  if (guideColorWidget) guideColorWidget.setValue(HUB_PALETTE_HEX[0]);
+// Ohne Argument: neues Buch anlegen. Mit Buch-ID: Name + Farbe bearbeiten.
+function openGuideCatModal(editId = null) {
+  const cat = typeof editId === 'string' ? guideCategories.find(c => c.id === editId) : null;
+  guideCatModalEditId = cat ? cat.id : null;
+  document.getElementById('guide-cat-modal-title').textContent = cat ? 'Buch bearbeiten' : 'Neues Buch';
+  document.getElementById('guide-cat-modal-save').textContent = cat ? 'Speichern' : 'Erstellen';
+  document.getElementById('guide-cat-name-input').value = cat ? cat.name : '';
+  // Alte Bücher mit Pastell-Index (Zahl statt Hex) zeigen den Paletten-
+  // Standard; ihre Farbe wird nur überschrieben, wenn wirklich eine neue
+  // gewählt wird (guideCatColorTouched).
+  const hex = cat && typeof cat.coverColor === 'string' && cat.coverColor.startsWith('#') ? cat.coverColor : HUB_PALETTE_HEX[0];
+  if (guideColorWidget) guideColorWidget.setValue(hex);
+  selectedCatColor = hex;
+  guideCatColorTouched = false;
   guideCatModal.open();
   setTimeout(() => document.getElementById('guide-cat-name-input').focus(), 50);
 }
@@ -1210,7 +1504,7 @@ function initGuides() {
   // Category modal: geteiltes Farb-Picker-Widget aus hub-utils.js
   guideColorWidget = initColorPickerWidget(
     { pickerId: 'guide-color-picker', previewId: 'guide-color-preview', addBtnId: 'guide-color-add-btn', libraryId: 'guide-color-library' },
-    { initial: HUB_PALETTE_HEX[0], onChange: hex => { selectedCatColor = hex; } }
+    { initial: HUB_PALETTE_HEX[0], onChange: hex => { selectedCatColor = hex; guideCatColorTouched = true; } }
   );
 
   guideCatModal = wireModal('guide-cat-modal-overlay', {
@@ -1223,12 +1517,18 @@ function initGuides() {
   document.getElementById('guide-cat-modal-save').addEventListener('click', () => {
     const name = document.getElementById('guide-cat-name-input').value.trim();
     if (!name) { document.getElementById('guide-cat-name-input').focus(); return; }
-    guideCategories.push({
-      id:     crypto.randomUUID(),
-      name,
-      coverColor: selectedCatColor, // hex string
-      guides: []
-    });
+    const editCat = guideCatModalEditId && guideCategories.find(c => c.id === guideCatModalEditId);
+    if (editCat) {
+      editCat.name = name;
+      if (guideCatColorTouched || typeof editCat.coverColor === 'string') editCat.coverColor = selectedCatColor;
+    } else {
+      guideCategories.push({
+        id:     crypto.randomUUID(),
+        name,
+        coverColor: selectedCatColor, // hex string
+        guides: []
+      });
+    }
     saveGuideCategories();
     closeGuideCatModal();
     renderGuideContent();
@@ -1247,7 +1547,29 @@ function initGuides() {
 
   // Modal tabs
   document.getElementById('guide-tab-edit').addEventListener('click', () => setGuideModalTab('editor'));
+  document.getElementById('guide-tab-split').addEventListener('click', () => setGuideModalTab('split'));
   document.getElementById('guide-tab-preview').addEventListener('click', () => setGuideModalTab('preview'));
+
+  // Live-Vorschau im geteilten Modus — leicht entprellt, damit lange
+  // Kapitel beim Tippen nicht bei jedem Tastendruck neu gerendert werden.
+  document.getElementById('guide-modal-content-input').addEventListener('input', () => {
+    if (guideEditorMode !== 'split') return;
+    clearTimeout(guidePreviewTimer);
+    guidePreviewTimer = setTimeout(renderGuideModalPreview, 150);
+  });
+
+  // Querverweise [[Kapitel]] im gelesenen Kapitel öffnen (nicht in der
+  // Editor-Vorschau — dort würde der Klick das ungespeicherte Modal verlassen)
+  document.getElementById('guide-main').addEventListener('click', e => {
+    const link = e.target.closest('[data-guide-xref]');
+    if (!link) return;
+    e.preventDefault();
+    openGuideChapter(link.dataset.guideXref);
+    document.getElementById('view-guides')?.scrollIntoView({ block: 'start' });
+  });
+  document.getElementById('guide-modal-preview-content').addEventListener('click', e => {
+    if (e.target.closest('[data-guide-xref]')) e.preventDefault();
+  });
 
   // Kein saveId: Titel ist nur eines von mehreren Feldern (inkl. Markdown-
   // Textarea) — Enter soll hier nichts auslösen, nur Escape schließt.
@@ -1357,6 +1679,9 @@ function initGuides() {
           break;
         case 'mark':
           prefix = '=='; text = sel || 'markierter Text'; suffix = '==';
+          break;
+        case 'xref':
+          prefix = '[['; text = sel || 'Kapitelname'; suffix = ']]';
           break;
         case 'list':
           if (sel) {
