@@ -14,14 +14,14 @@
 .project-task-cb { accent-color: var(--sage); }
 
 /* Archive rows */
-.archive-project-meta { font-size: 12px; color: var(--text-3); margin-top: 2px; font-family: var(--mono); }
+.archive-project-meta { font-size: calc(12px * var(--core-font-scale)); color: var(--text-3); margin-top: 2px; font-family: var(--mono); }
 
 /* --- Bestätigungs-Modal --- */
 .proj-confirm-danger { background: #dc2626 !important; }
 
 /* --- Verschieben Modal --- */
 #proj-move-modal-overlay .modal-hint {
-  font-size: 13px;
+  font-size: calc(13px * var(--core-font-scale));
   font-weight: 500;
   color: var(--text);
   margin-bottom: 12px;
@@ -40,8 +40,8 @@
 .archive-project-info { flex: 1; min-width: 0; }
 
 .archive-project-actions { display: flex; gap: 6px; flex-shrink: 0; }
-.archive-project-restore-btn { font-size: 12px; }
-.archive-project-delete-btn { font-size: 12px; color: var(--prio-1); border-color: var(--prio-1); }
+.archive-project-restore-btn { font-size: calc(12px * var(--core-font-scale)); }
+.archive-project-delete-btn { font-size: calc(12px * var(--core-font-scale)); color: var(--prio-1); border-color: var(--prio-1); }
 
 /* =========================
    PROJEKTWALD CONTAINER — Vollbild-Landschaft
@@ -98,7 +98,7 @@
   left: 50%;
   transform: translate(-50%, -50%);
   color: var(--text-3);
-  font-size: 14px;
+  font-size: calc(14px * var(--core-font-scale));
   text-align: center;
 }
 
@@ -129,7 +129,7 @@
 .forest-overlay-titles { display: flex; flex-direction: column; }
 .forest-overlay-title {
   font-family: var(--font);
-  font-size: 26px;
+  font-size: calc(26px * var(--core-font-scale));
   font-weight: 700;
   letter-spacing: -0.5px;
   color: var(--text);
@@ -140,7 +140,7 @@
   text-shadow: 0 1px 3px rgba(0,0,0,0.85), 0 2px 16px rgba(0,0,0,0.7);
 }
 .forest-overlay-subtitle {
-  font-size: 13px;
+  font-size: calc(13px * var(--core-font-scale));
   color: var(--text-2);
   margin: 2px 0 0;
   text-shadow: 0 1px 4px rgba(255,255,255,0.85);
@@ -186,7 +186,7 @@
   backdrop-filter: blur(6px);
   box-shadow: 0 4px 16px rgba(0,0,0,0.1);
   color: var(--text-2);
-  font-size: 13px;
+  font-size: calc(13px * var(--core-font-scale));
   font-weight: 500;
   cursor: pointer;
   transition: all 120ms;
@@ -195,7 +195,7 @@
 .forest-tab:hover { color: var(--text); }
 .forest-tab.active { background: var(--sage); color: var(--sage-fg); }
 .forest-tab.active .forest-tab-count { color: var(--sage-fg); opacity: 0.85; }
-.forest-tab-count { font-family: var(--mono); font-size: 11px; color: var(--text-3); }
+.forest-tab-count { font-family: var(--mono); font-size: calc(11px * var(--core-font-scale)); color: var(--text-3); }
 
 .forest-toolbar-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 
@@ -214,7 +214,7 @@
   border: none;
   border-radius: var(--radius-lg);
   padding: 8px 12px 8px 32px;
-  font-size: 13px;
+  font-size: calc(13px * var(--core-font-scale));
   width: 200px;
   background: transparent;
   color: var(--text);
@@ -256,14 +256,14 @@
   min-width: 140px;
 }
 .forest-filter-title {
-  font-size: 10px;
+  font-size: calc(10px * var(--core-font-scale));
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--text-3);
   padding: 0 2px 2px;
 }
-.forest-filter-panel .toggle-select-btn { padding: 6px 10px; font-size: 12.5px; text-align: left; }
+.forest-filter-panel .toggle-select-btn { padding: 6px 10px; font-size: calc(12.5px * var(--core-font-scale)); text-align: left; }
 
 /* =========================
    LEGENDE — Overlay am unteren Bildrand
@@ -285,7 +285,7 @@
   background: rgba(255,252,246,0.86);
   backdrop-filter: blur(6px);
   box-shadow: 0 4px 16px rgba(0,0,0,0.1);
-  font-size: 12px;
+  font-size: calc(12px * var(--core-font-scale));
   color: var(--text-2);
 }
 [data-theme-family="dark"] .forest-legend { background: rgba(26,24,18,0.82); }
@@ -349,7 +349,7 @@
   border: 1px solid var(--border-strong);
   background: var(--sage);
   color: #fff;
-  font-size: 13px;
+  font-size: calc(13px * var(--core-font-scale));
   cursor: pointer;
   transition: filter 120ms;
 }
@@ -382,7 +382,7 @@
 }
 .pdt-back-btn {
   display: flex; align-items: center; gap: 6px;
-  font-size: 13px; font-weight: 500; color: var(--text-2);
+  font-size: calc(13px * var(--core-font-scale)); font-weight: 500; color: var(--text-2);
   background: rgba(255,252,246,0.86);
   backdrop-filter: blur(6px);
   box-shadow: 0 4px 16px rgba(0,0,0,0.1);
@@ -395,7 +395,7 @@
 .pdt-toolbar-right { display: flex; align-items: center; gap: 10px; }
 .pdt-action-btn {
   display: flex; align-items: center; gap: 6px;
-  font-size: 12.5px; color: var(--text-2);
+  font-size: calc(12.5px * var(--core-font-scale)); color: var(--text-2);
   background: rgba(255,252,246,0.86);
   backdrop-filter: blur(6px);
   box-shadow: 0 4px 16px rgba(0,0,0,0.1);
@@ -470,16 +470,16 @@
 
 .pdt-status-badge {
   display: inline-flex; align-items: center; gap: 5px;
-  font-size: 10px; font-weight: 700;
+  font-size: calc(10px * var(--core-font-scale)); font-weight: 700;
   text-transform: uppercase; letter-spacing: 0.12em;
   color: var(--proj-success); background: color-mix(in srgb, var(--proj-success) 10%, transparent);
   border-radius: 99px; padding: 3px 12px; width: fit-content;
 }
 .pdt-status-badge.archived { color: #d97706; background: rgba(217,119,6,0.1); }
-.pdt-status-badge::before { content: '●'; font-size: 6px; }
+.pdt-status-badge::before { content: '●'; font-size: calc(6px * var(--core-font-scale)); }
 
 .pdt-project-name {
-  font-size: 52px;
+  font-size: calc(52px * var(--core-font-scale));
   font-weight: 700;
   color: var(--text);
   line-height: 1.08;
@@ -490,7 +490,7 @@
 [data-theme-family="dark"] .pdt-project-name { text-shadow: none; }
 
 .pdt-project-desc {
-  font-size: 14px; color: var(--text-3);
+  font-size: calc(14px * var(--core-font-scale)); color: var(--text-3);
   line-height: 1.7; margin: 0;
   max-width: 280px;
 }
@@ -499,7 +499,7 @@
 /* Fortschritt */
 .pdt-progress-section { display: flex; flex-direction: column; gap: 4px; margin-top: 2px; }
 .pdt-progress-label-row { display: flex; justify-content: flex-start; align-items: center; gap: 6px; }
-.pdt-progress-label { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; }
+.pdt-progress-label { font-size: calc(11px * var(--core-font-scale)); color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; }
 /* Pct: klein, über Balken rechts */
 .pdt-progress-pct-wrap {
   position: relative;
@@ -510,7 +510,7 @@
   position: absolute;
   right: 0;
   top: calc(-16px);
-  font-size: 11px;
+  font-size: calc(11px * var(--core-font-scale));
   font-weight: 600;
   color: var(--text-2);
   font-family: var(--mono);
@@ -523,7 +523,7 @@
 .pdt-progress-fill { height: 100%; border-radius: 99px; transition: width 600ms ease; }
 .pdt-progress-meta {
   display: flex; flex-direction: column; gap: 1px;
-  font-size: 12px; color: var(--text-2); font-family: var(--mono);
+  font-size: calc(12px * var(--core-font-scale)); color: var(--text-2); font-family: var(--mono);
   margin-top: 4px;
 }
 .pdt-meta-sep { display: none; }
@@ -554,7 +554,7 @@
 }
 
 .pdt-info-card-title {
-  font-size: 10px; font-weight: 700;
+  font-size: calc(10px * var(--core-font-scale)); font-weight: 700;
   text-transform: uppercase; letter-spacing: 0.12em;
   color: var(--text-3); margin-bottom: 10px;
 }
@@ -573,15 +573,15 @@
   color: var(--text-3); margin-top: 1px;
 }
 .pdt-info-content { display: flex; flex-direction: column; gap: 1px; }
-.pdt-info-key { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; }
-.pdt-info-val { font-size: 13.5px; font-weight: 500; color: var(--text); margin-top: 2px; }
+.pdt-info-key { font-size: calc(11px * var(--core-font-scale)); color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; }
+.pdt-info-val { font-size: calc(13.5px * var(--core-font-scale)); font-weight: 500; color: var(--text); margin-top: 2px; }
 .pdt-status-val { color: var(--proj-success); }
 
 .pdt-info-divider { height: 1px; background: var(--border); margin: 14px 0; }
 
 .pdt-info-quote {
   display: flex; gap: 10px; align-items: flex-start;
-  font-size: 12.5px; color: var(--text-3);
+  font-size: calc(12.5px * var(--core-font-scale)); color: var(--text-3);
   font-style: italic; line-height: 1.6;
   margin-top: 4px;
 }
@@ -601,12 +601,12 @@
   border-bottom: 1px solid var(--border);
 }
 .pdt-tasks-header-left { display: flex; flex-direction: column; gap: 3px; }
-.pdt-tasks-title { font-size: 18px; font-weight: 600; color: var(--text); }
-.pdt-tasks-sub { font-size: 12px; color: var(--text-3); }
+.pdt-tasks-title { font-size: calc(18px * var(--core-font-scale)); font-weight: 600; color: var(--text); }
+.pdt-tasks-sub { font-size: calc(12px * var(--core-font-scale)); color: var(--text-3); }
 
 .pdt-add-branch-btn {
   display: flex; align-items: center; gap: 6px;
-  font-size: 12.5px; color: var(--text-2);
+  font-size: calc(12.5px * var(--core-font-scale)); color: var(--text-2);
   background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--radius-sm); padding: 6px 14px;
   cursor: pointer; transition: all 120ms; flex-shrink: 0;
@@ -643,7 +643,7 @@
 .detail-tile-title-wrap { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .detail-tile-chevron {
   flex-shrink: 0; width: 12px; text-align: center;
-  font-size: 10px; color: var(--text-3);
+  font-size: calc(10px * var(--core-font-scale)); color: var(--text-3);
 }
 .detail-tile.collapsed .detail-tile-tasks { display: none; }
 /* Fortschrittsbalken bleibt auch eingeklappt sichtbar — Zustand des
@@ -659,7 +659,7 @@
 
 /* Aufgabenliste */
 .detail-tile-tasks { border-top: 1px solid var(--border); padding: 6px 0 8px; }
-.detail-tile-empty { font-size: 12.5px; color: var(--text-3); padding: 12px 18px; font-style: italic; }
+.detail-tile-empty { font-size: calc(12.5px * var(--core-font-scale)); color: var(--text-3); padding: 12px 18px; font-style: italic; }
 
 .detail-tile-task-row {
   display: flex; align-items: center; gap: 10px;
@@ -675,22 +675,22 @@
 .detail-tile-task-row.extra.done { border-left-color: var(--border); }
 
 .detail-tile-task-label {
-  flex: 1; font-size: 13px; color: var(--text);
+  flex: 1; font-size: calc(13px * var(--core-font-scale)); color: var(--text);
   line-height: 1.45; cursor: pointer; transition: color 100ms;
 }
 .detail-tile-task-label:hover { color: var(--sage-dark, #3d6b4a); }
-.detail-tile-extra-badge { font-size: 10px; color: var(--text-3); flex-shrink: 0; }
+.detail-tile-extra-badge { font-size: calc(10px * var(--core-font-scale)); color: var(--text-3); flex-shrink: 0; }
 .detail-tile-extra-row-badge {
-  font-size: 10px; font-weight: 600; color: var(--sage-dark); background: var(--sage-bg);
+  font-size: calc(10px * var(--core-font-scale)); font-weight: 600; color: var(--sage-dark); background: var(--sage-bg);
   border-radius: 99px; padding: 1px 7px; flex-shrink: 0;
 }
 /* Aufgabenkategorie-Badge — bewusst neutral/einheitlich statt pro Kategorie
    eingefärbt (siehe Absprache), damit die Aufgabenliste ruhig bleibt. */
 .detail-tile-category-badge {
-  font-size: 10px; color: var(--text-3); background: var(--surface-2);
+  font-size: calc(10px * var(--core-font-scale)); color: var(--text-3); background: var(--surface-2);
   border-radius: 4px; padding: 1px 6px; flex-shrink: 0;
 }
-.detail-task-has-detail { color: var(--text-3); margin-left: 4px; font-size: 15px; line-height: 1; vertical-align: middle; }
+.detail-task-has-detail { color: var(--text-3); margin-left: 4px; font-size: calc(15px * var(--core-font-scale)); line-height: 1; vertical-align: middle; }
 
 /* Umbenennen/Verschieben/Löschen je Aufgabenzeile — nur bei Hover sichtbar,
    damit die Liste im Ruhezustand aufgeräumt bleibt (gleiches Prinzip wie
@@ -704,7 +704,7 @@
   width: 22px; height: 22px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
   border: none; background: none; border-radius: 6px;
-  font-size: 12px; color: var(--text-3); cursor: pointer;
+  font-size: calc(12px * var(--core-font-scale)); color: var(--text-3); cursor: pointer;
   transition: background 100ms, color 100ms;
 }
 .detail-task-icon-btn:hover { background: var(--bg); color: var(--text); }
@@ -715,13 +715,13 @@
 .detail-tile-head:hover .detail-tile-sub-actions { opacity: 1; }
 
 .detail-tile-divider {
-  font-size: 10px; color: var(--text-3); letter-spacing: 0.02em;
+  font-size: calc(10px * var(--core-font-scale)); color: var(--text-3); letter-spacing: 0.02em;
   padding: 8px 18px 2px;
 }
 
 .detail-tile-add-btn {
   width: 100%; text-align: left;
-  padding: 9px 18px; font-size: 12.5px; color: var(--text-3);
+  padding: 9px 18px; font-size: calc(12.5px * var(--core-font-scale)); color: var(--text-3);
   background: none; border: none;
   border-top: 1px dashed var(--border);
   cursor: pointer; transition: color 120ms, background 120ms;
@@ -731,7 +731,7 @@
 /* Checkliste im Task-Modal */
 .task-cl-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--border); }
 .task-cl-row:last-child { border-bottom: none; }
-.task-cl-label { flex: 1; font-size: 13px; color: var(--text); }
+.task-cl-label { flex: 1; font-size: calc(13px * var(--core-font-scale)); color: var(--text); }
 .task-cl-row.done .task-cl-label { text-decoration: line-through; color: var(--text-3); }
 
 /* ── CUSTOMIZING-MODAL — Obst-/Blumenauswahl je Aufgabenart ──
@@ -749,7 +749,7 @@
 .cust-section-head {
   display: flex; align-items: center; justify-content: space-between;
   padding: 12px 16px;
-  font-size: 13.5px; font-weight: 600; color: var(--text);
+  font-size: calc(13.5px * var(--core-font-scale)); font-weight: 600; color: var(--text);
   cursor: pointer; user-select: none;
 }
 .cust-section-head:hover { background: var(--bg); }
@@ -757,7 +757,7 @@
 .cust-section.open > .cust-section-body { display: block; }
 .cust-section.open > .cust-section-head { border-bottom: 1px solid var(--border); }
 
-.cust-chevron { font-size: 10px; color: var(--text-3); transition: transform 150ms ease; display: inline-block; }
+.cust-chevron { font-size: calc(10px * var(--core-font-scale)); color: var(--text-3); transition: transform 150ms ease; display: inline-block; }
 .cust-section.open > .cust-section-head .cust-chevron,
 .cust-subgroup.open > .cust-subgroup-head .cust-chevron { transform: rotate(90deg); }
 
@@ -766,7 +766,7 @@
 .cust-subgroup-head {
   display: flex; align-items: center; gap: 7px;
   padding: 7px 4px;
-  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em;
+  font-size: calc(11px * var(--core-font-scale)); font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em;
   color: var(--text-3);
   cursor: pointer; user-select: none;
 }
@@ -799,7 +799,7 @@
   display: flex; align-items: center; justify-content: center;
 }
 .cust-row-preview img { width: 24px; height: 24px; object-fit: contain; }
-.cust-row-name { flex: 1; min-width: 0; font-size: 13px; color: var(--text); }
+.cust-row-name { flex: 1; min-width: 0; font-size: calc(13px * var(--core-font-scale)); color: var(--text); }
 
 /* Baum-Auswahl im Customizing-Modal (#3) — kleine Thumbnail-Kacheln, wirkt
    sofort per Klick (siehe renderTreePicker() in forest.js). */
@@ -838,7 +838,7 @@
 
 /* Toggle Buttons */
 .toggle-select-btn {
-  font-size: 12px; padding: 4px 12px;
+  font-size: calc(12px * var(--core-font-scale)); padding: 4px 12px;
   border: 1px solid var(--border); border-radius: var(--radius-sm);
   background: none; color: var(--text-3); cursor: pointer; transition: all 120ms;
 }
@@ -912,9 +912,9 @@
   .pdt-left { padding-bottom: 12px; border-bottom: 1px solid var(--border); gap: 8px; }
   .pdt-info-card { padding-top: 12px; }
 
-  .pdt-status-badge { font-size: 9px; padding: 2px 10px; }
-  .pdt-project-name { font-size: 24px; text-shadow: none; }
-  .pdt-project-desc { max-width: none; font-size: 13px; line-height: 1.5; }
+  .pdt-status-badge { font-size: calc(9px * var(--core-font-scale)); padding: 2px 10px; }
+  .pdt-project-name { font-size: calc(24px * var(--core-font-scale)); text-shadow: none; }
+  .pdt-project-desc { max-width: none; font-size: calc(13px * var(--core-font-scale)); line-height: 1.5; }
   .pdt-project-desc:empty { display: none; }
   .pdt-progress-section { margin-top: 0; }
   .pdt-progress-pct-wrap { max-width: 100%; }
@@ -922,7 +922,7 @@
   .pdt-info-card-title { margin-bottom: 6px; }
   .pdt-info-item { padding: 6px 0; }
   .pdt-info-divider { margin: 8px 0; }
-  .pdt-info-quote { font-size: 12px; }
+  .pdt-info-quote { font-size: calc(12px * var(--core-font-scale)); }
 }
 
 @media (max-width: 480px) {
@@ -954,9 +954,9 @@
      weniger Innenabstand rückt alles näher an den oberen Rand. */
   .forest-overlay-top { padding: 8px 10px; gap: 4px; }
   .forest-overlay-header-row { gap: 6px; }
-  .forest-overlay-title { font-size: 19px; }
+  .forest-overlay-title { font-size: calc(19px * var(--core-font-scale)); }
   .forest-overlay-subtitle { display: none; }
-  .forest-tab { padding: 6px 10px; font-size: 12px; }
+  .forest-tab { padding: 6px 10px; font-size: calc(12px * var(--core-font-scale)); }
   .forest-search-input { width: 120px; padding: 7px 10px 7px 30px; }
 
   /* Archiv/Neues-Projekt als kompakte Icon-Buttons neben dem Prioritäts-
@@ -972,7 +972,7 @@
     height: 34px;
     padding: 0;
     border-radius: var(--radius-lg);
-    font-size: 16px;
+    font-size: calc(16px * var(--core-font-scale));
     font-weight: 600;
     line-height: 1;
     flex-shrink: 0;
@@ -1083,8 +1083,8 @@
   }
 
   .pdt-hero { border-radius: var(--radius-lg); }
-  .pdt-project-name { font-size: 22px; }
-  .pdt-project-desc { font-size: 12.5px; }
+  .pdt-project-name { font-size: calc(22px * var(--core-font-scale)); }
+  .pdt-project-desc { font-size: calc(12.5px * var(--core-font-scale)); }
   .pdt-tasks-section { padding: 20px 16px 32px; }
   .pdt-tasks-header { flex-wrap: wrap; gap: 10px; }
 
@@ -1112,7 +1112,7 @@
   #project-archive-list .archive-project-delete-btn {
     flex: 1;
     text-align: center;
-    font-size: 12.5px;
+    font-size: calc(12.5px * var(--core-font-scale));
     padding: 8px 10px;
   }
 }

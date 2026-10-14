@@ -9,7 +9,7 @@
    Pflanzendex-Ansicht braucht das nicht, darf normal scrollen. ────────── */
 .garden-view-header { margin-bottom: 10px; }
 .garden-view-header-left { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-.garden-view-header .view-title { font-size: 19px; }
+.garden-view-header .view-title { font-size: calc(19px * var(--core-font-scale)); }
 /* Weniger Rahmen-Padding oben/unten als der generische .view/.dash-content-
    Standard — Desktop-Optimierung, siehe garden.md. Nur die Garten-
    Unteransicht ist betroffen (#garden-panel-dex bleibt unverändert). */
@@ -26,7 +26,7 @@
 .garden-subtab-btn {
   padding: 6px 16px;
   border-radius: 99px;
-  font-size: 12px;
+  font-size: calc(12px * var(--core-font-scale));
   font-weight: 600;
   color: var(--text-3);
   transition: all var(--transition);
@@ -93,7 +93,7 @@
   border: 1px solid var(--border-strong);
   background: var(--surface);
   color: var(--text-2);
-  font-size: 9px;
+  font-size: calc(9px * var(--core-font-scale));
   line-height: 1;
   display: flex;
   align-items: center;
@@ -112,7 +112,7 @@
   background: var(--surface);
   border: 1px solid var(--sage-border);
   color: var(--sage-dark);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--core-font-scale));
   font-weight: 600;
   padding: 7px 14px;
   border-radius: 99px;
@@ -157,7 +157,7 @@
   position: absolute;
   top: 8px;
   left: 10px;
-  font-size: 10px;
+  font-size: calc(10px * var(--core-font-scale));
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
@@ -185,7 +185,7 @@
   left: 50%;
   transform: translateX(-50%);
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: calc(9px * var(--core-font-scale));
   font-weight: 600;
   color: var(--text-2);
   background: var(--surface);
@@ -236,7 +236,7 @@
   text-align: center;
 }
 .garden-stand-head {
-  font-size: 11px;
+  font-size: calc(11px * var(--core-font-scale));
   font-weight: 700;
   color: #3b2a17;
   background: rgba(255,250,240,0.85);
@@ -244,7 +244,7 @@
   padding: 2px 10px;
 }
 .garden-stand-quest {
-  font-size: 9.5px;
+  font-size: calc(9.5px * var(--core-font-scale));
   color: #4a3822;
   background: rgba(255,250,240,0.75);
   border-radius: 8px;
@@ -262,7 +262,7 @@
   align-items: center;
   justify-content: center;
   color: rgba(60,40,20,0.6);
-  font-size: 11px;
+  font-size: calc(11px * var(--core-font-scale));
 }
 .garden-stand-slot img { width: 100%; height: 100%; object-fit: contain; padding: 2px; }
 .garden-stand-slot-filled { border-style: solid; border-color: var(--sage-border); background: rgba(255,255,255,0.88); }
@@ -291,7 +291,7 @@
 .garden-tray { margin-top: 18px; }
 .garden-tray-group { margin-bottom: 16px; }
 .garden-tray-group-label {
-  font-size: 10.5px;
+  font-size: calc(10.5px * var(--core-font-scale));
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.09em;
@@ -314,7 +314,7 @@
 .garden-tray-item:hover { border-color: var(--sage-border); background: var(--sage-bg); }
 .garden-tray-item img { width: 34px; height: 34px; object-fit: contain; }
 .garden-tray-item span {
-  font-size: 10.5px;
+  font-size: calc(10.5px * var(--core-font-scale));
   color: var(--text-2);
   text-align: center;
   line-height: 1.2;
@@ -351,12 +351,12 @@
 .garden-dex-thumb img { width: 100%; height: 100%; object-fit: contain; }
 .garden-dex-tile-unknown { border-style: dashed; opacity: 0.55; }
 .garden-dex-tile-unknown .garden-dex-thumb {
-  font-size: 18px;
+  font-size: calc(18px * var(--core-font-scale));
   font-weight: 700;
   color: var(--text-3);
 }
-.garden-dex-label { font-size: 12.5px; font-weight: 600; color: var(--text); }
-.garden-dex-meta { display: flex; flex-direction: column; gap: 1px; font-size: 10.5px; color: var(--text-3); }
+.garden-dex-label { font-size: calc(12.5px * var(--core-font-scale)); font-weight: 600; color: var(--text); }
+.garden-dex-meta { display: flex; flex-direction: column; gap: 1px; font-size: calc(10.5px * var(--core-font-scale)); color: var(--text-3); }
 
 @media (max-width: 640px) {
   .garden-tray-item { width: 70px; }
@@ -370,7 +370,7 @@
 .garden-debug { margin-top: 14px; }
 .garden-debug-toggle {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: calc(11px * var(--core-font-scale));
   color: #a8791f;
   background: none;
   border: 1px dashed #a8791f;
@@ -386,13 +386,13 @@
   border-radius: var(--radius);
   background: rgba(168, 121, 31, 0.06);
 }
-.garden-debug-hint { font-family: var(--mono); font-size: 10.5px; color: var(--text-3); margin: 0 0 10px; line-height: 1.5; }
+.garden-debug-hint { font-family: var(--mono); font-size: calc(10.5px * var(--core-font-scale)); color: var(--text-3); margin: 0 0 10px; line-height: 1.5; }
 .garden-debug-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-.garden-debug-label { flex: 1; font-family: var(--mono); font-size: 11.5px; color: var(--text-2); }
+.garden-debug-label { flex: 1; font-family: var(--mono); font-size: calc(11.5px * var(--core-font-scale)); color: var(--text-2); }
 .garden-debug-input {
   width: 64px;
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: calc(12px * var(--core-font-scale));
   padding: 4px 6px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
@@ -401,7 +401,7 @@
 }
 .garden-debug-unit {
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: calc(12px * var(--core-font-scale));
   padding: 4px 6px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
@@ -410,4 +410,4 @@
 }
 .garden-debug-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
 .garden-debug-actions .btn-primary,
-.garden-debug-actions .btn-ghost { font-size: 12px; padding: 6px 14px; }
+.garden-debug-actions .btn-ghost { font-size: calc(12px * var(--core-font-scale)); padding: 6px 14px; }

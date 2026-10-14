@@ -35,7 +35,7 @@ Für Funktionen, die einen sicheren Browser-Kontext brauchen (Google-Calendar-An
 - 🌟 Tägliche Positivity-Erinnerungen
 - 🌤 Wetterwidget mit Standortauswahl
 - 🎉 National-Day-Widget
-- 🎨 6 eingebaute Themes + eigener Theme-Builder für individuelle Farbschemata
+- 🎨 6 eingebaute Themes + Theme-Editor: eigene Farben, Schriftart/-größe, Kartendurchlässigkeit, Hintergrundbild und Grafik-Sets (Cozy, Sci-Fi, Forest, Royal, Cyberpunk, Lab) mit Kalenderbildern und Start-Banner im Tag/Nacht-Wechsel
 - 💾 Lokale Datenspeicherung mit optionalem Geräte-Sync
 - 📲 Installierbar als PWA mit Offline-Zugriff (bei Nutzung über `https://`)
 
@@ -97,7 +97,7 @@ Taschenrechner, Focus Timer, Converter, Datenübertragungsraten-Rechner mit Lern
 
 ### ⚙️ Einstellungen
 
-Themes & Theme-Builder, Tab-Verwaltung, Backup, optionaler Geräte-Sync, Google-Calendar-Verbindung.
+Themes & Theme-Editor, Tab-Verwaltung, Backup, optionaler Geräte-Sync, Google-Calendar-Verbindung.
 → [Wiki: Einstellungen](https://github.com/CaseyMazey/Nook/wiki/Einstellungen)
 
 ---

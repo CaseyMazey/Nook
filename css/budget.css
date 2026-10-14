@@ -215,7 +215,7 @@
 }
 .b-ks-header-pill:hover { box-shadow: var(--shadow-md); border-color: var(--border-strong); }
 .b-ks-pill-label {
-  font-size: 9.5px;
+  font-size: calc(9.5px * var(--core-font-scale));
   font-weight: 700;
   letter-spacing: 0.10em;
   text-transform: uppercase;
@@ -223,7 +223,7 @@
 }
 .b-ks-pill-value {
   font-family: var(--mono);
-  font-size: 20px;
+  font-size: calc(20px * var(--core-font-scale));
   font-weight: 700;
   color: var(--text);
   line-height: 1.1;
@@ -233,7 +233,7 @@
 
 #budget-title-block h1 {
   font-family: var(--font);
-  font-size: 38px;
+  font-size: calc(38px * var(--core-font-scale));
   font-weight: 400;
   letter-spacing: -1.5px;
   color: var(--text);
@@ -241,7 +241,7 @@
   margin-bottom: 5px;
 }
 #budget-title-block p {
-  font-size: 13px;
+  font-size: calc(13px * var(--core-font-scale));
   color: var(--text-3);
   letter-spacing: 0.01em;
   font-style: italic;
@@ -294,7 +294,7 @@
 .b-header-dropdown-item {
   display: flex; align-items: center;
   width: 100%; padding: 10px 14px;
-  font-size: 13px; color: var(--text);
+  font-size: calc(13px * var(--core-font-scale)); color: var(--text);
   background: none; border: none; cursor: pointer;
   text-align: left; gap: 8px;
   transition: background var(--transition);
@@ -315,7 +315,7 @@
   gap: 12px;
 }
 .finanzbaum-config-label {
-  font-size: 13px;
+  font-size: calc(13px * var(--core-font-scale));
   font-weight: 500;
   color: var(--text);
   flex: 1;
@@ -326,7 +326,7 @@
   gap: 6px;
 }
 .finanzbaum-config-unit {
-  font-size: 13px;
+  font-size: calc(13px * var(--core-font-scale));
   color: var(--text-3);
   font-family: var(--mono);
 }
@@ -342,7 +342,7 @@
   border: 1.5px solid var(--border-strong);
   border-radius: var(--b-radius-sm);
   box-shadow: var(--b-shadow);
-  font-size: 14px;
+  font-size: calc(14px * var(--core-font-scale));
   font-weight: 500;
   color: var(--text);
   cursor: default;
@@ -359,7 +359,7 @@
   border: 1.5px solid var(--border-strong);
   background: var(--surface);
   color: var(--text-2);
-  font-size: 16px;
+  font-size: calc(16px * var(--core-font-scale));
   display: flex; align-items: center; justify-content: center;
   transition: all var(--transition);
   cursor: pointer;
@@ -378,7 +378,7 @@
   height: 42px;
   padding: 0 18px;
   border-radius: var(--b-radius-xs);
-  font-size: 13px;
+  font-size: calc(13px * var(--core-font-scale));
   font-weight: 500;
   display: flex; align-items: center; gap: 6px;
   transition: all 0.18s ease;
@@ -442,7 +442,7 @@
 }
 .b-ks-value {
   font-family: var(--font);
-  font-size: 34px;
+  font-size: calc(34px * var(--core-font-scale));
   font-weight: 400;
   letter-spacing: -1px;
   color: var(--b-green);
@@ -463,12 +463,12 @@
 .b-status-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
 
 .b-checklist { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
-.b-check-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text); }
+.b-check-item { display: flex; align-items: center; gap: 8px; font-size: calc(13px * var(--core-font-scale)); color: var(--text); }
 .b-check-icon {
   width: 16px; height: 16px;
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-size: 9px;
+  font-size: calc(9px * var(--core-font-scale));
   font-weight: 700;
   flex-shrink: 0;
 }
@@ -479,7 +479,7 @@
 [data-theme-family="dark"] .b-check-icon.warn { background: rgba(202,138,4,0.18); }
 
 .b-status-hint {
-  font-size: 12px;
+  font-size: calc(12px * var(--core-font-scale));
   line-height: 1.6;
   color: var(--text-3);
   padding-top: 12px;
@@ -534,13 +534,13 @@
   background: var(--b-garden-header-bg);
 }
 .b-garden-title-block { display: flex; align-items: center; gap: 7px; }
-.b-garden-emoji { font-size: 16px; line-height: 1; }
-.b-garden-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.10em; color: var(--b-garden-title); }
+.b-garden-emoji { font-size: calc(16px * var(--core-font-scale)); line-height: 1; }
+.b-garden-title { font-size: calc(12px * var(--core-font-scale)); font-weight: 700; text-transform: uppercase; letter-spacing: 0.10em; color: var(--b-garden-title); }
 
 /* Ziel-Auswahl Button */
 .b-garden-select-btn {
   display: flex; align-items: center; gap: 5px;
-  font-size: 12px; font-weight: 600; color: var(--b-garden-select);
+  font-size: calc(12px * var(--core-font-scale)); font-weight: 600; color: var(--b-garden-select);
   background: var(--b-garden-chip-bg);
   border: 1px solid var(--b-garden-chip-border);
   border-radius: 99px;
@@ -553,10 +553,10 @@
   text-overflow: ellipsis;
 }
 .b-garden-select-btn:hover { background: var(--b-garden-chip-bg-hover); }
-.b-garden-select-arrow { opacity: 0.6; font-size: 10px; }
+.b-garden-select-arrow { opacity: 0.6; font-size: calc(10px * var(--core-font-scale)); }
 
 /* Emoji in Sparzielliste */
-.budget-goal-emoji { font-size: 15px; line-height: 1; vertical-align: middle; margin-right: 2px; }
+.budget-goal-emoji { font-size: calc(15px * var(--core-font-scale)); line-height: 1; vertical-align: middle; margin-right: 2px; }
 
 /* Dropdown — wird an body angehängt (fixed), umgeht overflow:hidden der Card */
 .b-garden-dropdown {
@@ -572,7 +572,7 @@
 .b-garden-dropdown-item {
   display: flex; justify-content: space-between; align-items: center;
   width: 100%; padding: 9px 14px;
-  font-size: 13px; color: var(--text);
+  font-size: calc(13px * var(--core-font-scale)); color: var(--text);
   background: none; border: none; cursor: pointer;
   text-align: left;
   transition: background var(--transition);
@@ -598,7 +598,7 @@
   padding-bottom: 10px;
 }
 .b-garden-stage-label {
-  font-size: 10px; font-weight: 700;
+  font-size: calc(10px * var(--core-font-scale)); font-weight: 700;
   color: var(--b-garden-stage);
   background: var(--b-garden-stage-bg);
   border-radius: 99px;
@@ -608,8 +608,8 @@
 .b-garden-svg { width: 80px; height: 80px; }
 .b-garden-svg svg { width: 100%; height: 100%; }
 .b-garden-svg-empty { opacity: 0.28; filter: grayscale(0.4); }
-.b-garden-plant-name { font-size: 12px; font-weight: 600; color: var(--b-garden-plant); text-align: center; }
-.b-garden-plant-val  { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--b-garden-plant-val); text-align: center; }
+.b-garden-plant-name { font-size: calc(12px * var(--core-font-scale)); font-weight: 600; color: var(--b-garden-plant); text-align: center; }
+.b-garden-plant-val  { font-family: var(--mono); font-size: calc(12px * var(--core-font-scale)); font-weight: 600; color: var(--b-garden-plant-val); text-align: center; }
 
 /* Progress */
 .b-garden-progress-bar { width: 78%; height: 5px; background: var(--b-garden-track); border-radius: 99px; overflow: hidden; }
@@ -680,8 +680,8 @@
 .goal-plant-option:hover { background: var(--surface-2); }
 .goal-plant-option input[type="radio"] { display: none; }
 .goal-plant-option:has(input:checked) { border-color: var(--sage); background: var(--sage-bg); }
-.goal-plant-icon { font-size: 18px; }
-.goal-plant-name { font-size: 13px; font-weight: 500; color: var(--text); }
+.goal-plant-icon { font-size: calc(18px * var(--core-font-scale)); }
+.goal-plant-name { font-size: calc(13px * var(--core-font-scale)); font-weight: 500; color: var(--text); }
 
 /* Icon-Picker für Einnahmen (recurring-Modal) — selbes Grundmuster wie
    der Pflanzen-Picker oben, nur als kompaktes umbrechendes Grid statt
@@ -690,7 +690,7 @@
 .recurring-icon-btn {
   width: 36px; height: 36px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  font-size: 17px; line-height: 1;
+  font-size: calc(17px * var(--core-font-scale)); line-height: 1;
   border-radius: var(--radius-sm);
   border: 1.5px solid var(--border);
   background: var(--surface-2);
@@ -714,14 +714,14 @@
 
 .b-liq-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
 .b-liq-title {
-  font-size: 11px;
+  font-size: calc(11px * var(--core-font-scale));
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.10em;
   color: var(--text-3);
 }
 .b-liq-badge {
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--core-font-scale));
   font-weight: 500;
   padding: 4px 12px;
   border-radius: 99px;
@@ -738,8 +738,8 @@
   border-bottom: 1px solid var(--border);
 }
 .b-liq-row:last-child { border-bottom: none; }
-.b-liq-row-label { font-size: 13px; color: var(--text-2); flex: 1; }
-.b-liq-row-value { font-family: var(--font); font-size: 15px; font-weight: 400; flex-shrink: 0; }
+.b-liq-row-label { font-size: calc(13px * var(--core-font-scale)); color: var(--text-2); flex: 1; }
+.b-liq-row-value { font-family: var(--font); font-size: calc(15px * var(--core-font-scale)); font-weight: 400; flex-shrink: 0; }
 .b-liq-row-value.income  { color: var(--b-green); }
 .b-liq-row-value.expense { color: var(--b-red); }
 
@@ -756,7 +756,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--core-font-scale));
   color: var(--text-2);
   gap: 8px;
 }
@@ -769,7 +769,7 @@
 .b-liq-divider { height: 1px; background: var(--border); margin: 6px 0; }
 
 .b-liq-total-row { display: flex; align-items: baseline; justify-content: space-between; padding: 8px 0 2px; }
-.b-liq-total-value { font-family: var(--font); font-size: 22px; font-weight: 400; letter-spacing: -0.5px; }
+.b-liq-total-value { font-family: var(--font); font-size: calc(22px * var(--core-font-scale)); font-weight: 400; letter-spacing: -0.5px; }
 .b-liq-total-value.income  { color: var(--b-green); }
 .b-liq-total-value.expense { color: var(--b-red); }
 
@@ -802,7 +802,7 @@
   border-bottom: 1px solid var(--border);
 }
 .b-card-title {
-  font-size: 11px;
+  font-size: calc(11px * var(--core-font-scale));
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.10em;
@@ -814,7 +814,7 @@
   border-radius: var(--b-radius-xs);
   border: 1.5px solid var(--border-strong);
   background: var(--surface);
-  font-size: 12px; font-weight: 500;
+  font-size: calc(12px * var(--core-font-scale)); font-weight: 500;
   color: var(--text);
   cursor: pointer;
   transition: all var(--transition);
@@ -827,7 +827,7 @@
   align-items: center;
   gap: 7px;
   padding: 10px 20px 6px;
-  font-size: 12px;
+  font-size: calc(12px * var(--core-font-scale));
   font-weight: 600;
   color: var(--text);
 }
@@ -853,10 +853,10 @@
 .budget-row-paid .budget-row-name { text-decoration: line-through; }
 .budget-row-left { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .budget-row-name-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.budget-row-name { font-size: 12.5px; color: var(--text); }
-.budget-row-sub  { font-size: 11px; color: var(--text-3); }
+.budget-row-name { font-size: calc(12.5px * var(--core-font-scale)); color: var(--text); }
+.budget-row-sub  { font-size: calc(11px * var(--core-font-scale)); color: var(--text-3); }
 .budget-row-right { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
-.budget-row-amount { font-size: 13px; font-weight: 600; font-family: var(--font); }
+.budget-row-amount { font-size: calc(13px * var(--core-font-scale)); font-weight: 600; font-family: var(--font); }
 
 .b-sum-row {
   display: flex;
@@ -869,13 +869,13 @@
 .b-sum-row-yearly { opacity: 0.75; }
 .b-sum-row-yearly .b-sum-label { font-style: italic; }
 .b-sum-label {
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--core-font-scale));
   font-weight: 600;
   color: var(--text-3);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
-.b-sum-value { font-family: var(--font); font-size: 14px; font-weight: 400; }
+.b-sum-value { font-family: var(--font); font-size: calc(14px * var(--core-font-scale)); font-weight: 400; }
 .b-sum-value.income  { color: var(--b-green); }
 .b-sum-value.expense { color: var(--b-red); }
 
@@ -883,7 +883,7 @@
 /* ── Priority badges ──────────────────────────────────────── */
 .budget-badge {
   display: inline-block;
-  font-size: 9.5px;
+  font-size: calc(9.5px * var(--core-font-scale));
   font-weight: 700;
   letter-spacing: 0.06em;
   padding: 2px 7px;
@@ -901,7 +901,7 @@
 .sz-icon-btn {
   width: 26px; height: 26px; flex-shrink: 0; border-radius: 50%;
   border: 1px solid var(--border-strong); background: var(--surface); color: var(--text-2);
-  font-size: 15px; line-height: 1; display: flex; align-items: center; justify-content: center;
+  font-size: calc(15px * var(--core-font-scale)); line-height: 1; display: flex; align-items: center; justify-content: center;
   transition: background var(--transition), color var(--transition), border-color var(--transition);
 }
 .sz-icon-btn:hover { background: var(--sage-bg); color: var(--sage-dark); border-color: var(--sage-border); }
@@ -911,7 +911,7 @@
 .budget-archiv-section { margin-bottom: 18px; }
 .budget-archiv-section:last-child { margin-bottom: 0; }
 .budget-archiv-section-title {
-  font-size: 12px; font-weight: 700; color: var(--text-3);
+  font-size: calc(12px * var(--core-font-scale)); font-weight: 700; color: var(--text-3);
   text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px;
 }
 .budget-archiv-row {
@@ -923,10 +923,10 @@
 
 /* ── Finanzierungs-Editor ("Jedem Euro einen Job") — budget-financing.js ── */
 .fin-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 5px 0; }
-.fin-row-check { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; flex: 1; }
-.fin-row-max { color: var(--text-3); font-family: var(--mono); font-size: 11.5px; }
+.fin-row-check { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: calc(13px * var(--core-font-scale)); flex: 1; }
+.fin-row-max { color: var(--text-3); font-family: var(--mono); font-size: calc(11.5px * var(--core-font-scale)); }
 .fin-row-amount { max-width: 90px; flex-shrink: 0; }
-.fin-diff { font-size: 12px; margin-top: 6px; font-weight: 600; }
+.fin-diff { font-size: calc(12px * var(--core-font-scale)); margin-top: 6px; font-weight: 600; }
 
 /* ── Sparziel-Posten ("Aus Posten zusammensetzen") — budget.js ──────── */
 .goal-items-list { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; padding-right: 2px; }
@@ -941,14 +941,14 @@
 .goal-item-optional-btn.active { color: var(--sage-dark); opacity: 1; background: var(--sage-bg); border-color: var(--sage-border); }
 .goal-items-add-btn { margin-top: 8px; width: 100%; }
 #goal-target.goal-target-computed { background: var(--surface-2); color: var(--text-2); cursor: default; }
-.goal-items-summary { font-size: 12px; color: var(--text-3); margin-top: 8px; line-height: 1.5; }
+.goal-items-summary { font-size: calc(12px * var(--core-font-scale)); color: var(--text-3); margin-top: 8px; line-height: 1.5; }
 .goal-items-summary strong { color: var(--text-2); }
 
 /* ── Finanzgarten: Auswahl "Pflicht-Posten" vs. "Alle Posten" als
    verfolgter Zielbetrag (nur sichtbar bei optionalen Posten) — budget.js ── */
 .b-garden-track-toggle { display: flex; gap: 4px; }
 .b-garden-track-btn {
-  font-size: 10px; font-weight: 600; color: var(--b-garden-select);
+  font-size: calc(10px * var(--core-font-scale)); font-weight: 600; color: var(--b-garden-select);
   background: var(--b-garden-chip-bg);
   border: 1px solid var(--b-garden-chip-border);
   border-radius: 99px;
@@ -965,7 +965,7 @@
   width: 21px; height: 21px;
   border-radius: 50%;
   border: 1.5px solid var(--border-strong);
-  font-size: 10px;
+  font-size: calc(10px * var(--core-font-scale));
   color: var(--text-3);
   display: flex; align-items: center; justify-content: center;
   transition: all var(--transition);
@@ -977,7 +977,7 @@
 
 /* ── Edit / delete buttons ────────────────────────────────── */
 .budget-edit-btn {
-  font-size: 12px;
+  font-size: calc(12px * var(--core-font-scale));
   color: var(--text-3);
   padding: 2px 4px;
   border-radius: 5px;
@@ -992,7 +992,7 @@
 
 #view-budget .task-delete {
   opacity: 0;
-  font-size: 11px;
+  font-size: calc(11px * var(--core-font-scale));
   color: var(--text-3);
   transition: opacity var(--transition), color var(--transition);
 }
@@ -1009,14 +1009,14 @@
 .budget-timeline-row:hover { background: var(--bg); }
 .budget-timeline-row.budget-row-paid { opacity: 0.4; }
 .budget-timeline-date {
-  font-size: 11px;
+  font-size: calc(11px * var(--core-font-scale));
   color: var(--text-3);
   width: 50px;
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
 }
-.budget-timeline-name   { flex: 1; font-size: 13px; color: var(--text); }
-.budget-timeline-amount { font-size: 13px; font-family: var(--font); font-weight: 400; flex-shrink: 0; }
+.budget-timeline-name   { flex: 1; font-size: calc(13px * var(--core-font-scale)); color: var(--text); }
+.budget-timeline-amount { font-size: calc(13px * var(--core-font-scale)); font-family: var(--font); font-weight: 400; flex-shrink: 0; }
 
 /* ── Goals ────────────────────────────────────────────────── */
 .budget-goal-card {
@@ -1054,7 +1054,7 @@
   padding: 7px 10px;
   border-radius: var(--b-radius-xs);
   border: 1.5px solid var(--border-strong);
-  font-size: 12px;
+  font-size: calc(12px * var(--core-font-scale));
   font-weight: 600;
   color: var(--text-2);
   background: var(--surface);
@@ -1087,19 +1087,19 @@
 }
 .b-tip-icon { flex-shrink: 0; opacity: 0.7; }
 .b-tip-eyebrow {
-  font-size: 10px;
+  font-size: calc(10px * var(--core-font-scale));
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.12em;
   color: var(--text-3);
   margin-bottom: 6px;
 }
-.b-tip-text { font-size: 14px; color: var(--text); line-height: 1.6; max-width: 480px; }
+.b-tip-text { font-size: calc(14px * var(--core-font-scale)); color: var(--text); line-height: 1.6; max-width: 480px; }
 
 /* ── Empty state ──────────────────────────────────────────── */
 #view-budget .empty-state {
   padding: 24px;
-  font-size: 13px;
+  font-size: calc(13px * var(--core-font-scale));
   color: var(--text-3);
   text-align: center;
 }
@@ -1109,7 +1109,7 @@
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  font-size: 10px;
+  font-size: calc(10px * var(--core-font-scale));
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -1162,11 +1162,11 @@
 .b-main-card-summary:hover { background: var(--b-card-line-1); }
 
 .b-mcs-left { display: flex; flex-direction: column; gap: 3px; }
-.b-mcs-label { font-size: 9px; font-weight: 700; letter-spacing: 0.13em; text-transform: uppercase; color: var(--b-card-ink-4); }
-.b-mcs-value { font-family: var(--mono); font-size: 20px; font-weight: 700; color: var(--b-card-ink-1); line-height: 1.1; }
+.b-mcs-label { font-size: calc(9px * var(--core-font-scale)); font-weight: 700; letter-spacing: 0.13em; text-transform: uppercase; color: var(--b-card-ink-4); }
+.b-mcs-value { font-family: var(--mono); font-size: calc(20px * var(--core-font-scale)); font-weight: 700; color: var(--b-card-ink-1); line-height: 1.1; }
 .b-mcs-value.income  { color: var(--b-card-income-text); }
 .b-mcs-value.expense { color: var(--b-card-expense-text); }
-.b-mcs-arrow { font-size: 10px; color: var(--b-card-ink-7); flex-shrink: 0; }
+.b-mcs-arrow { font-size: calc(10px * var(--core-font-scale)); color: var(--b-card-ink-7); flex-shrink: 0; }
 
 /* Detail panel — clearly lighter than header */
 .b-main-card-detail {
@@ -1177,7 +1177,7 @@
 }
 
 .b-main-card-list { display: flex; flex-direction: column; }
-.b-main-empty { font-size: 12px; color: var(--b-card-ink-5); padding: 4px 0; font-style: italic; }
+.b-main-empty { font-size: calc(12px * var(--core-font-scale)); color: var(--b-card-ink-5); padding: 4px 0; font-style: italic; }
 
 /* ── Geldfluss — ersetzt die bisherige Finanzanalyse. Visuelle
    Töpfe (Einnahmen-Karten) mit gestapelten Zuordnungen, plus ziehbare
@@ -1191,8 +1191,8 @@
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl);
   padding: 6px 18px; box-shadow: var(--shadow-sm);
 }
-.gf-monatsrest-label { font-size: 9px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-3); }
-.gf-monatsrest-value { font-family: var(--mono); font-size: 15px; font-weight: 700; }
+.gf-monatsrest-label { font-size: calc(9px * var(--core-font-scale)); font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-3); }
+.gf-monatsrest-value { font-family: var(--mono); font-size: calc(15px * var(--core-font-scale)); font-weight: 700; }
 
 /* ── Einnahmen-Zeitachse: Wochen als Spalten, Monatsposten als Balken ── */
 .gf-week-grid {
@@ -1202,8 +1202,8 @@
 .gf-week-col { padding: 10px; display: flex; flex-direction: column; gap: 8px; min-height: 60px; }
 .gf-week-col + .gf-week-col { border-left: 1px dashed var(--border); }
 .gf-week-head { display: flex; align-items: baseline; justify-content: center; gap: 6px; margin-bottom: 2px; }
-.gf-week-title { font-size: 12px; font-weight: 700; color: var(--text); }
-.gf-week-total { font-family: var(--mono); font-size: 12px; font-weight: 700; }
+.gf-week-title { font-size: calc(12px * var(--core-font-scale)); font-weight: 700; color: var(--text); }
+.gf-week-total { font-family: var(--mono); font-size: calc(12px * var(--core-font-scale)); font-weight: 700; }
 @media (max-width: 760px) { .gf-week-grid { grid-template-columns: repeat(2, 1fr); } .gf-week-col + .gf-week-col { border-left: none; border-top: 1px dashed var(--border); } }
 /* ≤480px: bleibt bei 2 Spalten (siehe .gf-week-grid weiter unten im
    Mobile-Block) statt auf 1 zu wechseln — spart vertikalen Platz. */
@@ -1219,9 +1219,9 @@
    volle Betrag bleibt als kleine Nebeninfo direkt daneben statt am
    Kartenrand zu kleben. */
 .gf-bar-main { display: flex; align-items: baseline; justify-content: center; gap: 10px; flex-wrap: wrap; text-align: center; }
-.gf-bar-name { font-size: 13px; font-weight: 600; color: var(--text); }
-.gf-bar-rest { font-family: var(--mono); font-size: 18px; font-weight: 700; }
-.gf-bar-amount-sub { font-family: var(--mono); font-size: 11px; color: var(--text-3); }
+.gf-bar-name { font-size: calc(13px * var(--core-font-scale)); font-weight: 600; color: var(--text); }
+.gf-bar-rest { font-family: var(--mono); font-size: calc(18px * var(--core-font-scale)); font-weight: 700; }
+.gf-bar-amount-sub { font-family: var(--mono); font-size: calc(11px * var(--core-font-scale)); color: var(--text-3); }
 .gf-stack--bar { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .gf-stack--bar .gf-stack-item { margin-top: 0; }
 
@@ -1232,10 +1232,10 @@
 }
 .gf-income-card.gf-drop-hover { box-shadow: 0 0 0 2px var(--sage), 0 4px 14px rgba(50,40,20,0.12); transform: translateY(-2px); }
 .gf-income-head { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; }
-.gf-income-name { font-size: 12.5px; font-weight: 600; color: var(--text); }
+.gf-income-name { font-size: calc(12.5px * var(--core-font-scale)); font-weight: 600; color: var(--text); }
 /* Nebeninfo: der ursprüngliche Betrag — bewusst klein, der Rest (oben)
    ist jetzt die Hauptinformation der Karte. */
-.gf-income-amount-sub { font-family: var(--mono); font-size: 11px; color: var(--text-3); text-align: right; }
+.gf-income-amount-sub { font-family: var(--mono); font-size: calc(11px * var(--core-font-scale)); color: var(--text-3); text-align: right; }
 
 /* Farbfamilie je Einnahmequelle (bis zu 4, rotierend) — ans Mockup
    angelehnt: jede Einnahme bekommt eine eigene, stabile Farbe, damit man
@@ -1253,7 +1253,7 @@
 
 .gf-stack { display: flex; flex-direction: column; }
 .gf-stack-item {
-  display: flex; justify-content: center; align-items: baseline; gap: 6px; font-size: 11px; color: var(--text-2);
+  display: flex; justify-content: center; align-items: baseline; gap: 6px; font-size: calc(11px * var(--core-font-scale)); color: var(--text-2);
   background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--b-radius-xs);
   padding: 4px 8px; margin-top: calc(-1px - var(--gf-i, 0) * 0px);
   /* pan-y statt none: die Karte selbst bleibt normales, natives Scrollen —
@@ -1266,8 +1266,8 @@
 .gf-stack-item + .gf-stack-item { margin-top: 3px; }
 
 /* Rest — jetzt die groß hervorgehobene Hauptinformation jeder Karte. */
-.gf-rest { font-size: 12px; font-weight: 700; }
-.gf-rest-hero { font-family: var(--mono); font-size: 22px; font-weight: 700; padding: 2px 0 4px; }
+.gf-rest { font-size: calc(12px * var(--core-font-scale)); font-weight: 700; }
+.gf-rest-hero { font-family: var(--mono); font-size: calc(22px * var(--core-font-scale)); font-weight: 700; padding: 2px 0 4px; }
 .gf-rest-ok   { color: var(--b-green); }
 .gf-rest-low  { color: var(--b-olive); }
 .gf-rest-over { color: var(--b-red); }
@@ -1277,9 +1277,9 @@
 @media (max-width: 640px) { .gf-consumer-grid { grid-template-columns: 1fr; } }
 
 .gf-group { display: flex; flex-direction: column; min-width: 0; }
-.gf-group-title { font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+.gf-group-title { font-size: calc(12px * var(--core-font-scale)); font-weight: 700; color: var(--text); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
 .gf-group-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.gf-group-count { font-size: 10px; font-family: var(--mono); color: var(--text-3); font-weight: 400; }
+.gf-group-count { font-size: calc(10px * var(--core-font-scale)); font-family: var(--mono); color: var(--text-3); font-weight: 400; }
 .gf-group-list { display: flex; flex-direction: column; gap: 8px; }
 
 .gf-consumer-card {
@@ -1294,8 +1294,8 @@
 .gf-consumer-card.gf-consumer-blue   { background: var(--b-blue-soft);   border-left: 3px solid var(--b-blue); }
 .gf-consumer-card.gf-consumer-purple { background: var(--b-purple-soft); border-left: 3px solid var(--b-purple); }
 .gf-consumer-left { display: flex; align-items: center; gap: 6px; min-width: 0; }
-.gf-consumer-name { font-size: 12.5px; font-weight: 600; color: var(--text); }
-.gf-consumer-amount { font-family: var(--mono); font-size: 12.5px; color: var(--text-2); flex-shrink: 0; }
+.gf-consumer-name { font-size: calc(12.5px * var(--core-font-scale)); font-weight: 600; color: var(--text); }
+.gf-consumer-amount { font-family: var(--mono); font-size: calc(12.5px * var(--core-font-scale)); color: var(--text-2); flex-shrink: 0; }
 
 /* ── Ziehpunkt für Touch — auf Desktop unsichtbar (Maus zieht wie gehabt
    von der ganzen Karte aus), auf Touch-Geräten die EINZIGE Stelle, die
@@ -1305,7 +1305,7 @@
 .gf-drag-handle {
   display: none;
   flex-shrink: 0; align-items: center; justify-content: center;
-  color: var(--text-3); font-size: 12px; line-height: 1;
+  color: var(--text-3); font-size: calc(12px * var(--core-font-scale)); line-height: 1;
   touch-action: none; cursor: grab;
 }
 @media (hover: none) and (pointer: coarse) {
@@ -1321,7 +1321,7 @@
 
 .gf-add-btn {
   margin-top: 8px; padding: 8px 10px; border: 1px dashed var(--border-strong); border-radius: var(--b-radius-sm);
-  background: transparent; color: var(--text-3); font-size: 12px; cursor: pointer; text-align: center;
+  background: transparent; color: var(--text-3); font-size: calc(12px * var(--core-font-scale)); cursor: pointer; text-align: center;
   transition: background var(--transition), color var(--transition);
 }
 .gf-add-btn:hover { background: var(--surface-2); color: var(--text-2); }
@@ -1334,7 +1334,7 @@
 .b-main-row {
   display: grid; grid-template-columns: 38px 1fr 14px auto;
   align-items: center; gap: 5px;
-  padding: 3px 0; border-bottom: 1px solid var(--b-card-line-1); font-size: 12px; line-height: 1.2;
+  padding: 3px 0; border-bottom: 1px solid var(--b-card-line-1); font-size: calc(12px * var(--core-font-scale)); line-height: 1.2;
 }
 .b-main-row:last-child { border-bottom: none; }
 
@@ -1343,30 +1343,30 @@
 .b-main-row-clickable:active { background: var(--b-card-line-6); }
 .b-main-row.b-main-row-paid  { opacity: 0.35; text-decoration: line-through; }
 
-.b-main-row-day    { font-family: var(--mono); font-size: 9.5px; color: var(--b-card-ink-5); }
+.b-main-row-day    { font-family: var(--mono); font-size: calc(9.5px * var(--core-font-scale)); color: var(--b-card-ink-5); }
 .b-main-row-name   { color: var(--b-card-neutral-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.b-main-row-check  { font-size: 10px; color: var(--b-card-ink-3); text-align: center; }
-.b-main-row-amount { font-family: var(--mono); font-size: 11.5px; font-weight: 600; white-space: nowrap; }
+.b-main-row-check  { font-size: calc(10px * var(--core-font-scale)); color: var(--b-card-ink-3); text-align: center; }
+.b-main-row-amount { font-family: var(--mono); font-size: calc(11.5px * var(--core-font-scale)); font-weight: 600; white-space: nowrap; }
 .b-main-row-amount.income  { color: var(--b-card-income-text); }
 .b-main-row-amount.expense { color: var(--b-card-expense-text); }
 
-.b-main-group-head { display: flex; align-items: center; gap: 5px; font-size: 9.5px; font-weight: 700; color: var(--b-card-ink-5); padding: 4px 0 2px; text-transform: uppercase; letter-spacing: 0.05em; }
+.b-main-group-head { display: flex; align-items: center; gap: 5px; font-size: calc(9.5px * var(--core-font-scale)); font-weight: 700; color: var(--b-card-ink-5); padding: 4px 0 2px; text-transform: uppercase; letter-spacing: 0.05em; }
 
 .b-main-card-total { display: flex; justify-content: space-between; align-items: center; padding: 6px 0 0; border-top: 1px solid var(--b-card-line-3); margin-top: 3px; }
-.b-main-total-label { font-size: 9.5px; font-weight: 600; color: var(--b-card-ink-5); text-transform: uppercase; letter-spacing: 0.07em; }
-.b-main-total-value { font-family: var(--mono); font-size: 13px; font-weight: 700; }
+.b-main-total-label { font-size: calc(9.5px * var(--core-font-scale)); font-weight: 600; color: var(--b-card-ink-5); text-transform: uppercase; letter-spacing: 0.07em; }
+.b-main-total-value { font-family: var(--mono); font-size: calc(13px * var(--core-font-scale)); font-weight: 700; }
 .b-main-total-value.income  { color: var(--b-card-income-text); }
 .b-main-total-value.expense { color: var(--b-card-expense-text); }
 
 /* Free budget card inner */
 #b-free-content { padding: 6px 0 2px; }
 .b-free-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; }
-.b-free-label     { font-size: 12px; color: var(--b-card-ink-2); }
-.b-free-label-big { font-size: 13px; font-weight: 600; color: var(--b-card-neutral-text); }
-.b-free-val { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--b-card-neutral-text); }
+.b-free-label     { font-size: calc(12px * var(--core-font-scale)); color: var(--b-card-ink-2); }
+.b-free-label-big { font-size: calc(13px * var(--core-font-scale)); font-weight: 600; color: var(--b-card-neutral-text); }
+.b-free-val { font-family: var(--mono); font-size: calc(13px * var(--core-font-scale)); font-weight: 600; color: var(--b-card-neutral-text); }
 .b-free-val.income  { color: var(--b-card-income-text); }
 .b-free-val.expense { color: var(--b-card-expense-text); }
-.b-free-val-big { font-family: var(--mono); font-size: 17px; font-weight: 700; }
+.b-free-val-big { font-family: var(--mono); font-size: calc(17px * var(--core-font-scale)); font-weight: 700; }
 .b-free-val-big.income  { color: var(--b-card-income-text); }
 .b-free-val-big.expense { color: var(--b-card-expense-text); }
 .b-free-divider { height: 1px; background: var(--b-card-line-4); margin: 5px 0 3px; }
@@ -1380,7 +1380,7 @@
   align-items: center;
   gap: 6px;
   padding: 3px 0;
-  font-size: 12px;
+  font-size: calc(12px * var(--core-font-scale));
 }
 .b-free-prio-dot {
   width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
@@ -1388,9 +1388,9 @@
 .b-free-prio-dot.must { background: var(--b-card-must); }
 .b-free-prio-dot.need { background: var(--b-card-need); }
 .b-free-prio-dot.want { background: var(--b-card-want); }
-.b-free-prio-label { color: var(--b-card-ink-2); font-size: 11.5px; }
-.b-free-prio-amt   { font-family: var(--mono); font-size: 11px; color: var(--b-card-expense-text); text-align: right; }
-.b-free-prio-after { font-family: var(--mono); font-size: 11px; font-weight: 600; text-align: right; min-width: 64px; }
+.b-free-prio-label { color: var(--b-card-ink-2); font-size: calc(11.5px * var(--core-font-scale)); }
+.b-free-prio-amt   { font-family: var(--mono); font-size: calc(11px * var(--core-font-scale)); color: var(--b-card-expense-text); text-align: right; }
+.b-free-prio-after { font-family: var(--mono); font-size: calc(11px * var(--core-font-scale)); font-weight: 600; text-align: right; min-width: 64px; }
 .b-free-prio-after.ok      { color: var(--b-card-income-text); }
 .b-free-prio-after.bad     { color: var(--b-card-bad); }
 .b-free-prio-after.neutral { color: var(--b-card-ink-6); }
@@ -1419,8 +1419,8 @@
   text-align: left;
   padding: 0;
 }
-.b-card-arrow { font-size: 9px; color: var(--text-3); flex-shrink: 0; }
-.b-card-title { font-size: 13px; font-weight: 600; color: var(--text); }
+.b-card-arrow { font-size: calc(9px * var(--core-font-scale)); color: var(--text-3); flex-shrink: 0; }
+.b-card-title { font-size: calc(13px * var(--core-font-scale)); font-weight: 600; color: var(--text); }
 
 /* =============================================================
    SPARPROGNOSE & SPARPLÄNE — Sub-Tabs innerhalb von #view-budget
@@ -1441,7 +1441,7 @@
 .sp-subtab-btn {
   padding: 6px 16px;
   border-radius: 99px;
-  font-size: 12px;
+  font-size: calc(12px * var(--core-font-scale));
   font-weight: 600;
   color: var(--text-3);
   transition: all var(--transition);
@@ -1465,10 +1465,10 @@
   box-shadow: var(--b-shadow);
 }
 .sp-scen-card:hover { box-shadow: var(--b-shadow-lg); transform: translateY(-1px); }
-.sp-scen-eyebrow { font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 10px; }
-.sp-scen-desc { font-size: 11.5px; color: var(--text-3); margin-bottom: 2px; }
-.sp-scen-value { font-family: var(--mono); font-size: 24px; font-weight: 700; line-height: 1.15; margin: 4px 0 2px; }
-.sp-scen-sub { font-size: 11px; color: var(--text-3); }
+.sp-scen-eyebrow { font-size: calc(10.5px * var(--core-font-scale)); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 10px; }
+.sp-scen-desc { font-size: calc(11.5px * var(--core-font-scale)); color: var(--text-3); margin-bottom: 2px; }
+.sp-scen-value { font-family: var(--mono); font-size: calc(24px * var(--core-font-scale)); font-weight: 700; line-height: 1.15; margin: 4px 0 2px; }
+.sp-scen-sub { font-size: calc(11px * var(--core-font-scale)); color: var(--text-3); }
 
 .sp-scen-card .sp-scen-garant { color: var(--b-green); }
 .sp-scen-card .sp-scen-real   { color: var(--b-olive); }
@@ -1480,8 +1480,8 @@
 /* ── Generisches Sparplaner-Panel (Karte) ─────────────────── */
 .sp-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--b-radius); box-shadow: var(--b-shadow); overflow: hidden; }
 .sp-panel-head { display: flex; align-items: center; justify-content: space-between; padding: 13px 16px 11px; border-bottom: 1px solid var(--border); }
-.sp-panel-title { font-size: 13px; font-weight: 600; color: var(--text); }
-.sp-add-btn { font-size: 11.5px; font-weight: 600; color: var(--sage-dark); background: var(--sage-bg); border: 1px solid var(--sage-border); border-radius: 99px; padding: 5px 12px; transition: all var(--transition); }
+.sp-panel-title { font-size: calc(13px * var(--core-font-scale)); font-weight: 600; color: var(--text); }
+.sp-add-btn { font-size: calc(11.5px * var(--core-font-scale)); font-weight: 600; color: var(--sage-dark); background: var(--sage-bg); border: 1px solid var(--sage-border); border-radius: 99px; padding: 5px 12px; transition: all var(--transition); }
 .sp-add-btn:hover { background: var(--sage); color: var(--surface); }
 
 #sparplan-grid { display: grid; grid-template-columns: 1fr 1.35fr; gap: 16px; align-items: start; }
@@ -1489,50 +1489,50 @@
 
 /* ── Einnahmen/Ausgaben-Gruppen ────────────────────────────── */
 .sp-group { padding: 10px 16px 4px; }
-.sp-group-label { display: flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); margin-bottom: 4px; padding-top: 6px; }
+.sp-group-label { display: flex; align-items: center; gap: 6px; font-size: calc(10px * var(--core-font-scale)); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); margin-bottom: 4px; padding-top: 6px; }
 .sp-group-label .dot { width: 7px; height: 7px; border-radius: 50%; }
 .sp-group-label.garant .dot   { background: var(--b-green-mid); }
 .sp-group-label.variabel .dot { background: var(--b-olive); }
 .sp-group-label.sonder .dot   { background: var(--text-3); }
 
-.sp-row { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 12.5px; }
+.sp-row { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: calc(12.5px * var(--core-font-scale)); }
 .sp-row:last-child { border-bottom: none; }
 .sp-row-name { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sp-row-amt { font-family: var(--mono); font-weight: 600; white-space: nowrap; }
 .sp-row-amt.income  { color: var(--budget-income); }
 .sp-row-amt.expense { color: var(--budget-expense); }
-.sp-row-range { font-family: var(--mono); font-size: 10.5px; color: var(--text-3); white-space: nowrap; }
+.sp-row-range { font-family: var(--mono); font-size: calc(10.5px * var(--core-font-scale)); color: var(--text-3); white-space: nowrap; }
 
-.sp-group-total { display: flex; justify-content: space-between; padding: 6px 0 10px; font-size: 11.5px; font-weight: 700; color: var(--text-2); }
+.sp-group-total { display: flex; justify-content: space-between; padding: 6px 0 10px; font-size: calc(11.5px * var(--core-font-scale)); font-weight: 700; color: var(--text-2); }
 .sp-group-total span:last-child { font-family: var(--mono); }
 
-.sp-source-note { margin: 4px 16px 14px; padding: 9px 12px; background: var(--surface-2); border-radius: var(--radius-sm); font-size: 11px; color: var(--text-3); line-height: 1.6; }
+.sp-source-note { margin: 4px 16px 14px; padding: 9px 12px; background: var(--surface-2); border-radius: var(--radius-sm); font-size: calc(11px * var(--core-font-scale)); color: var(--text-3); line-height: 1.6; }
 
 /* ── Sparziele & Prognose ──────────────────────────────────── */
-.sp-goal-table-head { display: grid; grid-template-columns: 56px 1.5fr 1fr auto; gap: 10px; padding: 8px 16px; font-size: 9.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); border-bottom: 1px solid var(--border); }
+.sp-goal-table-head { display: grid; grid-template-columns: 56px 1.5fr 1fr auto; gap: 10px; padding: 8px 16px; font-size: calc(9.5px * var(--core-font-scale)); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); border-bottom: 1px solid var(--border); }
 .sp-goal-row { display: grid; grid-template-columns: 56px 1.5fr 1fr auto; gap: 10px; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--border); }
 .sp-goal-row:last-child { border-bottom: none; }
 .sp-goal-row:hover { background: var(--surface-3); }
 
 .sp-goal-order { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-.sp-order-btn { font-size: 9px; color: var(--text-3); line-height: 1; padding: 1px 4px; border-radius: 3px; transition: color var(--transition), background var(--transition); }
+.sp-order-btn { font-size: calc(9px * var(--core-font-scale)); color: var(--text-3); line-height: 1; padding: 1px 4px; border-radius: 3px; transition: color var(--transition), background var(--transition); }
 .sp-order-btn:hover:not(:disabled) { color: var(--sage-dark); background: var(--sage-bg); }
 .sp-order-btn:disabled { opacity: .25; cursor: default; }
-.sp-goal-prio { font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--text-2); }
+.sp-goal-prio { font-family: var(--mono); font-size: calc(11px * var(--core-font-scale)); font-weight: 700; color: var(--text-2); }
 
 .sp-goal-name { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
-.sp-goal-name-top { display: flex; align-items: center; gap: 7px; font-weight: 600; font-size: 13px; flex-wrap: wrap; }
-.sp-goal-target { font-weight: 400; color: var(--text-3); font-size: 11px; }
+.sp-goal-name-top { display: flex; align-items: center; gap: 7px; font-weight: 600; font-size: calc(13px * var(--core-font-scale)); flex-wrap: wrap; }
+.sp-goal-target { font-weight: 400; color: var(--text-3); font-size: calc(11px * var(--core-font-scale)); }
 .sp-goal-bar { height: 5px; background: var(--surface-3); border-radius: 99px; overflow: hidden; width: 100%; max-width: 170px; }
 .sp-goal-fill { height: 100%; background: var(--sage); border-radius: 99px; transition: width 500ms cubic-bezier(.4,0,.2,1); }
-.sp-goal-progress-txt { font-size: 10.5px; color: var(--text-3); font-family: var(--mono); }
+.sp-goal-progress-txt { font-size: calc(10.5px * var(--core-font-scale)); color: var(--text-3); font-family: var(--mono); }
 
-.sp-goal-eta-block { display: flex; flex-direction: column; gap: 2px; font-family: var(--mono); font-size: 11px; }
+.sp-goal-eta-block { display: flex; flex-direction: column; gap: 2px; font-family: var(--mono); font-size: calc(11px * var(--core-font-scale)); }
 .sp-goal-eta-block .g { color: var(--text-3); }
 .sp-goal-eta-block .r { color: var(--b-olive); font-weight: 700; }
 .sp-goal-eta-block .o { color: var(--sage-dark); }
 
-.sp-goal-compare { font-size: 11px; font-weight: 600; padding: 5px 9px; border-radius: 99px; white-space: nowrap; text-align: center; }
+.sp-goal-compare { font-size: calc(11px * var(--core-font-scale)); font-weight: 600; padding: 5px 9px; border-radius: 99px; white-space: nowrap; text-align: center; }
 .sp-goal-compare.early { background: var(--sage-bg); color: var(--sage-dark); }
 .sp-goal-compare.late  { background: var(--b-red-soft); color: var(--b-red); }
 .sp-goal-compare.none  { background: var(--surface-2); color: var(--text-3); }
@@ -1552,7 +1552,7 @@
 }
 .sp-tl-year-label {
   position: absolute; top: -34px; transform: translateX(-2px);
-  font-size: 10.5px; font-weight: 700; font-family: var(--mono);
+  font-size: calc(10.5px * var(--core-font-scale)); font-weight: 700; font-family: var(--mono);
   color: var(--text-3); letter-spacing: .02em; white-space: nowrap;
 }
 
@@ -1572,21 +1572,21 @@
   border-radius: var(--radius); padding: 9px 12px; text-align: center;
   min-width: 116px; box-shadow: var(--shadow-xs);
 }
-.sp-tl-month { font-size: 10px; color: var(--text-3); font-family: var(--mono); margin-bottom: 4px; }
-.sp-tl-icon { font-size: 18px; margin-bottom: 2px; }
-.sp-tl-goal { font-size: 12px; font-weight: 600; color: var(--text); white-space: nowrap; }
-.sp-tl-amt { font-size: 10.5px; color: var(--text-3); font-family: var(--mono); white-space: nowrap; }
+.sp-tl-month { font-size: calc(10px * var(--core-font-scale)); color: var(--text-3); font-family: var(--mono); margin-bottom: 4px; }
+.sp-tl-icon { font-size: calc(18px * var(--core-font-scale)); margin-bottom: 2px; }
+.sp-tl-goal { font-size: calc(12px * var(--core-font-scale)); font-weight: 600; color: var(--text); white-space: nowrap; }
+.sp-tl-amt { font-size: calc(10.5px * var(--core-font-scale)); color: var(--text-3); font-family: var(--mono); white-space: nowrap; }
 
 /* ── Was-wäre-wenn + Zusammenfassung ───────────────────────── */
 #sparplan-bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 @media (max-width: 960px) { #sparplan-bottom-grid { grid-template-columns: 1fr; } }
 
 .sp-sim-panel { padding: 18px 20px 22px; }
-.sp-sim-value { font-family: var(--mono); font-size: 28px; font-weight: 700; color: var(--sage-dark); text-align: center; margin: 14px 0 6px; }
+.sp-sim-value { font-family: var(--mono); font-size: calc(28px * var(--core-font-scale)); font-weight: 700; color: var(--sage-dark); text-align: center; margin: 14px 0 6px; }
 .sp-sim-slider { width: 100%; accent-color: var(--sage); height: 5px; }
-.sp-sim-labels { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--text-3); font-family: var(--mono); margin-top: 6px; }
-.sp-sim-hint { margin-top: 14px; font-size: 11.5px; color: var(--text-3); text-align: center; }
-.sp-sim-reset { display: block; margin: 12px auto 0; font-size: 11px; font-weight: 600; color: var(--text-3); border: 1.5px solid var(--border-strong); border-radius: 99px; padding: 5px 14px; transition: all var(--transition); }
+.sp-sim-labels { display: flex; justify-content: space-between; font-size: calc(10.5px * var(--core-font-scale)); color: var(--text-3); font-family: var(--mono); margin-top: 6px; }
+.sp-sim-hint { margin-top: 14px; font-size: calc(11.5px * var(--core-font-scale)); color: var(--text-3); text-align: center; }
+.sp-sim-reset { display: block; margin: 12px auto 0; font-size: calc(11px * var(--core-font-scale)); font-weight: 600; color: var(--text-3); border: 1.5px solid var(--border-strong); border-radius: 99px; padding: 5px 14px; transition: all var(--transition); }
 
 
 @media (max-width: 720px) {
@@ -1603,7 +1603,7 @@
 ============================================================= */
 
 /* ── Kopf & Grid der Übersicht ───────────────────────────────── */
-.sp-plaene-sub { padding: 0 16px 13px; font-size: 12px; color: var(--text-3); }
+.sp-plaene-sub { padding: 0 16px 13px; font-size: calc(12px * var(--core-font-scale)); color: var(--text-3); }
 .sp-plaene-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
 
 /* ── Einzelne Sparplan-Karte ──────────────────────────────────── */
@@ -1620,16 +1620,16 @@
 }
 .sp-plan-card:hover { box-shadow: var(--b-shadow-lg); transform: translateY(-1px); }
 .sp-plan-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.sp-plan-card-name { font-size: 13.5px; font-weight: 600; color: var(--text); }
+.sp-plan-card-name { font-size: calc(13.5px * var(--core-font-scale)); font-weight: 600; color: var(--text); }
 .sp-plan-badge { background: var(--sage-bg); color: var(--sage-dark); }
 .sp-plan-bar { height: 6px; }
-.sp-plan-card-row { display: flex; align-items: center; justify-content: space-between; font-family: var(--mono); font-size: 12.5px; color: var(--text); }
+.sp-plan-card-row { display: flex; align-items: center; justify-content: space-between; font-family: var(--mono); font-size: calc(12.5px * var(--core-font-scale)); color: var(--text); }
 .sp-plan-card-amounts-of { color: var(--text-3); }
 .sp-plan-card-pct { color: var(--text-3); }
-.sp-plan-card-meta { display: flex; flex-direction: column; gap: 2px; font-size: 11.5px; color: var(--text-3); }
+.sp-plan-card-meta { display: flex; flex-direction: column; gap: 2px; font-size: calc(11.5px * var(--core-font-scale)); color: var(--text-3); }
 .sp-plan-card-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
-.sp-plan-open-btn { font-size: 11.5px; padding: 5px 14px; }
-.sp-plan-pay-btn { font-size: 11.5px; padding: 5px 14px; }
+.sp-plan-open-btn { font-size: calc(11.5px * var(--core-font-scale)); padding: 5px 14px; }
+.sp-plan-pay-btn { font-size: calc(11.5px * var(--core-font-scale)); padding: 5px 14px; }
 
 /* ── Assistent: Variantenauswahl ─────────────────────────────── */
 .sp-wizard-variant-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
@@ -1645,26 +1645,26 @@
   transition: all var(--transition);
 }
 .sp-wizard-variant-btn:hover { border-color: var(--sage); background: var(--sage-bg); }
-.sp-wizard-variant-title { font-size: 13px; font-weight: 600; color: var(--text); }
-.sp-wizard-variant-desc { font-size: 11.5px; color: var(--text-3); line-height: 1.4; }
-.sp-wizard-preview { margin-top: 8px; font-size: 12px; color: var(--text-3); font-family: var(--mono); min-height: 16px; }
+.sp-wizard-variant-title { font-size: calc(13px * var(--core-font-scale)); font-weight: 600; color: var(--text); }
+.sp-wizard-variant-desc { font-size: calc(11.5px * var(--core-font-scale)); color: var(--text-3); line-height: 1.4; }
+.sp-wizard-preview { margin-top: 8px; font-size: calc(12px * var(--core-font-scale)); color: var(--text-3); font-family: var(--mono); min-height: 16px; }
 .sp-wizard-custom-row { display: grid; grid-template-columns: auto 1fr auto; gap: 6px; align-items: center; margin-bottom: 6px; }
-.sp-wizard-custom-position { font-size: 12.5px; color: var(--text-3); font-family: var(--mono); white-space: nowrap; min-width: 64px; }
+.sp-wizard-custom-position { font-size: calc(12.5px * var(--core-font-scale)); color: var(--text-3); font-family: var(--mono); white-space: nowrap; min-width: 64px; }
 
 /* ── Detailansicht ────────────────────────────────────────────── */
 .sp-detail-stammdaten { display: flex; flex-direction: column; gap: 8px; }
-.sp-detail-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12.5px; }
+.sp-detail-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: calc(12.5px * var(--core-font-scale)); }
 .sp-detail-row > span:first-child { color: var(--text-3); }
-.sp-detail-section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-3); margin: 16px 0 6px; }
+.sp-detail-section-title { font-size: calc(11px * var(--core-font-scale)); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-3); margin: 16px 0 6px; }
 .sp-detail-entry-list { display: flex; flex-direction: column; gap: 4px; max-height: 160px; overflow-y: auto; }
 .sp-detail-entry-row {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
   padding: 7px 10px; border-radius: var(--b-radius-xs); background: var(--surface-2);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--core-font-scale));
 }
 .sp-detail-entry-row--done { opacity: .65; }
 .sp-detail-entry-amount { font-family: var(--mono); }
-.sp-detail-entry-btn { font-size: 11px; padding: 3px 10px; }
+.sp-detail-entry-btn { font-size: calc(11px * var(--core-font-scale)); padding: 3px 10px; }
 
 /* ── Individuell: additive Werkzeugleiste & Generator-Formulare ──
    Die 4 Werkzeuge sind KEINE exklusiven Varianten mehr, sondern
@@ -1673,13 +1673,13 @@
 .sp-wizard-toolbar { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 14px; }
 .sp-wizard-back-link {
   background: none; border: none; padding: 0 0 12px; margin: 0;
-  font-size: 12px; font-weight: 600; color: var(--sage-dark); cursor: pointer;
+  font-size: calc(12px * var(--core-font-scale)); font-weight: 600; color: var(--sage-dark); cursor: pointer;
 }
 .sp-wizard-back-link:hover { text-decoration: underline; }
 .sp-template-item {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
   padding: 10px 12px; border-radius: var(--b-radius-xs); border: 1.5px dashed var(--border-strong);
-  color: var(--text-3); font-size: 12.5px; margin-bottom: 6px;
+  color: var(--text-3); font-size: calc(12.5px * var(--core-font-scale)); margin-bottom: 6px;
 }
 /* .badge-soon selbst ist jetzt hubweit generisch in css/main.css definiert
    (siehe dortigen Kommentar) — .sp-template-item braucht dafür keine eigene
@@ -1691,7 +1691,7 @@
   margin-top: 8px;
   padding-top: 8px;
   border-top: 1px dashed var(--border-strong);
-  font-size: 10px;
+  font-size: calc(10px * var(--core-font-scale));
   font-family: var(--mono);
   color: var(--text-3);
   line-height: 1.5;
@@ -1707,28 +1707,28 @@
 /* ── "Gespart bis..." — Ergebnisdarstellung (vorher komplett ungestylt,
    deshalb die Debug-Optik). Fließtext-Zusammenfassung → große Ergebnis-
    Karte → Kennzahlen → Berechnung, sanft eingeblendet. ── */
-.sp-savedby-hint { font-size: 13px; color: var(--text-3); padding: 10px 2px; line-height: 1.5; }
+.sp-savedby-hint { font-size: calc(13px * var(--core-font-scale)); color: var(--text-3); padding: 10px 2px; line-height: 1.5; }
 
 .sp-savedby-result { display: flex; flex-direction: column; gap: 14px; margin-top: 14px; animation: sp-savedby-fadein 260ms ease-out; }
 @keyframes sp-savedby-fadein { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
-.sp-savedby-summary { font-size: 13px; color: var(--text-2); line-height: 1.5; }
+.sp-savedby-summary { font-size: calc(13px * var(--core-font-scale)); color: var(--text-2); line-height: 1.5; }
 
 .sp-savedby-hero {
   background: var(--sage-bg); border: 1px solid var(--sage-border); border-radius: var(--b-radius);
   padding: 16px; text-align: center;
 }
-.sp-savedby-hero-label { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--sage-dark); margin-bottom: 6px; }
-.sp-savedby-hero-sub { font-size: 12.5px; color: var(--text-2); }
-.sp-savedby-hero-amount { font-family: var(--mono); font-size: 30px; font-weight: 700; color: var(--sage-dark); margin: 4px 0; }
+.sp-savedby-hero-label { font-size: calc(11px * var(--core-font-scale)); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--sage-dark); margin-bottom: 6px; }
+.sp-savedby-hero-sub { font-size: calc(12.5px * var(--core-font-scale)); color: var(--text-2); }
+.sp-savedby-hero-amount { font-family: var(--mono); font-size: calc(30px * var(--core-font-scale)); font-weight: 700; color: var(--sage-dark); margin: 4px 0; }
 
 .sp-savedby-section { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--b-radius-sm); padding: 10px 14px; }
-.sp-savedby-section-title { font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
-.sp-savedby-row { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--text-2); padding: 4px 0; }
+.sp-savedby-section-title { font-size: calc(12px * var(--core-font-scale)); font-weight: 700; color: var(--text); margin-bottom: 6px; }
+.sp-savedby-row { display: flex; justify-content: space-between; font-size: calc(12.5px * var(--core-font-scale)); color: var(--text-2); padding: 4px 0; }
 .sp-savedby-row + .sp-savedby-row { border-top: 1px dashed var(--border); }
 .sp-savedby-row span:last-child { font-family: var(--mono); font-weight: 600; color: var(--text); }
 
-.sp-savedby-formula { display: flex; align-items: baseline; justify-content: center; flex-wrap: wrap; gap: 8px; font-family: var(--mono); font-size: 13px; color: var(--text-2); padding: 4px 0; }
+.sp-savedby-formula { display: flex; align-items: baseline; justify-content: center; flex-wrap: wrap; gap: 8px; font-family: var(--mono); font-size: calc(13px * var(--core-font-scale)); color: var(--text-2); padding: 4px 0; }
 .sp-savedby-formula-op { color: var(--text-3); }
 .sp-savedby-formula-result { font-weight: 700; color: var(--sage-dark); }
 .sp-savedby-formula + .sp-savedby-formula { border-top: 1px dashed var(--border); margin-top: 2px; padding-top: 8px; }
@@ -1781,7 +1781,7 @@
 }
 
 @media (max-width: 480px) {
-  #budget-title-block h1 { font-size: 28px; }
+  #budget-title-block h1 { font-size: calc(28px * var(--core-font-scale)); }
   #budget-month-picker { width: 100%; }
   .b-tree-config-btn { width: 32px; height: 32px; }
   .b-tip-left { flex-direction: column; align-items: flex-start; gap: 12px; padding: 16px 18px; }
@@ -1790,7 +1790,7 @@
      "+ Hinzufügen" bleibt einzeilig (siehe .b-card-add-btn), der Titel
      darf bei Bedarf zweizeilig umbrechen statt den Button zu quetschen. */
   .b-card-header { padding: 12px 14px 10px; }
-  .b-card-add-btn { padding: 0 10px; font-size: 11.5px; }
+  .b-card-add-btn { padding: 0 10px; font-size: calc(11.5px * var(--core-font-scale)); }
 
   /* ── Wiederkehrende/Einmalige Posten, Sparziele: Zeilen-Layout ──
      Ursachen der "gequetschten" Optik auf Mobile:
@@ -1829,12 +1829,12 @@
      Karte breit genug für Name + Rest-Betrag. */
   .gf-week-grid { grid-template-columns: repeat(2, 1fr); }
   .gf-week-col { padding: 8px; gap: 6px; }
-  .gf-week-title, .gf-week-total { font-size: 11px; }
+  .gf-week-title, .gf-week-total { font-size: calc(11px * var(--core-font-scale)); }
 
   .gf-income-card { padding: 8px 9px 7px; }
-  .gf-rest-hero { font-size: 18px; }
+  .gf-rest-hero { font-size: calc(18px * var(--core-font-scale)); }
   .gf-income-bar { padding: 10px 12px; }
-  .gf-bar-rest { font-size: 16px; }
+  .gf-bar-rest { font-size: calc(16px * var(--core-font-scale)); }
 
   /* Lange Namen/Beträge sollen sauber umbrechen statt aus der Karte zu
      laufen — betrifft v.a. lange Einnahme-/Postennamen auf schmalen
@@ -1844,7 +1844,7 @@
 
   /* Stack-Einträge (zugeordnete Posten in einer Einnahme-Karte) und
      Verbraucher-Karten (unten) etwas großzügiger für Touch. */
-  .gf-stack-item { padding: 6px 8px; font-size: 11.5px; }
+  .gf-stack-item { padding: 6px 8px; font-size: calc(11.5px * var(--core-font-scale)); }
   .gf-consumer-card { padding: 11px 12px; }
 
   /* Ausgaben/Sparziele/Schulden: eigene Kartenfläche statt reinem
@@ -1861,7 +1861,7 @@
 .tg-breakdown-btn {
   flex-shrink: 0; width: 18px; height: 18px; margin-right: 6px;
   border: none; background: none; cursor: pointer;
-  color: var(--text-3); font-size: 13px; line-height: 1;
+  color: var(--text-3); font-size: calc(13px * var(--core-font-scale)); line-height: 1;
   display: flex; align-items: center; justify-content: center;
   border-radius: 50%; transition: background var(--transition), color var(--transition);
 }
@@ -1872,7 +1872,7 @@
 }
 .tg-rate-field {
   display: flex; align-items: center; gap: 6px;
-  font-size: 12.5px; color: var(--text-2);
+  font-size: calc(12.5px * var(--core-font-scale)); color: var(--text-2);
 }
 .tg-rate-field input { width: 64px; flex-shrink: 0; }
 
@@ -1885,16 +1885,16 @@
 
 .tg-bd-row {
   display: flex; align-items: center; justify-content: space-between;
-  gap: 10px; padding: 5px 0; font-size: 13px;
+  gap: 10px; padding: 5px 0; font-size: calc(13px * var(--core-font-scale));
 }
 .tg-bd-row-label { color: var(--text); flex-shrink: 0; }
-.tg-bd-row-calc { color: var(--text-3); font-size: 12px; flex: 1; text-align: right; }
+.tg-bd-row-calc { color: var(--text-3); font-size: calc(12px * var(--core-font-scale)); flex: 1; text-align: right; }
 .tg-bd-row-amount { font-family: var(--mono); font-weight: 600; color: var(--text); flex-shrink: 0; min-width: 60px; text-align: right; }
-.tg-bd-deduct { font-size: 12px; color: var(--text-3); padding: 3px 0; }
+.tg-bd-deduct { font-size: calc(12px * var(--core-font-scale)); color: var(--text-3); padding: 3px 0; }
 .tg-bd-divider { height: 1px; background: var(--border); margin: 8px 0; }
 .tg-bd-total-row {
   display: flex; align-items: center; justify-content: space-between;
-  font-size: 14px; font-weight: 700; color: var(--text); padding-top: 2px;
+  font-size: calc(14px * var(--core-font-scale)); font-weight: 700; color: var(--text); padding-top: 2px;
 }
 .tg-bd-total-amount { font-family: var(--mono); }
 

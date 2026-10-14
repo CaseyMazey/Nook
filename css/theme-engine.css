@@ -1,0 +1,185 @@
+/* =============================================================
+   THEME-ENGINE.CSS — Theme-Editor + eigene Theme-Buttons
+   Gehört zu js/theme-engine.js (übernommen aus Core, an Nook angepasst).
+   Die Theme-Variablen selbst (--surface-solid, --core-card-opacity,
+   --core-font-scale …) liegen in main.css, Kalenderbilder in
+   calendar.css, das Start-Banner in today.css.
+============================================================= */
+
+/* ── Eigene-Theme-Buttons im #theme-picker (gleicher Look wie die
+   eingebauten .clock-type-btn.theme-picker-btn) ─────────────────────── */
+.theme-picker-btn-custom {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.theme-swatch-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 2px solid;
+  flex-shrink: 0;
+}
+
+.theme-picker-icon {
+  font-size: calc(10px * var(--core-font-scale));
+  color: var(--text-3);
+  opacity: 0.6;
+  padding: 1px 2px;
+  transition: opacity var(--transition), color var(--transition);
+}
+.theme-picker-icon:hover { opacity: 1; }
+.theme-picker-icon-del:hover { color: var(--prio-1); }
+.theme-picker-icon-edit:hover { color: var(--sage); }
+
+/* ── Theme-Editor ────────────────────────────────────────────────────── */
+.tb-modal-box {
+  width: 480px;
+  max-height: 88vh;
+  overflow-y: auto;
+}
+
+.tb-label-hint {
+  font-size: calc(11px * var(--core-font-scale));
+  color: var(--text-3);
+  font-weight: 400;
+}
+
+.tb-template-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* Gruppierte Abschnitte (Allgemein/Oberflächen/Schrift/Hintergrund/Grafik) */
+.tb-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  margin-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+.tb-color-fields {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.tb-color-field {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+.tb-color-field input[type="color"] {
+  width: 40px;
+  height: 32px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+  background: var(--surface-2);
+  cursor: pointer;
+}
+.tb-color-field span {
+  font-size: calc(11px * var(--core-font-scale));
+  color: var(--text-3);
+}
+
+.tb-slider-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tb-slider-label { font-size: calc(13px * var(--core-font-scale)); color: var(--text-2); }
+.tb-slider-label span { font-family: var(--mono); color: var(--sage); font-weight: 600; }
+.tb-slider-hint { font-size: calc(11px * var(--core-font-scale)); color: var(--text-3); }
+.tb-slider-row input[type="range"] { width: 100%; accent-color: var(--sage); }
+
+.tb-bg-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+}
+.tb-bg-opt-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: calc(12.5px * var(--core-font-scale));
+  color: var(--text-2);
+}
+.tb-bg-opt-row input[type="range"] { width: 140px; accent-color: var(--sage); }
+#theme-builder-graphics-detail { display: flex; flex-direction: column; gap: 8px; }
+#theme-builder-graphics-detail.hidden { display: none; }
+.tb-bg-filename {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-3);
+}
+
+.tb-delete-btn { margin-right: auto; color: var(--prio-1); }
+
+/* ── Schriftart-Dropdown — eigenes Widget statt <select>, damit jede
+   Zeile in ihrer eigenen Schrift erscheint ─────────────────────────── */
+.tb-font-picker { position: relative; }
+
+.tb-font-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  cursor: pointer;
+  text-align: left;
+}
+.tb-font-trigger-arrow { color: var(--text-3); flex-shrink: 0; }
+
+.tb-font-panel {
+  position: absolute;
+  left: 0; right: 0;
+  top: calc(100% + 6px);
+  z-index: 30;
+  background: var(--surface-solid, var(--surface));
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: 6px;
+  max-height: 260px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tb-font-group-label {
+  font-size: calc(10.5px * var(--core-font-scale));
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
+  padding: 8px 8px 2px;
+}
+
+.tb-font-option {
+  padding: 7px 8px;
+  border-radius: var(--radius-sm);
+  font-size: calc(14.5px * var(--core-font-scale));
+  color: var(--text);
+  cursor: pointer;
+  transition: background var(--transition);
+}
+.tb-font-option:hover { background: var(--accent-soft); }
+.tb-font-option.active { background: var(--sage-bg); color: var(--sage-dark); }
+
+@media (max-width: 480px) {
+  .tb-modal-box { width: 100%; }
+}

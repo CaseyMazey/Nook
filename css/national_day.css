@@ -13,8 +13,8 @@
 }
 
 .national-day-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-.national-day-label { font-size: 9.5px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: var(--sage); }
-.national-day-date { font-size: 10px; color: var(--text-3); font-family: var(--mono); }
+.national-day-label { font-size: calc(9.5px * var(--core-font-scale)); font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: var(--sage); }
+.national-day-date { font-size: calc(10px * var(--core-font-scale)); color: var(--text-3); font-family: var(--mono); }
 
 /* ── Accordion-Liste ─────────────────────────────────────── */
 .national-day-list { display: flex; flex-direction: column; }
@@ -33,7 +33,7 @@
   cursor: pointer;
   text-align: left;
   color: var(--text);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--core-font-scale));
   font-weight: 500;
   font-family: var(--font);
   transition: color 120ms;
@@ -42,7 +42,7 @@
 .nd-title-row:focus { outline: none; }
 
 .nd-arrow {
-  font-size: 8px;
+  font-size: calc(8px * var(--core-font-scale));
   color: var(--text-3);
   flex-shrink: 0;
   transition: transform 200ms ease;
@@ -54,7 +54,7 @@
 
 /* Beschreibung — eingeklappt by default, smooth transition */
 .nd-desc {
-  font-size: 12px;
+  font-size: calc(12px * var(--core-font-scale));
   color: var(--text-2);
   line-height: 1.55;
   padding: 0 0 0 15px;

@@ -113,7 +113,11 @@ function weatherCodeToSvg(code) {
 let weatherSettings = DB.get('weatherSettings', { mode: 'manual', city: 'Cologne' });
 
 async function fetchWeatherByCoords(lat, lon) {
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=precipitation_probability&timezone=auto`;
+  // daily=sunrise,sunset + forecast_days=2: liefert fürs Start-Banner
+  // (isStartHeaderDaytime() unten) auch den morgigen Sonnenaufgang mit,
+  // ohne zweiten Request. timezone=auto → Zeiten in lokaler Wanduhrzeit
+  // des Standorts.
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=precipitation_probability&daily=sunrise,sunset&forecast_days=2&timezone=auto`;
   const res = await fetch(url);
   if (!res.ok) throw new Error('Weather fetch failed');
   const data = await res.json();
@@ -122,7 +126,11 @@ async function fetchWeatherByCoords(lat, lon) {
   const svgCode = weatherCodeToSvg(code);
   const temp = Math.round(wc.temperature) + '°C';
   const desc = weatherCodeToDesc(code);
-  return { svgCode, temp, desc };
+  const sunrise = data.daily?.sunrise?.[0] || null;
+  const sunset = data.daily?.sunset?.[0] || null;
+  const sunriseTomorrow = data.daily?.sunrise?.[1] || null;
+  const utcOffsetSeconds = typeof data.utc_offset_seconds === 'number' ? data.utc_offset_seconds : null;
+  return { svgCode, temp, desc, sunrise, sunset, sunriseTomorrow, utcOffsetSeconds };
 }
 
 async function fetchWeatherByCity(city) {
@@ -149,6 +157,60 @@ function weatherCodeToDesc(code) {
   return 'Unbekannt';
 }
 
+// =========================
+// START-BANNER — Tag/Nacht (aus Core)
+// Nutzt nur die Sonnenauf-/-untergangszeiten aus fetchWeatherByCoords()
+// oben, kein zweiter Dienst. Welches Banner-Set gezeigt wird, entscheidet
+// js/theme-engine.js ([data-start-header-theme]); hier wird nur
+// [data-start-header-daynight] gesetzt, das css/today.css damit kombiniert.
+// =========================
+
+// Open-Meteo liefert bei timezone=auto Wanduhrzeit ohne Offset (z.B.
+// "2026-09-21T06:42") — new Date(str) würde das als Browser-Zeitzone lesen,
+// was bei manuell gewählter Stadt in anderer Zeitzone falsch wäre. Deshalb
+// als Pseudo-UTC-Epoche vergleichen.
+function parseOpenMeteoLocalTime(str) {
+  const [datePart, timePart] = str.split('T');
+  const [y, mo, d] = datePart.split('-').map(Number);
+  const [h, mi] = timePart.split(':').map(Number);
+  return Date.UTC(y, mo - 1, d, h, mi);
+}
+
+// true/false = Tag/Nacht, null = unbekannt (CSS fällt dann auf Tag zurück).
+function isStartHeaderDaytime(w) {
+  if (!w || !w.sunrise || !w.sunset || typeof w.utcOffsetSeconds !== 'number') return null;
+  const nowAtLocation = Date.now() + w.utcOffsetSeconds * 1000;
+  return nowAtLocation >= parseOpenMeteoLocalTime(w.sunrise) && nowAtLocation < parseOpenMeteoLocalTime(w.sunset);
+}
+
+function applyStartHeaderDaynight() {
+  const isDay = isStartHeaderDaytime(DB.get('weatherData', null));
+  // Ohne gültige Daten Attribut entfernen statt einen alten Wert stehen zu lassen.
+  if (isDay === null) { document.documentElement.removeAttribute('data-start-header-daynight'); return; }
+  document.documentElement.setAttribute('data-start-header-daynight', isDay ? 'day' : 'night');
+}
+
+// Plant den nächsten Wechsel exakt zum Sonnenauf-/-untergang statt zu
+// pollen; nach Sonnenuntergang den morgigen Sonnenaufgang.
+let _startHeaderDaynightTimer = null;
+function scheduleStartHeaderDaynightCheck(w) {
+  if (_startHeaderDaynightTimer) { clearTimeout(_startHeaderDaynightTimer); _startHeaderDaynightTimer = null; }
+  if (!w || !w.sunrise || !w.sunset || typeof w.utcOffsetSeconds !== 'number') return;
+  const sunrise = parseOpenMeteoLocalTime(w.sunrise);
+  const sunset = parseOpenMeteoLocalTime(w.sunset);
+  const sunriseTomorrow = w.sunriseTomorrow ? parseOpenMeteoLocalTime(w.sunriseTomorrow) : null;
+  const nowAtLocation = Date.now() + w.utcOffsetSeconds * 1000;
+  let nextChangeAt = null;
+  if (nowAtLocation < sunrise) nextChangeAt = sunrise;
+  else if (nowAtLocation < sunset) nextChangeAt = sunset;
+  else if (sunriseTomorrow && nowAtLocation < sunriseTomorrow) nextChangeAt = sunriseTomorrow;
+  if (nextChangeAt === null) return;
+  _startHeaderDaynightTimer = setTimeout(() => {
+    applyStartHeaderDaynight();
+    scheduleStartHeaderDaynightCheck(DB.get('weatherData', null));
+  }, Math.max(nextChangeAt - nowAtLocation, 0) + 250);
+}
+
 async function renderWeather() {
   const tempEl = document.getElementById('weather-temp');
   const descEl = document.getElementById('weather-desc');
@@ -170,6 +232,8 @@ async function renderWeather() {
     if (iconEl) iconEl.innerHTML = saved.svgCode;
     tempEl.textContent = saved.temp;
     descEl.textContent = saved.desc;
+    applyStartHeaderDaynight();
+    scheduleStartHeaderDaynightCheck(saved);
     return;
   }
 
@@ -184,10 +248,13 @@ async function renderWeather() {
       const city = weatherSettings.city || 'Cologne';
       data = await fetchWeatherByCity(city);
     }
-    DB.set('weatherData', { ...data, ts: Date.now(), locKey });
+    const weatherData = { ...data, ts: Date.now(), locKey };
+    DB.set('weatherData', weatherData);
     if (iconEl) iconEl.innerHTML = data.svgCode;
     tempEl.textContent = data.temp;
     descEl.textContent = data.desc;
+    applyStartHeaderDaynight();
+    scheduleStartHeaderDaynightCheck(weatherData);
   } catch (e) {
     if (iconEl) iconEl.innerHTML = WEATHER_SVGS.unknown;
     tempEl.textContent = '—';
@@ -1004,3 +1071,10 @@ renderWeather();
 startSidebarClock();
 renderMiniCal();
 updateThemeIcon();
+
+// Falls der Sonnenauf-/-untergangs-Timer durch Rechner-/Tab-Schlaf
+// verpasst wurde: beim Zurückkehren in den Tab über renderWeather() neu
+// bestimmen (nutzt den 30-Minuten-Cache, also kein zusätzlicher Request).
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') renderWeather();
+});

@@ -6,7 +6,7 @@
 ========================================== */
 
 .tools-subtitle {
-  font-size: 13px;
+  font-size: calc(13px * var(--core-font-scale));
   color: var(--text-3);
   margin-top: 4px;
 }
@@ -43,12 +43,12 @@
 }
 
 .tool-card-icon {
-  font-size: 17px;
+  font-size: calc(17px * var(--core-font-scale));
   line-height: 1;
 }
 
 .tool-card-title {
-  font-size: 13.5px;
+  font-size: calc(13.5px * var(--core-font-scale));
   font-weight: 600;
   color: var(--text);
 }
@@ -67,7 +67,7 @@
 
 .calc-expression {
   font-family: var(--mono);
-  font-size: 13px;
+  font-size: calc(13px * var(--core-font-scale));
   color: var(--text-3);
   text-align: right;
   min-height: 16px;
@@ -84,7 +84,7 @@
   padding: 18px 16px;
   text-align: right;
   font-family: var(--mono);
-  font-size: 32px;
+  font-size: calc(32px * var(--core-font-scale));
   color: var(--text);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -100,7 +100,7 @@
 .calc-key {
   padding: 14px 0;
   border-radius: var(--radius-sm);
-  font-size: 15px;
+  font-size: calc(15px * var(--core-font-scale));
   font-weight: 500;
   background: var(--surface-2);
   color: var(--text);
@@ -154,7 +154,7 @@
 .calc-history-item {
   text-align: right;
   font-family: var(--mono);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--core-font-scale));
   color: var(--text-2);
   background: var(--surface-2);
   border: none;
@@ -167,14 +167,14 @@
 
 .calc-history-empty {
   text-align: center;
-  font-size: 12px;
+  font-size: calc(12px * var(--core-font-scale));
   color: var(--text-3);
   padding: 8px 0;
 }
 
 .calc-history-clear {
   align-self: center;
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--core-font-scale));
   color: var(--text-3);
   padding: 4px 8px;
   transition: color var(--transition);
@@ -205,9 +205,9 @@
   border-radius: var(--radius);
 }
 
-.timer-complete-icon { font-size: 32px; line-height: 1; }
-.timer-complete-title { font-size: 15px; font-weight: 600; color: var(--text); }
-.timer-complete-sub { font-size: 13px; color: var(--text-2); }
+.timer-complete-icon { font-size: calc(32px * var(--core-font-scale)); line-height: 1; }
+.timer-complete-title { font-size: calc(15px * var(--core-font-scale)); font-weight: 600; color: var(--text); }
+.timer-complete-sub { font-size: calc(13px * var(--core-font-scale)); color: var(--text-2); }
 .timer-complete-btn { margin-top: 8px; }
 
 .tool-toggle-row {
@@ -228,14 +228,14 @@
   display: flex;
   flex-direction: column;
   gap: 3px;
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--core-font-scale));
   color: var(--text-2);
   background: var(--surface-2);
   border-radius: var(--radius-sm);
   padding: 10px 12px;
 }
 .timer-history-title {
-  font-size: 10.5px;
+  font-size: calc(10.5px * var(--core-font-scale));
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -252,13 +252,13 @@
 }
 .timer-history-item {
   font-family: var(--mono);
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--core-font-scale));
   color: var(--text-3);
   padding: 3px 4px;
 }
 .timer-history-empty {
   text-align: center;
-  font-size: 12px;
+  font-size: calc(12px * var(--core-font-scale));
   color: var(--text-3);
   padding: 6px 0;
 }
@@ -295,14 +295,14 @@
 
 .timer-time {
   font-family: var(--mono);
-  font-size: 34px;
+  font-size: calc(34px * var(--core-font-scale));
   font-weight: 500;
   color: var(--text);
   letter-spacing: -0.5px;
 }
 
 .timer-mode-pill {
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--core-font-scale));
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -314,7 +314,7 @@
 
 .timer-sessions {
   text-align: center;
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--core-font-scale));
   color: var(--text-3);
   background: var(--surface-2);
   border-radius: 999px;
@@ -334,7 +334,7 @@
 
 .tool-settings-toggle {
   align-self: center;
-  font-size: 12px;
+  font-size: calc(12px * var(--core-font-scale));
   color: var(--text-3);
   padding: 4px 8px;
   transition: color var(--transition);
@@ -355,7 +355,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--core-font-scale));
   color: var(--text-2);
 }
 
@@ -364,7 +364,7 @@
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
   padding: 6px 8px;
-  font-size: 13px;
+  font-size: calc(13px * var(--core-font-scale));
   background: var(--bg);
   color: var(--text);
   text-align: center;
@@ -383,7 +383,7 @@
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
   padding: 9px 12px;
-  font-size: 13px;
+  font-size: calc(13px * var(--core-font-scale));
   background: var(--bg);
   color: var(--text);
   outline: none;
@@ -402,7 +402,7 @@
 }
 
 .conv-label {
-  font-size: 10.5px;
+  font-size: calc(10.5px * var(--core-font-scale));
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -420,7 +420,7 @@
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
   padding: 0 10px;
-  font-size: 13px;
+  font-size: calc(13px * var(--core-font-scale));
   background: var(--bg);
   color: var(--text);
   outline: none;
@@ -441,7 +441,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  font-size: calc(14px * var(--core-font-scale));
   transition: background var(--transition), color var(--transition), transform var(--transition);
 }
 .conv-swap-btn:hover { background: var(--accent-soft); color: var(--text); }
@@ -449,7 +449,7 @@
 
 .conv-example {
   text-align: center;
-  font-size: 12px;
+  font-size: calc(12px * var(--core-font-scale));
   color: var(--text-3);
   background: var(--surface-2);
   border-radius: var(--radius-sm);
@@ -474,7 +474,7 @@
   padding: 8px 16px;
   border-radius: var(--radius-sm);
   border: 1.5px solid var(--border-strong);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--core-font-scale));
   font-weight: 500;
   color: var(--text-2);
   background: var(--surface-2);
@@ -499,7 +499,7 @@
 }
 
 .dr-learn-switch-label {
-  font-size: 12px;
+  font-size: calc(12px * var(--core-font-scale));
   font-weight: 500;
   color: var(--text-2);
   white-space: nowrap;
@@ -582,11 +582,11 @@
 .dr-formula-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: calc(12px * var(--core-font-scale));
 }
 .dr-formula-table th {
   text-align: left;
-  font-size: 10.5px;
+  font-size: calc(10.5px * var(--core-font-scale));
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -603,7 +603,7 @@
 .dr-formula-table tr:last-child td { border-bottom: none; }
 
 .dr-formula-note {
-  font-size: 12px;
+  font-size: calc(12px * var(--core-font-scale));
   line-height: 1.6;
   color: var(--text-2);
 }
@@ -617,14 +617,14 @@
 }
 .dr-formula-formula {
   font-family: var(--mono);
-  font-size: 13.5px;
+  font-size: calc(13.5px * var(--core-font-scale));
   font-weight: 700;
   color: var(--text);
   background: var(--surface-2);
   border-radius: var(--radius-sm);
   padding: 3px 9px;
 }
-.dr-formula-formula-desc { font-size: 11.5px; color: var(--text-3); }
+.dr-formula-formula-desc { font-size: calc(11.5px * var(--core-font-scale)); color: var(--text-3); }
 
 .dr-formula-placeholder {
   text-align: center;
@@ -634,8 +634,8 @@
   align-items: center;
   gap: 6px;
 }
-.dr-formula-placeholder-icon { font-size: 22px; }
-.dr-formula-placeholder-title { font-size: 12.5px; color: var(--text-2); font-weight: 500; }
+.dr-formula-placeholder-icon { font-size: calc(22px * var(--core-font-scale)); }
+.dr-formula-placeholder-title { font-size: calc(12.5px * var(--core-font-scale)); color: var(--text-2); font-weight: 500; }
 .dr-formula-placeholder-list {
   list-style: none;
   padding: 0;
@@ -643,7 +643,7 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--core-font-scale));
   color: var(--text-3);
 }
 .dr-formula-placeholder-list li::before { content: '·'; margin-right: 6px; color: var(--border-strong); }
@@ -677,7 +677,7 @@
   gap: 7px;
   padding: 8px 9px;
   border-radius: var(--radius-sm);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--core-font-scale));
   color: var(--text-2);
   text-align: left;
   cursor: pointer;
@@ -686,11 +686,11 @@
 }
 .dr-formula-nav-item:hover { background: var(--accent-soft); color: var(--text); }
 .dr-formula-nav-item.active { background: var(--sage-bg); color: var(--sage-dark); font-weight: 600; }
-.dr-formula-nav-icon { flex-shrink: 0; font-size: 13px; }
+.dr-formula-nav-icon { flex-shrink: 0; font-size: calc(13px * var(--core-font-scale)); }
 .dr-formula-nav-label { flex: 1; min-width: 0; }
 .dr-formula-nav-badge {
   flex-shrink: 0;
-  font-size: 9px;
+  font-size: calc(9px * var(--core-font-scale));
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -715,8 +715,8 @@
   padding-bottom: 8px;
   border-bottom: 1px solid var(--border);
 }
-.dr-formula-content-icon { font-size: 17px; }
-.dr-formula-content-title { font-size: 14.5px; font-weight: 700; color: var(--text); }
+.dr-formula-content-icon { font-size: calc(17px * var(--core-font-scale)); }
+.dr-formula-content-title { font-size: calc(14.5px * var(--core-font-scale)); font-weight: 700; color: var(--text); }
 
 .dr-formula-content-body {
   display: flex;
@@ -754,10 +754,10 @@
   gap: 7px;
 }
 
-.dr-learn-section-icon { font-size: 14px; line-height: 1; }
+.dr-learn-section-icon { font-size: calc(14px * var(--core-font-scale)); line-height: 1; }
 
 .dr-learn-section-title {
-  font-size: 11px;
+  font-size: calc(11px * var(--core-font-scale));
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
@@ -777,7 +777,7 @@
   align-items: baseline;
   gap: 8px;
   font-family: var(--mono);
-  font-size: 13px;
+  font-size: calc(13px * var(--core-font-scale));
 }
 
 .dr-learn-given-var, .dr-learn-search-var {
@@ -792,14 +792,14 @@
 .dr-learn-formula {
   text-align: center;
   font-family: var(--mono);
-  font-size: 16px;
+  font-size: calc(16px * var(--core-font-scale));
   font-weight: 600;
   color: var(--text);
   padding: 4px 0;
 }
 
 .dr-learn-rearrange-why {
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--core-font-scale));
   line-height: 1.5;
   color: var(--text-3);
 }
@@ -812,7 +812,7 @@
 }
 
 .dr-learn-chain-label {
-  font-size: 10.5px;
+  font-size: calc(10.5px * var(--core-font-scale));
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -830,19 +830,19 @@
   flex-wrap: wrap;
   gap: 8px;
   font-family: var(--mono);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--core-font-scale));
   color: var(--text);
   text-align: center;
 }
 
-.dr-learn-chain-op { color: var(--text-3); font-size: 11.5px; flex-shrink: 0; }
+.dr-learn-chain-op { color: var(--text-3); font-size: calc(11.5px * var(--core-font-scale)); flex-shrink: 0; }
 .dr-learn-chain-result { font-weight: 600; }
 
 .dr-learn-why {
   display: flex;
   align-items: flex-start;
   gap: 6px;
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--core-font-scale));
   line-height: 1.5;
   color: var(--text-3);
   background: var(--bg);
@@ -851,10 +851,10 @@
   margin-top: 4px;
 }
 
-.dr-learn-why-icon { flex-shrink: 0; font-size: 12px; }
+.dr-learn-why-icon { flex-shrink: 0; font-size: calc(12px * var(--core-font-scale)); }
 .dr-learn-why strong { color: var(--text-2); }
 
-.dr-learn-arrow { text-align: center; font-size: 12px; color: var(--text-3); }
+.dr-learn-arrow { text-align: center; font-size: calc(12px * var(--core-font-scale)); color: var(--text-3); }
 
 .dr-learn-substitute-row {
   display: flex;
@@ -865,7 +865,7 @@
 
 .dr-learn-substitute-var {
   font-family: var(--mono);
-  font-size: 13px;
+  font-size: calc(13px * var(--core-font-scale));
   font-weight: 600;
   color: var(--text);
 }
@@ -878,7 +878,7 @@
 
 .dr-learn-fraction-num, .dr-learn-fraction-den {
   font-family: var(--mono);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--core-font-scale));
   color: var(--text);
   padding: 0 4px;
   white-space: nowrap;
@@ -893,25 +893,25 @@
 
 .dr-learn-math-line {
   font-family: var(--mono);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--core-font-scale));
   color: var(--text);
   text-align: center;
 }
 
-.dr-learn-math-line--result { font-weight: 700; font-size: 14px; }
+.dr-learn-math-line--result { font-weight: 700; font-size: calc(14px * var(--core-font-scale)); }
 
 .dr-learn-section--result { background: var(--sage-bg); border-color: var(--sage-border); }
 
 .dr-learn-result-value {
   font-family: var(--mono);
-  font-size: 22px;
+  font-size: calc(22px * var(--core-font-scale));
   font-weight: 700;
   color: var(--sage-dark);
   text-align: center;
 }
 
 .dr-learn-result-sub {
-  font-size: 12px;
+  font-size: calc(12px * var(--core-font-scale));
   color: var(--text-3);
   text-align: center;
 }
@@ -928,24 +928,24 @@
 
 
 .dr-result-label {
-  font-size: 11px;
+  font-size: calc(11px * var(--core-font-scale));
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
   color: var(--sage-dark);
 }
 
-.dr-copy-btn { width: 26px; height: 26px; font-size: 13px; }
+.dr-copy-btn { width: 26px; height: 26px; font-size: calc(13px * var(--core-font-scale)); }
 
 .dr-result-value {
   font-family: var(--mono);
-  font-size: 26px;
+  font-size: calc(26px * var(--core-font-scale));
   font-weight: 500;
   color: var(--text);
 }
 
 .dr-result-sub {
-  font-size: 12px;
+  font-size: calc(12px * var(--core-font-scale));
   color: var(--text-3);
   min-height: 16px;
 }
@@ -966,7 +966,7 @@
 
 .dr-step-line {
   font-family: var(--mono);
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--core-font-scale));
   color: var(--text-2);
 }
 
@@ -974,12 +974,12 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--core-font-scale));
   color: var(--text-3);
 }
 
 .dr-hints-title {
-  font-size: 10.5px;
+  font-size: calc(10.5px * var(--core-font-scale));
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -1004,7 +1004,7 @@
 
 .noten-empty, .noten-empty-hint, .noten-subject-empty {
   text-align: center;
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--core-font-scale));
   color: var(--text-3);
   padding: 14px 0;
 }
@@ -1027,14 +1027,14 @@
 .noten-year-header:hover { background: var(--accent-soft); }
 
 .noten-year-chevron {
-  font-size: 9px;
+  font-size: calc(9px * var(--core-font-scale));
   color: var(--text-3);
   width: 10px;
   flex-shrink: 0;
 }
 
 .noten-year-name {
-  font-size: 13.5px;
+  font-size: calc(13.5px * var(--core-font-scale));
   font-weight: 600;
   color: var(--text);
   flex: 1;
@@ -1045,14 +1045,14 @@
 }
 
 .noten-year-meta {
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--core-font-scale));
   color: var(--text-3);
   flex-shrink: 0;
 }
 
 .noten-year-avg {
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: calc(12px * var(--core-font-scale));
   font-weight: 600;
   color: var(--sage-dark);
   background: var(--sage-bg);
@@ -1066,7 +1066,7 @@
   gap: 4px;
   flex-shrink: 0;
 }
-.noten-year-actions .icon-btn { width: 24px; height: 24px; font-size: 11.5px; }
+.noten-year-actions .icon-btn { width: 24px; height: 24px; font-size: calc(11.5px * var(--core-font-scale)); }
 
 .noten-year-body {
   padding: 0 14px 14px;
@@ -1098,9 +1098,9 @@
 }
 .noten-subject-card:hover { border-color: var(--sage); background: var(--sage-bg); }
 
-.noten-subject-name { font-size: 12.5px; font-weight: 600; color: var(--text); }
-.noten-subject-avg { font-family: var(--mono); font-size: 14px; font-weight: 600; color: var(--sage-dark); }
-.noten-subject-pending { font-size: 10px; font-weight: 600; color: var(--prio-1); }
+.noten-subject-name { font-size: calc(12.5px * var(--core-font-scale)); font-weight: 600; color: var(--text); }
+.noten-subject-avg { font-family: var(--mono); font-size: calc(14px * var(--core-font-scale)); font-weight: 600; color: var(--sage-dark); }
+.noten-subject-pending { font-size: calc(10px * var(--core-font-scale)); font-weight: 600; color: var(--prio-1); }
 
 /* ── Kategorien-Modal ── */
 .noten-category-rows {
@@ -1124,7 +1124,7 @@
 }
 .noten-detail-avg {
   font-family: var(--mono);
-  font-size: 13px;
+  font-size: calc(13px * var(--core-font-scale));
   font-weight: 600;
   color: var(--sage-dark);
   background: var(--sage-bg);
@@ -1148,18 +1148,18 @@
   padding: 8px 10px;
   background: var(--surface-2);
   border-radius: var(--radius-sm);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--core-font-scale));
 }
-.noten-entry-date { width: 78px; flex-shrink: 0; font-family: var(--mono); font-size: 11.5px; color: var(--text-2); }
+.noten-entry-date { width: 78px; flex-shrink: 0; font-family: var(--mono); font-size: calc(11.5px * var(--core-font-scale)); color: var(--text-2); }
 .noten-entry-cat { flex: 1; min-width: 0; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .noten-entry-grade { width: 42px; flex-shrink: 0; text-align: right; font-family: var(--mono); font-weight: 600; color: var(--text); }
-.noten-entry-weight { width: 30px; flex-shrink: 0; text-align: right; font-size: 11px; color: var(--text-3); }
+.noten-entry-weight { width: 30px; flex-shrink: 0; text-align: right; font-size: calc(11px * var(--core-font-scale)); color: var(--text-3); }
 .noten-entry-actions { display: flex; gap: 2px; flex-shrink: 0; }
-.noten-entry-actions .icon-btn { width: 22px; height: 22px; font-size: 11px; }
+.noten-entry-actions .icon-btn { width: 22px; height: 22px; font-size: calc(11px * var(--core-font-scale)); }
 
 .noten-badge-pending {
   display: inline-block;
-  font-size: 9.5px;
+  font-size: calc(9.5px * var(--core-font-scale));
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -1172,7 +1172,7 @@
 /* ── Zeugnisse (pro Ausbildungsjahr) ── */
 .noten-reports-section { padding-top: 12px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; }
 .noten-reports-header { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.noten-reports-title { font-size: 12.5px; font-weight: 600; color: var(--text-2); }
+.noten-reports-title { font-size: calc(12.5px * var(--core-font-scale)); font-weight: 600; color: var(--text-2); }
 .noten-reports-header-actions { display: flex; gap: 8px; margin-left: auto; }
 .noten-reports-list { display: flex; flex-wrap: wrap; gap: 10px; }
 
@@ -1191,11 +1191,11 @@
 .noten-report-card:hover { border-color: var(--sage); background: var(--sage-bg); }
 
 .noten-report-card-head { display: flex; align-items: center; gap: 8px; }
-.noten-report-card-icon { font-size: 13px; flex-shrink: 0; line-height: 1; }
-.noten-report-card-name { font-size: 12.5px; font-weight: 600; color: var(--text); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.noten-report-card-icon { font-size: calc(13px * var(--core-font-scale)); flex-shrink: 0; line-height: 1; }
+.noten-report-card-name { font-size: calc(12.5px * var(--core-font-scale)); font-weight: 600; color: var(--text); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .noten-report-card-avg {
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: calc(12px * var(--core-font-scale));
   font-weight: 600;
   color: var(--sage-dark);
   background: var(--sage-bg);
@@ -1204,24 +1204,24 @@
   flex-shrink: 0;
 }
 .noten-report-card-actions { display: flex; gap: 2px; flex-shrink: 0; }
-.noten-report-card-actions .icon-btn { width: 22px; height: 22px; font-size: 11px; }
+.noten-report-card-actions .icon-btn { width: 22px; height: 22px; font-size: calc(11px * var(--core-font-scale)); }
 
 .noten-report-card-grades { display: flex; flex-wrap: wrap; align-items: baseline; gap: 5px 12px; }
-.noten-report-grade-chip { display: inline-flex; align-items: baseline; gap: 5px; font-size: 12px; }
+.noten-report-grade-chip { display: inline-flex; align-items: baseline; gap: 5px; font-size: calc(12px * var(--core-font-scale)); }
 .noten-report-grade-subject { color: var(--text-3); }
 .noten-report-grade-value { font-family: var(--mono); font-weight: 600; color: var(--text-2); }
-.noten-report-grade-sep { color: var(--border-strong); font-size: 10px; align-self: center; }
+.noten-report-grade-sep { color: var(--border-strong); font-size: calc(10px * var(--core-font-scale)); align-self: center; }
 
 /* ── Zeugnis-Modal: Notenliste je Fach ── */
 .noten-report-grades { display: flex; flex-direction: column; gap: 8px; max-height: 260px; overflow-y: auto; }
 .noten-report-grade-row { display: flex; align-items: center; gap: 8px; }
-.noten-report-subject-name { flex: 1; min-width: 0; font-size: 12.5px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.noten-report-subject-name { flex: 1; min-width: 0; font-size: calc(12.5px * var(--core-font-scale)); color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .noten-report-grade-input { width: 68px; text-align: center; flex-shrink: 0; }
 
 /* ── Zeugnisse vergleichen ── */
 .noten-compare-selects { display: flex; align-items: center; gap: 10px; }
 .noten-compare-selects .modal-select { flex: 1; min-width: 0; }
-.noten-compare-arrow { color: var(--text-3); font-size: 13px; flex-shrink: 0; }
+.noten-compare-arrow { color: var(--text-3); font-size: calc(13px * var(--core-font-scale)); flex-shrink: 0; }
 .noten-compare-table { display: flex; flex-direction: column; gap: 6px; max-height: 320px; overflow-y: auto; }
 .noten-compare-row {
   display: flex;
@@ -1231,7 +1231,7 @@
   padding: 8px 10px;
   background: var(--surface-2);
   border-radius: var(--radius-sm);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--core-font-scale));
 }
 .noten-compare-subject { color: var(--text-2); }
 .noten-compare-values { font-family: var(--mono); font-weight: 600; color: var(--text); }

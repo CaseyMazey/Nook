@@ -22,7 +22,7 @@
 // werden (siehe _headers in Phase 3), sonst kommen Updates nie an.
 // =========================
 
-const CACHE_VERSION = "nook-v2";
+const CACHE_VERSION = "nook-v3";
 const SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 const WEATHER_CACHE = `${CACHE_VERSION}-weather`;

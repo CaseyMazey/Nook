@@ -10,15 +10,35 @@
   /* ── Fonts ────────────────────────────────────────────── */
   --font: 'DM Sans', system-ui, sans-serif;
   --mono: 'DM Mono', 'Courier New', monospace;
+  /* Eigene Themes (js/theme-engine.js) setzen --font UND --mono auf die
+     gewählte Theme-Schrift. Echte Code-Darstellung (Guides-Codeblöcke)
+     braucht aber eine feste Monospace-Schrift zur Ausrichtung und nutzt
+     deshalb --core-code-font, das nie überschrieben wird. */
+  --core-code-font: 'DM Mono', 'Courier New', monospace;
+  /* Schriftgrößen-Regler im Theme-Editor — reine Zahl (1 = 100%), jede
+     font-size-Regel in css/ ist als calc(Npx * var(--core-font-scale))
+     geschrieben, dadurch bleiben alle Größenverhältnisse erhalten. */
+  --core-font-scale: 1;
 
   /* ── Page background — warm paper ────────────────────── */
   --bg:        #EFEBe3;
   --bg-2:      #E5E0D5;
 
   /* ── Surface hierarchy — layered elevation ────────────── */
-  --surface:   #FDFAF5;   /* top-level cards */
-  --surface-2: #F4F0E8;   /* secondary panels */
-  --surface-3: #EAE5DA;   /* subtle insets */
+  /* Kartendurchlässigkeit (Theme-Editor bzw. eingebaute Themes mit
+     Hintergrundbild, js/theme-engine.js) — 100% = deckend wie bisher.
+     --surface/-2/-3 werden über color-mix() berechnet, damit jede
+     "background: var(--surface)"-Regel automatisch mit durchscheint.
+     --surface-solid hält den deckenden Rohwert. */
+  --core-card-opacity:  100%;
+  --core-nav-opacity:   100%;
+  --core-modal-opacity: 100%;
+  --core-nav-bg:   color-mix(in srgb, var(--surface-solid) var(--core-nav-opacity), transparent);
+  --core-modal-bg: color-mix(in srgb, var(--surface-solid) var(--core-modal-opacity), transparent);
+  --surface-solid: #FDFAF5;   /* top-level cards */
+  --surface:   color-mix(in srgb, var(--surface-solid) var(--core-card-opacity), transparent);
+  --surface-2: color-mix(in srgb, #F4F0E8 var(--core-card-opacity), transparent);   /* secondary panels */
+  --surface-3: color-mix(in srgb, #EAE5DA var(--core-card-opacity), transparent);   /* subtle insets */
 
   /* ── Dashboard container (today main area) ────────────── */
   --dash-bg:     #F7F3EB;
@@ -95,9 +115,10 @@
 [data-theme-family="dark"] {
   --bg:        #1A1815;
   --bg-2:      #201E1A;
-  --surface:   #252119;
-  --surface-2: #2C2820;
-  --surface-3: #322E24;
+  --surface-solid: #252119;
+  --surface:   color-mix(in srgb, var(--surface-solid) var(--core-card-opacity), transparent);
+  --surface-2: color-mix(in srgb, #2C2820 var(--core-card-opacity), transparent);
+  --surface-3: color-mix(in srgb, #322E24 var(--core-card-opacity), transparent);
   --dash-bg:     #242019;
   --dash-border: rgba(240,220,180,0.07);
   --dash-shadow: 0 2px 16px rgba(0,0,0,0.30), 0 1px 4px rgba(0,0,0,0.20);
@@ -142,9 +163,10 @@
 [data-theme="dark"] {
   --bg:          #181817;
   --bg-2:        #1e1d1c;
-  --surface:     #20201e;
-  --surface-2:   #272625;
-  --surface-3:   #2d2c2a;
+  --surface-solid: #20201e;
+  --surface:     color-mix(in srgb, var(--surface-solid) var(--core-card-opacity), transparent);
+  --surface-2:   color-mix(in srgb, #272625 var(--core-card-opacity), transparent);
+  --surface-3:   color-mix(in srgb, #2d2c2a var(--core-card-opacity), transparent);
   --dash-bg:     #201f1d;
   --dash-border: rgba(203,200,194,0.07);
   --border:        rgba(203,200,194,0.09);
@@ -159,9 +181,10 @@
 [data-theme="midnight"] {
   --bg:          #121419;
   --bg-2:        #16191f;
-  --surface:     #141925;
-  --surface-2:   #1a202c;
-  --surface-3:   #1e2432;
+  --surface-solid: #141925;
+  --surface:     color-mix(in srgb, var(--surface-solid) var(--core-card-opacity), transparent);
+  --surface-2:   color-mix(in srgb, #1a202c var(--core-card-opacity), transparent);
+  --surface-3:   color-mix(in srgb, #1e2432 var(--core-card-opacity), transparent);
   --dash-bg:     #141924;
   --dash-border: rgba(176,190,221,0.07);
   --border:        rgba(176,190,221,0.10);
@@ -176,9 +199,10 @@
 [data-theme="forest"] {
   --bg:          #131915;
   --bg-2:        #181f1b;
-  --surface:     #16251b;
-  --surface-2:   #1c2c22;
-  --surface-3:   #203227;
+  --surface-solid: #16251b;
+  --surface:     color-mix(in srgb, var(--surface-solid) var(--core-card-opacity), transparent);
+  --surface-2:   color-mix(in srgb, #1c2c22 var(--core-card-opacity), transparent);
+  --surface-3:   color-mix(in srgb, #203227 var(--core-card-opacity), transparent);
   --dash-bg:     #16241b;
   --dash-border: rgba(181,217,194,0.07);
   --border:        rgba(181,217,194,0.10);
@@ -193,9 +217,10 @@
 [data-theme="espresso"] {
   --bg:          #1a1815;
   --bg-2:        #201d1a;
-  --surface:     #252019;
-  --surface-2:   #2c2620;
-  --surface-3:   #322c24;
+  --surface-solid: #252019;
+  --surface:     color-mix(in srgb, var(--surface-solid) var(--core-card-opacity), transparent);
+  --surface-2:   color-mix(in srgb, #2c2620 var(--core-card-opacity), transparent);
+  --surface-3:   color-mix(in srgb, #322c24 var(--core-card-opacity), transparent);
   --dash-bg:     #241f19;
   --dash-border: rgba(230,201,168,0.07);
   --border:        rgba(230,201,168,0.11);
@@ -210,9 +235,10 @@
 [data-theme="oled"] {
   --bg:          #070707;
   --bg-2:        #080808;
-  --surface:     #090909;
-  --surface-2:   #0b0b0b;
-  --surface-3:   #0c0c0c;
+  --surface-solid: #090909;
+  --surface:     color-mix(in srgb, var(--surface-solid) var(--core-card-opacity), transparent);
+  --surface-2:   color-mix(in srgb, #0b0b0b var(--core-card-opacity), transparent);
+  --surface-3:   color-mix(in srgb, #0c0c0c var(--core-card-opacity), transparent);
   --dash-bg:     #090908;
   --dash-border: rgba(199,199,199,0.06);
   --border:        rgba(199,199,199,0.08);
@@ -232,7 +258,7 @@ body {
   font-family: var(--font);
   background: var(--bg);
   color: var(--text);
-  font-size: 14px;
+  font-size: calc(14px * var(--core-font-scale));
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -249,44 +275,34 @@ ul { list-style: none; }
   display: grid;
   grid-template-columns: var(--sidebar-w) 1fr;
   min-height: 100vh;
-  /* position+z-index: liegt über #bg-image-overlay (siehe THEME-HINTERGRUNDBILD
-     unten) — ohne das würde ein fixed positioniertes Overlay je nach
-     Stacking-Reihenfolge im Zweifel über statt unter dem eigentlichen
-     Inhalt landen. */
+  /* Eigener Stacking-Kontext über dem Body-Hintergrund (Theme-
+     Hintergrundbild, siehe unten). */
   position: relative;
   z-index: 1;
 }
 
 /* =============================================================
-   THEME-HINTERGRUNDBILD (optional, pro Theme) — js/theme-builder.js
-   Ein Foto/Bild kann für das jeweils aktive Theme (eingebaut oder
-   eigenes) hinterlegt werden (Einstellungen > Darstellung). Body bekommt
-   das Bild direkt als background-image; #bg-image-overlay liegt als
-   fixe, abdunkelbare Ebene darüber (dahinter im Stacking, siehe
-   DOM-Reihenfolge: wird per prepend() vor #app eingefügt). Ist ein Bild
-   aktiv, bekommen Sidebar/Panels/Karten/Modals eine halbtransparente,
-   geblurrte Fläche (statt der normalen deckenden Oberfläche), damit das
-   Bild dahinter durchscheint — Klasse .has-bg-image auf <body> statt der
-   fragileren CSS-:has()-Variante der Vorlage, für die Nook keine
-   zusätzliche Browserabhängigkeit eingehen muss. */
-#bg-image-overlay {
-  position: fixed;
-  inset: 0;
-  background: var(--bg);
-  opacity: 0;
-  pointer-events: none;
-  z-index: 0;
-  transition: opacity 400ms ease;
+   THEME-HINTERGRUNDBILD (optional, pro Theme) — js/theme-engine.js
+   Das Bild liegt samt Tönung (in der Theme-Hintergrundfarbe) direkt als
+   background-image auf <body> und wird damit garantiert hinter #app
+   gemalt. Durchscheinen lassen die Flächen über --core-card-opacity/
+   --core-nav-opacity/--core-modal-opacity (siehe Tokens oben): eigene
+   Themes stellen das im Editor ein, eingebaute Themes mit Bild bekommen
+   82% plus Blur (.bg-frosted, die bisherige Nook-Glasoptik).
+   .has-bg-image entfernt außerdem die großen Sammelboxen um den Inhalt,
+   damit das Bild zwischen den einzelnen Karten sichtbar bleibt. */
+body.has-bg-image .dash-content,
+body.has-bg-image #today-main,
+body.has-bg-image .games-mock-wrapper {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
 }
-body.has-bg-image #sidebar,
-body.has-bg-image .panel,
-body.has-bg-image .modal-box {
-  background: color-mix(in srgb, var(--surface) 82%, transparent);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-body.has-bg-image .dash-content {
-  background: color-mix(in srgb, var(--dash-bg) 82%, transparent);
+body.has-bg-image #view-games { background: transparent; }
+body.bg-frosted #sidebar,
+body.bg-frosted #mobile-bottom-nav,
+body.bg-frosted .panel,
+body.bg-frosted .modal-box {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
@@ -295,7 +311,7 @@ body.has-bg-image .dash-content {
    SIDEBAR
 ============================================================= */
 #sidebar {
-  background: var(--surface);
+  background: var(--core-nav-bg);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
@@ -334,7 +350,7 @@ body.has-bg-image .dash-content {
   border-top: 1px solid var(--border);
 }
 #sidebar-countdowns-label {
-  font-size: 9px;
+  font-size: calc(9px * var(--core-font-scale));
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -359,13 +375,13 @@ body.has-bg-image .dash-content {
   min-width: 0;
 }
 .countdown-entry-icon {
-  font-size: 13px;
+  font-size: calc(13px * var(--core-font-scale));
   flex-shrink: 0;
   opacity: 0.7;
 }
 .countdown-entry-info { min-width: 0; }
 .countdown-label {
-  font-size: 12px;
+  font-size: calc(12px * var(--core-font-scale));
   color: var(--text);
   font-weight: 500;
   white-space: nowrap;
@@ -374,13 +390,13 @@ body.has-bg-image .dash-content {
   display: block;
 }
 .countdown-sub {
-  font-size: 10px;
+  font-size: calc(10px * var(--core-font-scale));
   color: var(--text-3);
   display: block;
 }
 .countdown-days {
   font-family: var(--mono);
-  font-size: 20px;
+  font-size: calc(20px * var(--core-font-scale));
   font-weight: 600;
   color: var(--text);
   line-height: 1;
@@ -411,14 +427,14 @@ body.has-bg-image .dash-content {
 
 #brand-name {
   font-family: var(--font);
-  font-size: 20px;
+  font-size: calc(20px * var(--core-font-scale));
   font-weight: 700;
   letter-spacing: -0.6px;
   color: var(--text);
 }
 
 #brand-subtitle {
-  font-size: 9.5px;
+  font-size: calc(9.5px * var(--core-font-scale));
   font-weight: 400;
   color: var(--text-3);
   white-space: normal;
@@ -443,7 +459,7 @@ body.has-bg-image .dash-content {
   padding: 10px 12px;
   border-radius: var(--radius-sm);
   color: var(--text-2);
-  font-size: 13.5px;
+  font-size: calc(13.5px * var(--core-font-scale));
   font-weight: 400;
   text-align: left;
   transition: background var(--transition), color var(--transition);
@@ -476,7 +492,7 @@ body.has-bg-image .dash-content {
 #week-label {
   flex: 1;
   text-align: center;
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--core-font-scale));
   font-family: var(--mono);
   color: var(--text-3);
 }
@@ -486,7 +502,7 @@ body.has-bg-image .dash-content {
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-strong);
   color: var(--text-2);
-  font-size: 14px;
+  font-size: calc(14px * var(--core-font-scale));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -535,7 +551,7 @@ body.has-bg-image .dash-content {
   position: fixed;
   left: 0; right: 0; bottom: 0;
   z-index: 90;
-  background: var(--surface);
+  background: var(--core-nav-bg);
   border-top: 1px solid var(--border-strong);
   box-shadow: 0 -2px 10px rgba(50,40,20,0.06);
   /* env() für's Home-Indicator-Gebiet auf iPhones ohne Home-Button —
@@ -568,7 +584,7 @@ body.has-bg-image .dash-content {
     height: 56px;
     padding: 0;
     border-radius: 0;
-    font-size: 10px;
+    font-size: calc(10px * var(--core-font-scale));
     font-weight: 500;
     color: var(--text-2);
     text-align: center;
@@ -606,9 +622,9 @@ body.has-bg-image .dash-content {
 .mehr-section-label { display: block; margin-bottom: 8px; padding-left: 2px; }
 
 .mehr-group.panel { display: flex; flex-direction: column; }
-.mehr-group .nav-btn { border-radius: 0; padding: 13px 16px; font-size: 14px; }
+.mehr-group .nav-btn { border-radius: 0; padding: 13px 16px; font-size: calc(14px * var(--core-font-scale)); }
 .mehr-group .nav-btn + .nav-btn { border-top: 1px solid var(--border); }
-.mehr-group .nav-btn::after { content: '›'; margin-left: auto; opacity: .5; font-size: 17px; }
+.mehr-group .nav-btn::after { content: '›'; margin-left: auto; opacity: .5; font-size: calc(17px * var(--core-font-scale)); }
 
 #mehr-positivity-slot, #mehr-countdown-slot { padding: 14px 16px; }
 #mehr-positivity-slot #sidebar-positivity { padding: 0; }
@@ -622,7 +638,7 @@ body.has-bg-image .dash-content {
   margin-top: 10px;
   padding-top: 10px;
   border-top: 1px solid var(--border);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--core-font-scale));
   color: var(--text-3);
   font-weight: 500;
 }
@@ -653,7 +669,7 @@ body.has-bg-image .dash-content {
 
 .view-title {
   font-family: var(--font);
-  font-size: 26px;
+  font-size: calc(26px * var(--core-font-scale));
   font-weight: 700;
   letter-spacing: -0.5px;
   color: var(--text);
@@ -667,7 +683,7 @@ body.has-bg-image .dash-content {
   color: var(--sage-fg);
   padding: 9px 18px;
   border-radius: var(--radius-sm);
-  font-size: 13px;
+  font-size: calc(13px * var(--core-font-scale));
   font-weight: 500;
   transition: background var(--transition), box-shadow var(--transition);
   letter-spacing: 0.01em;
@@ -683,7 +699,7 @@ body.has-bg-image .dash-content {
   color: var(--text-2);
   padding: 9px 16px;
   border-radius: var(--radius-sm);
-  font-size: 13px;
+  font-size: calc(13px * var(--core-font-scale));
   font-weight: 400;
   border: 1px solid var(--border-strong);
   transition: background var(--transition), color var(--transition), border-color var(--transition);
@@ -725,7 +741,7 @@ body.has-bg-image .dash-content {
   border-radius: var(--radius-lg);
   padding: 12px 16px;
   box-shadow: var(--shadow-sm);
-  font-size: 13px;
+  font-size: calc(13px * var(--core-font-scale));
   color: var(--text-2);
   animation: modalIn 160ms ease;
 }
@@ -735,7 +751,7 @@ body.has-bg-image .dash-content {
   border: none;
   border-radius: var(--radius-sm);
   padding: 6px 12px;
-  font-size: 12px;
+  font-size: calc(12px * var(--core-font-scale));
   font-weight: 500;
   cursor: pointer;
 }
@@ -750,7 +766,7 @@ body.has-bg-image .dash-content {
   border: 1px solid var(--border-strong);
   background: var(--surface);
   color: var(--text-2);
-  font-size: 14px;
+  font-size: calc(14px * var(--core-font-scale));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -779,15 +795,15 @@ body.has-bg-image .dash-content {
 }
 
 .panel-label {
-  font-size: 10.5px;
+  font-size: calc(10.5px * var(--core-font-scale));
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.09em;
   color: var(--text-3);
 }
 
-.task-count { font-family: var(--mono); font-size: 11px; color: var(--sage); font-weight: 600; }
-.save-hint { font-size: 11px; color: var(--sage); opacity: 0; transition: opacity 600ms; }
+.task-count { font-family: var(--mono); font-size: calc(11px * var(--core-font-scale)); color: var(--sage); font-weight: 600; }
+.save-hint { font-size: calc(11px * var(--core-font-scale)); color: var(--sage); opacity: 0; transition: opacity 600ms; }
 .save-hint.show { opacity: 1; }
 
 /* =============================================================
@@ -797,7 +813,7 @@ body.has-bg-image .dash-content {
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
   padding: 10px 14px;
-  font-size: 14px;
+  font-size: calc(14px * var(--core-font-scale));
   outline: none;
   width: 100%;
   background: var(--bg);
@@ -814,7 +830,7 @@ body.has-bg-image .dash-content {
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
   padding: 10px 14px;
-  font-size: 13px;
+  font-size: calc(13px * var(--core-font-scale));
   outline: none;
   width: 100%;
   background: var(--bg);
@@ -834,7 +850,7 @@ body.has-bg-image .dash-content {
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
   padding: 9px 12px;
-  font-size: 13.5px;
+  font-size: calc(13.5px * var(--core-font-scale));
   outline: none;
   background: var(--bg);
   color: var(--text);
@@ -862,7 +878,7 @@ body.has-bg-image .dash-content {
 .modal-backdrop.hidden { display: none; }
 
 .modal-box {
-  background: var(--surface);
+  background: var(--core-modal-bg);
   border-radius: var(--radius-xl);
   border: 1px solid var(--border-strong);
   width: 480px;
@@ -885,15 +901,15 @@ body.has-bg-image .dash-content {
 .modal-head,
 .budget-goal-head,
 .dr-result-top { display: flex; justify-content: space-between; align-items: center; }
-.modal-head > span { font-family: var(--font); font-size: 17px; font-weight: 700; letter-spacing: -0.3px; }
-.modal-x { color: var(--text-3); font-size: 14px; padding: 4px 8px; border-radius: var(--radius-sm); transition: background var(--transition), color var(--transition); }
+.modal-head > span { font-family: var(--font); font-size: calc(17px * var(--core-font-scale)); font-weight: 700; letter-spacing: -0.3px; }
+.modal-x { color: var(--text-3); font-size: calc(14px * var(--core-font-scale)); padding: 4px 8px; border-radius: var(--radius-sm); transition: background var(--transition), color var(--transition); }
 .modal-x:hover { background: var(--accent-soft); color: var(--text); }
 
-.modal-hint { font-size: 12px; color: var(--text-3); line-height: 1.6; }
+.modal-hint { font-size: calc(12px * var(--core-font-scale)); color: var(--text-3); line-height: 1.6; }
 .modal-row { display: flex; flex-direction: column; gap: 6px; }
-.modal-row label { font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.08em; }
+.modal-row label { font-size: calc(11px * var(--core-font-scale)); font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.08em; }
 .modal-row-inline { flex-direction: row !important; align-items: center; justify-content: space-between; }
-.modal-row-inline label { text-transform: none; letter-spacing: 0; font-size: 13px; font-weight: 400; color: var(--text-2); }
+.modal-row-inline label { text-transform: none; letter-spacing: 0; font-size: calc(13px * var(--core-font-scale)); font-weight: 400; color: var(--text-2); }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; padding-top: 4px; }
 
 /* =============================================================
@@ -922,7 +938,7 @@ body.has-bg-image .dash-content {
 .hub-color-add-btn {
   width: 32px; height: 32px; flex-shrink: 0;
   border: 1.5px solid var(--border); border-radius: var(--radius-sm);
-  background: var(--surface); color: var(--text-2); font-size: 18px; line-height: 1;
+  background: var(--surface); color: var(--text-2); font-size: calc(18px * var(--core-font-scale)); line-height: 1;
   cursor: pointer; display: flex; align-items: center; justify-content: center;
   transition: border-color var(--transition), color var(--transition), background var(--transition);
 }
@@ -943,7 +959,7 @@ body.has-bg-image .dash-content {
   color: var(--sage-dark);
 }
 .hub-color-library-wrap { display: flex; flex-direction: column; gap: 6px; }
-.hub-color-library-label { font-size: 11px; color: var(--text-3); font-weight: 500; letter-spacing: .04em; text-transform: uppercase; }
+.hub-color-library-label { font-size: calc(11px * var(--core-font-scale)); color: var(--text-3); font-weight: 500; letter-spacing: .04em; text-transform: uppercase; }
 .hub-color-library { display: flex; flex-wrap: wrap; gap: 6px; min-height: 16px; }
 .hub-color-swatch {
   width: 32px; height: 32px; border-radius: var(--radius-sm);
@@ -956,7 +972,7 @@ body.has-bg-image .dash-content {
 .hub-color-swatch.active { border-color: var(--sage); box-shadow: 0 0 0 2px var(--sage-bg); }
 .hub-color-del {
   position: absolute; top: 0; right: 0; width: 14px; height: 14px;
-  background: rgba(0,0,0,0.45); color: #fff; font-size: 8px; line-height: 14px; text-align: center;
+  background: rgba(0,0,0,0.45); color: #fff; font-size: calc(8px * var(--core-font-scale)); line-height: 14px; text-align: center;
   border-radius: 0 0 0 3px; opacity: 0; transition: opacity 0.15s; cursor: pointer;
 }
 
@@ -966,7 +982,7 @@ body.has-bg-image .dash-content {
   padding: 8px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-strong);
-  font-size: 13px;
+  font-size: calc(13px * var(--core-font-scale));
   font-weight: 500;
   color: var(--text-2);
   background: var(--surface-2);
@@ -985,7 +1001,7 @@ body.has-bg-image .dash-content {
   padding: 8px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-strong);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--core-font-scale));
   font-weight: 500;
   color: var(--text-2);
   background: var(--surface-2);
@@ -1002,7 +1018,7 @@ body.has-bg-image .dash-content {
   padding: 9px 16px;
   border-radius: var(--radius-sm);
   border: 1.5px solid var(--border-strong);
-  font-size: 13px;
+  font-size: calc(13px * var(--core-font-scale));
   font-weight: 500;
   color: var(--text-2);
   background: var(--surface-2);
@@ -1031,7 +1047,7 @@ body.has-bg-image .dash-content {
   padding: 9px 12px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-strong);
-  font-size: 13px;
+  font-size: calc(13px * var(--core-font-scale));
   font-weight: 500;
   color: var(--text-2);
   background: var(--surface-2);
@@ -1042,7 +1058,7 @@ body.has-bg-image .dash-content {
   transition: all var(--transition);
 }
 .tile-type-btn:hover { background: var(--accent-soft); color: var(--text); }
-.tile-type-desc { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+.tile-type-desc { font-size: calc(12px * var(--core-font-scale)); color: var(--text-3); margin-top: 2px; }
 
 .countdown-row {
   display: flex;
@@ -1054,7 +1070,7 @@ body.has-bg-image .dash-content {
 }
 .countdown-row:last-child { border-bottom: none; }
 .countdown-row-info { display: flex; flex-direction: column; gap: 2px; }
-.countdown-row-title { font-size: 13.5px; font-weight: 500; }
+.countdown-row-title { font-size: calc(13.5px * var(--core-font-scale)); font-weight: 500; }
 
 /* ── Geteiltes "Bold-Status/Titel-Text"-Muster ─────────────
    War 5x identisch dupliziert über budget/flashcards/projects.css. */
@@ -1064,7 +1080,7 @@ body.has-bg-image .dash-content {
 .archive-project-name,
 .detail-tile-title {
   color: var(--text);
-  font-size: 14px;
+  font-size: calc(14px * var(--core-font-scale));
   font-weight: 600;
 }
 
@@ -1082,7 +1098,7 @@ body.has-bg-image .dash-content {
 .positivity-char-count {
   color: var(--text-3);
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: calc(11px * var(--core-font-scale));
 }
 .b-garden-dd-pct,
 .cal-birthday-date,
@@ -1152,7 +1168,7 @@ body.has-bg-image .dash-content {
 
 .task-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .task-title {
-  font-size: 13.5px;
+  font-size: calc(13.5px * var(--core-font-scale));
   cursor: pointer;
   white-space: nowrap;
   overflow: hidden;
@@ -1165,11 +1181,11 @@ body.has-bg-image .dash-content {
   text-underline-offset: 3px;
 }
 .task-item.done .task-title { color: var(--text-3); text-decoration: line-through; }
-.task-sub { font-size: 11px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.task-sub { font-size: calc(11px * var(--core-font-scale)); color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* Block badge — always-visible sage pill */
 .task-block-badge {
-  font-size: 10.5px;
+  font-size: calc(10.5px * var(--core-font-scale));
   font-family: var(--mono);
   font-weight: 500;
   color: var(--sage-dark);
@@ -1184,7 +1200,7 @@ body.has-bg-image .dash-content {
 .task-delete {
   opacity: 0;
   color: var(--text-3);
-  font-size: 13px;
+  font-size: calc(13px * var(--core-font-scale));
   padding: 2px 6px;
   border-radius: 4px;
   transition: opacity var(--transition), color var(--transition);
@@ -1192,14 +1208,14 @@ body.has-bg-image .dash-content {
 .task-item:hover .task-delete { opacity: 1; }
 .task-delete:hover { color: var(--prio-1); }
 
-#task-empty { padding: 22px 18px; font-size: 13px; color: var(--text-3); }
+#task-empty { padding: 22px 18px; font-size: calc(13px * var(--core-font-scale)); color: var(--text-3); }
 #task-empty.hidden { display: none; }
 .clock-analog { display: flex; align-items: center; justify-content: center; }
 
 /* =============================================================
    UTILITY + EMPTY STATES
 ============================================================= */
-.empty-state { font-size: 13px; color: var(--text-3); padding: 16px 18px; }
+.empty-state { font-size: calc(13px * var(--core-font-scale)); color: var(--text-3); padding: 16px 18px; }
 .empty-state.full { text-align: center; padding: 44px; }
 .hidden { display: none !important; }
 
@@ -1209,7 +1225,7 @@ body.has-bg-image .dash-content {
    nutzen können, ohne eine ähnliche Badge-Variante neu zu bauen). Text
    frei wählbar ("Bald", "In Bearbeitung", ...). */
 .badge-soon {
-  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+  font-size: calc(10px * var(--core-font-scale)); font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
   background: var(--sage-bg); color: var(--sage-dark); border-radius: 99px; padding: 2px 8px;
 }
 
@@ -1231,7 +1247,7 @@ body.has-bg-image .dash-content {
   border-radius: var(--radius-sm);
   background: var(--accent-soft);
   color: var(--text-3);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--core-font-scale));
   line-height: 1.5;
 }
 .hub-notice > :first-child { flex-shrink: 0; }

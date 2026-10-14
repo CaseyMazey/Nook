@@ -14,8 +14,8 @@
 
 .positivity-widget-top { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
 .positivity-widget-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--positivity-color, var(--sage)); flex-shrink: 0; }
-.positivity-widget-cat { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); }
-.positivity-widget-text { font-size: 12.5px; line-height: 1.55; color: var(--text-2); margin-bottom: 8px; }
+.positivity-widget-cat { font-size: calc(9.5px * var(--core-font-scale)); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); }
+.positivity-widget-text { font-size: calc(12.5px * var(--core-font-scale)); line-height: 1.55; color: var(--text-2); margin-bottom: 8px; }
 .positivity-widget-actions { display: flex; align-items: center; gap: 2px; justify-content: flex-end; }
 
 .positivity-action-btn { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 50%; color: var(--text-3); transition: background var(--transition), color var(--transition); }
@@ -25,27 +25,27 @@
 [data-theme-family="dark"] .positivity-action-btn.active { color: #D99577; }
 
 /* ── Einstellungen: Kategorie-Liste ──────────────────────── */
-.positivity-total-badge { font-family: var(--mono); font-size: 11px; color: var(--sage); font-weight: 600; }
+.positivity-total-badge { font-family: var(--mono); font-size: calc(11px * var(--core-font-scale)); color: var(--sage); font-weight: 600; }
 
 .positivity-cat-row { display: flex; align-items: center; gap: 10px; padding: 11px 18px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background var(--transition); }
 .positivity-cat-row:last-child { border-bottom: none; }
 .positivity-cat-row:hover { background: var(--surface-2); }
 
-.positivity-cat-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 9px; line-height: 1; }
+.positivity-cat-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: calc(9px * var(--core-font-scale)); line-height: 1; }
 .positivity-cat-dot.is-fav { color: var(--fav-color); background: none; }
 
-.positivity-cat-name { flex: 1; font-size: 13.5px; color: var(--text); }
-.positivity-cat-count { font-size: 11.5px; font-family: var(--mono); color: var(--text-3); }
-.positivity-cat-menu-btn { font-size: 12px; flex-shrink: 0; }
+.positivity-cat-name { flex: 1; font-size: calc(13.5px * var(--core-font-scale)); color: var(--text); }
+.positivity-cat-count { font-size: calc(11.5px * var(--core-font-scale)); font-family: var(--mono); color: var(--text-3); }
+.positivity-cat-menu-btn { font-size: calc(12px * var(--core-font-scale)); flex-shrink: 0; }
 
 /* ── Kategorie-Burger-Menü (fixed, gegen Clipping durch .panel overflow:hidden) ── */
 .positivity-cat-menu { position: fixed; z-index: 250; background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); box-shadow: var(--shadow-md); padding: 6px; min-width: 180px; display: flex; flex-direction: column; gap: 2px; }
 .positivity-cat-menu.hidden { display: none; }
-.positivity-cat-menu-item { text-align: left; padding: 8px 10px; border-radius: var(--radius-sm); font-size: 13px; color: var(--text-2); transition: background var(--transition), color var(--transition); }
+.positivity-cat-menu-item { text-align: left; padding: 8px 10px; border-radius: var(--radius-sm); font-size: calc(13px * var(--core-font-scale)); color: var(--text-2); transition: background var(--transition), color var(--transition); }
 .positivity-cat-menu-item:hover { background: var(--accent-soft); color: var(--text); }
 
 /* ── Karten-Detail Modal ──────────────────────────────────── */
-.positivity-modal-text { font-size: 14.5px; line-height: 1.7; color: var(--text); }
+.positivity-modal-text { font-size: calc(14.5px * var(--core-font-scale)); line-height: 1.7; color: var(--text); }
 
 /* ── Karten verwalten Modal ──────────────────────────────── */
 .positivity-new-card-row { border: 1px solid var(--border); border-radius: var(--radius); padding: 10px; margin-bottom: 4px; background: var(--surface-2); }
@@ -53,4 +53,4 @@
 
 .positivity-card-row { display: flex; align-items: center; gap: 10px; padding: 10px 4px; border-bottom: 1px solid var(--border); }
 .positivity-card-row:last-child { border-bottom: none; }
-.positivity-card-row-text { flex: 1; font-size: 13px; color: var(--text); line-height: 1.5; }
+.positivity-card-row-text { flex: 1; font-size: calc(13px * var(--core-font-scale)); color: var(--text); line-height: 1.5; }

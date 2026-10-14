@@ -160,7 +160,7 @@ if (theme === null) {
   theme = DB.get('darkMode', false) ? 'dark' : 'light';
   DB.set('theme', theme);
 }
-// Eigene Themes (Theme-Builder, js/theme-builder.js) stehen nicht in
+// Eigene Themes (js/theme-engine.js) stehen nicht in
 // THEME_FAMILY — deren Familie wird beim Erstellen/Anwenden zusätzlich
 // unter 'themeFamily' gespeichert, damit dieses frühe Initial-Setup sie
 // korrekt setzen kann, ohne dass main.js die customThemes-Liste selbst
@@ -195,7 +195,7 @@ document.documentElement.setAttribute('data-theme-family', themeFamily);
 // aktualisiert werden.
 // Wird von der Theme-Auswahl in den Einstellungen (settings.js) aufgerufen.
 // Akzeptiert neben den 6 eingebauten Namen auch die ID eines eigenen
-// Themes (Theme-Builder, js/theme-builder.js) — dessen Familie steht
+// Themes (js/theme-engine.js) — dessen Familie steht
 // nicht in THEME_FAMILY, sondern wird aus customThemes nachgeschlagen,
 // falls dieses bereits geladen ist (siehe Skript-Ladereihenfolge unten).
 function setTheme(name) {
@@ -216,16 +216,11 @@ function setTheme(name) {
   if (typeof renderDesk === 'function') renderDesk();
   if (typeof renderCalendar === 'function') renderCalendar();
   if (typeof renderGuideShelf === 'function') renderGuideShelf();
-  // Eigene Farbwerte (inline CSS-Variablen) anwenden/entfernen — siehe
-  // js/theme-builder.js. Für die 6 eingebauten Themes reicht das
-  // data-theme-Attribut allein (Farben kommen aus main.css), die Funktion
-  // entfernt dort nur evtl. noch gesetzte Inline-Variablen eines zuvor
-  // aktiven eigenen Themes.
-  if (typeof applyCustomThemeVars === 'function') applyCustomThemeVars();
-  // Hintergrundbild ist pro Theme hinterlegt (js/theme-builder.js) — beim
-  // Wechsel neu anwenden, damit ein evtl. für das NEUE Theme gespeichertes
-  // Bild erscheint bzw. keins mehr, wenn das neue Theme keins hat.
-  if (typeof applyThemeBackground === 'function') applyThemeBackground();
+  // Eigene Farbwerte (inline CSS-Variablen), Hintergrundbild, Kalender-
+  // bilder, Start-Banner und Icon des neuen Themes — siehe
+  // js/theme-engine.js. Für die 6 eingebauten Themes kommen die Farben
+  // weiterhin allein über das data-theme-Attribut aus main.css.
+  if (typeof applyThemeEngine === 'function') applyThemeEngine(theme);
 }
 
 // Schnellumschalter (Sidebar Sonne/Mond) — schaltet nur zwischen Light und
