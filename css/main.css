@@ -132,6 +132,13 @@
   --tooltip-bg:   color-mix(in srgb, var(--text) 92%, transparent);
   --tooltip-text: var(--bg);
   --sheen:        #FFFFFF;   /* Glanzlicht auf farbigen Flächen (Buchrücken, Regal) — bleibt auch dunkel hell */
+  /* Scrollbalken: Griff aus Text + Akzent gemischt, folgt damit jedem Theme */
+  --scrollbar-thumb:       color-mix(in srgb, color-mix(in srgb, var(--sage) 45%, var(--text)) 32%, transparent);
+  --scrollbar-thumb-hover: color-mix(in srgb, color-mix(in srgb, var(--sage) 45%, var(--text)) 55%, transparent);
+  --scrollbar-track:       transparent;
+  /* Browser-eigene Elemente (Scrollbalken-Reste, Formular-Steuerelemente,
+     Datumsauswahl …) hell bzw. dunkel zeichnen lassen */
+  color-scheme: light;
   /* Basis-Töne, mit denen hub-utils.js Nutzerfarben ans Theme angleicht */
   --user-color-neutral:   #EAE5DA;
   --user-color-ink-dark:  #3D3626;
@@ -216,6 +223,7 @@
   --user-color-neutral:   #26221B;
   --user-color-ink-dark:  #221E18;
   --user-color-ink-light: #F0EAD8;
+  color-scheme: dark;
   --budget-expense: var(--prio-1);
 
   /* ── Code-Panel (nur dark, bewusst schwärzer als --surface-2) ─ */
@@ -259,6 +267,19 @@
    RESET
 ============================================================= */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* Scrollbalken überall im Hub (Seite, Panels, Textfelder, Fenster) —
+   Farben über --scrollbar-* (Tokens oben). Standard-Eigenschaften für
+   Firefox/Chromium, ::-webkit-scrollbar für Safari. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 99px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); background-clip: padding-box; }
+::-webkit-scrollbar-corner { background: transparent; }
 
 body {
   font-family: var(--font);

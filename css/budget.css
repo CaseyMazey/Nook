@@ -1753,7 +1753,7 @@
   scrollbar-width: thin;
 }
 .sp-subtab-switch::-webkit-scrollbar { height: 4px; }
-.sp-subtab-switch::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 99px; }
+.sp-subtab-switch::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 99px; }
 .sp-subtab-btn { flex-shrink: 0; white-space: nowrap; }
 
 @media (max-width: 1080px) {

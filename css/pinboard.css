@@ -124,11 +124,7 @@
 /* ═══════════════════════════════════════════════════════════
    COZY SCROLLBARS — für Kartenkörper (gleiches Muster wie today.css)
 ═══════════════════════════════════════════════════════════ */
-.today-tile *::-webkit-scrollbar { width: 5px; height: 5px; }
-.today-tile *::-webkit-scrollbar-track { background: transparent; border-radius: 99px; }
-.today-tile *::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 99px; }
-.today-tile *::-webkit-scrollbar-thumb:hover { background: var(--text-3); }
-.today-tile * { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+/* Scrollbalken: zentral in css/main.css (--scrollbar-*) */
 
 /* ═══════════════════════════════════════════════════════════
    TOUCH — Bearbeiten-/Löschen-/Kopieren-Buttons sind rein

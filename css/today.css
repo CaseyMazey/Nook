@@ -136,20 +136,7 @@
    COZY SCROLLBARS — für die verbleibenden Today-Panels
    (Kartensystem inkl. eigener Scrollbar-Regeln jetzt in pinboard.css)
 ═══════════════════════════════════════════════════════════ */
-#today-main *::-webkit-scrollbar,
-#panel-quicknote *::-webkit-scrollbar,
-#today-mini-cal *::-webkit-scrollbar { width: 5px; height: 5px; }
-
-#today-main *::-webkit-scrollbar-track,
-#panel-quicknote *::-webkit-scrollbar-track { background: transparent; border-radius: 99px; }
-
-#today-main *::-webkit-scrollbar-thumb,
-#panel-quicknote *::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 99px; }
-
-#today-main *::-webkit-scrollbar-thumb:hover,
-#panel-quicknote *::-webkit-scrollbar-thumb:hover { background: var(--text-3); }
-
-#today-main *, #panel-quicknote * { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+/* Scrollbalken: zentral in css/main.css (--scrollbar-*) */
 
 /* ═══════════════════════════════════════════════════════════
    RIGHT SIDEBAR

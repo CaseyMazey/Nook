@@ -465,7 +465,7 @@ body:not(:has(#view-guides.active)) #guide-scroll-top { display: none; }
   scrollbar-width: thin;
 }
 .guide-shelf::-webkit-scrollbar { height: 6px; }
-.guide-shelf::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
+.guide-shelf::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 4px; }
  
 .guide-shelf-board {
   height: 14px;
