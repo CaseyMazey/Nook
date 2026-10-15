@@ -9,6 +9,8 @@ Ergänzt den `nook-architektur-guard` um Stil- und Konsistenzregeln, die keine h
 
 ## 1. Farbsystem
 
+**Grundregel (vom Projekt-Owner festgelegt): Außerhalb der Spiele (`games/<id>/`) gibt es KEINE festen Farben** — weder in CSS-Regeln noch in Inline-Styles oder JS (auch kein `#fff`, `rgba(0,0,0,…)`, `white` oder Fallback in `var(--x, #hex)`). Jede UI-Farbe ist eine Theme-Variable aus `css/main.css`; bevorzugt aus Grundfarben gemischt (`color-mix(in srgb, var(--text) 8%, transparent)` für Linien/Balken, `var(--shadow-tint)` für Schatten, `var(--glass-bg)` für schwebende Knöpfe, `var(--sheen)` für Glanz auf farbigen Flächen, `--status-*` für Ampeln …), damit sie jedem Theme folgt. Fehlt eine passende Variable: neue in `main.css` (`:root` + dunkle Familie) anlegen und bei Bedarf in `deriveThemeVars()` (js/theme-engine.js) für eigene Themes ableiten. Erlaubt sind nur Theme-Definitionen selbst, vom Nutzer gewählte Datenfarben samt Voreinstellungen und Illustrationen.
+
 - Neue Farben NIEMALS als Ad-hoc-Hexwert (`#a3b8c2`) direkt im Code.
 - Immer über das zentrale Farbsystem aus `js/hub-utils.js` beziehen (Basis-Hexwert-Ableitung).
 - Vor dem Hinzufügen einer neuen Farbe: prüfen, ob eine bestehende Farbe im System schon passt, statt eine neue Variante abzuleiten.

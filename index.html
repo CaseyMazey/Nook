@@ -6,7 +6,8 @@
   <title>Nook</title>
   <link rel="icon" type="image/svg+xml" href="assets/nook_icon.svg" />
   <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#6B7F58" />
+  <!-- theme-color setzt js/theme-engine.js (applyThemeEngine) auf --bg des aktiven Themes -->
+  <meta name="theme-color" content="" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -699,7 +700,7 @@
               </div>
               <div id="learn-actions" class="hidden" style="display:flex;gap:8px;margin-top:8px;">
                 <button id="learn-didnt" class="btn-ghost" style="flex:1;font-size:13px;">↩ Wiederholen</button>
-                <button id="learn-hard" class="btn-ghost" style="flex:1;font-size:13px;color:#e07a5f;">∼ Schwer</button>
+                <button id="learn-hard" class="btn-ghost" style="flex:1;font-size:13px;color:var(--leitner-1);">∼ Schwer</button>
                 <button id="learn-knew" class="btn-primary" style="flex:1;font-size:13px;">✓ Leicht</button>
               </div>
               <div id="learn-done" class="hidden"></div>
@@ -1993,7 +1994,7 @@
         </div>
       </div>
       <div class="modal-row" id="recurring-prio-row">
-        <label>Priorität <span id="recurring-prio-hint" style="font-size:11px;color:#8a8478;font-weight:400;">(nur für Ausgaben)</span></label>
+        <label>Priorität <span id="recurring-prio-hint" style="font-size:11px;color:var(--text-3);font-weight:400;">(nur für Ausgaben)</span></label>
         <div class="budget-prio-picker">
           <button class="budget-prio-btn" data-prio="must" id="recurring-prio-must">Muss</button>
           <button class="budget-prio-btn active" data-prio="need" id="recurring-prio-need">Brauche</button>
@@ -2905,6 +2906,8 @@
           <label class="tb-color-field"><input type="color" id="theme-builder-nav"/><span>Navigation</span></label>
           <label class="tb-color-field"><input type="color" id="theme-builder-modal"/><span>Fenster</span></label>
           <label class="tb-color-field"><input type="color" id="theme-builder-border"/><span>Rahmen</span></label>
+          <label class="tb-color-field"><input type="color" id="theme-builder-quicknote" data-auto="1"/><span>Notiz</span></label>
+          <label class="tb-color-field"><input type="color" id="theme-builder-highlight" data-auto="1"/><span>Hervorhebung</span></label>
         </div>
         <p class="modal-hint">Prioritäts-, Budget- und Systemfarben bleiben wie im Rest von Nook.</p>
       </div>

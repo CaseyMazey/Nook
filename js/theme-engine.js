@@ -32,8 +32,8 @@
 //    ein gerade aktives eigenes Theme die ausgelesenen Werte verfälschen
 //    würde. Bei Änderungen an den Grundfarben in main.css hier mitziehen.
 const THEME_REGISTRY = [
-  { id: 'light', label: 'Cozy',         core: { bg: '#efebe3', surface: '#fdfaf5', nav: '#fdfaf5', modal: '#fdfaf5', text: '#24211c', border: '#786541', accent: '#6b7f58' } },
-  { id: 'dark',  label: 'Cozy (Nacht)', core: { bg: '#181817', surface: '#20201e', nav: '#20201e', modal: '#20201e', text: '#e6e3df', border: '#cbc8c2', accent: '#728460' } },
+  { id: 'light', label: 'Cozy',         core: { bg: '#efebe3', surface: '#fdfaf5', nav: '#fdfaf5', modal: '#fdfaf5', text: '#24211c', border: '#786541', accent: '#6b7f58', quicknote: '#f9f5dc', highlight: '#ebe4d4' } },
+  { id: 'dark',  label: 'Cozy (Nacht)', core: { bg: '#181817', surface: '#20201e', nav: '#20201e', modal: '#20201e', text: '#e6e3df', border: '#cbc8c2', accent: '#728460', quicknote: '#272510', highlight: '#383733' } },
 ];
 
 // Alle CSS-Variablen, die ein eigenes Theme inline auf <html> setzt — zum
@@ -44,6 +44,7 @@ const CUSTOM_THEME_VARS = [
   '--text', '--text-2', '--text-3', '--accent-soft',
   '--sage', '--sage-dark', '--sage-light', '--sage-bg', '--sage-border',
   '--event-color', '--event-color-bg',
+  '--quicknote-bg', '--quicknote-line', '--quicknote-text', '--highlight-bg', '--user-color-neutral',
   '--core-nav-bg', '--core-modal-bg', '--core-card-opacity',
   '--font', '--core-font-scale', '--mono',
 ];
@@ -412,8 +413,20 @@ function teLuminance(hex) {
 // Muster der eingebauten Themes in main.css. --surface/-2/-3, Navigation
 // und Modal werden über color-mix() mit der Kartendurchlässigkeit
 // verrechnet (dasselbe Prinzip wie --core-card-opacity in main.css).
+// Schnellnotiz + Hervorhebung (aktiver Unterrichtsblock): ohne eigene Wahl
+// im Editor ein Hauch Akzentfarbe auf der Kartenfarbe — dadurch passt z.B.
+// die Notiz bei Cotton Candy zu Rosa statt fest Gelb zu sein.
+function derivedNoteColors(core) {
+  const isDark = teLuminance(core.bg) < 128;
+  return {
+    quicknote: mixHex(core.surface, core.accent, isDark ? 0.12 : 0.14),
+    highlight: mixHex(core.surface, core.accent, isDark ? 0.18 : 0.20),
+  };
+}
+
 function deriveThemeVars(core, cardOpacityPct, fontSizePct) {
   const isDark = teLuminance(core.bg) < 128;
+  const notes = derivedNoteColors(core);
   const tint = isDark ? '#ffffff' : '#000000';
   const borderAlphaLow  = isDark ? 0.09 : 0.16;
   const borderAlphaHigh = isDark ? 0.18 : 0.28;
@@ -441,6 +454,11 @@ function deriveThemeVars(core, cardOpacityPct, fontSizePct) {
     '--sage-border':   hexToRgba(core.accent, 0.32),
     '--event-color':    core.accent,
     '--event-color-bg': hexToRgba(core.accent, 0.13),
+    '--quicknote-bg':   core.quicknote || notes.quicknote,
+    '--quicknote-line': core.accent,
+    '--quicknote-text': mixHex(core.text, core.accent, 0.45),
+    '--highlight-bg':   core.highlight || notes.highlight,
+    '--user-color-neutral': mixHex(core.surface, tint, 0.12),
     '--core-nav-bg':   mix(core.nav),
     '--core-modal-bg': mix(core.modal),
     '--font':          font,
@@ -603,6 +621,9 @@ function applyThemeEngine(id) {
   applyCalendarImageTheme(id);
   applyStartHeaderTheme(id);
   applyBranding(id);
+  // Browser-/PWA-Leiste in der Hintergrundfarbe des aktiven Themes
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.content = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
 }
 
 // =========================================================================
@@ -661,7 +682,18 @@ function readThemeBuilderCore() {
     border:  tbEl('border').value,
     accent:  tbEl('accent').value,
     font:    tbEl('font').value || DEFAULT_FONT_STACK,
+    // Nur gespeichert, wenn selbst gewählt — sonst folgen sie der Ableitung
+    // (derivedNoteColors) und passen sich an, wenn sich Akzent/Karte ändern.
+    quicknote: tbEl('quicknote').dataset.auto === '1' ? undefined : tbEl('quicknote').value,
+    highlight: tbEl('highlight').dataset.auto === '1' ? undefined : tbEl('highlight').value,
   };
+}
+
+// Notiz-/Hervorhebungsfeld: zeigt im Auto-Modus die abgeleitete Farbe und
+// zieht bei Änderungen an Akzent/Karte mit; eine eigene Wahl beendet das.
+function syncThemeBuilderNoteFields() {
+  const derived = derivedNoteColors(readThemeBuilderCore());
+  ['quicknote', 'highlight'].forEach(k => { if (tbEl(k).dataset.auto === '1') tbEl(k).value = derived[k]; });
 }
 
 function readThemeBuilderBgMeta() {
@@ -680,6 +712,12 @@ function readThemeBuilderBgMeta() {
 function fillThemeBuilderForm(t) {
   const core = getThemeCore(t);
   ['bg', 'surface', 'nav', 'modal', 'text', 'border', 'accent'].forEach(k => { tbEl(k).value = core[k]; });
+  ['quicknote', 'highlight'].forEach(k => {
+    const own = t.coreColors && t.coreColors[k];
+    tbEl(k).dataset.auto = own ? '0' : '1';
+    if (own) tbEl(k).value = own;
+  });
+  syncThemeBuilderNoteFields();
   tbEl('opacity').value = t.cardOpacity ?? 100;
   tbEl('fontsize').value = t.fontSize ?? 100;
   renderFontSelect(core.font);
@@ -761,6 +799,7 @@ function closeThemeBuilder() {
 function previewThemeBuilderLive() {
   const overlay = document.getElementById('theme-builder-overlay');
   if (!overlay || overlay.classList.contains('hidden')) return;
+  syncThemeBuilderNoteFields();
   const core = readThemeBuilderCore();
   const opacity = parseInt(tbEl('opacity').value, 10);
   const fontSize = parseInt(tbEl('fontsize').value, 10);
@@ -973,6 +1012,10 @@ function initThemeBuilder() {
 
   ['bg', 'surface', 'nav', 'modal', 'text', 'border', 'accent', 'opacity', 'fontsize', 'bg-dim']
     .forEach(k => tbEl(k).addEventListener('input', previewThemeBuilderLive));
+  ['quicknote', 'highlight'].forEach(k => tbEl(k).addEventListener('input', () => {
+    tbEl(k).dataset.auto = '0';
+    previewThemeBuilderLive();
+  }));
   ['bg-size', 'calendar-image', 'start-header', 'branding-theme']
     .forEach(k => tbEl(k).addEventListener('change', previewThemeBuilderLive));
 

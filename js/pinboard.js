@@ -433,13 +433,14 @@ document.getElementById('tile-modal-delete-btn').addEventListener('click', () =>
 // Wird ausschließlich von Checklisten-Karten genutzt.
 // =========================
 
-// Berechnet Kreis-Akzentfarbe passend zur Kachelfarbe
-function paperCbColor(bg) {
-  if (!bg || bg === '#EBE4D4') return { ring: 'rgba(120,100,60,0.30)', check: 'rgba(80,65,35,0.70)', fill: 'rgba(120,100,60,0.12)' };
-  if (bg === '#A3B18A')        return { ring: 'rgba(50,75,35,0.32)',  check: 'rgba(45,68,28,0.75)', fill: 'rgba(50,75,35,0.14)' };
-  if (bg === '#C0AC99')        return { ring: 'rgba(90,65,40,0.30)',  check: 'rgba(75,50,30,0.72)', fill: 'rgba(90,65,40,0.12)' };
-  // Fallback für andere Farben: nimm text-3-ähnliche Töne
-  return { ring: 'rgba(100,85,65,0.30)', check: 'rgba(70,55,40,0.72)', fill: 'rgba(100,85,65,0.12)' };
+// Kreis-Akzentfarben aus der Textfarbe der Kachel (--user-color-text, von
+// applyUserColorVars() pro Karte gesetzt) — passt dadurch automatisch zu
+// jeder Kachelfarbe und jedem Theme statt einer festen Liste pro Farbe.
+// Als style statt SVG-Attribut, weil CSS-Variablen in Attributen nicht
+// zuverlässig ausgewertet werden.
+function paperCbColor() {
+  const ink = pct => `color-mix(in srgb, var(--user-color-text, var(--text)) ${pct}%, transparent)`;
+  return { ring: ink(30), check: ink(72), fill: ink(12) };
 }
 
 function buildPaperCb(done, bg) {
@@ -448,15 +449,15 @@ function buildPaperCb(done, bg) {
     // Gefüllter Kreis mit Haken
     return `<span class="paper-cb paper-cb--done" aria-label="erledigt">
       <svg width="17" height="17" viewBox="0 0 17 17" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="8.5" cy="8.5" r="7.5" fill="${c.fill}" stroke="${c.ring}" stroke-width="1.2"/>
-        <polyline points="4.5,8.5 7.5,11.5 12.5,6" stroke="${c.check}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="8.5" cy="8.5" r="7.5" style="fill:${c.fill};stroke:${c.ring}" stroke-width="1.2"/>
+        <polyline points="4.5,8.5 7.5,11.5 12.5,6" style="stroke:${c.check}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </span>`;
   } else {
     // Leerer Kreis
     return `<span class="paper-cb" aria-label="offen">
       <svg width="17" height="17" viewBox="0 0 17 17" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="8.5" cy="8.5" r="7.5" fill="none" stroke="${c.ring}" stroke-width="1.2"/>
+        <circle cx="8.5" cy="8.5" r="7.5" fill="none" style="stroke:${c.ring}" stroke-width="1.2"/>
       </svg>
     </span>`;
   }

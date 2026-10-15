@@ -459,12 +459,12 @@ function renderFinancialStatus(fs) {
   if (!statusInner) return;
 
   if (!fs) {
-    statusInner.innerHTML = '<div class="b-status-header"><span class="b-status-dot" style="background:#ccc"></span><span class="b-status-text">Kontostand nicht gesetzt</span></div>';
+    statusInner.innerHTML = '<div class="b-status-header"><span class="b-status-dot" style="background:var(--text-3)"></span><span class="b-status-text">Kontostand nicht gesetzt</span></div>';
     return;
   }
 
   const labels   = { green: 'Stabil', yellow: 'Eingeschränkt', orange: 'Aufpassen', red: 'Kritisch' };
-  const dotColor = { green: '#5A9C28', yellow: '#D4A010', orange: '#D46010', red: '#C03020' };
+  const dotColor = { green: 'var(--status-ok)', yellow: 'var(--status-caution)', orange: 'var(--status-warning)', red: 'var(--status-danger)' };
 
   // Render checks — each item already contains its own icon, class and label from calcFinancialStatus
   const checkHtml = fs.checks.map(c => `

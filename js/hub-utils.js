@@ -219,12 +219,20 @@ function mixHex(hexA, hexB, t) {
   return '#' + mix.map(v => v.toString(16).padStart(2, '0')).join('');
 }
 
-// Neutraler Dunkel-Ton, an --surface-3 (Dark) angelehnt — Ziel für die
-// Light→Dark-Mischung, damit Nutzerfarben sich wie Teil der Dark-UI anfühlen.
-const USER_COLOR_DARK_NEUTRAL = '#26221B';
-// Pendant für die umgekehrte Richtung: an --surface-3 (Light) angelehnt —
-// Ziel für die Dark→Light-Mischung.
-const USER_COLOR_LIGHT_NEUTRAL = '#EAE5DA';
+// Theme-Töne für die Angleichung von Nutzerfarben — kommen aus dem aktiven
+// Theme (css/main.css bzw. js/theme-engine.js), nicht aus festen Werten:
+//  --user-color-neutral   Ziel der Mischung (an --surface-3 des aktiven
+//                         Themes angelehnt). Angeglichen wird nur, wenn eine
+//                         Farbe im jeweils ANDEREN Hell/Dunkel-Modus angezeigt
+//                         wird — der aktive Theme-Ton ist dann genau der richtige.
+//  --user-color-ink-dark/-light  Textfarbe auf hellen bzw. dunklen Flächen
+//  --sheen                Richtung "heller" für Rand/Hover auf dunklen Farben
+function themeColorHex(varName) {
+  return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+}
+const USER_COLOR_INK_DARK  = 'var(--user-color-ink-dark)';
+const USER_COLOR_INK_LIGHT = 'var(--user-color-ink-light)';
+const USER_COLOR_SHADOW    = 'color-mix(in srgb, var(--shadow-tint) 35%, transparent)';
 
 /**
  * Berechnet die vollständige --user-color-* Variablen-Menge aus einer
@@ -258,7 +266,7 @@ function computeUserColorVars(hex, forceDark) {
       border: hexDarken(bg, 0.16),
       hover:  hexDarken(bg, 0.06),
       focus:  hexDarken(bg, 0.30),
-      text:   relativeLuminance(hexToRgbArr(bg)) > 0.6 ? '#3D3626' : '#F5F1E6',
+      text:   relativeLuminance(hexToRgbArr(bg)) > 0.6 ? USER_COLOR_INK_DARK : USER_COLOR_INK_LIGHT,
       shadow: hexToRgba(hex, 0.25),
     };
   }
@@ -268,14 +276,15 @@ function computeUserColorVars(hex, forceDark) {
   // entsättigte Fläche. Rand/Hover/Fokus bleiben näher an der Originalfarbe
   // und wirken dadurch heller als die Fläche.
   if (!baseIsDark && adjust) {
+    const USER_COLOR_DARK_NEUTRAL = themeColorHex('--user-color-neutral');
     const bg     = mixHex(hex, USER_COLOR_DARK_NEUTRAL, 0.62);
     const border = mixHex(hex, USER_COLOR_DARK_NEUTRAL, 0.28);
     const hover  = mixHex(hex, USER_COLOR_DARK_NEUTRAL, 0.42);
     const focus  = mixHex(hex, USER_COLOR_DARK_NEUTRAL, 0.18);
     return {
       bg, border, hover, focus,
-      text:   relativeLuminance(hexToRgbArr(bg)) > 0.5 ? '#221E18' : '#F0EAD8',
-      shadow: 'rgba(0,0,0,0.35)',
+      text:   relativeLuminance(hexToRgbArr(bg)) > 0.5 ? USER_COLOR_INK_DARK : USER_COLOR_INK_LIGHT,
+      shadow: USER_COLOR_SHADOW,
     };
   }
 
@@ -286,24 +295,25 @@ function computeUserColorVars(hex, forceDark) {
     const bg = hex;
     return {
       bg,
-      border: mixHex(hex, '#FFFFFF', 0.22),
-      hover:  mixHex(hex, '#FFFFFF', 0.10),
-      focus:  mixHex(hex, '#FFFFFF', 0.34),
-      text:   relativeLuminance(hexToRgbArr(bg)) > 0.5 ? '#221E18' : '#F0EAD8',
-      shadow: 'rgba(0,0,0,0.35)',
+      border: mixHex(hex, themeColorHex('--sheen'), 0.22),
+      hover:  mixHex(hex, themeColorHex('--sheen'), 0.10),
+      focus:  mixHex(hex, themeColorHex('--sheen'), 0.34),
+      text:   relativeLuminance(hexToRgbArr(bg)) > 0.5 ? USER_COLOR_INK_DARK : USER_COLOR_INK_LIGHT,
+      shadow: USER_COLOR_SHADOW,
     };
   }
 
   // Fall 4: Dark → Light automatisch angepasst. Basisfarbe wird Richtung
   // neutralen Light-UI-Ton gemischt → aufgehellte, für helle Flächen
   // passende Fläche, analog zu Fall 2 in umgekehrter Richtung.
+  const USER_COLOR_LIGHT_NEUTRAL = themeColorHex('--user-color-neutral');
   const bg     = mixHex(hex, USER_COLOR_LIGHT_NEUTRAL, 0.55);
   const border = mixHex(hex, USER_COLOR_LIGHT_NEUTRAL, 0.20);
   const hover  = mixHex(hex, USER_COLOR_LIGHT_NEUTRAL, 0.35);
   const focus  = mixHex(hex, USER_COLOR_LIGHT_NEUTRAL, 0.10);
   return {
     bg, border, hover, focus,
-    text:   relativeLuminance(hexToRgbArr(bg)) > 0.6 ? '#3D3626' : '#F5F1E6',
+    text:   relativeLuminance(hexToRgbArr(bg)) > 0.6 ? USER_COLOR_INK_DARK : USER_COLOR_INK_LIGHT,
     shadow: hexToRgba(hex, 0.25),
   };
 }

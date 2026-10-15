@@ -260,7 +260,7 @@ function buildForestTree(project, slot, containerWidth) {
 
   const dot = document.createElement('span');
   dot.className = 'forest-tree-dot';
-  dot.style.background = isDone ? '#d97706' : '#16a34a';
+  dot.style.background = isDone ? 'var(--status-warning)' : 'var(--status-ok)';
 
   const nameEl = document.createElement('span');
   nameEl.className = 'forest-tree-name';
@@ -275,7 +275,7 @@ function buildForestTree(project, slot, containerWidth) {
   const fill = document.createElement('div');
   fill.className = 'forest-tree-bar-fill';
   fill.style.width = pct + '%';
-  if (isDone) fill.style.background = '#d97706';
+  if (isDone) fill.style.background = 'var(--status-warning)';
   bar.appendChild(fill);
 
   const pctLabel = document.createElement('span');
@@ -578,7 +578,7 @@ function renderProjectDetail() {
 
   // Neue Felder
   const statusValEl = document.getElementById('proj-detail-status-val');
-  if (statusValEl) { statusValEl.textContent = p.archived ? 'Archiviert' : 'Aktiv'; statusValEl.style.color = p.archived ? '#d97706' : '#16a34a'; }
+  if (statusValEl) { statusValEl.textContent = p.archived ? 'Archiviert' : 'Aktiv'; statusValEl.style.color = p.archived ? 'var(--status-warning)' : 'var(--status-ok)'; }
   const subValEl = document.getElementById('proj-detail-sub-val');
   if (subValEl) subValEl.textContent = p.subprojects.length;
 
@@ -770,7 +770,7 @@ function buildMainTasksTile(p) {
   const barFill = document.createElement('div');
   barFill.className = 'detail-tile-bar-fill';
   barFill.style.width = mainPct + '%';
-  if (mainPct === 100 && mainTotal > 0) barFill.style.background = '#16a34a';
+  if (mainPct === 100 && mainTotal > 0) barFill.style.background = 'var(--status-ok)';
   barWrap.appendChild(barFill);
 
   const taskList = document.createElement('div');
@@ -908,7 +908,7 @@ function renderDetailTiles() {
     const barFill = document.createElement('div');
     barFill.className = 'detail-tile-bar-fill';
     barFill.style.width = stats.pct + '%';
-    if (stats.pct === 100) barFill.style.background = '#16a34a';
+    if (stats.pct === 100) barFill.style.background = 'var(--status-ok)';
     barWrap.appendChild(barFill);
 
     const taskList = document.createElement('div');

@@ -326,7 +326,7 @@ function renderGroupList(subj){
 
     // Leitner progress bar
     const progRow = document.createElement('div'); progRow.className='group-progress-row';
-    const colors = ['#e07a5f','#f2cc8f','#81b29a','#3d7a8a','#2c5f6e'];
+    const colors = ['var(--leitner-1)','var(--leitner-2)','var(--leitner-3)','var(--leitner-4)','var(--leitner-5)'];
     const labels = ['Neu','Lernen','Gut','Sehr gut','Sicher'];
     const leitnerBar = document.createElement('div'); leitnerBar.className='leitner-bar';
     boxes.forEach((cnt,i) => {
@@ -743,9 +743,9 @@ function endLearnSession(){
   const down = learnSession.leitnerChanges.filter(c => c.to < c.from).length;
   const leitnerHTML = (up||down) ? `
     <div style="font-size:12px;color:var(--text-3);margin-top:6px;">
-      ${up ? `<span style="color:#81b29a;">▲ ${up} Karte${up!==1?'n':''} aufgestiegen</span>` : ''}
+      ${up ? `<span style="color:var(--leitner-3);">▲ ${up} Karte${up!==1?'n':''} aufgestiegen</span>` : ''}
       ${up&&down?' · ':''}
-      ${down ? `<span style="color:#e07a5f;">▼ ${down} Karte${down!==1?'n':''} zurückgefallen</span>` : ''}
+      ${down ? `<span style="color:var(--leitner-1);">▼ ${down} Karte${down!==1?'n':''} zurückgefallen</span>` : ''}
     </div>` : '';
 
   document.getElementById('learn-card-wrap').style.display = 'none';

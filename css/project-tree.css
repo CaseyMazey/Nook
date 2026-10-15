@@ -30,30 +30,30 @@
   height: auto;
   display: block;
   pointer-events: none;
-  filter: drop-shadow(0 10px 10px rgba(30,25,10,0.22));
+  filter: drop-shadow(0 10px 10px color-mix(in srgb, var(--shadow-tint) 22%, transparent));
   transition: filter 200ms ease;
 }
-.forest-tree-wrap:hover .forest-tree-img { filter: drop-shadow(0 14px 14px rgba(30,25,10,0.3)) brightness(1.03); }
+.forest-tree-wrap:hover .forest-tree-img { filter: drop-shadow(0 14px 14px color-mix(in srgb, var(--shadow-tint) 30%, transparent)) brightness(1.03); }
 
 /* =========================
    PROJEKTKARTE unter dem Baum
 ========================= */
 .forest-tree-card {
-  background: rgba(255,255,255,0.92);
-  border: 1px solid rgba(0,0,0,0.08);
+  background: color-mix(in srgb, var(--surface-solid) 92%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
   border-radius: 10px;
   padding: 6px 10px;
   margin-top: -10%;
   min-width: 110px;
   max-width: 160px;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--shadow-tint) 10%, transparent);
   backdrop-filter: blur(4px);
   position: relative;
   z-index: 1;
 }
 [data-theme-family="dark"] .forest-tree-card {
-  background: rgba(30,34,24,0.9);
-  border-color: rgba(255,255,255,0.1);
+  background: var(--glass-bg);
+  border-color: var(--hairline);
 }
 
 .forest-tree-card-top {
@@ -90,7 +90,7 @@
 .forest-tree-bar {
   flex: 1;
   height: 3px;
-  background: rgba(0,0,0,0.1);
+  background: color-mix(in srgb, var(--text) 10%, transparent);
   border-radius: 99px;
   overflow: hidden;
 }
@@ -114,8 +114,8 @@
   gap: 2px;
   min-width: 140px;
   max-width: 200px;
-  background: rgba(30,26,18,0.92);
-  color: #f4f0e6;
+  background: var(--tooltip-bg);
+  color: var(--tooltip-text);
   border-radius: 8px;
   padding: 8px 10px;
   font-size: calc(11px * var(--core-font-scale));
@@ -124,11 +124,11 @@
   pointer-events: none;
   transition: opacity 150ms ease, transform 150ms ease;
   z-index: 20;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.22);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--shadow-tint) 22%, transparent);
   white-space: normal;
 }
 .forest-tree-hover-info strong { font-size: calc(11.5px * var(--core-font-scale)); font-weight: 600; }
-.forest-tree-hover-info span { color: rgba(244,240,230,0.78); }
+.forest-tree-hover-info span { color: color-mix(in srgb, var(--tooltip-text) 78%, transparent); }
 .forest-tree-wrap:hover .forest-tree-hover-info {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
@@ -178,7 +178,7 @@
   width: auto;
   display: block;
   pointer-events: none;
-  filter: drop-shadow(0 16px 16px rgba(30,25,10,0.25));
+  filter: drop-shadow(0 16px 16px color-mix(in srgb, var(--shadow-tint) 25%, transparent));
 }
 
 /* Obst-/Blumen-Deko — rein dekorativ, oben auf der Baumkrone platziert
@@ -195,7 +195,7 @@
   width: 45px;
   height: 45px;
   object-fit: contain;
-  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+  filter: drop-shadow(0 1px 2px color-mix(in srgb, var(--shadow-tint) 30%, transparent));
 }
 /* Blumen (category:'blumen' in DECOR_REGISTRY) etwas kleiner als Obst —
    optisch näher an der Größe einer echten Blüte. */

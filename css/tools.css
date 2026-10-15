@@ -110,7 +110,7 @@
   font-family: var(--font);
 }
 .calc-key:hover { background: var(--accent-soft); }
-.calc-key:active { box-shadow: inset 0 1px 4px rgba(0,0,0,0.12); }
+.calc-key:active { box-shadow: inset 0 1px 4px color-mix(in srgb, var(--shadow-tint) 12%, transparent); }
 
 .calc-key--fn {
   background: var(--surface-3);

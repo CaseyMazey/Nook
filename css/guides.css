@@ -302,20 +302,20 @@
 .guide-bookmark-btn:hover  { color: var(--amber); transform: scale(1.15); }
 .guide-bookmark-btn.active { color: var(--amber); }
 [data-theme-family="dark"] .guide-bookmark-btn:hover,
-[data-theme-family="dark"] .guide-bookmark-btn.active { color: color-mix(in srgb, var(--amber) 75%, white); }
+[data-theme-family="dark"] .guide-bookmark-btn.active { color: color-mix(in srgb, var(--amber) 75%, var(--sheen)); }
 
 /* Highlighted (bookmarked) code block */
 .guide-code-block.bookmarked {
   border-color: var(--amber);
-  box-shadow: 0 0 0 1px rgba(192,131,74,0.25);
-  background: linear-gradient(180deg, rgba(192,131,74,0.10) 0%, rgba(192,131,74,0.03) 100%);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--amber) 25%, transparent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--amber) 10%, transparent) 0%, color-mix(in srgb, var(--amber) 3%, transparent) 100%);
 }
 [data-theme-family="dark"] .guide-code-block.bookmarked {
-  background: linear-gradient(180deg, rgba(192,131,74,0.16) 0%, rgba(192,131,74,0.04) 100%);
-  box-shadow: 0 0 0 1px rgba(192,131,74,0.3);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--amber) 16%, transparent) 0%, color-mix(in srgb, var(--amber) 4%, transparent) 100%);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--amber) 30%, transparent);
 }
 .guide-code-block.bookmarked .guide-code-header {
-  border-bottom-color: rgba(192,131,74,0.3);
+  border-bottom-color: color-mix(in srgb, var(--amber) 30%, transparent);
 }
  
 /* Featured-snippet star button */
@@ -337,7 +337,7 @@
 .guide-feature-btn:hover  { color: var(--amber); transform: scale(1.15); }
 .guide-feature-btn.active { color: var(--amber); }
 [data-theme-family="dark"] .guide-feature-btn:hover,
-[data-theme-family="dark"] .guide-feature-btn.active { color: color-mix(in srgb, var(--amber) 60%, white); }
+[data-theme-family="dark"] .guide-feature-btn.active { color: color-mix(in srgb, var(--amber) 60%, var(--sheen)); }
 
 .guide-bm-nav {
   display: flex;
@@ -387,13 +387,13 @@
   cursor: pointer;
   transition: border-color var(--transition), background var(--transition), color var(--transition);
 }
-.guide-bm-item:hover { border-color: var(--amber); color: var(--text); background: rgba(192,131,74,0.08); }
+.guide-bm-item:hover { border-color: var(--amber); color: var(--text); background: color-mix(in srgb, var(--amber) 8%, transparent); }
 .guide-bm-item-lang { font-family: var(--mono); font-size: calc(10.5px * var(--core-font-scale)); color: var(--text-3); text-transform: lowercase; }
  
 @keyframes guide-bm-glow {
-  0%   { box-shadow: 0 0 0 0 rgba(192,131,74,0.5); }
-  50%  { box-shadow: 0 0 0 6px rgba(192,131,74,0.15); }
-  100% { box-shadow: 0 0 0 0 rgba(192,131,74,0); }
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--amber) 50%, transparent); }
+  50%  { box-shadow: 0 0 0 6px color-mix(in srgb, var(--amber) 15%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--amber) 0%, transparent); }
 }
 .guide-bm-flash { animation: guide-bm-glow 0.9s ease-out; border-color: var(--amber) !important; }
  
@@ -471,13 +471,13 @@ body:not(:has(#view-guides.active)) #guide-scroll-top { display: none; }
   height: 14px;
   margin: 0 6px 22px;
   border-radius: 4px;
-  background: linear-gradient(180deg, #D8BD93 0%, #C7A977 55%, #B9985F 100%);
-  box-shadow: 0 4px 8px rgba(80,60,30,0.18), inset 0 1px 0 rgba(255,255,255,0.35);
+  background: linear-gradient(180deg, var(--shelf-top) 0%, color-mix(in srgb, var(--shelf-top) 45%, var(--shelf-bottom)) 55%, var(--shelf-bottom) 100%);
+  box-shadow: 0 4px 8px color-mix(in srgb, var(--shadow-tint) 18%, transparent), inset 0 1px 0 color-mix(in srgb, var(--sheen) 35%, transparent);
   position: relative;
 }
 [data-theme-family="dark"] .guide-shelf-board {
-  background: linear-gradient(180deg, #5C4527 0%, #4A3620 55%, #3C2C18 100%);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08);
+  background: linear-gradient(180deg, var(--shelf-top) 0%, color-mix(in srgb, var(--shelf-top) 45%, var(--shelf-bottom)) 55%, var(--shelf-bottom) 100%);
+  box-shadow: 0 4px 8px color-mix(in srgb, var(--shadow-tint) 35%, transparent), inset 0 1px 0 color-mix(in srgb, var(--sheen) 8%, transparent);
 }
  
 /* ── Book spines ───────────────────────────────────────────── */
@@ -494,21 +494,21 @@ body:not(:has(#view-guides.active)) #guide-scroll-top { display: none; }
   cursor: pointer;
   box-shadow: var(--shadow-sm);
   transition: transform var(--transition), box-shadow var(--transition), min-height var(--transition);
-  color: #2B2A22;
+  color: var(--deco-ink);
   overflow: hidden;
 }
 /* Darker spine on the left edge */
 .guide-book::before {
   content: '';
   position: absolute; left: 0; top: 0; bottom: 0; width: 16px;
-  background: rgba(0,0,0,0.18);
-  box-shadow: inset -3px 0 5px rgba(0,0,0,0.10);
+  background: color-mix(in srgb, var(--shadow-tint) 18%, transparent);
+  box-shadow: inset -3px 0 5px color-mix(in srgb, var(--shadow-tint) 10%, transparent);
 }
 /* Subtle highlight where spine meets cover */
 .guide-book::after {
   content: '';
   position: absolute; left: 16px; top: 0; bottom: 0; width: 1px;
-  background: rgba(255,255,255,0.30);
+  background: color-mix(in srgb, var(--sheen) 30%, transparent);
 }
 .guide-book:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
 .guide-book.active {
@@ -527,30 +527,23 @@ body:not(:has(#view-guides.active)) #guide-scroll-top { display: none; }
 .guide-book-del {
   position: absolute; top: 8px; right: 8px;
   width: 22px; height: 22px; border-radius: 50%;
-  background: rgba(255,255,255,0.55); color: #5A2010;
+  background: color-mix(in srgb, var(--sheen) 55%, transparent); color: var(--prio-1);
   display: flex; align-items: center; justify-content: center;
   font-size: calc(11px * var(--core-font-scale)); opacity: 0; transition: opacity var(--transition), background var(--transition);
   border: none; cursor: pointer;
 }
 .guide-book:hover .guide-book-del { opacity: 1; }
-.guide-book-del:hover { background: rgba(255,255,255,0.85); }
+.guide-book-del:hover { background: color-mix(in srgb, var(--sheen) 85%, transparent); }
  
 /* Pastel spine palette */
-.guide-book-0 { background: linear-gradient(160deg, #C9D6BC 0%, #AEC09C 100%); }
-.guide-book-1 { background: linear-gradient(160deg, #ECDFCB 0%, #DDC7A8 100%); }
-.guide-book-2 { background: linear-gradient(160deg, #DAD3EA 0%, #C2B6DD 100%); }
-.guide-book-3 { background: linear-gradient(160deg, #F2E6AE 0%, #E5D284 100%); }
-.guide-book-4 { background: linear-gradient(160deg, #E2DED4 0%, #CFC8BA 100%); }
-.guide-book-5 { background: linear-gradient(160deg, #E4CBE6 0%, #D2AED6 100%); }
+.guide-book-0 { background: linear-gradient(160deg, var(--deco-1) 0%, color-mix(in srgb, var(--deco-1) 86%, var(--shadow-tint)) 100%); }
+.guide-book-1 { background: linear-gradient(160deg, var(--deco-2) 0%, color-mix(in srgb, var(--deco-2) 86%, var(--shadow-tint)) 100%); }
+.guide-book-2 { background: linear-gradient(160deg, var(--deco-3) 0%, color-mix(in srgb, var(--deco-3) 86%, var(--shadow-tint)) 100%); }
+.guide-book-3 { background: linear-gradient(160deg, var(--deco-4) 0%, color-mix(in srgb, var(--deco-4) 86%, var(--shadow-tint)) 100%); }
+.guide-book-4 { background: linear-gradient(160deg, var(--deco-5) 0%, color-mix(in srgb, var(--deco-5) 86%, var(--shadow-tint)) 100%); }
+.guide-book-5 { background: linear-gradient(160deg, var(--deco-6) 0%, color-mix(in srgb, var(--deco-6) 86%, var(--shadow-tint)) 100%); }
  
-[data-theme-family="dark"] .guide-book { color: #2B2A22; }
-[data-theme-family="dark"] .guide-book::before { background: rgba(0,0,0,0.32); box-shadow: inset -3px 0 5px rgba(0,0,0,0.2); }
-[data-theme-family="dark"] .guide-book-0 { background: linear-gradient(160deg, #9FB28C 0%, #7E9568 100%); }
-[data-theme-family="dark"] .guide-book-1 { background: linear-gradient(160deg, #CBB594 0%, #B59670 100%); }
-[data-theme-family="dark"] .guide-book-2 { background: linear-gradient(160deg, #B6A8D6 0%, #9A89C4 100%); }
-[data-theme-family="dark"] .guide-book-3 { background: linear-gradient(160deg, #DACB80 0%, #C7B25E 100%); }
-[data-theme-family="dark"] .guide-book-4 { background: linear-gradient(160deg, #B9B3A5 0%, #A19A89 100%); }
-[data-theme-family="dark"] .guide-book-5 { background: linear-gradient(160deg, #C9A6CC 0%, #B086B5 100%); }
+[data-theme-family="dark"] .guide-book::before { background: color-mix(in srgb, var(--shadow-tint) 32%, transparent); box-shadow: inset -3px 0 5px color-mix(in srgb, var(--shadow-tint) 20%, transparent); }
  
 /* "Add new book" tile — same footprint as a real book */
 .guide-book-add {
@@ -602,7 +595,7 @@ body:not(:has(#view-guides.active)) #guide-scroll-top { display: none; }
 }
 .guide-book-header-swatch::before {
   content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 6px;
-  background: rgba(0,0,0,0.18);
+  background: color-mix(in srgb, var(--text) 18%, transparent);
 }
 .guide-book-detail-title { font-family: var(--font); font-size: calc(22px * var(--core-font-scale)); font-weight: 700; letter-spacing: -0.3px; }
 .guide-book-detail-sub { font-size: calc(13px * var(--core-font-scale)); color: var(--text-3); margin-top: 2px; }
@@ -693,11 +686,11 @@ body:not(:has(#view-guides.active)) #guide-scroll-top { display: none; }
 .hl-attr     { color: var(--amber); }
 [data-theme-family="dark"] .hl-string  { color: var(--sage-light); }
 [data-theme-family="dark"] .hl-keyword,
-[data-theme-family="dark"] .hl-tag     { color: color-mix(in srgb, var(--prio-1) 55%, white); }
+[data-theme-family="dark"] .hl-tag     { color: color-mix(in srgb, var(--prio-1) 55%, var(--sheen)); }
 [data-theme-family="dark"] .hl-literal,
 [data-theme-family="dark"] .hl-number,
 [data-theme-family="dark"] .hl-variable,
-[data-theme-family="dark"] .hl-attr    { color: color-mix(in srgb, var(--amber) 75%, white); }
+[data-theme-family="dark"] .hl-attr    { color: color-mix(in srgb, var(--amber) 75%, var(--sheen)); }
 
 /* ── Querverweise [[Kapitel]] ───────────────────────────────── */
 .guide-xref { text-decoration-style: dotted; }

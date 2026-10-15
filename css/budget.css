@@ -476,7 +476,7 @@
 .b-check-icon.warn    { background: color-mix(in srgb, var(--bg) 70%, var(--b-status-amber) 12%); color: var(--b-status-amber-text); }
 .b-check-icon.bad     { background: var(--b-red-soft); color: var(--b-red); }
 .b-check-icon.neutral { background: var(--accent-soft); color: var(--text-3); }
-[data-theme-family="dark"] .b-check-icon.warn { background: rgba(202,138,4,0.18); }
+[data-theme-family="dark"] .b-check-icon.warn { background: color-mix(in srgb, var(--status-caution) 18%, transparent); }
 
 .b-status-hint {
   font-size: calc(12px * var(--core-font-scale));
@@ -1211,10 +1211,10 @@
 .gf-bar-wrap { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
 .gf-income-bar {
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--b-radius);
-  box-shadow: 0 2px 8px rgba(50,40,20,0.06); padding: 12px 16px;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--shadow-tint) 6%, transparent); padding: 12px 16px;
   transition: box-shadow var(--transition), transform var(--transition);
 }
-.gf-income-bar.gf-drop-hover { box-shadow: 0 0 0 2px var(--sage), 0 4px 14px rgba(50,40,20,0.12); transform: translateY(-2px); }
+.gf-income-bar.gf-drop-hover { box-shadow: 0 0 0 2px var(--sage), 0 4px 14px color-mix(in srgb, var(--shadow-tint) 12%, transparent); transform: translateY(-2px); }
 /* Name + Rest rücken eng zusammen in die Mitte (Hauptinformation), der
    volle Betrag bleibt als kleine Nebeninfo direkt daneben statt am
    Kartenrand zu kleben. */
@@ -1227,10 +1227,10 @@
 
 .gf-income-card {
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--b-radius-sm);
-  box-shadow: 0 2px 6px rgba(50,40,20,0.06); padding: 10px 11px 8px; width: 100%;
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--shadow-tint) 6%, transparent); padding: 10px 11px 8px; width: 100%;
   display: flex; flex-direction: column; gap: 4px; transition: box-shadow var(--transition), transform var(--transition);
 }
-.gf-income-card.gf-drop-hover { box-shadow: 0 0 0 2px var(--sage), 0 4px 14px rgba(50,40,20,0.12); transform: translateY(-2px); }
+.gf-income-card.gf-drop-hover { box-shadow: 0 0 0 2px var(--sage), 0 4px 14px color-mix(in srgb, var(--shadow-tint) 12%, transparent); transform: translateY(-2px); }
 .gf-income-head { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; }
 .gf-income-name { font-size: calc(12.5px * var(--core-font-scale)); font-weight: 600; color: var(--text); }
 /* Nebeninfo: der ursprüngliche Betrag — bewusst klein, der Rest (oben)
@@ -1284,11 +1284,11 @@
 
 .gf-consumer-card {
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--b-radius-sm);
-  box-shadow: 0 1px 4px rgba(50,40,20,0.05); padding: 9px 12px; display: flex; align-items: center;
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--shadow-tint) 5%, transparent); padding: 9px 12px; display: flex; align-items: center;
   justify-content: space-between; gap: 8px; cursor: grab; touch-action: pan-y; user-select: none;
   transition: box-shadow var(--transition), transform var(--transition);
 }
-.gf-consumer-card:hover { box-shadow: 0 3px 10px rgba(50,40,20,0.10); transform: translateY(-1px); }
+.gf-consumer-card:hover { box-shadow: 0 3px 10px color-mix(in srgb, var(--shadow-tint) 10%, transparent); transform: translateY(-1px); }
 .gf-consumer-card.gf-drag-source, .gf-stack-item.gf-drag-source { opacity: 0.35; }
 .gf-consumer-card.gf-consumer-red    { background: var(--b-red-soft);    border-left: 3px solid var(--b-red); }
 .gf-consumer-card.gf-consumer-blue   { background: var(--b-blue-soft);   border-left: 3px solid var(--b-blue); }
@@ -1328,7 +1328,7 @@
 
 .gf-drag-ghost {
   position: fixed; top: 0; left: 0; z-index: 9999; pointer-events: none;
-  box-shadow: 0 8px 24px rgba(50,40,20,0.22); transform: rotate(-2deg); opacity: 0.95;
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--shadow-tint) 22%, transparent); transform: rotate(-2deg); opacity: 0.95;
 }
 
 .b-main-row {
@@ -1902,6 +1902,6 @@
    auf .sp-scen-formula, deshalb ohne eigene Trennlinie/Extra-Abstand. */
 .sp-scen-tg-line {
   margin-top: 4px; padding-top: 0; border-top: none;
-  color: #9A7020;
+  color: var(--status-caution);
 }
 

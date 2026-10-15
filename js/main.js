@@ -18,7 +18,6 @@ const DEFAULT_BLOCKS = [
   { id: 4, label: 'Block 4', start: '14:30', end: '16:10', free: true },
 ];
 
-const DEFAULT_COLORS = { event: '#2563eb', prio1: '#dc2626', prio2: '#2563eb', prio3: '#6b7280' };
 
 const state = {
   currentDate: new Date(),
@@ -175,7 +174,6 @@ let themeFamily = THEME_FAMILY[theme] || DB.get('themeFamily', 'light');
 // Stellen, die nur zwischen hell/dunkel unterscheiden (Sonne/Mond-Icon
 // in today.js, Sidebar-Schnellumschalter).
 let darkMode = themeFamily === 'dark';
-let colors           = DB.get('colors', DEFAULT_COLORS);
 let customTiles      = DB.get('customTiles', []);
 let deskCards        = DB.get('deskCards', null);
 let generalTodos     = DB.get('generalTodos', []);
@@ -256,22 +254,12 @@ function setDarkMode(dark) {
   setTheme(dark ? DAYNIGHT_THEMES[base] : base);
 }
 
-function applyColors() {
-  const r = document.documentElement.style;
-  r.setProperty('--event-color',    colors.event);
-  r.setProperty('--event-color-bg', hexToRgba(colors.event, 0.1));
-  r.setProperty('--prio-1',         colors.prio1);
-  r.setProperty('--prio-1-bg',      hexToRgba(colors.prio1, 0.08));
-  r.setProperty('--prio-2',         colors.prio2);
-  r.setProperty('--prio-2-bg',      hexToRgba(colors.prio2, 0.08));
-  r.setProperty('--prio-3',         colors.prio3);
-  r.setProperty('--prio-3-bg',      hexToRgba(colors.prio3, 0.08));
-}
+// Prioritätsfarben wurden hier früher (applyColors) für alle Themes fest
+// inline gesetzt — sie sind jetzt Theme-Variablen in css/main.css.
 function hexToRgba(hex, alpha) {
   const r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
   return `rgba(${r},${g},${b},${alpha})`;
 }
-applyColors();
 
 // =========================
 // DATE HELPERS
