@@ -228,12 +228,25 @@ function setTheme(name) {
 
 // ── Tag/Nacht-Themes ────────────────────────────────────────────────────
 // Ein Theme kann eine Tag- und eine Nachtversion haben, die in der Theme-
-// Auswahl als EIN Theme erscheinen (Button-Wert = Tag-ID). Aktuell nur Cozy
-// ('light' Tag / 'dark' Nacht); weitere Paare sind ein Eintrag hier.
-const DAYNIGHT_THEMES = { light: 'dark' };   // Tag-ID → Nacht-ID
+// Auswahl als EIN Theme erscheinen (Button-Wert = Tag-ID): Cozy ('light' Tag
+// / 'dark' Nacht) sowie eigene Themes mit Nachtversion aus dem Theme-Editor.
+const DAYNIGHT_THEMES = { light: 'dark' };   // Tag-ID → Nacht-ID (fest in main.css)
+// Eigene Themes können im Theme-Editor ebenfalls eine Nachtversion bekommen
+// (ct.night, js/theme-engine.js) — deren ID ist dann "<id>:night".
+const NIGHT_SUFFIX = ':night';
+function nightThemeId(base) {
+  if (DAYNIGHT_THEMES[base]) return DAYNIGHT_THEMES[base];
+  if (!base || base.endsWith(NIGHT_SUFFIX) || typeof getCustomTheme !== 'function') return null;
+  const ct = getCustomTheme(base);
+  return ct && ct.night ? base + NIGHT_SUFFIX : null;
+}
 function dayNightBase(id) {
+  if (!id) return null;
   if (DAYNIGHT_THEMES[id]) return id;
-  return Object.keys(DAYNIGHT_THEMES).find(day => DAYNIGHT_THEMES[day] === id) || null;
+  const builtin = Object.keys(DAYNIGHT_THEMES).find(day => DAYNIGHT_THEMES[day] === id);
+  if (builtin) return builtin;
+  const base = id.endsWith(NIGHT_SUFFIX) ? id.slice(0, -NIGHT_SUFFIX.length) : id;
+  return nightThemeId(base) ? base : null;
 }
 // Theme-ID, unter der ein Theme in der Auswahl steht (Tag-ID bzw. eigene ID).
 function themePickerId(id) { return dayNightBase(id) || id; }
@@ -251,7 +264,7 @@ function isDayNightToggleOn(id = theme) {
 function setDarkMode(dark) {
   const base = dayNightBase(theme);
   if (!base) return;
-  setTheme(dark ? DAYNIGHT_THEMES[base] : base);
+  setTheme(dark ? nightThemeId(base) : base);
 }
 
 // Prioritätsfarben wurden hier früher (applyColors) für alle Themes fest

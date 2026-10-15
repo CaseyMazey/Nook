@@ -2890,6 +2890,21 @@
         <input type="text" class="modal-input" id="theme-builder-name" placeholder="Name, z.B. Ozean, Rosé, Nacht…" maxlength="32" autocomplete="off"/>
       </div>
 
+      <!-- Tag/Nacht — mit Nachtversion erscheint das Theme wie Cozy als ein
+           Eintrag mit Sonne/Mond-Umschalter. Farben, Schrift, Größe,
+           Durchlässigkeit und Hintergrund gelten pro Version; Name und
+           Grafik-Set teilen sich beide (js/theme-engine.js). -->
+      <div class="tb-group">
+        <div class="tb-bg-opt-row">
+          <span>Tag- und Nachtversion</span>
+          <label class="toggle"><input type="checkbox" id="theme-builder-daynight"/><span class="toggle-slider"></span></label>
+        </div>
+        <div class="tb-template-row hidden" id="theme-builder-variant-row">
+          <button type="button" class="clock-type-btn" id="theme-builder-variant-day">☀ Tag bearbeiten</button>
+          <button type="button" class="clock-type-btn" id="theme-builder-variant-night">☾ Nacht bearbeiten</button>
+        </div>
+      </div>
+
       <div class="tb-group">
         <span class="panel-label">Allgemein</span>
         <div class="tb-color-fields">

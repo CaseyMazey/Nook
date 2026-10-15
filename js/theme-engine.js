@@ -331,7 +331,22 @@ const PRESET_THEMES = [
 
 function getPresetTheme(id)  { return PRESET_THEMES.find(t => t.id === id) || null; }
 // Liefert Presets UND eigene Themes — alles, was über Kernfarben läuft.
-function getCustomTheme(id)  { return customThemes.find(t => t.id === id) || getPresetTheme(id); }
+// Liefert auch die Nachtversion eines Themes ("<id>:night", siehe
+// nightThemeId() in main.js): ein zusammengesetztes Objekt aus dem Basis-
+// Theme (Name, Grafik-Set …) und dessen ct.night (Farben, Schrift, Größe,
+// Durchlässigkeit, Hintergrund).
+function getCustomTheme(id) {
+  if (typeof id === 'string' && id.endsWith(NIGHT_SUFFIX)) {
+    const base = getCustomTheme(id.slice(0, -NIGHT_SUFFIX.length));
+    if (!base || !base.night) return null;
+    const n = base.night;
+    return Object.assign({}, base, {
+      id, family: n.family || 'dark', coreColors: n.coreColors,
+      cardOpacity: n.cardOpacity ?? base.cardOpacity, fontSize: n.fontSize ?? base.fontSize, bg: n.bg || null,
+    });
+  }
+  return customThemes.find(t => t.id === id) || getPresetTheme(id);
+}
 function isCustomThemeId(id) { return !!getCustomTheme(id); }
 
 function getThemeCore(ct) { return Object.assign({}, DEFAULT_BUILDER_CORE, ct && ct.coreColors); }
@@ -634,11 +649,16 @@ function deleteCustomTheme(id) {
   if (!customThemes.some(t => t.id === id)) return;
   customThemes = customThemes.filter(t => t.id !== id);
   saveCustomThemes();
-  if (theme === id) setTheme('light');
+  if (theme === id || theme === id + NIGHT_SUFFIX) setTheme('light');
   if (typeof renderThemeSettings === 'function') renderThemeSettings();
 }
 
 let _teBuilderEditId = null;
+// Tag/Nacht im Editor: Zustand beider Versionen (Farben, Schrift, Größe,
+// Durchlässigkeit, Hintergrund) — das Formular zeigt immer nur die gerade
+// gewählte, die andere liegt hier zwischengespeichert.
+let _teBuilderVariants = { day: null, night: null };
+let _teBuilderVariant = 'day';   // 'day' | 'night'
 let _teBuilderGraphicsMode = 'theme';  // 'theme' | 'custom'
 // Hintergrund im Editor: bereits verkleinertes eigenes Bild (data-URL),
 // erst beim Speichern ins Theme übernommen.
@@ -706,10 +726,19 @@ function readThemeBuilderBgMeta() {
   };
 }
 
-// Füllt alle Editor-Felder aus einem Theme-ähnlichen Objekt — gemeinsam
-// genutzt von openThemeBuilder() (bestehendes/neues Theme) und der
-// "Vorlage"-Leiste (applyThemeTemplate()).
-function fillThemeBuilderForm(t) {
+// Zustand der gerade im Formular stehenden Version (Tag oder Nacht).
+function readThemeBuilderVariant() {
+  return {
+    coreColors: readThemeBuilderCore(),
+    cardOpacity: parseInt(tbEl('opacity').value, 10),
+    fontSize: parseInt(tbEl('fontsize').value, 10),
+    bg: readThemeBuilderBgMeta(),
+  };
+}
+
+// Füllt nur die Felder, die pro Version gelten (Farben, Schrift, Größe,
+// Durchlässigkeit, Hintergrund).
+function fillThemeBuilderVariant(t) {
   const core = getThemeCore(t);
   ['bg', 'surface', 'nav', 'modal', 'text', 'border', 'accent'].forEach(k => { tbEl(k).value = core[k]; });
   ['quicknote', 'highlight'].forEach(k => {
@@ -728,6 +757,15 @@ function fillThemeBuilderForm(t) {
   tbEl('bg-source').value = bg.source || 'none';
   tbEl('bg-size').value = bg.size || 'cover';
   tbEl('bg-dim').value = bg.dim ?? 40;
+  syncThemeBuilderBgUI();
+}
+
+// Füllt alle Editor-Felder aus einem Theme-ähnlichen Objekt — gemeinsam
+// genutzt von openThemeBuilder() (bestehendes/neues Theme) und der
+// "Vorlage"-Leiste. Die Versions-Felder landen in der gerade gewählten
+// Version (Tag oder Nacht).
+function fillThemeBuilderForm(t) {
+  fillThemeBuilderVariant(t);
 
   const calendar = (t.calendar && t.calendar.imageTheme) || 'cozy';
   const startHeader = (t.startHeader && t.startHeader.banner) || 'none';
@@ -762,8 +800,15 @@ function openThemeBuilder(editId) {
   tbEl('name').value = isPreset ? existing.name + ' (eigen)' : (existing ? existing.name : '');
   tbEl('delete').style.display = existing && !isPreset ? '' : 'none';
 
+  _teBuilderVariants = { day: null, night: existing && existing.night ? JSON.parse(JSON.stringify(existing.night)) : null };
+  setThemeBuilderVariantUI('day');
+  tbEl('daynight').checked = !!(existing && existing.night);
+  tbEl('variant-row').classList.toggle('hidden', !tbEl('daynight').checked);
+
   if (existing) {
     fillThemeBuilderForm(existing);
+    // Ist gerade die Nachtversion dieses Themes aktiv, gleich dort starten.
+    if (existing.night && theme === editId + NIGHT_SUFFIX) switchThemeBuilderVariant('night');
   } else {
     // Neues Theme startet mit den Farben des aktuell aktiven Themes und
     // im einfacheren "Ein Set für alles"-Modus.
@@ -788,6 +833,8 @@ function closeThemeBuilder() {
   _teBuilderEditId = null;
   _teBuilderBgData = null;
   _teBuilderBgName = null;
+  _teBuilderVariants = { day: null, night: null };
+  _teBuilderVariant = 'day';
   document.documentElement.setAttribute('data-theme-family', themeFamily);
   applyThemeEngine(theme);
 }
@@ -825,6 +872,7 @@ function renderThemeTemplateStrip() {
   row.innerHTML = '';
   const templates = THEME_REGISTRY
     .map(reg => ({
+      regId: reg.id,
       name: reg.label, coreColors: reg.core, cardOpacity: 100, fontSize: 100,
       bg: themeBackgrounds[reg.id] || null,
       calendar: { imageTheme: 'cozy' }, startHeader: { banner: 'none' }, branding: { theme: 'none' },
@@ -835,7 +883,16 @@ function renderThemeTemplateStrip() {
     btn.type = 'button';
     btn.className = 'clock-type-btn';
     btn.textContent = t.name;
-    btn.addEventListener('click', () => fillThemeBuilderForm(t));
+    btn.addEventListener('click', () => {
+      fillThemeBuilderForm(t);
+      // Tag/Nacht aktiv und Tag-Ansicht offen: hat die Vorlage selbst eine
+      // Nachtversion (Cozy → Cozy Nacht, eigene Themes mit ct.night), wird
+      // die gleich mit übernommen.
+      if (!tbEl('daynight').checked || _teBuilderVariant !== 'day') return;
+      const darkReg = t.regId && DAYNIGHT_THEMES[t.regId] && THEME_REGISTRY.find(r => r.id === DAYNIGHT_THEMES[t.regId]);
+      if (darkReg) _teBuilderVariants.night = { coreColors: Object.assign({}, darkReg.core), cardOpacity: 100, fontSize: 100, bg: themeBackgrounds[darkReg.id] || null };
+      else if (t.night) _teBuilderVariants.night = JSON.parse(JSON.stringify(t.night));
+    });
     row.appendChild(btn);
   });
 }
@@ -854,17 +911,27 @@ function saveThemeBuilder() {
   const name = nameInput.value.trim();
   if (!name) { nameInput.focus(); return; }
 
-  const core = readThemeBuilderCore();
-  const bg = readThemeBuilderBgMeta();
-  if (bg.source !== 'custom' || !bg.data) { delete bg.data; delete bg.name; }
-  if (bg.source === 'custom' && !bg.data) bg.source = 'none';
+  _teBuilderVariants[_teBuilderVariant] = readThemeBuilderVariant();
+  const cleanBg = bg => {
+    bg = Object.assign({}, bg);
+    if (bg.source !== 'custom' || !bg.data) { delete bg.data; delete bg.name; }
+    if (bg.source === 'custom' && !bg.data) bg.source = 'none';
+    return bg;
+  };
+  const day = _teBuilderVariants.day;
+  const nightOn = tbEl('daynight').checked && _teBuilderVariants.night;
+  const night = nightOn ? Object.assign({}, _teBuilderVariants.night, {
+    family: teLuminance(getThemeCore(_teBuilderVariants.night).bg) < 128 ? 'dark' : 'light',
+    bg: cleanBg(_teBuilderVariants.night.bg || { source: 'none' }),
+  }) : undefined;
   const data = {
     name,
-    family: teLuminance(core.bg) < 128 ? 'dark' : 'light',
-    coreColors: core,
-    cardOpacity: parseInt(tbEl('opacity').value, 10),
-    fontSize: parseInt(tbEl('fontsize').value, 10),
-    bg,
+    family: teLuminance(day.coreColors.bg) < 128 ? 'dark' : 'light',
+    coreColors: day.coreColors,
+    cardOpacity: day.cardOpacity,
+    fontSize: day.fontSize,
+    bg: cleanBg(day.bg),
+    night,
     calendar: { imageTheme: tbEl('calendar-image').value },
     startHeader: { banner: tbEl('start-header').value },
     branding: { theme: tbEl('branding-theme').value },
@@ -872,17 +939,49 @@ function saveThemeBuilder() {
   };
 
   let id = _teBuilderEditId;
-  const ct = id ? getCustomTheme(id) : null;
-  if (ct) Object.assign(ct, data);
-  else { id = 'custom_' + Date.now(); customThemes.push(Object.assign({ id }, data)); }
+  const ct = id ? customThemes.find(t => t.id === id) : null;
+  if (ct) { Object.assign(ct, data); if (!night) delete ct.night; }
+  else { id = 'custom_' + Date.now(); const neu = Object.assign({ id }, data); if (!night) delete neu.night; customThemes.push(neu); }
+  // Danach die Version aktivieren, die gerade im Editor offen war.
+  const showNight = !!night && _teBuilderVariant === 'night';
   try { saveCustomThemes(); }
   catch {
     alert('Das Theme konnte nicht gespeichert werden — der Speicher ist voll. Versuch es mit einem kleineren Hintergrundbild.');
     return;
   }
   closeThemeBuilder();
-  setTheme(id);
+  setTheme(showNight ? id + NIGHT_SUFFIX : id);
   if (typeof renderThemeSettings === 'function') renderThemeSettings();
+}
+
+// ── Tag/Nacht im Editor ──────────────────────────────────────────────────
+function setThemeBuilderVariantUI(v) {
+  _teBuilderVariant = v;
+  tbEl('variant-day').classList.toggle('active', v === 'day');
+  tbEl('variant-night').classList.toggle('active', v === 'night');
+}
+
+// Formular auf die andere Version umschalten — die aktuelle wird vorher
+// zwischengespeichert, die Live-Vorschau zeigt danach die neue.
+function switchThemeBuilderVariant(v) {
+  if (v === _teBuilderVariant) return;
+  _teBuilderVariants[_teBuilderVariant] = readThemeBuilderVariant();
+  if (!_teBuilderVariants[v]) _teBuilderVariants[v] = makeNightVariant(_teBuilderVariants.day);
+  fillThemeBuilderVariant(_teBuilderVariants[v]);
+  setThemeBuilderVariantUI(v);
+  previewThemeBuilderLive();
+}
+
+// Erste Nachtversion: ist der Tag schon dunkel, eine Kopie davon; sonst die
+// Grundfarben von Cozy (Nacht) mit Akzent und Schrift des Tags. Notiz und
+// Hervorhebung leiten sich daraus neu ab.
+function makeNightVariant(day) {
+  const dayCore = getThemeCore(day);
+  const copy = JSON.parse(JSON.stringify(day));
+  if (teLuminance(dayCore.bg) < 128) return copy;
+  const darkCore = Object.assign({}, THEME_REGISTRY.find(r => r.id === 'dark').core, { accent: dayCore.accent, font: dayCore.font });
+  delete darkCore.quicknote; delete darkCore.highlight;
+  return Object.assign(copy, { coreColors: darkCore });
 }
 
 // ── Preset- und eigene Theme-Buttons im #theme-picker (Einstellungen) ────
@@ -900,7 +999,7 @@ function renderCustomThemeButtons() {
     const isPreset = !!getPresetTheme(ct.id);
     const core = getThemeCore(ct);
     const btn = document.createElement('button');
-    btn.className = 'clock-type-btn theme-picker-btn theme-picker-btn-custom' + (theme === ct.id ? ' active' : '');
+    btn.className = 'clock-type-btn theme-picker-btn theme-picker-btn-custom' + (themePickerId(theme) === ct.id ? ' active' : '');
     btn.dataset.themeValue = ct.id;
     btn.innerHTML = `
       <span class="theme-swatch-dot" style="background:${core.surface};border-color:${core.accent};"></span>
@@ -1047,6 +1146,16 @@ function initThemeBuilder() {
     syncThemeBuilderBgUI(); previewThemeBuilderLive();
   });
 
+  // Tag/Nacht: Schalter blendet Tag/Nacht-Umschalter ein; beim Einschalten
+  // direkt in die (neue) Nachtversion wechseln, beim Ausschalten zurück
+  // zum Tag (die Nachtversion wird erst beim Speichern verworfen).
+  tbEl('daynight').addEventListener('change', e => {
+    tbEl('variant-row').classList.toggle('hidden', !e.target.checked);
+    switchThemeBuilderVariant(e.target.checked ? 'night' : 'day');
+  });
+  tbEl('variant-day').addEventListener('click', () => switchThemeBuilderVariant('day'));
+  tbEl('variant-night').addEventListener('click', () => switchThemeBuilderVariant('night'));
+
   // Grafische Elemente
   tbEl('graphics-mode-theme').addEventListener('click', () => {
     setGraphicsModeUI('theme');
@@ -1067,7 +1176,10 @@ initBgImageSettings();
 // Gespeichertes Theme existiert nicht mehr (eigenes Theme auf einem anderen
 // Gerät gelöscht und per Sync entfernt, Preset aus dem Code genommen) →
 // sauber auf Cozy zurück statt halb angewendeter Farben.
-if (!THEME_FAMILY[theme] && !getCustomTheme(theme)) setTheme('light');
+if (!THEME_FAMILY[theme] && !getCustomTheme(theme)) {
+  const base = theme.endsWith(NIGHT_SUFFIX) ? theme.slice(0, -NIGHT_SUFFIX.length) : null;
+  setTheme(base && getCustomTheme(base) ? base : 'light');
+}
 else applyThemeEngine(theme);
 // settings.js zeigt beim Laden bereits die zuletzt offene View an — ist das
 // die Einstellungsseite, wurde die Theme-Auswahl gezeichnet, BEVOR diese
