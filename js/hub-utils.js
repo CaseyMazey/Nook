@@ -562,6 +562,7 @@ document.addEventListener('keydown', e => {
  *   confirmText {string}  Beschriftung des Bestätigen-Buttons (Default: "Bestätigen")
  *   cancelText  {string}  Beschriftung des Abbrechen-Buttons (Default: "Abbrechen")
  *   danger      {boolean} warnende (terrakotta) statt neutrale Bestätigen-Farbe
+ *   hideCancel  {boolean} nur OK-Button anzeigen (siehe hubAlert())
  * @returns {Promise<boolean>} true = bestätigt, false = abgebrochen/geschlossen
  */
 function hubConfirm(opts = {}) {
@@ -572,7 +573,20 @@ function hubConfirm(opts = {}) {
     const okBtn = document.getElementById('hub-confirm-ok');
     okBtn.textContent = opts.confirmText || 'Bestätigen';
     okBtn.className = 'btn-primary' + (opts.danger ? ' hub-confirm-danger' : '');
-    document.getElementById('hub-confirm-cancel').textContent = opts.cancelText || 'Abbrechen';
+    const cancelBtn = document.getElementById('hub-confirm-cancel');
+    cancelBtn.textContent = opts.cancelText || 'Abbrechen';
+    cancelBtn.classList.toggle('hidden', !!opts.hideCancel);
     hubConfirmModalCtl.open();
   });
+}
+
+/**
+ * Nook-gestyltes Pendant zu window.alert() — reiner Hinweis mit einem
+ * einzigen OK-Button (hubConfirm ohne Abbrechen).
+ * @param {string} title
+ * @param {string} message
+ * @returns {Promise<void>} löst auf, sobald der Hinweis geschlossen wurde
+ */
+function hubAlert(title, message) {
+  return hubConfirm({ title, message, confirmText: 'OK', hideCancel: true }).then(() => {});
 }

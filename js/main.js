@@ -192,6 +192,32 @@ function saveHiddenTabs(){ DB.set('hiddenTabs', hiddenTabs); }
 document.documentElement.setAttribute('data-theme', theme);
 document.documentElement.setAttribute('data-theme-family', themeFamily);
 
+// ── Anzeige-Einstellungen (Einstellungen > Darstellung / Navigation) ─────
+// Schriftgröße wirkt über --user-font-scale, das in main.css mit der
+// Schriftgröße eigener Themes (--theme-font-scale) zu --core-font-scale
+// multipliziert wird. "Animationen reduzieren" und die eingeklappte
+// Sidebar sind reine Attribute auf <html>, die CSS auswertet.
+const UI_FONT_SCALE_MIN = 85, UI_FONT_SCALE_MAX = 130;
+let uiFontScale      = DB.get('uiFontScale', 100);           // Prozent
+function saveUiFontScale(){ DB.set('uiFontScale', uiFontScale); }
+let reduceMotion     = DB.get('reduceMotion', false);
+function saveReduceMotion(){ DB.set('reduceMotion', reduceMotion); }
+let sidebarCollapsed = DB.get('sidebarCollapsed', false);    // nur dieses Gerät (sync.js)
+function saveSidebarCollapsed(){ DB.set('sidebarCollapsed', sidebarCollapsed); }
+function applyUiPrefs() {
+  const root = document.documentElement;
+  const pct = Math.min(Math.max(Number(uiFontScale) || 100, UI_FONT_SCALE_MIN), UI_FONT_SCALE_MAX);
+  root.style.setProperty('--user-font-scale', (pct / 100).toFixed(2));
+  root.toggleAttribute('data-reduce-motion', !!reduceMotion);
+  root.toggleAttribute('data-sidebar-collapsed', !!sidebarCollapsed);
+}
+applyUiPrefs();
+
+// Startbildschirm: 'last' = zuletzt geöffneter Tab (URL-Hash), sonst eine
+// feste View-ID. Ausgeblendete Tabs fallen auf "today" zurück.
+let startView = DB.get('startView', 'last');
+function saveStartView(){ DB.set('startView', startView); }
+
 // ── Zentraler Theme-Switch ──────────────────────────────────────────────
 // Einziger Ort, der theme setzt/speichert und alle Folgen auslöst:
 // data-theme-/data-theme-family-Attribute, Sidebar-Icon, und Neu-Rendern
@@ -400,8 +426,13 @@ let currentView='today';
 // Tabs, die in der Mobile-Bottom-Nav einen eigenen Button haben (siehe
 // index.html #mobile-bottom-nav) — alle anderen Views gelten dort als
 // "im Mehr-Menü", der Mehr-Button bekommt dann statt eines der 4 Buttons
-// den Aktiv-Zustand.
-const BOTTOM_NAV_VIEWS = ['today', 'calendar', 'budget', 'games'];
+// den Aktiv-Zustand. Vom Nutzer wählbar (Einstellungen > Navigation),
+// tatsächlich angezeigt wird bottomNavActive (siehe applyBottomNav()).
+const BOTTOM_NAV_SLOTS = 4;
+const BOTTOM_NAV_DEFAULT = ['today', 'calendar', 'budget', 'games'];
+let bottomNavTabs = DB.get('bottomNavTabs', BOTTOM_NAV_DEFAULT.slice());
+function saveBottomNavTabs(){ DB.set('bottomNavTabs', bottomNavTabs); }
+let bottomNavActive = BOTTOM_NAV_DEFAULT.slice();
 
 // =========================
 // TAB-SICHTBARKEIT (Einstellungen -> "Sichtbare Tabs")
@@ -436,10 +467,47 @@ function applyTabVisibility() {
       (btn.closest('li') || btn).classList.toggle('nav-item-hidden', hidden);
     });
   });
+  applyBottomNav();
   // Ist die gerade aktive View jetzt ausgeblendet (z.B. während man selbst
   // in den Einstellungen den eigenen aktuellen Tab abwählt), auf Today
   // zurückfallen statt eine unsichtbare View aktiv zu lassen.
   if (hiddenTabs.includes(currentView)) showView('today');
+}
+
+// Bottom-Nav (Handy): gewählte Tabs in gewählter Reihenfolge; ausgeblendete
+// Tabs hinterlassen keine Lücke, sondern werden mit den nächsten sichtbaren
+// Tabs (Heute, dann tabOrder) aufgefüllt. Was unten steht, verschwindet von
+// der "Mehr"-Seite, alles andere steht dort.
+function computeBottomNavActive() {
+  const visible = id => id === 'today' || (TAB_VISIBILITY_CONFIG.some(t => t.id === id) && !hiddenTabs.includes(id));
+  const list = [];
+  (Array.isArray(bottomNavTabs) ? bottomNavTabs : []).forEach(id => {
+    if (visible(id) && !list.includes(id) && list.length < BOTTOM_NAV_SLOTS) list.push(id);
+  });
+  ['today', ...tabOrder].forEach(id => {
+    if (list.length < BOTTOM_NAV_SLOTS && visible(id) && !list.includes(id)) list.push(id);
+  });
+  return list;
+}
+
+function applyBottomNav() {
+  bottomNavActive = computeBottomNavActive();
+  document.querySelectorAll('#mobile-bottom-nav .nav-btn').forEach(btn => {
+    const idx = bottomNavActive.indexOf(btn.dataset.view);
+    btn.classList.toggle('bottom-nav-off', idx === -1);
+    btn.style.order = idx === -1 ? '' : String(idx);
+  });
+  document.querySelectorAll('#view-mehr .mehr-section').forEach(section => {
+    const btns = [...section.querySelectorAll('.nav-btn')];
+    if (!btns.length) return;
+    btns.forEach(b => b.classList.toggle('nav-in-bottombar', bottomNavActive.includes(b.dataset.view)));
+    const shown = btns.filter(b => !b.classList.contains('nav-in-bottombar') && !b.classList.contains('nav-item-hidden'));
+    btns.forEach(b => b.classList.toggle('mehr-first', b === shown[0]));
+    section.classList.toggle('hidden', shown.length === 0);
+  });
+  if (typeof currentView === 'string') {
+    document.getElementById('bottom-nav-more-btn')?.classList.toggle('active', !bottomNavActive.includes(currentView));
+  }
 }
 
 // Vom Nutzer wählbare Reihenfolge der togglebaren Tabs (Einstellungen ->
@@ -486,16 +554,17 @@ function applyTabOrder() {
   // (Pinnwand/Projekte/Garten/Karteikarten/Anleitungen) — Tools und
   // Einstellungen stecken in eigenen Einzel-Gruppen und bleiben unberührt.
   reorderNavGroup(document.querySelector('#view-mehr .mehr-group'), '.nav-btn', btn => btn.dataset.view);
+  applyBottomNav();
 }
 
 function showView(name) {
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>{ b.classList.remove('active'); b.removeAttribute('aria-current'); });
   const view=viewMap[name]; if(view) view.classList.add('active');
   // querySelectorAll statt querySelector: derselbe data-view-Button existiert
   // doppelt (Sidebar + Bottom-Nav), beide sollen aktiv markiert werden.
-  document.querySelectorAll(`.nav-btn[data-view="${name}"]`).forEach(b=>b.classList.add('active'));
-  document.getElementById('bottom-nav-more-btn')?.classList.toggle('active', !BOTTOM_NAV_VIEWS.includes(name));
+  document.querySelectorAll(`.nav-btn[data-view="${name}"]`).forEach(b=>{ b.classList.add('active'); b.setAttribute('aria-current', 'page'); });
+  document.getElementById('bottom-nav-more-btn')?.classList.toggle('active', !bottomNavActive.includes(name));
   currentView=name; renderView(name);
   // URL-Hash spiegelt die aktuelle View, damit ein Reload wieder hier landet
   // (siehe hashchange-Listener unten). "mehr" ist nur eine mobile Overlay-
@@ -509,8 +578,37 @@ function showView(name) {
 document.querySelectorAll('.nav-btn').forEach(btn=>{
   btn.addEventListener('click',()=>showView(btn.dataset.view));
 });
+// Tooltips für die eingeklappte Sidebar (dort sind nur die Icons sichtbar).
+document.querySelectorAll('#nav-list .nav-btn').forEach(btn => {
+  if (!btn.title) btn.title = btn.textContent.trim();
+});
 applyTabOrder();
 applyTabVisibility();
+
+// Startbildschirm für den ersten Aufruf (settings.js: INIT) — siehe startView.
+function resolveInitialView() {
+  const usable = v => v && v !== 'mehr' && viewMap[v] && !hiddenTabs.includes(v);
+  if (startView && startView !== 'last') return usable(startView) ? startView : 'today';
+  const fromHash = location.hash.replace(/^#/, '');
+  return usable(fromHash) ? fromHash : 'today';
+}
+
+// ── Sidebar einklappen (nur Desktop/Tablet, auf dem Handy gibt es sie nicht)
+function updateSidebarCollapseBtn() {
+  const btn = document.getElementById('sidebar-collapse-btn');
+  if (!btn) return;
+  const label = sidebarCollapsed ? 'Seitenleiste ausklappen' : 'Seitenleiste einklappen';
+  btn.title = label;
+  btn.setAttribute('aria-label', label);
+  btn.setAttribute('aria-expanded', String(!sidebarCollapsed));
+}
+document.getElementById('sidebar-collapse-btn')?.addEventListener('click', () => {
+  sidebarCollapsed = !sidebarCollapsed;
+  saveSidebarCollapsed();
+  applyUiPrefs();
+  updateSidebarCollapseBtn();
+});
+updateSidebarCollapseBtn();
 
 // Erlaubt Direktlinks/Browser-Navigation über den Hash (z.B. manuell
 // editierte URL); löst nicht durch showView() selbst aus, da dieses
@@ -547,7 +645,7 @@ function placeSidebarWidgets(isPhone) {
     document.getElementById('mehr-positivity-slot')?.appendChild(positivity);
     document.getElementById('mehr-countdown-slot')?.appendChild(countdowns);
   } else {
-    document.getElementById('sidebar-footer')?.before(positivity, countdowns);
+    document.getElementById('sidebar')?.append(positivity, countdowns);
   }
 }
 placeSidebarWidgets(mehrPhoneQuery.matches);
@@ -566,3 +664,46 @@ function renderView(name) {
   if(name==='projects')  { renderProjects(); }
   if(name==='garden')    { renderGarden(); }
 }
+
+// =========================
+// TAG/NACHT AUTOMATISCH (Einstellungen > Darstellung)
+// 'off' = nur manuell (Sonne/Mond), 'system' = folgt dem hellen/dunklen
+// Modus des Geräts, 'sun' = Sonnenauf-/-untergang aus den Wetterdaten
+// (today.js: isStartHeaderDaytime), ohne aktuelle Daten 7–19 Uhr.
+// Gewechselt wird nur, wenn sich der berechnete Zustand ändert — ein
+// manueller Klick auf Sonne/Mond gilt also bis zum nächsten Wechselpunkt.
+// =========================
+let themeAutoMode = DB.get('themeAutoMode', 'off');
+function saveThemeAutoMode(){ DB.set('themeAutoMode', themeAutoMode); }
+const themeSystemDarkQuery = window.matchMedia('(prefers-color-scheme: dark)');
+let themeAutoLastDark = null;
+
+function themeAutoWantsDark() {
+  if (themeAutoMode === 'system') return themeSystemDarkQuery.matches;
+  if (themeAutoMode === 'sun') {
+    const w = DB.get('weatherData', null);
+    const fresh = w && w.ts && Date.now() - w.ts < 20 * 3600 * 1000;
+    const isDay = fresh && typeof isStartHeaderDaytime === 'function' ? isStartHeaderDaytime(w) : null;
+    if (isDay !== null) return !isDay;
+    const h = new Date().getHours();
+    return h < 7 || h >= 19;
+  }
+  return null;
+}
+
+function applyThemeAuto(force) {
+  if (!dayNightBase(theme)) return;
+  const dark = themeAutoWantsDark();
+  if (dark === null) { themeAutoLastDark = null; return; }
+  if (!force && dark === themeAutoLastDark) return;
+  themeAutoLastDark = dark;
+  if (dark !== darkMode) setDarkMode(dark);
+}
+function onThemeAutoWeatherUpdate() { applyThemeAuto(false); }
+
+themeSystemDarkQuery.addEventListener('change', () => applyThemeAuto(false));
+setInterval(() => applyThemeAuto(false), 60 * 1000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) applyThemeAuto(false); });
+// Erst wenn alle Skripte geladen sind — eigene Themes mit Nachtversion
+// kennt erst js/theme-engine.js (getCustomTheme).
+document.addEventListener('DOMContentLoaded', () => applyThemeAuto(true));

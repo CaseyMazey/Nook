@@ -15,10 +15,14 @@
      braucht aber eine feste Monospace-Schrift zur Ausrichtung und nutzt
      deshalb --core-code-font, das nie überschrieben wird. */
   --core-code-font: 'DM Mono', 'Courier New', monospace;
-  /* Schriftgrößen-Regler im Theme-Editor — reine Zahl (1 = 100%), jede
-     font-size-Regel in css/ ist als calc(Npx * var(--core-font-scale))
-     geschrieben, dadurch bleiben alle Größenverhältnisse erhalten. */
-  --core-font-scale: 1;
+  /* Schriftgröße — reine Zahl (1 = 100%), jede font-size-Regel in css/
+     ist als calc(Npx * var(--core-font-scale)) geschrieben, dadurch bleiben
+     alle Größenverhältnisse erhalten. Zusammengesetzt aus dem Regler im
+     Theme-Editor (--theme-font-scale, js/theme-engine.js) und der globalen
+     Einstellung (--user-font-scale, Einstellungen > Darstellung, main.js). */
+  --theme-font-scale: 1;
+  --user-font-scale: 1;
+  --core-font-scale: calc(var(--theme-font-scale) * var(--user-font-scale));
 
   /* ── Page background — warm paper ────────────────────── */
   --bg:        #EFEBe3;
@@ -345,7 +349,11 @@ body.bg-frosted .modal-box {
   position: sticky;
   top: 0;
   height: 100vh;
-  overflow: hidden;
+  /* Scrollt statt abzuschneiden, wenn Tabs + Positivity + Countdowns
+     höher als das Fenster werden (z.B. Laptops mit 768px Höhe). */
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: thin;
   box-shadow: 2px 0 8px color-mix(in srgb, var(--shadow-tint) 4%, transparent);
 }
 
@@ -370,6 +378,33 @@ body.bg-frosted .modal-box {
   cursor: pointer;
 }
 #theme-toggle-btn:hover { background: var(--accent-soft); color: var(--text); }
+
+#sidebar-header-actions { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+#sidebar-collapse-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  color: var(--text-3);
+  transition: background var(--transition), color var(--transition), transform var(--transition);
+  cursor: pointer;
+}
+#sidebar-collapse-btn:hover { background: var(--accent-soft); color: var(--text); }
+
+/* ── Eingeklappte Sidebar (Einstellungen > Navigation bzw. Pfeil im
+   Sidebar-Kopf, js/main.js: sidebarCollapsed) — nur Icons, Beschriftung
+   als Tooltip (title). Positivity und Countdowns entfallen dabei. */
+[data-sidebar-collapsed] { --sidebar-w: 64px; }
+[data-sidebar-collapsed] #sidebar-header { flex-direction: column; padding: 16px 8px 12px; gap: 10px; }
+[data-sidebar-collapsed] #brand-text { display: none; }
+[data-sidebar-collapsed] #sidebar-header-actions { flex-direction: column; gap: 6px; }
+[data-sidebar-collapsed] #sidebar-collapse-btn { transform: rotate(180deg); }
+[data-sidebar-collapsed] #nav-list { padding: 6px 8px; }
+[data-sidebar-collapsed] #nav-list .nav-btn { justify-content: center; padding: 10px 0; font-size: 0; gap: 0; }
+[data-sidebar-collapsed] #sidebar #sidebar-positivity,
+[data-sidebar-collapsed] #sidebar #sidebar-countdowns { display: none; }
 
 /* ── Sidebar countdowns section ──────────────────────────── */
 #sidebar-countdowns {
@@ -504,25 +539,33 @@ body.bg-frosted .modal-box {
   box-shadow: 0 1px 4px color-mix(in srgb, var(--shadow-tint) 12%, transparent);
 }
 .nav-btn.active svg { opacity: 1; color: var(--sage-fg); }
+.nav-btn:focus-visible, #sidebar-collapse-btn:focus-visible, #theme-toggle-btn:focus-visible {
+  outline: 2px solid var(--sage);
+  outline-offset: 2px;
+}
 
 /* Vom Nutzer ausgeblendeter Tab (Einstellungen -> "Sichtbare Tabs", siehe
    TAB_VISIBILITY_CONFIG/applyTabVisibility() in main.js) — trifft je nach
    Stelle das <li> (Sidebar) oder den .nav-btn selbst (Bottom-Nav/"Mehr"). */
 .nav-item-hidden { display: none; }
 
-#sidebar-footer {
-  padding: 14px 18px;
-  border-top: 1px solid var(--border);
-}
-
-#week-nav { display: flex; align-items: center; gap: 8px; }
+/* Wochen-Navigation — sitzt im Kopf der Heute-Seite (index.html,
+   #today-greeting-block), früher im Sidebar-Fuß. */
+#week-nav { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
 #week-label {
-  flex: 1;
+  min-width: 52px;
   text-align: center;
   font-size: calc(11.5px * var(--core-font-scale));
   font-family: var(--mono);
   color: var(--text-3);
 }
+.week-today-btn {
+  font-size: calc(11.5px * var(--core-font-scale));
+  color: var(--sage-dark);
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+}
+.week-today-btn:hover { background: var(--sage-bg); }
 .week-btn {
   width: 28px;
   height: 28px;
@@ -600,6 +643,9 @@ body.bg-frosted .modal-box {
   .view { padding: 20px 16px calc(56px + env(safe-area-inset-bottom, 0px) + 16px); }
 
   #mobile-bottom-nav { display: flex; }
+  /* Nicht für die Leiste gewählte Tabs (js/main.js: applyBottomNav()). */
+  #mobile-bottom-nav .nav-btn.bottom-nav-off { display: none; }
+  #mobile-bottom-nav #bottom-nav-more-btn { order: 99; }
   #mobile-bottom-nav .nav-btn,
   #mobile-bottom-nav #bottom-nav-more-btn {
     flex: 1;
@@ -633,6 +679,7 @@ body.bg-frosted .modal-box {
   /* Update-Pillen (sync.js/pwa.js) über statt hinter der Bottom-Nav. */
   .floating-update-banner { right: 12px; bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 12px); }
   #sw-update-banner { bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 76px); }
+  #backup-reminder-banner { left: 12px; bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 140px); }
 }
 
 /* =============================================================
@@ -650,7 +697,9 @@ body.bg-frosted .modal-box {
 
 .mehr-group.panel { display: flex; flex-direction: column; }
 .mehr-group .nav-btn { border-radius: 0; padding: 13px 16px; font-size: calc(14px * var(--core-font-scale)); }
-.mehr-group .nav-btn + .nav-btn { border-top: 1px solid var(--border); }
+.mehr-group .nav-btn:not(.mehr-first) { border-top: 1px solid var(--border); }
+/* Tabs, die schon in der Bottom-Nav stehen (js/main.js: applyBottomNav()). */
+.mehr-group .nav-btn.nav-in-bottombar { display: none; }
 .mehr-group .nav-btn::after { content: '›'; margin-left: auto; opacity: .5; font-size: calc(17px * var(--core-font-scale)); }
 
 #mehr-positivity-slot, #mehr-countdown-slot { padding: 14px 16px; }
@@ -785,6 +834,14 @@ body.bg-frosted .modal-box {
 .floating-update-banner button:hover { background: var(--sage-dark); }
 /* App-Update-Banner sitzt über dem Sync-Banner, falls je beide gleichzeitig sichtbar sind. */
 #sw-update-banner { bottom: 88px; }
+/* Backup-Erinnerung (js/settings.js: checkBackupReminder) darüber. */
+#backup-reminder-banner { bottom: 152px; }
+.floating-update-banner button.floating-banner-ghost {
+  background: none;
+  color: var(--text-2);
+  border: 1px solid var(--border-strong);
+}
+.floating-update-banner button.floating-banner-ghost:hover { background: var(--accent-soft); color: var(--text); }
 
 .icon-btn {
   width: 28px;
@@ -1278,3 +1335,18 @@ body.bg-frosted .modal-box {
   line-height: 1.5;
 }
 .hub-notice > :first-child { flex-shrink: 0; }
+
+/* =============================================================
+   ANIMATIONEN REDUZIEREN (Einstellungen > Darstellung, js/main.js:
+   reduceMotion) — Übergänge und Animationen der Hub-Oberfläche fallen
+   weg. Die Spiele (#view-games) sind bewusst ausgenommen, ihre Logik
+   hängt teils an Animationsereignissen.
+============================================================= */
+[data-reduce-motion] *:not(#view-games *),
+[data-reduce-motion] *:not(#view-games *)::before,
+[data-reduce-motion] *:not(#view-games *)::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}

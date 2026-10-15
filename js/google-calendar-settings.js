@@ -19,6 +19,7 @@ function applyGoogleCalAccordion() {
   document.getElementById('gcal-settings-body')?.classList.toggle('collapsed', !googleCalSettingsOpen);
   const chevron = document.getElementById('gcal-settings-chevron');
   if (chevron) chevron.textContent = googleCalSettingsOpen ? '▼' : '▶';
+  document.getElementById('gcal-settings-header')?.setAttribute('aria-expanded', String(googleCalSettingsOpen));
 }
 document.getElementById('gcal-settings-header')?.addEventListener('click', () => {
   googleCalSettingsOpen = !googleCalSettingsOpen;

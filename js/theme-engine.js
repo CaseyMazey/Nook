@@ -46,7 +46,7 @@ const CUSTOM_THEME_VARS = [
   '--event-color', '--event-color-bg',
   '--quicknote-bg', '--quicknote-line', '--quicknote-text', '--highlight-bg', '--user-color-neutral',
   '--core-nav-bg', '--core-modal-bg', '--core-card-opacity',
-  '--font', '--core-font-scale', '--mono',
+  '--font', '--theme-font-scale', '--mono',
 ];
 
 // =========================================================================
@@ -479,7 +479,7 @@ function deriveThemeVars(core, cardOpacityPct, fontSizePct) {
     '--font':          font,
     '--mono':          font,
     '--core-card-opacity': opacity,
-    '--core-font-scale': ((fontSizePct || 100) / 100).toFixed(2),
+    '--theme-font-scale': ((fontSizePct || 100) / 100).toFixed(2),
   };
 }
 

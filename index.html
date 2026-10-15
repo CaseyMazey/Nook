@@ -125,10 +125,10 @@
          dieselbe .nav-btn-Klasse + data-view wie die Sidebar-Buttons, damit
          showView() (main.js) Aktiv-Status und Klick-Handling für beide
          Stellen automatisch mit übernimmt, ohne eigenen Code.
-         "Mehr" öffnet stattdessen den bestehenden Sidebar-Drawer (ersetzt
-         den früheren eigenen Menü-Button) — dort bleiben alle restlichen
-         Tabs sowie Positivity-Widget, Countdowns und Wochen-Navigation
-         unverändert erreichbar, nichts davon musste für Mobile umziehen. -->
+         Enthält Buttons für ALLE Tabs; welche vier sichtbar sind, wählt
+         der Nutzer (Einstellungen > Navigation, js/main.js: applyBottomNav()).
+         "Mehr" öffnet die Vollbild-View #view-mehr mit allen übrigen Tabs
+         sowie Positivity-Widget und Countdowns. -->
     <nav id="mobile-bottom-nav">
       <button class="nav-btn" data-view="today">
         <svg width="18" height="18" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1.5" fill="currentColor"/><rect x="9" y="2" width="5" height="5" rx="1.5" fill="currentColor" opacity=".4"/><rect x="2" y="9" width="5" height="5" rx="1.5" fill="currentColor" opacity=".4"/><rect x="9" y="9" width="5" height="5" rx="1.5" fill="currentColor" opacity=".4"/></svg>
@@ -146,6 +146,30 @@
         <svg width="18" height="18" viewBox="0 0 16 16" fill="none"><rect x="2" y="4" width="12" height="8" rx="2" stroke="currentColor" stroke-width="1.5" fill="none" opacity=".6"/><path d="M6 8H4M5 7v2M10 8h2M11 7l1 1-1 1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
         <span>Spiele</span>
       </button>
+      <button class="nav-btn bottom-nav-off" data-view="pinboard">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="none"><path d="M8 2v3.5M5.5 5.5h5l1 3.5h-7.5l1-3.5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" fill="none" opacity=".7"/><path d="M8 9v5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        <span>Pinnwand</span>
+      </button>
+      <button class="nav-btn bottom-nav-off" data-view="projects">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="12" rx="1.5" stroke="currentColor" stroke-width="1.4" fill="none" opacity=".7"/><rect x="9" y="2" width="5" height="7" rx="1.5" stroke="currentColor" stroke-width="1.4" fill="none" opacity=".7"/><rect x="9" y="11" width="5" height="3" rx="1" fill="currentColor" opacity=".4"/></svg>
+        <span>Projekte</span>
+      </button>
+      <button class="nav-btn bottom-nav-off" data-view="garden">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="none"><path d="M8 14V7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" opacity=".7"/><path d="M8 9C8 9 4 8.5 4 5C7 5 8 7 8 9Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" fill="none" opacity=".7"/><path d="M8 7C8 7 12 6.5 12 3C9 3 8 5 8 7Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" fill="none" opacity=".7"/></svg>
+        <span>Garten</span>
+      </button>
+      <button class="nav-btn bottom-nav-off" data-view="flashcards">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="9" rx="2" stroke="currentColor" stroke-width="1.5" fill="none" opacity=".7"/><path d="M5 7h6M5 9.5h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        <span>Karten</span>
+      </button>
+      <button class="nav-btn bottom-nav-off" data-view="guides">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="none"><path d="M3 3.5A1.5 1.5 0 0 1 4.5 2H13v10H4.5A1.5 1.5 0 0 0 3 13.5v-10z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" fill="none" opacity=".7"/><path d="M3 13.5A1.5 1.5 0 0 0 4.5 15H13v-3" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" fill="none"/><path d="M6 5.5h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        <span>Anleitungen</span>
+      </button>
+      <button class="nav-btn bottom-nav-off" data-view="tools">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="none"><path d="M9.5 2.5l1 1-5 5-1-1a2.2 2.2 0 0 1 0-3.1l1.1-1.1a2.2 2.2 0 0 1 3.1 0z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" fill="none" opacity=".7"/><path d="M6.5 6.5L2.5 10.5a1.4 1.4 0 0 0 2 2l4-4" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" fill="none" opacity=".7"/><path d="M11 5l0.5 2 2-0.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Tools</span>
+      </button>
       <button id="bottom-nav-more-btn" aria-label="Mehr">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         <span>Mehr</span>
@@ -162,7 +186,8 @@
             <span id="brand-subtitle">deine kleine digitale ecke.</span>
           </div>
         </div>
-        <button id="theme-toggle-btn" title="Design wechseln" aria-label="Theme toggle">
+        <div id="sidebar-header-actions">
+        <button id="theme-toggle-btn" title="Zwischen Tag und Nacht wechseln" aria-label="Zwischen Tag und Nacht wechseln">
           <svg id="theme-icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <circle cx="12" cy="12" r="4.5" stroke="currentColor" stroke-width="1.8"/>
             <path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
@@ -171,6 +196,11 @@
             <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </button>
+        <!-- Sidebar einklappen (js/main.js: sidebarCollapsed) -->
+        <button id="sidebar-collapse-btn" type="button" aria-label="Seitenleiste einklappen" aria-expanded="true">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3.5L5.5 8l4.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        </div>
       </div>
  
       <ul id="nav-list">
@@ -199,7 +229,7 @@
           Karteikarten
         </button></li>
         <li><button class="nav-btn" data-view="guides">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="9" rx="2" stroke="currentColor" stroke-width="1.5" fill="none" opacity=".7"/><path d="M5 7h6M5 9.5h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 3.5A1.5 1.5 0 0 1 4.5 2H13v10H4.5A1.5 1.5 0 0 0 3 13.5v-10z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" fill="none" opacity=".7"/><path d="M3 13.5A1.5 1.5 0 0 0 4.5 15H13v-3" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" fill="none"/><path d="M6 5.5h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
           Anleitungen
         </button></li>
         <li><button class="nav-btn" data-view="budget">
@@ -230,15 +260,7 @@
         <button id="countdown-view-all-btn" class="countdown-view-all-btn">Alle Countdowns anzeigen <span aria-hidden="true">›</span></button>
         <div id="exam-pill" title="Countdowns verwalten" style="display:none;"></div>
       </div>
- 
-      <div id="sidebar-footer">
-        <div id="week-nav">
-          <button id="prev-week" class="week-btn">‹</button>
-          <span id="week-label">—</span>
-          <button id="next-week" class="week-btn">›</button>
-        </div>
-      </div>
-    </nav>
+     </nav>
  
     <!-- Main -->
     <main id="main">
@@ -257,6 +279,15 @@
               <div id="today-greeting-block">
                 <h1 id="today-greeting" class="today-greeting">—</h1>
                 <div id="today-subtitle" class="today-subtitle">—</div>
+                <!-- Wochen-Navigation (js/today.js: updateHeader) — wirkt auf
+                     Aufgaben und Blöcke dieser Seite, deshalb hier statt in
+                     der globalen Sidebar. -->
+                <div id="week-nav" role="group" aria-label="Woche wählen">
+                  <button id="prev-week" class="week-btn" aria-label="Vorherige Woche">‹</button>
+                  <span id="week-label" aria-live="polite">—</span>
+                  <button id="next-week" class="week-btn" aria-label="Nächste Woche">›</button>
+                  <button id="week-today-btn" class="week-today-btn hidden" type="button">Diese Woche</button>
+                </div>
               </div>
               <div id="today-weather" class="today-weather">
                 <div class="weather-icon"></div>
@@ -1158,7 +1189,9 @@
       <!-- TOOLS -->
       <section id="view-tools" class="view"></section>
  
-      <!-- SETTINGS -->
+      <!-- SETTINGS — in Bereiche gegliedert (.settings-group), oben eine
+           Sprungleiste (#settings-jump, js/settings.js). Jeder Bereich ist
+           ein zweispaltiges Raster aus Panels, ab 1024px einspaltig. -->
       <section id="view-settings" class="view">
         <div class="view-header"><h1 class="view-title">Einstellungen</h1></div>
         <div class="dash-content">
@@ -1166,11 +1199,22 @@
           <span aria-hidden="true">ℹ️</span>
           <span>Nook befindet sich in aktiver Entwicklung — Funktionen, Darstellung und Verhalten können sich jederzeit noch ändern.</span>
         </div>
-        <div id="settings-layout">
- 
-          <div class="settings-col">
- 
-            <!-- NEU: Profil / Benutzername -->
+
+        <nav id="settings-jump" class="settings-jump" aria-label="Bereiche der Einstellungen">
+          <button type="button" class="settings-jump-btn" data-target="settings-group-general">Allgemein</button>
+          <button type="button" class="settings-jump-btn" data-target="settings-group-look">Darstellung</button>
+          <button type="button" class="settings-jump-btn" data-target="settings-group-nav">Navigation</button>
+          <button type="button" class="settings-jump-btn" data-target="settings-group-today">Heute-Seite</button>
+          <button type="button" class="settings-jump-btn" data-target="settings-group-integrations">Integrationen</button>
+          <button type="button" class="settings-jump-btn" data-target="settings-group-data">Daten</button>
+          <button type="button" class="settings-jump-btn" data-target="settings-group-danger">Gefahrenzone</button>
+          <button type="button" class="settings-jump-btn" data-target="settings-group-about">Über Nook</button>
+        </nav>
+
+        <!-- ── ALLGEMEIN ─────────────────────────────────────────── -->
+        <section class="settings-group" id="settings-group-general">
+          <div class="settings-group-head"><h2 class="settings-group-title">Allgemein</h2><button type="button" class="settings-group-top" data-target="settings-jump">↑ Übersicht</button></div>
+          <div class="settings-grid">
             <div class="panel settings-panel">
               <div class="panel-header"><span class="panel-label">Profil</span></div>
               <div class="settings-row">
@@ -1178,20 +1222,31 @@
                   <div class="settings-row-title">Dein Name</div>
                   <div class="settings-row-sub">Wird in der Begrüßung auf der Heuteseite angezeigt</div>
                 </div>
-                <input type="text" id="setting-username" class="modal-input"
-                  placeholder="z.B. Casey"
-                  style="width:140px;padding:7px 12px;font-size:13px;"
-                  autocomplete="off"/>
+                <input type="text" id="setting-username" class="modal-input settings-input"
+                  placeholder="z.B. Casey" autocomplete="off"/>
+              </div>
+              <div class="settings-row">
+                <div>
+                  <div class="settings-row-title">Startbildschirm</div>
+                  <div class="settings-row-sub">Welcher Tab beim Öffnen von Nook erscheint</div>
+                </div>
+                <select id="setting-start-view" class="modal-select settings-select"></select>
               </div>
             </div>
- 
+          </div>
+        </section>
+
+        <!-- ── DARSTELLUNG ───────────────────────────────────────── -->
+        <section class="settings-group" id="settings-group-look">
+          <div class="settings-group-head"><h2 class="settings-group-title">Darstellung</h2><button type="button" class="settings-group-top" data-target="settings-jump">↑ Übersicht</button></div>
+          <div class="settings-grid">
             <div class="panel settings-panel">
-              <div class="panel-header"><span class="panel-label">Darstellung</span></div>
+              <div class="panel-header"><span class="panel-label">Theme</span></div>
               <div class="settings-row">
                 <div><div class="settings-row-title">Theme</div><div class="settings-row-sub">Farbschema für den gesamten Hub</div></div>
               </div>
               <div class="settings-row">
-                <div id="theme-picker" style="display:flex;flex-wrap:wrap;gap:6px;">
+                <div id="theme-picker" class="settings-chip-row">
                   <button class="clock-type-btn theme-picker-btn" data-theme-value="light">Cozy</button>
                   <!-- Eigene Themes (js/theme-engine.js) werden hier per JS
                        zwischen die eingebauten Buttons und diesen "+"-Button gerendert,
@@ -1200,9 +1255,17 @@
                 </div>
               </div>
 
-              <!-- Tag/Nacht — nur bei Themes mit Tag- und Nachtversion (aktuell Cozy),
-                   blendet den Sonne/Mond-Knopf in der Sidebar ein/aus. Siehe
-                   DAYNIGHT_THEMES/dayNightToggle in js/main.js. -->
+              <!-- Tag/Nacht — nur bei Themes mit Tag- und Nachtversion (Cozy und
+                   eigene Themes mit Nachtversion). Siehe DAYNIGHT_THEMES,
+                   dayNightToggle und themeAutoMode in js/main.js. -->
+              <div class="settings-row hidden" id="daynight-auto-row">
+                <div><div class="settings-row-title">Tag/Nacht automatisch</div><div class="settings-row-sub" id="daynight-auto-sub">Wechselt selbst zwischen Tag- und Nachtversion</div></div>
+                <select id="setting-daynight-auto" class="modal-select settings-select">
+                  <option value="off">Aus (nur manuell)</option>
+                  <option value="system">Wie das Gerät</option>
+                  <option value="sun">Nach Sonnenstand</option>
+                </select>
+              </div>
               <div class="settings-row hidden" id="daynight-toggle-row">
                 <div><div class="settings-row-title">Tag/Nacht-Umschalter</div><div class="settings-row-sub">Zeigt Sonne/Mond in der Navigation, um zwischen Tag- und Nachtversion zu wechseln</div></div>
                 <label class="toggle"><input type="checkbox" id="setting-daynight-toggle"/><span class="toggle-slider"></span></label>
@@ -1243,51 +1306,138 @@
               </div>
             </div>
 
-            <div class="panel settings-panel">
-              <div class="panel-header"><span class="panel-label">Wetter Widget</span></div>
-              <div class="settings-row">
-                <div><div class="settings-row-title">Standort</div><div class="settings-row-sub">GPS oder manuelle Eingabe</div></div>
-                <div style="display:flex;gap:6px;">
-                  <button class="clock-type-btn" id="weather-mode-gps">GPS</button>
-                  <button class="clock-type-btn active" id="weather-mode-manual">Manuell</button>
+            <div class="settings-col">
+              <div class="panel settings-panel">
+                <div class="panel-header"><span class="panel-label">Lesbarkeit</span></div>
+                <div class="settings-row settings-row-stack">
+                  <div class="settings-row-head">
+                    <div><div class="settings-row-title">Schriftgröße</div><div class="settings-row-sub">Gilt für alle Themes, zusätzlich zur Schriftgröße eines eigenen Themes</div></div>
+                    <span class="settings-value" id="setting-font-scale-label">100 %</span>
+                  </div>
+                  <div class="settings-range-row">
+                    <span class="settings-range-a settings-range-a-small" aria-hidden="true">A</span>
+                    <input type="range" id="setting-font-scale" min="85" max="130" step="5" value="100" aria-label="Schriftgröße in Prozent"/>
+                    <span class="settings-range-a" aria-hidden="true">A</span>
+                    <button type="button" class="btn-ghost settings-small-btn" id="setting-font-scale-reset">Standard</button>
+                  </div>
+                </div>
+                <div class="settings-row">
+                  <div><div class="settings-row-title">Animationen reduzieren</div><div class="settings-row-sub">Schaltet Übergänge und Bewegungen der Oberfläche ab (Spiele ausgenommen)</div></div>
+                  <label class="toggle"><input type="checkbox" id="setting-reduce-motion"/><span class="toggle-slider"></span></label>
                 </div>
               </div>
-              <div class="settings-row" id="weather-city-row">
-                <div><div class="settings-row-title">Stadt</div><div class="settings-row-sub">z.B. Cologne, Frankfurt, Berlin</div></div>
-                <input type="text" id="weather-city-input" class="modal-input"
-                  placeholder="z.B. Cologne"
-                  style="width:140px;padding:7px 12px;font-size:13px;"
-                  autocomplete="off"/>
+
+              <div class="panel settings-panel">
+                <div class="panel-header"><span class="panel-label">Persönliche Farben</span></div>
+                <div class="settings-row" style="border-bottom:none;">
+                  <div><div class="settings-row-title">Gespeicherte Farben</div><div class="settings-row-sub">Beim Überfahren einer Farbe erscheint ✕ zum Entfernen</div></div>
+                </div>
+                <div style="padding:0 18px 16px;border-bottom:1px solid var(--border);">
+                  <div id="settings-color-library" class="hub-color-library"></div>
+                  <div id="settings-color-empty" class="empty-state" style="display:none;padding:6px 0 0;">Noch keine Farben gespeichert.</div>
+                </div>
+                <!-- Standard für NEU gespeicherte Farben (hub-utils.js:
+                     colorAutoAdjustSettings) — bestehende Farben behalten ihren Wert. -->
+                <div class="settings-row">
+                  <div><div class="settings-row-title">Helle Farben im dunklen Theme anpassen</div><div class="settings-row-sub">Im hellen Theme gespeicherte Farben werden im dunklen abgedunkelt</div></div>
+                  <label class="toggle"><input type="checkbox" id="color-autoadjust-light-to-dark"/><span class="toggle-slider"></span></label>
+                </div>
+                <div class="settings-row">
+                  <div><div class="settings-row-title">Dunkle Farben im hellen Theme anpassen</div><div class="settings-row-sub">Im dunklen Theme gespeicherte Farben werden im hellen aufgehellt</div></div>
+                  <label class="toggle"><input type="checkbox" id="color-autoadjust-dark-to-light"/><span class="toggle-slider"></span></label>
+                </div>
               </div>
             </div>
+          </div>
+        </section>
+
+        <!-- ── NAVIGATION ────────────────────────────────────────── -->
+        <section class="settings-group" id="settings-group-nav">
+          <div class="settings-group-head"><h2 class="settings-group-title">Navigation</h2><button type="button" class="settings-group-top" data-target="settings-jump">↑ Übersicht</button></div>
+          <div class="settings-grid">
             <div class="panel settings-panel">
-              <div class="panel-header"><span class="panel-label">Daten &amp; Backup</span></div>
-              <div class="settings-row">
-                <div><div class="settings-row-title">Geräte-Sync</div><div class="settings-row-sub" id="sync-status-sub">Nicht angemeldet — Daten bleiben nur auf diesem Gerät</div></div>
-                <button class="btn-ghost" id="sync-status-btn" style="font-size:13px;">Anmelden</button>
+              <div class="panel-header"><span class="panel-label">Sichtbare Tabs &amp; Reihenfolge</span></div>
+              <div class="settings-row-sub settings-panel-intro">Blende Tabs aus, die du nicht brauchst — sie verschwinden aus der Navigation, deine Daten bleiben dabei erhalten. Mit den Pfeilen änderst du die Reihenfolge.</div>
+              <div id="tab-visibility-list"></div>
+            </div>
+
+            <div class="settings-col">
+              <div class="panel settings-panel">
+                <div class="panel-header"><span class="panel-label">Leiste unten (Handy)</span></div>
+                <div class="settings-row-sub settings-panel-intro">Die vier Tabs in der unteren Leiste auf dem Handy. Alle anderen findest du unter „Mehr“. Ausgeblendete Tabs werden automatisch ersetzt.</div>
+                <div id="bottom-nav-settings-list"></div>
+                <div class="settings-row">
+                  <div class="settings-row-sub">Standardbelegung: Heute, Kalender, Budget, Spiele</div>
+                  <button type="button" class="btn-ghost settings-small-btn" id="bottom-nav-reset-btn">Zurücksetzen</button>
+                </div>
               </div>
-              <div class="settings-row">
-                <div><div class="settings-row-title">Backup exportieren</div><div class="settings-row-sub">Alle Daten als JSON-Datei herunterladen</div></div>
-                <button class="btn-ghost" id="backup-export-btn" style="font-size:13px;">Exportieren</button>
+
+              <div class="panel settings-panel">
+                <div class="panel-header"><span class="panel-label">Seitenleiste</span></div>
+                <div class="settings-row">
+                  <div><div class="settings-row-title">Eingeklappt</div><div class="settings-row-sub">Nur Icons anzeigen, mehr Platz für den Inhalt (nur dieses Gerät, auch per Pfeil oben in der Seitenleiste)</div></div>
+                  <label class="toggle"><input type="checkbox" id="setting-sidebar-collapsed"/><span class="toggle-slider"></span></label>
+                </div>
               </div>
-              <div class="settings-row">
-                <div><div class="settings-row-title">Backup importieren</div><div class="settings-row-sub">Gespeicherte JSON-Datei wiederherstellen</div></div>
-                <button class="btn-ghost" id="backup-import-btn" style="font-size:13px;">Importieren</button>
-                <input type="file" id="backup-file-input" accept=".json" style="display:none;"/>
+            </div>
+          </div>
+        </section>
+
+        <!-- ── HEUTE-SEITE ───────────────────────────────────────── -->
+        <section class="settings-group" id="settings-group-today">
+          <div class="settings-group-head"><h2 class="settings-group-title">Heute-Seite</h2><button type="button" class="settings-group-top" data-target="settings-jump">↑ Übersicht</button></div>
+          <div class="settings-grid">
+            <div class="settings-col">
+              <div class="panel settings-panel">
+                <div class="panel-header"><span class="panel-label">Wetter</span></div>
+                <div class="settings-row">
+                  <div><div class="settings-row-title">Standort</div><div class="settings-row-sub" id="weather-mode-sub">GPS oder manuelle Eingabe</div></div>
+                  <div style="display:flex;gap:6px;">
+                    <button class="clock-type-btn" id="weather-mode-gps">GPS</button>
+                    <button class="clock-type-btn active" id="weather-mode-manual">Manuell</button>
+                  </div>
+                </div>
+                <div class="settings-row" id="weather-city-row">
+                  <div><div class="settings-row-title">Stadt</div><div class="settings-row-sub">z.B. Cologne, Frankfurt, Berlin</div></div>
+                  <input type="text" id="weather-city-input" class="modal-input settings-input"
+                    placeholder="z.B. Cologne" autocomplete="off"/>
+                </div>
+                <p class="settings-status hidden" id="weather-status" role="status"></p>
               </div>
-              <div class="settings-row">
-                <div><div class="settings-row-title">Alle Spieldaten zurücksetzen</div><div class="settings-row-sub">Löscht ausnahmslos alle Spielstatistiken UND alle Cozy-Home-Daten (Haustiere, Münzen, Inventar) — für einzelne Spiele gibt es eigene Zurücksetzen-Buttons in deren Statistik-Ansicht.</div></div>
-                <button class="btn-ghost" id="reset-highscores-btn" style="font-size:13px;color:var(--prio-1);border-color:var(--prio-1);">Alles zurücksetzen</button>
+
+              <div class="panel settings-panel" id="positivity-settings-panel">
+                <div class="panel-header"><span class="panel-label">Positivity</span><span class="positivity-total-badge" id="positivity-total-count"></span></div>
+                <div id="positivity-category-list"></div>
               </div>
             </div>
 
             <div class="panel settings-panel">
-              <div class="panel-header panel-header-toggle" id="gcal-settings-header">
+              <div class="panel-header"><span class="panel-label">Unterrichtsblöcke</span><button class="icon-btn" id="add-block-btn" aria-label="Unterrichtsblock hinzufügen" title="Unterrichtsblock hinzufügen">+</button></div>
+              <div class="settings-row-sub settings-panel-intro">Schalter an = Unterricht, aus = frei. Ziehen am ⠿ ändert die Reihenfolge.</div>
+              <div id="blocks-settings-list"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ── INTEGRATIONEN ─────────────────────────────────────── -->
+        <section class="settings-group" id="settings-group-integrations">
+          <div class="settings-group-head"><h2 class="settings-group-title">Integrationen</h2><button type="button" class="settings-group-top" data-target="settings-jump">↑ Übersicht</button></div>
+          <div class="settings-grid">
+            <div class="panel settings-panel">
+              <div class="panel-header"><span class="panel-label">Geräte-Sync</span></div>
+              <div class="settings-row">
+                <div><div class="settings-row-title">Geräte-Sync</div><div class="settings-row-sub" id="sync-status-sub">Nicht angemeldet — Daten bleiben nur auf diesem Gerät</div></div>
+                <button class="btn-ghost settings-small-btn" id="sync-status-btn">Anmelden</button>
+              </div>
+            </div>
+
+            <div class="panel settings-panel">
+              <div class="panel-header panel-header-toggle" id="gcal-settings-header" role="button" tabindex="0" aria-expanded="false" aria-controls="gcal-settings-body">
                 <span style="display:flex;align-items:center;gap:8px;">
                   <span class="panel-label">Google Calendar</span>
                   <span class="badge-soon" title="Funktion ist voll nutzbar, Feinschliff/Live-Test stehen noch aus">In Bearbeitung</span>
                 </span>
-                <span class="panel-chevron" id="gcal-settings-chevron">▶</span>
+                <span class="panel-chevron" id="gcal-settings-chevron" aria-hidden="true">▶</span>
               </div>
               <div id="gcal-settings-body" class="collapsed">
                 <div style="padding:0 18px 14px;">
@@ -1348,45 +1498,82 @@
                 </div>
               </div>
             </div>
-
-            <div class="panel settings-panel">
-              <div class="panel-header panel-header-toggle" id="tab-visibility-header">
-                <span class="panel-label">Sichtbare Tabs</span>
-                <span class="panel-chevron" id="tab-visibility-chevron">▶</span>
-              </div>
-              <div id="tab-visibility-body" class="collapsed">
-                <div class="settings-row-sub" style="padding:0 18px 12px;">Blende Tabs aus, die du nicht brauchst — sie verschwinden aus der Navigation, deine Daten bleiben dabei erhalten.</div>
-                <div id="tab-visibility-list"></div>
-              </div>
-            </div>
-
           </div>
- 
-          <div class="settings-col">
+        </section>
+
+        <!-- ── DATEN ─────────────────────────────────────────────── -->
+        <section class="settings-group" id="settings-group-data">
+          <div class="settings-group-head"><h2 class="settings-group-title">Daten</h2><button type="button" class="settings-group-top" data-target="settings-jump">↑ Übersicht</button></div>
+          <div class="settings-grid">
             <div class="panel settings-panel">
-              <div class="panel-header"><span class="panel-label">Unterrichtsblöcke</span><button class="icon-btn" id="add-block-btn">+</button></div>
-              <div id="blocks-settings-list"></div>
-            </div>
- 
-            <div class="panel settings-panel" id="positivity-settings-panel">
-              <div class="panel-header"><span class="panel-label">Positivity</span><span class="positivity-total-badge" id="positivity-total-count"></span></div>
-              <div id="positivity-category-list"></div>
+              <div class="panel-header"><span class="panel-label">Backup</span></div>
+              <div class="settings-row">
+                <div><div class="settings-row-title">Backup exportieren</div><div class="settings-row-sub" id="backup-last-export-sub">Alle Daten als JSON-Datei herunterladen</div></div>
+                <button class="btn-ghost settings-small-btn" id="backup-export-btn">Exportieren</button>
+              </div>
+              <div class="settings-row">
+                <div><div class="settings-row-title">Backup importieren</div><div class="settings-row-sub">Gespeicherte JSON-Datei wiederherstellen — vorher siehst du, was enthalten ist</div></div>
+                <button class="btn-ghost settings-small-btn" id="backup-import-btn">Importieren</button>
+                <input type="file" id="backup-file-input" accept=".json,application/json" style="display:none;"/>
+              </div>
+              <div class="settings-row">
+                <div><div class="settings-row-title">Backup-Erinnerung</div><div class="settings-row-sub">Erinnert dich, wenn das letzte Backup länger zurückliegt</div></div>
+                <select id="setting-backup-reminder" class="modal-select settings-select">
+                  <option value="0">Aus</option>
+                  <option value="7">Nach 7 Tagen</option>
+                  <option value="14">Nach 14 Tagen</option>
+                  <option value="30">Nach 30 Tagen</option>
+                </select>
+              </div>
             </div>
 
             <div class="panel settings-panel">
-              <div class="panel-header"><span class="panel-label">Persönliche Farben verwalten</span></div>
-              <div class="settings-row" style="border-bottom:none;">
-                <div><div class="settings-row-title">Gespeicherte Farben</div><div class="settings-row-sub">Beim Überfahren einer Farbe erscheint ✕ zum Entfernen</div></div>
+              <div class="panel-header"><span class="panel-label">Speicher</span><button class="icon-btn" id="storage-refresh-btn" aria-label="Speicheranzeige aktualisieren" title="Aktualisieren">↻</button></div>
+              <div class="settings-row settings-row-stack">
+                <div class="settings-row-head">
+                  <div><div class="settings-row-title">Belegt auf diesem Gerät</div><div class="settings-row-sub">Browser-Speicher (localStorage), Grenze geschätzt</div></div>
+                  <span class="settings-value" id="storage-total-label">—</span>
+                </div>
+                <div class="storage-bar" aria-hidden="true"><div class="storage-bar-fill" id="storage-total-bar"></div></div>
               </div>
-              <div style="padding:0 18px 16px;">
-                <div id="settings-color-library" class="hub-color-library"></div>
-                <div id="settings-color-empty" class="empty-state" style="display:none;padding:6px 0 0;">Noch keine Farben gespeichert.</div>
+              <div id="storage-group-list"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ── GEFAHRENZONE ──────────────────────────────────────── -->
+        <section class="settings-group" id="settings-group-danger">
+          <div class="settings-group-head"><h2 class="settings-group-title">Gefahrenzone</h2><button type="button" class="settings-group-top" data-target="settings-jump">↑ Übersicht</button></div>
+          <div class="settings-grid">
+            <div class="panel settings-panel settings-danger-panel">
+              <div class="settings-row">
+                <div><div class="settings-row-title">Alle Spieldaten zurücksetzen</div><div class="settings-row-sub">Löscht ausnahmslos alle Spielstatistiken UND alle Cozy-Home-Daten (Haustiere, Münzen, Inventar) — für einzelne Spiele gibt es eigene Zurücksetzen-Buttons in deren Statistik-Ansicht.</div></div>
+                <button class="btn-ghost settings-small-btn settings-danger-btn" id="reset-highscores-btn">Alles zurücksetzen</button>
+              </div>
+              <div class="settings-row">
+                <div><div class="settings-row-title">Daten eines Bereichs zurücksetzen</div><div class="settings-row-sub">Unter „Daten → Speicher“ hat jeder Bereich einen eigenen Zurücksetzen-Knopf — mit Backup-Angebot vorher.</div></div>
               </div>
             </div>
- 
           </div>
- 
-        </div><!-- /settings-layout -->
+        </section>
+
+        <!-- ── ÜBER NOOK ─────────────────────────────────────────── -->
+        <section class="settings-group" id="settings-group-about">
+          <div class="settings-group-head"><h2 class="settings-group-title">Über Nook</h2><button type="button" class="settings-group-top" data-target="settings-jump">↑ Übersicht</button></div>
+          <div class="settings-grid">
+            <div class="panel settings-panel">
+              <div class="settings-row">
+                <div><div class="settings-row-title">Version</div><div class="settings-row-sub">deine kleine digitale ecke.</div></div>
+                <span class="settings-value" id="about-version">—</span>
+              </div>
+              <div class="settings-row settings-row-stack">
+                <div class="settings-row-title">Neu in Nook</div>
+                <div id="about-changelog" class="about-changelog"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         </div><!-- /dash-content -->
       </section>
 
@@ -1406,6 +1593,14 @@
         <div class="mehr-section">
           <span class="panel-label mehr-section-label">Organisieren</span>
           <div class="panel mehr-group">
+            <button class="nav-btn" data-view="today">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1.5" fill="currentColor"/><rect x="9" y="2" width="5" height="5" rx="1.5" fill="currentColor" opacity=".4"/><rect x="2" y="9" width="5" height="5" rx="1.5" fill="currentColor" opacity=".4"/><rect x="9" y="9" width="5" height="5" rx="1.5" fill="currentColor" opacity=".4"/></svg>
+              Heute
+            </button>
+            <button class="nav-btn" data-view="calendar">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" stroke-width="1.5" fill="none" opacity=".6"/><path d="M5 2v2M11 2v2M2 7h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              Kalender
+            </button>
             <button class="nav-btn" data-view="pinboard">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v3.5M5.5 5.5h5l1 3.5h-7.5l1-3.5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" fill="none" opacity=".7"/><path d="M8 9v5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
               Pinnwand
@@ -1423,15 +1618,23 @@
               Karteikarten
             </button>
             <button class="nav-btn" data-view="guides">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="9" rx="2" stroke="currentColor" stroke-width="1.5" fill="none" opacity=".7"/><path d="M5 7h6M5 9.5h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 3.5A1.5 1.5 0 0 1 4.5 2H13v10H4.5A1.5 1.5 0 0 0 3 13.5v-10z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" fill="none" opacity=".7"/><path d="M3 13.5A1.5 1.5 0 0 0 4.5 15H13v-3" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" fill="none"/><path d="M6 5.5h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
               Anleitungen
             </button>
           </div>
         </div>
 
         <div class="mehr-section">
-          <span class="panel-label mehr-section-label">Werkzeuge</span>
+          <span class="panel-label mehr-section-label">Werkzeuge &amp; Freizeit</span>
           <div class="panel mehr-group">
+            <button class="nav-btn" data-view="budget">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5" fill="none" opacity=".6"/><path d="M8 5v6M6 6.5h3a1 1 0 0 1 0 2H7a1 1 0 0 0 0 2h3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+              Budget
+            </button>
+            <button class="nav-btn" data-view="games">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="4" width="12" height="8" rx="2" stroke="currentColor" stroke-width="1.5" fill="none" opacity=".6"/><path d="M6 8H4M5 7v2M10 8h2M11 7l1 1-1 1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+              Spiele
+            </button>
             <button class="nav-btn" data-view="tools">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M9.5 2.5l1 1-5 5-1-1a2.2 2.2 0 0 1 0-3.1l1.1-1.1a2.2 2.2 0 0 1 3.1 0z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" fill="none" opacity=".7"/><path d="M6.5 6.5L2.5 10.5a1.4 1.4 0 0 0 2 2l4-4" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" fill="none" opacity=".7"/><path d="M11 5l0.5 2 2-0.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
               Tools
@@ -1470,6 +1673,12 @@
   <script>
     (function () {
       var name = location.hash.replace(/^#/, '');
+      // Fester Startbildschirm (Einstellungen > Allgemein, main.js: startView)
+      // schlägt den Hash — gleiche Regel wie resolveInitialView() in main.js.
+      try {
+        var sv = JSON.parse(localStorage.getItem('startView') || '"last"');
+        if (sv && sv !== 'last') name = sv;
+      } catch (e) {}
       if (!name || name === 'mehr' || name === 'today') return;
       var target = document.getElementById('view-' + name);
       if (!target) return;
@@ -1486,7 +1695,12 @@
       // Sidebar-Button existiert (wie in main.js#showView beschrieben)
       // doppelt (Sidebar + mobile Bottom-Nav) — beide hervorheben.
       document.querySelectorAll('.nav-btn.active').forEach(function (b) { b.classList.remove('active'); });
-      document.querySelectorAll('.nav-btn[data-view="' + name + '"]').forEach(function (b) { b.classList.add('active'); });
+      document.querySelectorAll('.nav-btn[data-view="' + name + '"]').forEach(function (b) { b.classList.add('active'); b.setAttribute('aria-current', 'page'); });
+      // Steht der Tab nicht in der Bottom-Nav, ist auf dem Handy "Mehr" aktiv.
+      try {
+        var bottom = JSON.parse(localStorage.getItem('bottomNavTabs') || 'null') || ['today', 'calendar', 'budget', 'games'];
+        if (bottom.indexOf(name) === -1) document.getElementById('bottom-nav-more-btn').classList.add('active');
+      } catch (e) {}
     })();
   </script>
 
@@ -2882,6 +3096,37 @@
     <button id="sw-update-reload-btn">Neu laden</button>
   </div>
 
+  <!-- Backup-Erinnerung (js/settings.js: checkBackupReminder) — erscheint,
+       wenn das letzte Backup länger zurückliegt als in Einstellungen >
+       Daten gewählt. "Später" blendet sie für einen Tag aus. -->
+  <div id="backup-reminder-banner" class="floating-update-banner hidden" role="status">
+    <span id="backup-reminder-text">Zeit für ein Backup</span>
+    <button id="backup-reminder-export-btn">Jetzt sichern</button>
+    <button id="backup-reminder-later-btn" class="floating-banner-ghost">Später</button>
+  </div>
+
+  <!-- Backup importieren — Vorschau + Modus (js/settings.js) -->
+  <div id="backup-import-overlay" class="modal-backdrop hidden">
+    <div class="modal-box" style="width:440px;">
+      <div class="modal-head">
+        <span>Backup importieren</span>
+        <button class="modal-x" id="backup-import-close" aria-label="Schließen">✕</button>
+      </div>
+      <p class="modal-hint" id="backup-import-summary"></p>
+      <div id="backup-import-groups" class="backup-import-groups"></div>
+      <div class="modal-row">
+        <label>Wie importieren?</label>
+        <label class="backup-import-mode"><input type="radio" name="backup-import-mode" value="merge" checked/> <span><strong>Zusammenführen</strong> — Daten aus dem Backup ersetzen gleichnamige, alles andere bleibt</span></label>
+        <label class="backup-import-mode"><input type="radio" name="backup-import-mode" value="replace"/> <span><strong>Ersetzen</strong> — alle aktuellen Daten werden gelöscht und durch das Backup ersetzt</span></label>
+      </div>
+      <p class="modal-hint backup-import-warning hidden" id="backup-import-warning"></p>
+      <div class="modal-actions">
+        <button class="btn-ghost" id="backup-import-cancel">Abbrechen</button>
+        <button class="btn-primary" id="backup-import-confirm">Wiederherstellen</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Hub-weites Bestätigungs-Modal (hub-utils.js: hubConfirm()) — ersetzt
        native confirm()-Dialoge durch ein Nook-gestyltes Modal. Tab-
        unabhängig nutzbar, aktuell vom Games-Reset (games.js/settings.js)
@@ -3269,6 +3514,8 @@
        die beim Hinzufügen/Entfernen eines Spiels angepasst werden muss -->
   <script src="js/games.js"></script>
   <script src="games/games-list.js"></script>
+  <!-- Version + Änderungsprotokoll für Einstellungen > Über Nook -->
+  <script src="js/nook-version.js"></script>
   <script src="js/settings.js"></script>
   <!-- Theme-Engine: braucht DB/theme/setTheme/hexToRgba (main.js), mixHex/
        hubConfirm (hub-utils.js) und escHtml (settings.js) -->

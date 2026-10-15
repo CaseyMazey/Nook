@@ -61,19 +61,59 @@ function setSyncMeta(meta) {
   localStorage.setItem(SYNC_META_KEY, JSON.stringify(meta));
 }
 
-// Keys, die nie über die generische DB-Sync-Logik laufen dürfen: unsere
-// eigene Buchhaltung sowie Supabase's eigener Session-Speicher (sb-...).
-function isSyncableKey(key) {
-  return key !== SYNC_META_KEY && key !== INITIAL_MERGE_DONE_KEY && !key.startsWith("sb-");
+// Interne Keys, die weder synchronisiert noch ins Backup gehören: unsere
+// eigene Buchhaltung sowie Supabase's eigener Session-Speicher (sb-...,
+// enthält Access-/Refresh-Token — gehört niemals in eine Datei oder auf
+// ein anderes Gerät). Wird auch vom Backup in settings.js benutzt.
+function isSyncInternalKey(key) {
+  return key === SYNC_META_KEY || key === INITIAL_MERGE_DONE_KEY || key.startsWith("sb-");
 }
 
-async function pushToSupabase(userId, key, val, ts) {
-  if (!sbClient || !userId) return;
-  const { error } = await sbClient.from(SYNC_TABLE).upsert(
-    { user_id: userId, key, value: val, updated_at: new Date(ts).toISOString() },
-    { onConflict: "user_id,key" }
-  );
-  if (error) console.error("Sync: Push fehlgeschlagen für", key, error);
+// Reine Geräte-Zustände bzw. Caches, die lokal bleiben: der Wetter-Cache
+// (enthält bei GPS den Standort), Akkordeon-/Layout-Zustände dieses Geräts.
+// Würden sonst bei jedem Seitenaufruf bzw. Klick einen Upload auslösen.
+const SYNC_LOCAL_ONLY_KEYS = [
+  "weatherData", "currentDate", "tabVisibilityOpen", "googleCalSettingsOpen",
+  "sidebarCollapsed",
+];
+
+// Keys, die nie über die generische DB-Sync-Logik laufen dürfen.
+function isSyncableKey(key) {
+  return !isSyncInternalKey(key) && !SYNC_LOCAL_ONLY_KEYS.includes(key);
+}
+
+// Laufende Uploads — damit z.B. der Backup-Import vor seinem Reload warten
+// kann, bis alles in der Cloud angekommen ist (ein Reload bricht offene
+// Requests sonst ab).
+const syncPendingPushes = new Set();
+function syncFlushPending() {
+  return Promise.allSettled([...syncPendingPushes]);
+}
+
+function pushToSupabase(userId, key, val, ts) {
+  if (!sbClient || !userId) return Promise.resolve();
+  const p = (async () => {
+    const { error } = await sbClient.from(SYNC_TABLE).upsert(
+      { user_id: userId, key, value: val, updated_at: new Date(ts).toISOString() },
+      { onConflict: "user_id,key" }
+    );
+    if (error) console.error("Sync: Push fehlgeschlagen für", key, error);
+  })();
+  syncPendingPushes.add(p);
+  p.finally(() => syncPendingPushes.delete(p));
+  return p;
+}
+
+// Entfernt Keys lokal UND in der Cloud (z.B. "Daten eines Tabs
+// zurücksetzen" in settings.js) — ohne den Remote-Löschschritt kämen die
+// Daten beim nächsten Erstabgleich eines Geräts wieder zurück.
+async function syncRemoveKeys(keys) {
+  const meta = getSyncMeta();
+  keys.forEach((k) => { localStorage.removeItem(k); delete meta[k]; });
+  setSyncMeta(meta);
+  if (!sbClient || !currentUserId || !keys.length) return;
+  const { error } = await sbClient.from(SYNC_TABLE).delete().eq("user_id", currentUserId).in("key", keys);
+  if (error) console.error("Sync: Löschen fehlgeschlagen", error);
 }
 
 // ── DB.set() additiv erweitern ──────────────────────────────────────────
@@ -125,6 +165,7 @@ async function catchUpSync(userId) {
   const meta = getSyncMeta();
   let changed = false;
   (rows || []).forEach((row) => {
+    if (!isSyncableKey(row.key)) return;
     const remoteTs = new Date(row.updated_at).getTime();
     const localTs = meta[row.key] || 0;
     if (remoteTs > localTs) {
@@ -149,7 +190,7 @@ function subscribeRealtime(userId) {
       { event: "*", schema: "public", table: SYNC_TABLE, filter: `user_id=eq.${userId}` },
       (payload) => {
         const row = payload.new;
-        if (!row) return;
+        if (!row || !row.key || !isSyncableKey(row.key)) return;
         const remoteTs = new Date(row.updated_at).getTime();
         const meta = getSyncMeta();
         const localTs = meta[row.key] || 0;
@@ -205,6 +246,13 @@ async function runInitialMerge(userId) {
       toPush.push({ user_id: userId, key, value, updated_at: new Date(now).toISOString() });
     }
   }
+  // Keys, die es nur in der Cloud gibt (z.B. Tab auf diesem Gerät nie
+  // geöffnet), ebenfalls übernehmen — die Schleife oben sieht nur lokale.
+  (rows || []).forEach((row) => {
+    if (!isSyncableKey(row.key) || localStorage.getItem(row.key) !== null) return;
+    _dbSetRaw(row.key, row.value);
+    meta[row.key] = new Date(row.updated_at).getTime();
+  });
   setSyncMeta(meta);
 
   if (toPush.length) {

@@ -234,7 +234,7 @@ async function renderWeather() {
     descEl.textContent = saved.desc;
     applyStartHeaderDaynight();
     scheduleStartHeaderDaynightCheck(saved);
-    return;
+    return { ok: true };
   }
 
   try {
@@ -255,10 +255,20 @@ async function renderWeather() {
     descEl.textContent = data.desc;
     applyStartHeaderDaynight();
     scheduleStartHeaderDaynightCheck(weatherData);
+    if (typeof onThemeAutoWeatherUpdate === 'function') onThemeAutoWeatherUpdate();
+    return { ok: true };
   } catch (e) {
     if (iconEl) iconEl.innerHTML = WEATHER_SVGS.unknown;
     tempEl.textContent = '—';
     descEl.textContent = 'Keine Daten';
+    // Ergebnis für die Einstellungen (settings.js: Hinweis unter "Standort"):
+    // GeolocationPositionError.code 1 = Zugriff verweigert, 2/3 = nicht
+    // ermittelbar/Zeitüberschreitung, sonst Netzwerk-/Stadtfehler.
+    let reason = 'network';
+    if (e && typeof e.code === 'number' && e.code >= 1 && e.code <= 3) reason = e.code === 1 ? 'denied' : 'unavailable';
+    else if (weatherSettings.mode === 'gps' && !navigator.geolocation) reason = 'unavailable';
+    else if (e && e.message === 'City not found') reason = 'notfound';
+    return { ok: false, reason };
   }
 }
 
@@ -273,7 +283,8 @@ function updateHeader() {
   const titleEl = document.getElementById('today-title');
   if (titleEl) titleEl.textContent = fmt(new Date(), { weekday: 'long', day: 'numeric', month: 'long' });
   updateCountdown();
-  DB.set('currentDate', state.currentDate.toISOString());
+  // Zurück-zur-aktuellen-Woche-Knopf nur zeigen, wenn eine andere Woche gewählt ist.
+  document.getElementById('week-today-btn')?.classList.toggle('hidden', getWeekId(state.currentDate) === getWeekId(new Date()));
   renderTodayHeader();
 }
 
@@ -322,6 +333,9 @@ function updateCountdown() {
 // Open countdown modal when section is clicked
 document.getElementById('sidebar-countdowns')?.addEventListener('click', openCountdownModal);
 
+document.getElementById('week-today-btn')?.addEventListener('click', () => {
+  state.currentDate = new Date(); updateHeader(); renderView(currentView);
+});
 document.getElementById('prev-week').addEventListener('click', () => {
   state.currentDate.setDate(state.currentDate.getDate() - 7); updateHeader(); renderView(currentView);
 });
@@ -1060,6 +1074,12 @@ function updateThemeIcon() {
   document.getElementById('theme-toggle-btn')?.classList.toggle('hidden', !isDayNightToggleOn());
   sunIcon.style.display  = darkMode ? 'none'  : 'block';
   moonIcon.style.display = darkMode ? 'block' : 'none';
+  const btn = document.getElementById('theme-toggle-btn');
+  if (btn) {
+    const label = darkMode ? 'Zur Tagversion wechseln' : 'Zur Nachtversion wechseln';
+    btn.title = label;
+    btn.setAttribute('aria-label', label);
+  }
 }
 
 document.getElementById('theme-toggle-btn')?.addEventListener('click', () => {
