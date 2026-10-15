@@ -33,6 +33,7 @@
 // DATENMODELL
 // { [montagDateKey]: { kw, importedAt, labels:{menu1,menu2,menu3,dessert},
 //                      days:[{menu1,menu2,menu3,dessert} × 5 (Mo–Fr)] } }
+// Es wird immer nur EINE Woche gehalten — Speichern ersetzt die vorige.
 // Gerichte sind reiner Text; beginnt er mit "VEGAN", zeigt das Widget
 // eine Markierung (so bleibt das Bearbeiten ein einfaches Textfeld).
 // =========================
@@ -46,7 +47,6 @@ const MEALPLAN_SLOTS = [
   { key: 'dessert', label: 'Dessert' },
 ];
 const MEALPLAN_WEEKDAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag'];
-const MEALPLAN_KEEP_WEEKS = 4; // ältere Wochen werden beim Speichern entfernt
 
 const PDFJS_VERSION = '3.11.174';
 const PDFJS_BASE = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}/`;
@@ -66,14 +66,6 @@ function mealPlanLookup(date) {
   const dayIndex = (date.getDay() + 6) % 7;
   if (!week || dayIndex > 4) return { week: null, dayIndex };
   return { week, dayIndex };
-}
-
-function mealPlanPruneOld() {
-  const cutoff = getWeekStart(new Date());
-  cutoff.setDate(cutoff.getDate() - 7 * MEALPLAN_KEEP_WEEKS);
-  Object.keys(mealPlanWeeks).forEach(k => {
-    if (parseLocalDate(k) < cutoff) delete mealPlanWeeks[k];
-  });
 }
 
 // =========================
@@ -454,8 +446,8 @@ function mealPlanUpdateWeekHint() {
   if (!val) { hint.textContent = ''; return; }
   const mon = getWeekStart(parseLocalDate(val));
   const fri = new Date(mon); fri.setDate(fri.getDate() + 4);
-  const exists = !!mealPlanWeeks[dateKey(mon)];
-  hint.textContent = `KW ${getISOWeek(mon)} · ${fmt(mon, { day: '2-digit', month: '2-digit' })} – ${fmt(fri, { day: '2-digit', month: '2-digit', year: 'numeric' })}${exists ? ' · ersetzt die gespeicherte Woche' : ''}`;
+  const old = Object.keys(mealPlanWeeks).find(k => k !== dateKey(mon));
+  hint.textContent = `KW ${getISOWeek(mon)} · ${fmt(mon, { day: '2-digit', month: '2-digit' })} – ${fmt(fri, { day: '2-digit', month: '2-digit', year: 'numeric' })}${old ? ` · ersetzt KW ${getISOWeek(parseLocalDate(old))}` : ''}`;
 }
 document.getElementById('mealplan-modal-week')?.addEventListener('change', mealPlanUpdateWeekHint);
 
@@ -467,13 +459,13 @@ document.getElementById('mealplan-modal-save')?.addEventListener('click', () => 
   document.querySelectorAll('#mealplan-modal-days .mealplan-edit-input').forEach(el => {
     days[Number(el.dataset.day)][el.dataset.slot] = el.value.replace(/\s+/g, ' ').trim();
   });
+  mealPlanWeeks = {};
   mealPlanWeeks[dateKey(monday)] = {
     kw: getISOWeek(monday),
     importedAt: new Date().toISOString(),
     labels: mealPlanEditorLabels || { menu1: '', menu2: '', menu3: '', dessert: '' },
     days,
   };
-  mealPlanPruneOld();
   saveMealPlanWeeks();
   mealPlanModal.close();
   mealPlanViewDate = null;
