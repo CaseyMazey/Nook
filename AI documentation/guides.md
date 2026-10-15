@@ -107,6 +107,8 @@ Farben werden dauerhaft gespeichert und können für weitere Bücher wiederverwe
 
 Name und Farbe eines Buches lassen sich nachträglich über „Buch bearbeiten" in der Kapitelübersicht ändern.
 
+Gelöscht wird ein Buch ebenfalls nur dort (nicht direkt im Regal) und in zwei Schritten: zuerst wird ein Backup-Export angeboten, danach folgt die eigentliche Sicherheitsabfrage.
+
 ---
 
 # Kapitel
@@ -371,6 +373,8 @@ Exportiert werden:
 - Inhalt
 
 Die Metadaten werden als Front Matter gespeichert und beim Import wieder übernommen.
+
+Ganze Bücher lassen sich als Backup-Datei (`.nook-buch.json`) exportieren — mit allen Kapiteln, Statistiken, Featured Snippet und Code-Bookmarks. Beim Import entsteht immer ein neues Buch; vorhandene Bücher werden nie überschrieben.
 
 ---
 

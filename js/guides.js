@@ -386,16 +386,176 @@ function exportGuideAsMd(guideId) {
   lines.push('---');
   lines.push('');
   lines.push(guide.content || '');
-  const blob = new Blob([lines.join('\n')], { type: 'text/markdown' });
+  downloadGuideFile(guideSafeFileName(guide.title) + '.md', lines.join('\n'), 'text/markdown');
+}
+
+function guideSafeFileName(name) {
+  return String(name || 'Unbenannt').replace(/[^a-z0-9äöüÄÖÜß ]/gi, '_');
+}
+
+function downloadGuideFile(fileName, text, mime) {
+  const blob = new Blob([text], { type: mime });
   const a    = document.createElement('a');
   a.href     = URL.createObjectURL(blob);
-  a.download = guide.title.replace(/[^a-z0-9äöüÄÖÜß ]/gi, '_') + '.md';
+  a.download = fileName;
   // Erst im DOM klicken und die URL verzögert freigeben — sofortiges
   // revokeObjectURL bricht den Download in manchen Browsern ab.
   document.body.appendChild(a);
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+// ── Ganze Bücher exportieren / importieren ────────────────
+// Ein Buch wird als eine JSON-Datei gesichert: Name, Einband, alle Kapitel
+// samt Metadaten/Statistik, Featured Snippet und Code-Bookmarks. Beim Import
+// entsteht immer ein NEUES Buch mit neuen IDs — ein vorhandenes wird nie
+// überschrieben, auch wenn es denselben Namen trägt.
+const GUIDE_BOOK_FORMAT = 'nook-guides-book';
+
+function exportGuideBook(categoryId) {
+  const cat = guideCategories.find(c => c.id === categoryId);
+  if (!cat) return;
+  const bookmarks = {};
+  cat.guides.forEach(g => { if (guideBookmarks[g.id]?.length) bookmarks[g.id] = guideBookmarks[g.id]; });
+  const data = {
+    format: GUIDE_BOOK_FORMAT,
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    book: {
+      name: cat.name,
+      coverColor: cat.coverColor,
+      featuredSnippet: cat.featuredSnippet || null,
+      guides: cat.guides,
+    },
+    bookmarks,
+  };
+  downloadGuideFile(guideSafeFileName(cat.name) + '.nook-buch.json', JSON.stringify(data, null, 2), 'application/json');
+}
+
+// Baut aus einer Backup-Datei ein neues Buch. Wirft bei ungültigem Inhalt.
+function guideBookFromBackup(data) {
+  if (!data || data.format !== GUIDE_BOOK_FORMAT || !data.book || !Array.isArray(data.book.guides)) {
+    throw new Error('Keine Nook-Buchdatei');
+  }
+  const src = data.book;
+  const now = new Date().toISOString();
+  const idMap = {};      // alte Kapitel-ID → neue
+  const blockMap = {};   // alte Block-ID → neue (Block-IDs hängen an der Kapitel-ID)
+  const guides = src.guides.filter(g => g && typeof g.title === 'string').map(g => {
+    const id = crypto.randomUUID();
+    const content = normalizeGuideNewlines(g.content);
+    idMap[g.id] = id;
+    const oldBlocks = listGuideCodeBlocks(content, g.id);
+    const newBlocks = listGuideCodeBlocks(content, id);
+    oldBlocks.forEach((b, i) => { blockMap[b.id] = newBlocks[i].id; });
+    return {
+      id,
+      title: g.title,
+      description: typeof g.description === 'string' ? g.description : '',
+      content,
+      tags: Array.isArray(g.tags) ? g.tags.filter(t => typeof t === 'string') : [],
+      favorite: !!g.favorite,
+      createdAt: g.createdAt || now,
+      updatedAt: g.updatedAt || now,
+      ...(g.lastOpened ? { lastOpened: g.lastOpened } : {}),
+      ...(g.openCount ? { openCount: g.openCount } : {}),
+    };
+  });
+
+  // Gleichnamiges Buch vorhanden → Namen eindeutig machen statt zu verwechseln
+  let name = String(src.name || 'Importiertes Buch').trim() || 'Importiertes Buch';
+  const taken = n => guideCategories.some(c => c.name.toLowerCase() === n.toLowerCase());
+  if (taken(name)) {
+    let i = 2;
+    while (taken(`${name} (${i})`)) i++;
+    name = `${name} (${i})`;
+  }
+
+  const fs = src.featuredSnippet;
+  const cat = {
+    id: crypto.randomUUID(),
+    name,
+    coverColor: src.coverColor ?? HUB_PALETTE_HEX[0],
+    guides,
+    featuredSnippet: (fs && idMap[fs.guideId] && blockMap[fs.blockId])
+      ? { guideId: idMap[fs.guideId], blockId: blockMap[fs.blockId] } : null,
+  };
+  const bookmarks = {};
+  Object.entries(data.bookmarks || {}).forEach(([oldGuideId, ids]) => {
+    if (!idMap[oldGuideId] || !Array.isArray(ids)) return;
+    const mapped = ids.map(id => blockMap[id]).filter(Boolean);
+    if (mapped.length) bookmarks[idMap[oldGuideId]] = mapped;
+  });
+  return { cat, bookmarks };
+}
+
+function importGuideBooks() {
+  const input    = document.createElement('input');
+  input.type     = 'file';
+  input.accept   = '.json,application/json';
+  input.multiple = true;
+  input.addEventListener('change', async () => {
+    const files = [...input.files];
+    const results = await Promise.allSettled(files.map(readGuideFileAsText));
+    const failed = [];
+    const added = [];
+    results.forEach((res, i) => {
+      try {
+        if (res.status !== 'fulfilled') throw res.reason;
+        const { cat, bookmarks } = guideBookFromBackup(JSON.parse(res.value));
+        guideCategories.push(cat);
+        Object.assign(guideBookmarks, bookmarks);
+        added.push(cat);
+      } catch {
+        failed.push(files[i].name);
+      }
+    });
+    if (added.length) {
+      saveGuideCategories();
+      saveBookmarks();
+      // Das (erste) importierte Buch direkt aufschlagen
+      guideSearchQuery = '';
+      const search = document.getElementById('guide-search-input');
+      if (search) search.value = '';
+      state.activeGuideCategoryId = added[0].id;
+      activeGuideId = null;
+      renderGuideContent();
+    }
+    if (failed.length) alert(`Folgende Dateien sind keine gültigen Nook-Bücher:\n${failed.join('\n')}`);
+  });
+  input.click();
+}
+
+// Buch löschen — zweistufig: erst Backup anbieten (bei "Ja" wird sofort
+// exportiert), dann die eigentliche Sicherheitsabfrage.
+async function deleteGuideBook(categoryId) {
+  const cat = guideCategories.find(c => c.id === categoryId);
+  if (!cat) return false;
+  const wantsBackup = await hubConfirm({
+    title: 'Backup erstellen?',
+    message: `Möchtest du „${cat.name}" zur Sicherheit als Backup exportieren, bevor es gelöscht wird?`,
+    confirmText: 'Ja, exportieren',
+    cancelText: 'Nein',
+  });
+  if (wantsBackup) exportGuideBook(cat.id);
+  const n = cat.guides.length;
+  const sure = await hubConfirm({
+    title: 'Buch löschen?',
+    message: `Bist du sicher, dass du „${cat.name}" mit ${n === 1 ? '1 Kapitel' : `allen ${n} Kapiteln`} endgültig löschen möchtest?`,
+    confirmText: 'Endgültig löschen',
+    danger: true,
+  });
+  if (!sure) return false;
+  guideCategories = guideCategories.filter(c => c.id !== cat.id);
+  forgetGuideBookmarks(cat.guides.map(g => g.id));
+  if (state.activeGuideCategoryId === cat.id) {
+    state.activeGuideCategoryId = null;
+    activeGuideId = null;
+  }
+  saveGuideCategories();
+  renderGuideContent();
+  return true;
 }
 
 // Liest eine Datei als Text; Promise statt onload-Zähler, damit eine
@@ -571,24 +731,6 @@ function renderGuideShelf() {
     book.title = cat.name;
     applyBookColor(book, cat, idx);
 
-    const del = document.createElement('button');
-    del.className = 'guide-book-del';
-    del.title = 'Buch löschen';
-    del.textContent = '✕';
-    del.addEventListener('click', e => {
-      e.stopPropagation();
-      const count = cat.guides.length;
-      if (!confirm(`Buch „${cat.name}" und alle ${count} Kapitel löschen?`)) return;
-      guideCategories = guideCategories.filter(c => c.id !== cat.id);
-      forgetGuideBookmarks(cat.guides.map(g => g.id));
-      if (state.activeGuideCategoryId === cat.id) {
-        state.activeGuideCategoryId = null;
-        activeGuideId = null;
-      }
-      saveGuideCategories();
-      renderGuideContent();
-    });
-
     book.innerHTML = `
       <div class="guide-book-title">${escHtml(cat.name)}</div>
       <div class="guide-book-meta">${categoryGuideCount(cat)} Kapitel</div>
@@ -598,7 +740,6 @@ function renderGuideShelf() {
         <span class="guide-book-opened-val">${fmtOpened(stats.opened)}</span>
       </div>
     `;
-    book.appendChild(del);
 
     book.addEventListener('click', () => {
       guideSearchQuery = '';
@@ -710,10 +851,17 @@ function renderGuideChapterList(cat) {
   editBookBtn.addEventListener('click', () => openGuideCatModal(cat.id));
   actions.appendChild(editBookBtn);
 
+  const exportBookBtn = document.createElement('button');
+  exportBookBtn.className = 'btn-ghost';
+  exportBookBtn.title = 'Ganzes Buch als Backup-Datei (.json) speichern';
+  exportBookBtn.textContent = '⬇ Buch exportieren';
+  exportBookBtn.addEventListener('click', () => exportGuideBook(cat.id));
+  actions.appendChild(exportBookBtn);
+
   const importBtn = document.createElement('button');
   importBtn.className = 'btn-ghost';
-  importBtn.title = '.md Datei(en) importieren';
-  importBtn.textContent = '⬆ Import';
+  importBtn.title = 'Einzelne Kapitel aus .md-Dateien in dieses Buch importieren';
+  importBtn.textContent = '⬆ Kapitel importieren';
   importBtn.addEventListener('click', () => importGuideFromMd(cat.id));
   actions.appendChild(importBtn);
 
@@ -851,11 +999,14 @@ function enableGuideChapterReorder(list, cat) {
       if (e.button !== 0) return;
       e.preventDefault();
       e.stopPropagation();
-      handle.setPointerCapture(e.pointerId);
       row.classList.add('dragging');
       list.classList.add('reordering');
 
+      // Bewusst am window statt per setPointerCapture am Griff: das Umhängen
+      // der Zeile im DOM (insertBefore) hebt eine Pointer-Capture auf — danach
+      // kämen keine move/up-Events mehr an und das Ziehen bliebe hängen.
       const onMove = ev => {
+        if (ev.pointerId !== e.pointerId) return;
         const target = [...list.querySelectorAll('.guide-chapter-row')].find(r => {
           if (r === row) return false;
           const b = r.getBoundingClientRect();
@@ -865,17 +1016,18 @@ function enableGuideChapterReorder(list, cat) {
         const b = target.getBoundingClientRect();
         list.insertBefore(row, ev.clientY > b.top + b.height / 2 ? target.nextSibling : target);
       };
-      const onEnd = () => {
-        handle.removeEventListener('pointermove', onMove);
-        handle.removeEventListener('pointerup', onEnd);
-        handle.removeEventListener('pointercancel', onEnd);
+      const onEnd = ev => {
+        if (ev.pointerId !== e.pointerId) return;
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onEnd);
+        window.removeEventListener('pointercancel', onEnd);
         row.classList.remove('dragging');
         list.classList.remove('reordering');
         if (commitOrder()) renderGuideContent();
       };
-      handle.addEventListener('pointermove', onMove);
-      handle.addEventListener('pointerup', onEnd);
-      handle.addEventListener('pointercancel', onEnd);
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onEnd);
+      window.addEventListener('pointercancel', onEnd);
     });
 
     handle.addEventListener('click', e => e.stopPropagation());
@@ -1470,6 +1622,8 @@ function openGuideCatModal(editId = null) {
   guideCatModalEditId = cat ? cat.id : null;
   document.getElementById('guide-cat-modal-title').textContent = cat ? 'Buch bearbeiten' : 'Neues Buch';
   document.getElementById('guide-cat-modal-save').textContent = cat ? 'Speichern' : 'Erstellen';
+  // Löschen gibt es nur beim Bearbeiten — bewusst nicht mehr direkt im Regal
+  document.getElementById('guide-cat-modal-delete').classList.toggle('hidden', !cat);
   document.getElementById('guide-cat-name-input').value = cat ? cat.name : '';
   // Alte Bücher mit Pastell-Index (Zahl statt Hex) zeigen den Paletten-
   // Standard; ihre Farbe wird nur überschrieben, wenn wirklich eine neue
@@ -1512,6 +1666,15 @@ function initGuides() {
     inputId: 'guide-cat-name-input',
     saveId: 'guide-cat-modal-save',
   });
+
+  // Category modal: löschen (zweistufige Abfrage, siehe deleteGuideBook)
+  document.getElementById('guide-cat-modal-delete').addEventListener('click', async () => {
+    if (!guideCatModalEditId) return;
+    if (await deleteGuideBook(guideCatModalEditId)) closeGuideCatModal();
+  });
+
+  // Ganze Bücher aus Backup-Dateien importieren
+  document.getElementById('guide-book-import-btn').addEventListener('click', importGuideBooks);
 
   // Category modal: save
   document.getElementById('guide-cat-modal-save').addEventListener('click', () => {

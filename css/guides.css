@@ -524,16 +524,6 @@ body:not(:has(#view-guides.active)) #guide-scroll-top { display: none; }
 .guide-book-opened-label { display: block; }
 .guide-book-opened-val { font-family: var(--mono); font-weight: 600; }
  
-.guide-book-del {
-  position: absolute; top: 8px; right: 8px;
-  width: 22px; height: 22px; border-radius: 50%;
-  background: color-mix(in srgb, var(--sheen) 55%, transparent); color: var(--prio-1);
-  display: flex; align-items: center; justify-content: center;
-  font-size: calc(11px * var(--core-font-scale)); opacity: 0; transition: opacity var(--transition), background var(--transition);
-  border: none; cursor: pointer;
-}
-.guide-book:hover .guide-book-del { opacity: 1; }
-.guide-book-del:hover { background: color-mix(in srgb, var(--sheen) 85%, transparent); }
  
 /* Pastel spine palette */
 .guide-book-0 { background: linear-gradient(160deg, var(--deco-1) 0%, color-mix(in srgb, var(--deco-1) 86%, var(--shadow-tint)) 100%); }
@@ -575,7 +565,6 @@ body:not(:has(#view-guides.active)) #guide-scroll-top { display: none; }
 .guide-shelf.list-mode .guide-book-spacer { display: none; }
 .guide-shelf.list-mode .guide-book-footer { margin-left: auto; text-align: right; white-space: nowrap; }
 .guide-shelf.list-mode .guide-book-opened-label { display: inline; margin-right: 4px; }
-.guide-shelf.list-mode .guide-book-del { position: static; opacity: 0.55; margin-left: 4px; }
 .guide-shelf.list-mode .guide-book-add { flex-direction: row; }
  
 /* ── Detail grid (chapter list / chapter detail + sidebar) ── */
@@ -599,7 +588,8 @@ body:not(:has(#view-guides.active)) #guide-scroll-top { display: none; }
 }
 .guide-book-detail-title { font-family: var(--font); font-size: calc(22px * var(--core-font-scale)); font-weight: 700; letter-spacing: -0.3px; }
 .guide-book-detail-sub { font-size: calc(13px * var(--core-font-scale)); color: var(--text-3); margin-top: 2px; }
-.guide-book-header-actions { display: flex; gap: 8px; }
+.guide-book-header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.guide-book-header-actions > button { white-space: nowrap; }
  
 /* ── Chapter list ──────────────────────────────────────────── */
 .guide-chapter-list { display: flex; flex-direction: column; gap: 6px; }
@@ -795,5 +785,8 @@ body:not(:has(#view-guides.active)) #guide-scroll-top { display: none; }
   .guide-chapter-title, .guide-chapter-title-wrap { flex: 1 1 0; min-width: 0; }
   .guide-chapter-actions { width: 100%; justify-content: flex-end; }
   .guide-chapter-open { display: none; }
-  .guide-book-header-actions { flex-wrap: wrap; }
 }
+
+/* Buch-Modal: Löschen links, abgesetzt von Abbrechen/Speichern */
+.guide-cat-delete-btn { margin-right: auto; color: var(--prio-1); }
+.guide-cat-delete-btn:hover { background: var(--prio-1-bg); color: var(--prio-1); }
