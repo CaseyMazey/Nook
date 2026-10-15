@@ -108,6 +108,7 @@ Aktuell:
 
 - Analoge Uhr
 - Schnellnotiz
+- Speiseplan
 - Mini-Kalender
 - Nationaler Tag
 - Countdowns
@@ -161,6 +162,18 @@ Nicht als Aufgabenverwaltung.
 
 ---
 
+# Speiseplan
+
+Zeigt Menü 1–3 und Dessert der Kantine für heute (am Wochenende: Montag), mit Pfeilen zu anderen Wochentagen.
+
+Quelle ist das wöchentliche Speiseplan-PDF aus Dock B (Browser-Export einer Intrexx-Tabelle mit Textebene). Der Nutzer gibt es per Button oder Drag & Drop, Nook liest es lokal mit pdf.js (lazy von cdnjs geladen) und zeigt das Ergebnis zur Kontrolle im Modal, bevor gespeichert wird. Ohne Internet bleibt das Modal zum Eintragen von Hand.
+
+Code: `js/today-mealplan.js`, DB-Key `mealPlanWeeks` (Wochen nach Montag, ältere als 4 Wochen werden beim Speichern entfernt).
+
+Keine Suppen, Beilagen oder Allergene — bewusst nur, was für die Essensauswahl gebraucht wird.
+
+---
+
 # Verschoben nach Pinnwand
 
 Folgende Bereiche gehörten ursprünglich zu Today, wurden aber in einen eigenständigen Pinnwand-Tab ausgelagert (siehe README: "früher Teil von 'Heute', jetzt ein eigener Tab mit mehr Platz"):
@@ -187,6 +200,7 @@ today.js ist verantwortlich für:
 - Today-Aufgaben
 - Schnellnotizen
 - Mini-Kalender
+- Speiseplan (today-mealplan.js)
 - Sidebar
 
 Nicht verantwortlich für:

@@ -3081,6 +3081,25 @@
     </div>
   </div>
 
+  <!-- Speiseplan: Kontrolle nach dem PDF-Import / Woche bearbeiten (js/today-mealplan.js) -->
+  <div id="mealplan-modal-overlay" class="modal-backdrop hidden">
+    <div class="modal-box mealplan-modal-box">
+      <div class="modal-head"><span id="mealplan-modal-title">Speiseplan prüfen</span><button class="modal-x" id="mealplan-modal-close">&#10005;</button></div>
+      <div id="mealplan-modal-message" class="mealplan-modal-message hidden"></div>
+      <div class="modal-row">
+        <label for="mealplan-modal-week">Woche (Montag)</label>
+        <input type="date" class="modal-input" id="mealplan-modal-week" style="max-width:170px;"/>
+        <div class="modal-hint" id="mealplan-modal-week-hint"></div>
+      </div>
+      <div id="mealplan-modal-days" class="mealplan-edit-days"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn-ghost mealplan-modal-delete" id="mealplan-modal-delete">Woche entfernen</button>
+        <button type="button" class="btn-ghost" id="mealplan-modal-cancel">Abbrechen</button>
+        <button type="button" class="btn-primary" id="mealplan-modal-save">Speichern</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Gruppendienste: Übersicht aller Pflichten -->
   <div id="gd-overview-modal-overlay" class="modal-backdrop hidden">
     <div class="modal-box" style="width:480px;">
@@ -3228,6 +3247,7 @@
   <script src="js/google-calendar-sync.js"></script>
   <script src="js/google-calendar-settings.js"></script>
   <script src="js/today.js"></script>
+  <script src="js/today-mealplan.js"></script>
   <script src="js/gruppendienste.js"></script>
   <script src="js/pinboard.js"></script>
   <script src="js/flashcards.js"></script>

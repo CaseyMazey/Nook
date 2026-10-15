@@ -554,7 +554,7 @@ placeSidebarWidgets(mehrPhoneQuery.matches);
 mehrPhoneQuery.addEventListener('change', e => placeSidebarWidgets(e.matches));
 
 function renderView(name) {
-  if(name==='today')     { renderBlocks(); renderTasks(); refreshTodayTextareas(); renderGruppendienste(); }
+  if(name==='today')     { renderBlocks(); renderTasks(); refreshTodayTextareas(); renderGruppendienste(); renderMealPlan(); }
   if(name==='pinboard')  { renderDesk(); }
   if(name==='flashcards'){ renderSubjectList(); }
   if(name==='guides')    { initGuides(); }
