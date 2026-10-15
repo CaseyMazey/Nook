@@ -791,6 +791,8 @@
             </div>
           </div>
  
+          <div id="guide-home" class="guide-home hidden"></div>
+
           <div id="guide-placeholder" class="empty-state full" style="flex-direction:column;gap:8px;">
             <svg width="40" height="40" viewBox="0 0 40 40" fill="none" opacity=".25">
               <path d="M8 9c0-1.66 1.34-3 3-3h9v28h-9a3 3 0 0 1-3-3V9Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
@@ -1883,14 +1885,33 @@
     </div>
   </div>
  
+  <!-- Guide Move Modal (Kapitel in anderes Buch verschieben) -->
+  <div id="guide-move-modal-overlay" class="modal-backdrop hidden">
+    <div class="modal-box" style="width:420px;">
+      <div class="modal-head">
+        <span>Kapitel verschieben</span>
+        <button class="modal-x" id="guide-move-modal-close">✕</button>
+      </div>
+      <p class="guide-move-hint">„<span id="guide-move-chapter-name"></span>" verschieben nach:</p>
+      <div class="modal-row">
+        <label for="guide-move-target">Buch</label>
+        <select class="modal-input" id="guide-move-target"></select>
+      </div>
+      <div class="modal-actions">
+        <button id="guide-move-cancel" class="btn-ghost">Abbrechen</button>
+        <button id="guide-move-save" class="btn-primary">Verschieben</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Guide Entry Modal -->
   <div id="guide-modal-overlay" class="modal-backdrop hidden">
     <div class="modal-box guide-modal-box">
       <div class="modal-head">
-        <span id="guide-modal-title">Neue Anleitung</span>
+        <span id="guide-modal-title">Neues Kapitel</span>
         <button class="modal-x" id="guide-modal-close">✕</button>
       </div>
-      <div class="modal-row"><label>Titel</label><input type="text" class="modal-input" id="guide-modal-title-input" placeholder="Titel der Anleitung" autocomplete="off"/></div>
+      <div class="modal-row"><label>Titel</label><input type="text" class="modal-input" id="guide-modal-title-input" placeholder="Titel des Kapitels" autocomplete="off"/></div>
       <div class="modal-row"><label>Beschreibung <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-3)">(optional)</span></label><input type="text" class="modal-input" id="guide-modal-desc-input" placeholder="Kurze Beschreibung..."/></div>
       <div class="modal-row"><label>Tags <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-3)">(kommagetrennt)</span></label><input type="text" class="modal-input" id="guide-modal-tags-input" placeholder="z.B. git, terminal, basics"/></div>
       <div class="modal-row modal-row-inline">
@@ -1904,13 +1925,21 @@
           <button class="guide-modal-tab" id="guide-tab-split" title="Editor und Live-Vorschau nebeneinander">Geteilt</button>
           <button class="guide-modal-tab" id="guide-tab-preview">Vorschau</button>
           <div class="guide-modal-snippets">
-            <button class="guide-snippet-btn" data-snippet="h2" title="## Überschrift">H2</button>
-            <button class="guide-snippet-btn" data-snippet="h3" title="### Unterüberschrift">H3</button>
-            <button class="guide-snippet-btn" data-snippet="bold" title="**fett**"><strong>B</strong></button>
-            <button class="guide-snippet-btn" data-snippet="code" title="Code-Block">{ }</button>
+            <button class="guide-snippet-btn" data-snippet="h2" title="Überschrift (## …)">H2</button>
+            <button class="guide-snippet-btn" data-snippet="h3" title="Unterüberschrift (### …)">H3</button>
+            <button class="guide-snippet-btn" data-snippet="bold" title="Fett (Strg+B)"><strong>B</strong></button>
+            <button class="guide-snippet-btn" data-snippet="italic" title="Kursiv (Strg+I)"><em>I</em></button>
+            <button class="guide-snippet-btn" data-snippet="strike" title="Durchgestrichen (~~…~~)"><s>S</s></button>
+            <button class="guide-snippet-btn" data-snippet="mark" title="Markieren (==…==)">▐</button>
+            <button class="guide-snippet-btn" data-snippet="inline" title="Inline-Code (`…`)">`a`</button>
+            <button class="guide-snippet-btn" data-snippet="code" title="Codeblock">{ }</button>
             <button class="guide-snippet-btn" data-snippet="list" title="Liste">☰</button>
+            <button class="guide-snippet-btn" data-snippet="olist" title="Nummerierte Liste">1.</button>
+            <button class="guide-snippet-btn" data-snippet="task" title="Checkliste (- [ ] …)">☑</button>
+            <button class="guide-snippet-btn" data-snippet="quote" title="Zitat (&gt; …)">❝</button>
+            <button class="guide-snippet-btn" data-snippet="table" title="Tabelle">▦</button>
             <button class="guide-snippet-btn" data-snippet="hr" title="Trennlinie">—</button>
-            <button class="guide-snippet-btn" data-snippet="mark" title="Text markieren ==text==">▐</button>
+            <button class="guide-snippet-btn" data-snippet="link" title="Link (Strg+K)">🔗</button>
             <button class="guide-snippet-btn" data-snippet="xref" title="Link zu einem anderen Kapitel [[Kapitelname]]">[[ ]]</button>
           </div>
         </div>

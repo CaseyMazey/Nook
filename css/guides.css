@@ -790,3 +790,79 @@ body:not(:has(#view-guides.active)) #guide-scroll-top { display: none; }
 /* Buch-Modal: Löschen links, abgesetzt von Abbrechen/Speichern */
 .guide-cat-delete-btn { margin-right: auto; color: var(--prio-1); }
 .guide-cat-delete-btn:hover { background: var(--prio-1-bg); color: var(--prio-1); }
+
+/* ── Markdown-Erweiterungen ─────────────────────────────────── */
+.guide-h5 { font-size: calc(13.5px * var(--core-font-scale)); font-weight: 600; margin: 16px 0 6px; color: var(--text-2); }
+.guide-h6 { font-size: calc(12.5px * var(--core-font-scale)); font-weight: 600; margin: 14px 0 6px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.04em; }
+.guide-quote {
+  margin: 12px 0 14px; padding: 8px 16px;
+  border-left: 3px solid var(--sage);
+  background: var(--sage-bg);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  color: var(--text-2);
+}
+.guide-detail-content del { color: var(--text-3); }
+/* Verschachtelte Listen: kein zusätzlicher Außenabstand */
+.guide-ul .guide-ul, .guide-ul .guide-ol, .guide-ol .guide-ul, .guide-ol .guide-ol { margin: 4px 0 0 20px; }
+.guide-ul .guide-ul { list-style: circle; }
+/* Checklisten */
+.guide-ul:has(> .guide-task) { list-style: none; margin-left: 4px; }
+.guide-task { list-style: none; }
+.guide-task-box { margin-right: 6px; accent-color: var(--sage); vertical-align: -1px; cursor: pointer; }
+.guide-task-box:disabled { cursor: default; }
+.guide-task.done { color: var(--text-3); text-decoration: line-through; }
+
+/* ── Tags als Filter-Buttons ────────────────────────────────── */
+.guide-tag-link { border: none; cursor: pointer; transition: background var(--transition), color var(--transition); }
+.guide-tag-link:hover, .guide-tag-link:focus-visible { background: var(--sage); color: var(--sage-fg); }
+.guide-tag-sm { font-size: calc(9.5px * var(--core-font-scale)); padding: 1px 6px; }
+.guide-tag-count { opacity: 0.65; margin-left: 2px; }
+.guide-tag-cloud { display: flex; flex-wrap: wrap; gap: 5px; padding: 4px 0 2px; }
+.guide-chapter-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.guide-chapter-row .guide-chapter-title-wrap { gap: 3px; min-width: 0; }
+
+/* ── Suche ──────────────────────────────────────────────────── */
+.guide-search-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.guide-search-clear { font-size: calc(12px * var(--core-font-scale)); }
+.guide-search-excerpt { font-size: calc(12px * var(--core-font-scale)); color: var(--text-3); line-height: 1.5; overflow-wrap: anywhere; }
+.guide-search-hit { background: color-mix(in srgb, var(--amber) 30%, transparent); color: inherit; border-radius: 2px; padding: 0 1px; }
+
+/* ── Statistik-Abschnitte ───────────────────────────────────── */
+.guide-stats-section {
+  font-size: calc(10.5px * var(--core-font-scale)); font-weight: 600; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--text-3); padding: 4px 0 2px;
+}
+
+/* ── Bookmark-Liste mit Kontext ─────────────────────────────── */
+.guide-bm-item { flex-direction: column; align-items: stretch; gap: 3px; text-align: left; }
+.guide-bm-item.current { border-color: var(--amber); }
+.guide-bm-item-top { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.guide-bm-item-heading { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.guide-bm-item-preview {
+  font-family: var(--mono); font-size: calc(10.5px * var(--core-font-scale)); color: var(--text-3);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* ── Startseite der Bibliothek ──────────────────────────────── */
+.guide-home { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+.guide-home-card { padding: 4px 0 12px; }
+.guide-home-card .panel-header { padding: 13px 18px; }
+.guide-home-list { display: flex; flex-direction: column; gap: 4px; padding: 4px 12px 0; }
+.guide-home-list .guide-snippet-empty { padding: 6px 6px 4px; }
+.guide-home-item {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left;
+  padding: 8px 10px; border: 1px solid transparent; border-radius: var(--radius-sm);
+  background: none; cursor: pointer; transition: background var(--transition), border-color var(--transition);
+}
+.guide-home-item:hover, .guide-home-item:focus-visible { background: var(--accent-soft); border-color: var(--border); }
+.guide-home-item-title { font-size: calc(13.5px * var(--core-font-scale)); color: var(--text); }
+.guide-home-item-meta { font-size: calc(11.5px * var(--core-font-scale)); color: var(--text-3); }
+@media (max-width: 1024px) { .guide-home { grid-template-columns: 1fr; } }
+
+/* ── Sonstiges ──────────────────────────────────────────────── */
+.guide-book:focus-visible, .guide-book-add:focus-visible { outline: 2px solid var(--sage); outline-offset: 3px; }
+.guide-chapter-list.single .guide-chapter-drag { display: none; }
+.guide-detail-menu-item:disabled { opacity: 0.45; cursor: default; background: none; }
+.guide-move-hint { font-size: calc(13px * var(--core-font-scale)); color: var(--text-2); margin: 0 0 10px; }
+.guide-input-invalid { border-color: var(--prio-1) !important; box-shadow: 0 0 0 2px var(--prio-1-bg); }
+.guide-modal-snippets { flex-wrap: wrap; justify-content: flex-end; }

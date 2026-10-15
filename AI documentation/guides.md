@@ -155,6 +155,14 @@ Kapitel können:
 
 Die Reihenfolge der Kapitel lässt sich per Drag & Drop am Griff (⋮⋮) ändern — mit Maus, Touch oder Pfeiltasten.
 
+Kapitel können außerdem dupliziert (z. B. als Vorlage) und in ein anderes Buch verschoben werden.
+
+---
+
+# Startseite
+
+Ist kein Buch gewählt, zeigt die Bibliothek Favoriten und zuletzt geöffnete Kapitel über alle Bücher hinweg. Nach dem Neuladen öffnet sich das zuletzt gelesene Buch bzw. Kapitel; die gewählte Regal- oder Listenansicht wird gemerkt.
+
 ---
 
 # Detailansicht
@@ -189,6 +197,11 @@ Guides unterstützt unter anderem:
 - Inline-Code
 - Codeblöcke
 - Trennlinien
+- Zitate
+- Durchstreichen
+- verschachtelte Listen (`-`, `*`, `+`, nummeriert)
+- Checklisten (`- [ ]` / `- [x]`, beim Lesen abhakbar)
+- Escapes (`\*` usw.) für wörtliche Sonderzeichen
 - Querverweise zwischen Kapiteln
 
 Markdown wird automatisch gerendert.
@@ -306,6 +319,10 @@ Die Ergebnisse erscheinen sofort während der Eingabe.
 
 Die Seitenleiste zeigt währenddessen die Treffer je Buch sowie Codeblöcke, die den Suchbegriff enthalten — direkt kopierbar.
 
+Treffer sind nach Relevanz sortiert (Titel vor Tags, Beschreibung und Inhalt) und zeigen einen Textauszug mit markiertem Suchbegriff. Wird die Suche geleert (auch per Escape), kehrt die Ansicht zum vorher geöffneten Buch bzw. Kapitel zurück.
+
+Tags sind überall anklickbar und filtern dann exakt nach diesem Tag (`#tag` im Suchfeld). Die Seitenleiste eines Buches listet alle seine Tags mit Häufigkeit.
+
 ---
 
 # Favoriten
@@ -328,7 +345,9 @@ Der Editor besitzt:
 - geteilte Ansicht (Editor und Live-Vorschau nebeneinander)
 - Vorschau
 
-Die zuletzt genutzte Ansicht wird gemerkt. Ungespeicherte Änderungen werden vor dem Schließen abgefragt.
+Die zuletzt genutzte Ansicht wird gemerkt. Ungespeicherte Änderungen werden vor dem Schließen abgefragt; zusätzlich wird ein Entwurf gesichert, der nach einem Absturz beim nächsten Öffnen wiederhergestellt werden kann.
+
+Tastenkürzel: Strg+B (fett), Strg+I (kursiv), Strg+K (Link), Strg+S (speichern), Tab / Shift+Tab (ein-/ausrücken; Escape gibt Tab wieder zum Verlassen des Feldes frei).
 
 Zusätzlich stehen Schnellbausteine zur Verfügung.
 
@@ -343,9 +362,14 @@ Folgende Elemente können per Klick eingefügt werden:
 - Codeblock
 - Liste
 - Fett
+- Kursiv, Durchgestrichen, Inline-Code
 - Markierung
+- nummerierte Liste, Checkliste, Zitat, Tabelle
 - Trennlinie
+- Link
 - Querverweis
+
+Codeblöcke schlagen die zuletzt verwendete Sprache vor.
 
 Markierter Text wird vom Baustein eingerahmt. Die Bausteine dienen ausschließlich als Schreibunterstützung.
 

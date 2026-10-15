@@ -78,13 +78,14 @@ async function pushToSupabase(userId, key, val, ts) {
 
 // ── DB.set() additiv erweitern ──────────────────────────────────────────
 DB.set = function (key, val) {
-  _dbSetRaw(key, val);
-  if (!isSyncableKey(key)) return;
+  const ok = _dbSetRaw(key, val); // Erfolg/Fehlschlag des lokalen Speicherns durchreichen
+  if (!isSyncableKey(key)) return ok;
   const now = Date.now();
   const meta = getSyncMeta();
   meta[key] = now;
   setSyncMeta(meta);
   if (currentUserId) pushToSupabase(currentUserId, key, val, now);
+  return ok;
 };
 
 // ── Auth-Status & UI ─────────────────────────────────────────────────

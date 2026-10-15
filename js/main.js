@@ -6,8 +6,10 @@ const DB = {
   get: (key, fallback = null) => {
     try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
   },
+  // Gibt zurück, ob gespeichert werden konnte (false z.B. bei vollem
+  // localStorage) — Aufrufer dürfen das ignorieren oder den Nutzer warnen.
   set: (key, val) => {
-    try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
+    try { localStorage.setItem(key, JSON.stringify(val)); return true; } catch { return false; }
   }
 };
 

@@ -7,7 +7,16 @@ let guideSearchQuery = '';
 let activeGuideId = null; // currently open guide
 
 function saveGuideCategories() {
-  DB.set('guideCategories', guideCategories);
+  if (!DB.set('guideCategories', guideCategories)) warnGuideStorageFull();
+}
+
+// localStorage ist pro Browser begrenzt (meist ~5 MB). Schlägt das Speichern
+// fehl, gingen Änderungen sonst still verloren — daher ein (gedrosselter) Hinweis.
+let guideStorageWarnedAt = 0;
+function warnGuideStorageFull() {
+  if (Date.now() - guideStorageWarnedAt < 60000) return;
+  guideStorageWarnedAt = Date.now();
+  alert('Speichern fehlgeschlagen: Der Browser-Speicher ist voll.\n\nDeine letzte Änderung ist nur bis zum Neuladen erhalten. Exportiere große Bücher als Backup und entferne nicht mehr benötigte Kapitel, um Platz zu schaffen.');
 }
 
 // ── Helpers ──────────────────────────────────────────────
@@ -32,7 +41,7 @@ let guideBookmarks = DB.get('guideBookmarks', {}); // { [guideId]: [blockId, ...
 let bookmarkNavIndex = 0;      // current position in bookmark navigation
 let bookmarkNavGuideId = null; // Kapitel, zu dem bookmarkNavIndex gehört
 
-function saveBookmarks() { DB.set('guideBookmarks', guideBookmarks); }
+function saveBookmarks() { if (!DB.set('guideBookmarks', guideBookmarks)) warnGuideStorageFull(); }
 
 // Fenced code block  ```lang\n...\n```  — Sprachname darf auch c++, c#,
 // objective-c, .net enthalten; Leerzeichen nach dem Sprachnamen sind erlaubt.
@@ -225,6 +234,7 @@ function renderMarkdown(raw, guideId = null, categoryId = null, featuredBlockId 
   // Fenced code blocks
   // Eigener Absatz (Leerzeilen drumherum), damit er nie in ein <p> gerät.
   let _blockIndex = 0;
+  const _taskCounter = { n: 0 }; // fortlaufende Checklisten-Nummer im Kapitel
   html = html.replace(new RegExp(GUIDE_FENCE_SRC, 'g'), (_, lang, code) => {
     const blockId  = guideId ? _rawBlockIds[_blockIndex++] : null;
     const bookmarked = guideId ? isBookmarked(guideId, blockId) : false;
@@ -246,6 +256,10 @@ function renderMarkdown(raw, guideId = null, categoryId = null, featuredBlockId 
   // Inline code `...`
   html = html.replace(/`([^`]+)`/g, (_, code) => _stash(`<code class="guide-inline-code">${code}</code>`));
 
+  // Escapes: \* \_ \# \= \~ \[ \] \| \` \\ \- \+ \. \! \> stehen wörtlich da,
+  // statt Formatierung auszulösen (nach Inline-Code, damit Code unberührt bleibt)
+  html = html.replace(/\\(&gt;|[\\*_#=~\[\]|`+\-.!])/g, (_, ch) => _stash(ch));
+
   // Querverweise [[Kapitel]], [[Buch/Kapitel]], [[Kapitel|Anzeigetext]]
   html = html.replace(/\[\[([^\[\]\n|]+?)(?:\|([^\[\]\n]+?))?\]\]/g, (_, target, label) => {
     const name = unescGuideHtml(target).trim();
@@ -261,15 +275,21 @@ function renderMarkdown(raw, guideId = null, categoryId = null, featuredBlockId 
   // (sonst landet z.B. eine Liste ohne Leerzeile davor in einem <p>).
   const _block = h => `\n\n${h}\n\n`;
 
-  // Headings
-  html = html.replace(/^### (.+)$/gm, (_, t) => _block(`<h4 class="guide-h4">${t}</h4>`));
-  html = html.replace(/^## (.+)$/gm,  (_, t) => _block(`<h3 class="guide-h3">${t}</h3>`));
-  html = html.replace(/^# (.+)$/gm,   (_, t) => _block(`<h2 class="guide-h2">${t}</h2>`));
+  // Headings # … ###### (# → h2, weil h1 der Kapiteltitel ist)
+  html = html.replace(/^(#{1,6}) (.+)$/gm, (_, hashes, t) => {
+    const tag = 'h' + Math.min(hashes.length + 1, 6);
+    return _block(`<${tag} class="guide-${tag}">${t}</${tag}>`);
+  });
 
-  // Bold + Italic
-  html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
-  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  // Zitate  > Text  (aufeinanderfolgende Zeilen bilden einen Block)
+  html = html.replace(/((?:^&gt; ?.*(?:\n|$))+)/gm, match => {
+    const lines = match.replace(/\n$/, '').split('\n').map(l => l.replace(/^&gt; ?/, ''));
+    return _block(`<blockquote class="guide-quote">${lines.join('<br>')}</blockquote>`);
+  });
+
+  // Listen: -, *, + und 1. — verschachtelt über Einrückung, inkl. Checklisten
+  html = html.replace(/((?:^[ \t]*(?:[-*+]|\d+\.)[ \t]+.*(?:\n|$))+)/gm,
+    match => _block(buildGuideList(match, guideId ? _taskCounter : null)));
 
   // Tables — detect block of lines starting with |
   html = html.replace(/((?:^\|.+\|[ \t]*(?:\n|$))+)/gm, match => {
@@ -286,38 +306,35 @@ function renderMarkdown(raw, guideId = null, categoryId = null, featuredBlockId 
     if (rows.length < (sepLine ? 1 : 2)) return match;
     const toCells = (line, tag) => splitCells(line)
       .map((cell, i) => `<${tag} class="guide-td"${aligns[i] ? ` style="text-align:${aligns[i]}"` : ''}>${cell}</${tag}>`).join('');
-    const body = rows.slice(1).map(r => `<tr>${toCells(r, 'td')}</tr>`).join('');
-    return _block(`<table class="guide-table"><thead><tr>${toCells(rows[0], 'th')}</tr></thead>${body ? `<tbody>${body}</tbody>` : ''}</table>`);
+    // Zeilen mit \n getrennt, damit Fett/Kursiv nie über Zellgrenzen hinweg greift
+    const body = rows.slice(1).map(r => `<tr>${toCells(r, 'td')}</tr>`).join('\n');
+    return _block(`<table class="guide-table"><thead><tr>${toCells(rows[0], 'th')}</tr></thead>${body ? `<tbody>\n${body}\n</tbody>` : ''}</table>`);
   });
 
-  // Unordered list lines  - item
-  html = html.replace(/((?:^- .+$\n?)+)/gm, match => {
-    const items = match.trim().split('\n').map(l => `<li>${l.replace(/^- /, '')}</li>`).join('');
-    return _block(`<ul class="guide-ul">${items}</ul>`);
-  });
-
-  // Ordered list lines  1. item
-  html = html.replace(/((?:^\d+\. .+$\n?)+)/gm, match => {
-    const items = match.trim().split('\n').map(l => `<li>${l.replace(/^\d+\. /, '')}</li>`).join('');
-    return _block(`<ol class="guide-ol">${items}</ol>`);
-  });
-
-  // Text marker ==text==
-  html = html.replace(/==(.+?)==/g, '<mark class="guide-mark">$1</mark>');
-
-  // Horizontal rule
-  html = html.replace(/^---$/gm, () => _block('<hr class="guide-hr">'));
+  // Horizontal rule  --- / *** / ___
+  html = html.replace(/^(?:-{3,}|\*{3,}|_{3,})$/gm, () => _block('<hr class="guide-hr">'));
 
   // Links [text](url) — http(s) und mailto; eine Klammerebene in der URL ist
-  // erlaubt (z.B. Wikipedia-Links wie .../Foo_(Bar)).
+  // erlaubt (z.B. Wikipedia-Links wie .../Foo_(Bar)). Die URL wird
+  // zwischengeparkt, damit _ oder * darin nicht als Kursiv/Fett gelten.
   html = html.replace(/\[([^\]]+)\]\(((?:https?:\/\/|mailto:)(?:[^()\s]|\([^()\s]*\))+)\)/g,
-    '<a class="guide-link" href="$2" target="_blank" rel="noopener">$1</a>');
+    (_, text, url) => `<a class="guide-link" href="${_stash(url)}" target="_blank" rel="noopener">${text}</a>`);
+
+  // Fett / Kursiv / Durchgestrichen / Markierung
+  html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  // _kursiv_ / __fett__ nur an Wortgrenzen — snake_case_namen bleiben unberührt
+  html = html.replace(/(^|[^\w])__(?=\S)(.+?)__(?!\w)/gm, '$1<strong>$2</strong>');
+  html = html.replace(/(^|[^\w])_(?=\S)([^_\n]+?)_(?!\w)/gm, '$1<em>$2</em>');
+  html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
+  html = html.replace(/==(.+?)==/g, '<mark class="guide-mark">$1</mark>');
 
   // Paragraphs: double newlines → <p>
   html = html
     .split(/\n{2,}/)
     .map(block => {
-      if (/^<(h[234]|ul|ol|hr|div|table)/.test(block.trim())) return block;
+      if (/^<(h[2-6]|ul|ol|hr|div|table|blockquote)/.test(block.trim())) return block;
       if (/^\u0000B\d+\u0000$/.test(block.trim())) return block.trim(); // reiner Codeblock-Platzhalter
       const wrapped = block.trim().replace(/\n/g, '<br>');
       return wrapped ? `<p class="guide-p">${wrapped}</p>` : '';
@@ -328,6 +345,61 @@ function renderMarkdown(raw, guideId = null, categoryId = null, featuredBlockId 
   html = html.replace(/\u0000B?(\d+)\u0000/g, (_, i) => _codeHtml[i]);
 
   return html;
+}
+
+// Baut aus einem Block Listenzeilen (bereits HTML-escaped) verschachtelte
+// <ul>/<ol>. Einrückung (Leerzeichen/Tab) bestimmt die Ebene; "- [ ]" bzw.
+// "- [x]" wird zur Checkliste. taskCounter ({n}) nummeriert die Checkboxen
+// kapitelweit, damit ein Klick die richtige Zeile im Markdown umschaltet —
+// ohne Zähler (Editor-Vorschau) sind die Checkboxen nur Anzeige.
+function buildGuideList(block, taskCounter) {
+  const items = block.replace(/\n$/, '').split('\n').map(line => {
+    const m = line.match(/^([ \t]*)([-*+]|\d+\.)[ \t]+(.*)$/);
+    return { indent: m[1].replace(/\t/g, '    ').length, ordered: /\d/.test(m[2]), start: parseInt(m[2], 10), text: m[3] };
+  });
+  let out = '';
+  const stack = []; // offene Listen: { indent, tag }
+  const open = it => {
+    const tag = it.ordered ? 'ol' : 'ul';
+    const start = it.ordered && it.start !== 1 ? ` start="${it.start}"` : '';
+    out += `<${tag} class="guide-${tag}"${start}>\n`;
+    stack.push({ indent: it.indent, tag });
+  };
+  items.forEach(it => {
+    while (stack.length > 1 && it.indent < stack[stack.length - 1].indent) out += `</li>\n</${stack.pop().tag}>`;
+    const top = stack[stack.length - 1];
+    if (!top) open(it);
+    else if (it.indent > top.indent) open(it); // Unterliste im offenen <li>
+    else {
+      out += '</li>\n';
+      if ((it.ordered ? 'ol' : 'ul') !== top.tag) { out += `</${stack.pop().tag}>\n`; open(it); }
+    }
+    const task = it.text.match(/^\[( |x|X)\][ \t]+(.*)$/);
+    if (task) {
+      const checked = task[1] !== ' ';
+      const idx = taskCounter ? taskCounter.n++ : -1;
+      out += `<li class="guide-task${checked ? ' done' : ''}"><input type="checkbox" class="guide-task-box"${checked ? ' checked' : ''}${idx >= 0 ? ` data-task="${idx}"` : ' disabled'}> ${task[2]}`;
+    } else {
+      out += `<li>${it.text}`;
+    }
+  });
+  while (stack.length) out += `</li>\n</${stack.pop().tag}>`;
+  return out;
+}
+
+// Schaltet die n-te Checkbox ("- [ ]" / "- [x]") im Markdown um. Codeblöcke
+// werden übersprungen, damit die Zählung exakt der gerenderten entspricht.
+function toggleGuideTaskInContent(content, n) {
+  const fence = new RegExp(GUIDE_FENCE_SRC, 'g');
+  let out = '', last = 0, count = 0, m;
+  const toggleIn = text => text.replace(/^([ \t]*(?:[-*+]|\d+\.)[ \t]+)\[( |x|X)\](?=[ \t])/gm, (all, pre, mark) =>
+    (count++ === n) ? `${pre}[${mark === ' ' ? 'x' : ' '}]` : all);
+  const src = normalizeGuideNewlines(content);
+  while ((m = fence.exec(src))) {
+    out += toggleIn(src.slice(last, m.index)) + m[0];
+    last = m.index + m[0].length;
+  }
+  return out + toggleIn(src.slice(last));
 }
 
 // Bookmark click handler (global so onclick works)
@@ -584,7 +656,7 @@ function importGuideFromMd(categoryId) {
       const file = files[i];
       if (res.status !== 'fulfilled') { failed.push(file.name); return; }
       // BOM entfernen + CRLF vereinheitlichen (Dateien aus Windows-Editoren)
-      const text = normalizeGuideNewlines(res.value).replace(/^﻿/, '');
+      const text = normalizeGuideNewlines(res.value).replace(/^\uFEFF/, '');
       // Parse optional front matter
       let title = file.name.replace(/\.(md|markdown)$/i, '').replace(/_/g, ' ');
       let description = '';
@@ -741,13 +813,26 @@ function renderGuideShelf() {
       </div>
     `;
 
+    // Buchrücken sind per Tastatur erreichbar (Tab) und mit Enter/Leertaste zu öffnen
+    book.tabIndex = 0;
+    book.setAttribute('role', 'button');
+    book.setAttribute('aria-label', `Buch „${cat.name}" öffnen, ${categoryGuideCount(cat)} Kapitel`);
+    if (activeOrOpenChapter) book.setAttribute('aria-current', 'true');
     book.addEventListener('click', () => {
       guideSearchQuery = '';
+      guidePreSearchView = null;
       const input = document.getElementById('guide-search-input');
       if (input) input.value = '';
       state.activeGuideCategoryId = cat.id;
       activeGuideId = null;
       renderGuideContent();
+    });
+    book.addEventListener('keydown', e => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      e.preventDefault();
+      book.click();
+      // Das Regal wurde neu gerendert — Fokus auf dem gewählten Buch halten
+      document.querySelector('#guide-shelf .guide-book[aria-current]')?.focus();
     });
 
     shelf.appendChild(book);
@@ -760,7 +845,13 @@ function renderGuideShelf() {
     <div class="guide-book-add-icon">+</div>
     <div class="guide-book-add-label">Neues Buch<br>erstellen</div>
   `;
-  addTile.addEventListener('click', openGuideCatModal);
+  addTile.tabIndex = 0;
+  addTile.setAttribute('role', 'button');
+  addTile.setAttribute('aria-label', 'Neues Buch erstellen');
+  addTile.addEventListener('click', () => openGuideCatModal());
+  addTile.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openGuideCatModal(); }
+  });
   shelf.appendChild(addTile);
 }
 
@@ -778,6 +869,7 @@ function renderGuideContent() {
   // Ebenso das Inhaltsverzeichnis (kann auf schmalen Screens in #guide-main
   // hängen, das die Teil-Render gleich leeren)
   hideGuideToc();
+  document.getElementById('guide-home')?.classList.add('hidden');
 
   // Search mode
   if (guideSearchQuery.trim().length >= 2) {
@@ -796,6 +888,7 @@ function renderGuideContent() {
     placeholder.classList.add('hidden');
     grid.classList.remove('hidden');
     renderSingleGuide(activeGuideId);
+    saveGuideLastView();
     return;
   }
 
@@ -808,12 +901,66 @@ function renderGuideContent() {
     renderGuideChapterList(cat);
     renderSidebarForCategory(cat, null);
     hideSidebarBookmarks();
+    saveGuideLastView();
     return;
   }
 
-  // Nothing selected
-  placeholder.classList.remove('hidden');
+  // Nothing selected → Startseite (Favoriten / zuletzt geöffnet) oder Hinweis
   grid.classList.add('hidden');
+  saveGuideLastView();
+  const hasGuides = guideCategories.some(c => c.guides.length);
+  placeholder.classList.toggle('hidden', hasGuides);
+  if (hasGuides) renderGuideHome();
+}
+
+// Zuletzt geöffnetes Buch/Kapitel merken, damit ein Neuladen dort weitermacht
+function saveGuideLastView() {
+  if (guideSearchQuery.trim().length >= 2) return;
+  DB.set('guideLastView', { categoryId: state.activeGuideCategoryId || null, guideId: activeGuideId || null });
+}
+
+function restoreGuideLastView() {
+  const v = DB.get('guideLastView', null);
+  if (!v) return;
+  const found = v.guideId && findGuide(v.guideId);
+  if (found) { activeGuideId = found.guide.id; state.activeGuideCategoryId = found.category.id; }
+  else if (v.categoryId && guideCategories.some(c => c.id === v.categoryId)) state.activeGuideCategoryId = v.categoryId;
+}
+
+// ── Startseite der Bibliothek ─────────────────────────────
+// Ohne gewähltes Buch: schneller Zugriff auf Favoriten und die zuletzt
+// geöffneten Kapitel über alle Bücher hinweg.
+const GUIDE_HOME_LIMIT = 6;
+
+function renderGuideHome() {
+  const home = document.getElementById('guide-home');
+  if (!home) return;
+  const all = getAllGuides();
+  const favs = all.filter(g => g.favorite)
+    .sort((a, b) => String(b.lastOpened || '').localeCompare(String(a.lastOpened || '')))
+    .slice(0, GUIDE_HOME_LIMIT);
+  const recent = all.filter(g => g.lastOpened)
+    .sort((a, b) => b.lastOpened.localeCompare(a.lastOpened))
+    .slice(0, GUIDE_HOME_LIMIT);
+  const list = (items, empty) => items.length
+    ? items.map(g => `
+        <button type="button" class="guide-home-item" data-guide-open="${g.id}">
+          <span class="guide-home-item-title">${g.favorite ? '<span class="guide-fav-star">★</span> ' : ''}${escHtml(g.title)}</span>
+          <span class="guide-home-item-meta">${escHtml(g.categoryName)}${g.lastOpened ? ' · ' + fmtOpened(g.lastOpened) : ''}</span>
+        </button>`).join('')
+    : `<p class="guide-snippet-empty">${empty}</p>`;
+  home.innerHTML = `
+    <div class="panel guide-home-card">
+      <div class="panel-header"><span class="panel-label">Favoriten</span></div>
+      <div class="guide-home-list">${list(favs, 'Noch keine Favoriten — ☆ an einem Kapitel klicken.')}</div>
+    </div>
+    <div class="panel guide-home-card">
+      <div class="panel-header"><span class="panel-label">Zuletzt geöffnet</span></div>
+      <div class="guide-home-list">${list(recent, 'Noch nichts geöffnet — wähle ein Buch aus dem Regal.')}</div>
+    </div>`;
+  home.querySelectorAll('[data-guide-open]').forEach(btn =>
+    btn.addEventListener('click', () => openGuideChapter(btn.dataset.guideOpen)));
+  home.classList.remove('hidden');
 }
 
 // ── Chapter list (book detail) ────────────────────────────
@@ -886,7 +1033,9 @@ function renderGuideChapterList(cat) {
     cat.guides.forEach((guide, idx) => {
       list.appendChild(buildChapterRow(guide, cat, idx + 1));
     });
+    // Mit nur einem Kapitel gibt es nichts umzusortieren — Griff ausblenden
     if (cat.guides.length > 1) enableGuideChapterReorder(list, cat);
+    else list.classList.add('single');
   }
 
   main.appendChild(list);
@@ -910,6 +1059,7 @@ function openGuideChapter(guideId) {
   if (!found) return;
   const { guide, category } = found;
   guideSearchQuery = '';
+  guidePreSearchView = null; // bewusst woanders hin navigiert
   const input = document.getElementById('guide-search-input');
   if (input) input.value = '';
   guide.lastOpened = new Date().toISOString();
@@ -936,6 +1086,106 @@ async function deleteGuideChapter(category, guide) {
   renderGuideContent();
 }
 
+// Kopie eines Kapitels direkt hinter dem Original (z.B. als Vorlage).
+// Statistik startet neu; Bookmarks werden auf die neuen Block-IDs übertragen.
+function duplicateGuideChapter(category, guide) {
+  const now = new Date().toISOString();
+  const copy = {
+    id: crypto.randomUUID(),
+    title: guide.title + ' (Kopie)',
+    description: guide.description || '',
+    content: guide.content || '',
+    tags: [...(guide.tags || [])],
+    favorite: false,
+    createdAt: now,
+    updatedAt: now,
+  };
+  const oldBlocks = listGuideCodeBlocks(guide.content, guide.id);
+  const newBlocks = listGuideCodeBlocks(copy.content, copy.id);
+  const bm = (guideBookmarks[guide.id] || [])
+    .map(id => { const i = oldBlocks.findIndex(b => b.id === id); return i !== -1 ? newBlocks[i].id : null; })
+    .filter(Boolean);
+  if (bm.length) { guideBookmarks[copy.id] = bm; saveBookmarks(); }
+  category.guides.splice(category.guides.indexOf(guide) + 1, 0, copy);
+  saveGuideCategories();
+  openGuideChapter(copy.id);
+}
+
+// ── Kapitel in ein anderes Buch verschieben ───────────────
+let guideMoveModal = { open(){}, close(){} };
+let guideMoveGuideId = null;
+
+function openGuideMoveModal(guideId) {
+  const found = findGuide(guideId);
+  if (!found) return;
+  guideMoveGuideId = guideId;
+  const select = document.getElementById('guide-move-target');
+  select.innerHTML = guideCategories
+    .filter(c => c.id !== found.category.id)
+    .map(c => `<option value="${c.id}">${escHtml(c.name)}</option>`).join('');
+  document.getElementById('guide-move-chapter-name').textContent = found.guide.title;
+  guideMoveModal.open();
+  setTimeout(() => select.focus(), 50);
+}
+
+function moveGuideChapter(guideId, targetCategoryId) {
+  const found = findGuide(guideId);
+  const target = guideCategories.find(c => c.id === targetCategoryId);
+  if (!found || !target || target === found.category) return;
+  const { guide, category } = found;
+  category.guides = category.guides.filter(g => g.id !== guide.id);
+  // Featured Snippet gehört zum alten Buch — es zeigt sonst ins Leere
+  if (category.featuredSnippet && category.featuredSnippet.guideId === guide.id) category.featuredSnippet = null;
+  target.guides.push(guide);
+  saveGuideCategories(); // Bookmarks hängen an der Kapitel-ID und wandern automatisch mit
+  openGuideChapter(guide.id);
+}
+
+// ── Tags ──────────────────────────────────────────────────
+// Tags sind überall anklickbar und starten eine Suche nach genau diesem Tag
+// (Suchfeld zeigt "#tag", siehe getGuideSearchResults).
+function guideTagButtons(tags, extraClass = '') {
+  return (tags || []).map(t =>
+    `<button type="button" class="guide-tag guide-tag-link ${extraClass}" data-guide-tag="${escHtml(t)}" title="Alle Kapitel mit #${escHtml(t)}">${escHtml(t)}</button>`
+  ).join('');
+}
+
+function searchGuideTag(tag) {
+  const input = document.getElementById('guide-search-input');
+  rememberGuidePreSearchView();
+  guideSearchQuery = '#' + tag;
+  if (input) input.value = guideSearchQuery;
+  state.activeGuideCategoryId = null;
+  activeGuideId = null;
+  renderGuideContent();
+  document.getElementById('view-guides')?.scrollIntoView({ block: 'start' });
+}
+
+// Grober Klartext eines Kapitels (für Lesezeit und Such-Auszüge)
+function guidePlainText(content) {
+  return normalizeGuideNewlines(content)
+    .replace(/```[^\n]*\n/g, '').replace(/```/g, '')
+    .replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_, a, b) => b || a)
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/^[ \t]*(?:#{1,6}|>|[-*+]|\d+\.)[ \t]+(?:\[[ xX]\][ \t]+)?/gm, '')
+    .replace(/==|~~|\*\*|__|[*`|]/g, '');
+}
+
+function guideReadingMinutes(content) {
+  const words = guidePlainText(content).split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.round(words / 200));
+}
+
+// Neu rendern, ohne dass die Leseposition nach oben springt
+function keepGuideScroll(fn) {
+  const scroller = document.getElementById('main');
+  const top = scroller ? scroller.scrollTop : 0;
+  const winTop = window.scrollY;
+  fn();
+  if (scroller) scroller.scrollTop = top;
+  window.scrollTo(0, winTop);
+}
+
 function buildChapterRow(guide, cat, number) {
   const row = document.createElement('div');
   row.className = 'guide-chapter-row';
@@ -946,7 +1196,10 @@ function buildChapterRow(guide, cat, number) {
       <svg width="12" height="14" viewBox="0 0 12 14" fill="currentColor"><circle cx="3.5" cy="3" r="1.3"/><circle cx="8.5" cy="3" r="1.3"/><circle cx="3.5" cy="7" r="1.3"/><circle cx="8.5" cy="7" r="1.3"/><circle cx="3.5" cy="11" r="1.3"/><circle cx="8.5" cy="11" r="1.3"/></svg>
     </button>
     <span class="guide-chapter-num">${number}</span>
-    <span class="guide-chapter-title">${escHtml(guide.title)}</span>
+    <div class="guide-chapter-title-wrap">
+      <span class="guide-chapter-title">${escHtml(guide.title)}</span>
+      ${guide.tags?.length ? `<div class="guide-chapter-tags">${guideTagButtons(guide.tags, 'guide-tag-sm')}</div>` : ''}
+    </div>
     <div class="guide-chapter-actions">
       <button class="guide-chapter-btn guide-chapter-edit" title="Bearbeiten">✏️</button>
       <button class="guide-chapter-btn guide-chapter-export" title="Als Markdown exportieren">⬇</button>
@@ -959,7 +1212,7 @@ function buildChapterRow(guide, cat, number) {
   `;
 
   row.addEventListener('click', e => {
-    if (e.target.closest('.guide-chapter-actions, .guide-chapter-drag')) return;
+    if (e.target.closest('.guide-chapter-actions, .guide-chapter-drag, [data-guide-tag]')) return;
     openGuideChapter(guide.id);
   });
 
@@ -971,7 +1224,7 @@ function buildChapterRow(guide, cat, number) {
   on('.guide-chapter-fav',    () => {
     guide.favorite = !guide.favorite;
     saveGuideCategories();
-    renderGuideContent();
+    keepGuideScroll(renderGuideContent);
   });
 
   return row;
@@ -1082,9 +1335,10 @@ function renderSingleGuide(guideId) {
     </div>
     ${guide.description ? `<p class="guide-detail-desc">${escHtml(guide.description)}</p>` : ''}
     <div class="guide-detail-info-row">
-      ${(guide.tags || []).map(t => `<span class="guide-tag">${escHtml(t)}</span>`).join('')}
+      ${guideTagButtons(guide.tags)}
       ${guide.createdAt ? `<span class="guide-detail-date">Erstellt: ${fmtDate(guide.createdAt)}</span>` : ''}
       ${guide.updatedAt ? `<span class="guide-detail-date">Bearbeitet: ${fmtDate(guide.updatedAt)}</span>` : ''}
+      <span class="guide-detail-date">~${guideReadingMinutes(guide.content)} Min. Lesezeit</span>
     </div>
   `;
 
@@ -1098,7 +1352,7 @@ function renderSingleGuide(guideId) {
   favBtn.addEventListener('click', () => {
     guide.favorite = !guide.favorite;
     saveGuideCategories();
-    renderGuideContent();
+    keepGuideScroll(renderGuideContent);
   });
 
   const menuWrap = document.createElement('div');
@@ -1142,7 +1396,25 @@ function renderSingleGuide(guideId) {
     printGuideChapter();
   });
 
-  dropdown.append(editItem, exportItem, printItem, deleteItem);
+  const duplicateItem = document.createElement('button');
+  duplicateItem.className = 'guide-detail-menu-item';
+  duplicateItem.textContent = '⧉ Duplizieren';
+  duplicateItem.addEventListener('click', () => {
+    dropdown.classList.remove('open');
+    duplicateGuideChapter(category, guide);
+  });
+
+  const moveItem = document.createElement('button');
+  moveItem.className = 'guide-detail-menu-item';
+  moveItem.textContent = '📚 In anderes Buch verschieben';
+  moveItem.disabled = guideCategories.length < 2;
+  if (moveItem.disabled) moveItem.title = 'Dafür braucht es mindestens ein zweites Buch';
+  moveItem.addEventListener('click', () => {
+    dropdown.classList.remove('open');
+    openGuideMoveModal(guide.id);
+  });
+
+  dropdown.append(editItem, duplicateItem, moveItem, exportItem, printItem, deleteItem);
 
   menuBtn.addEventListener('click', e => {
     e.stopPropagation();
@@ -1163,6 +1435,15 @@ function renderSingleGuide(guideId) {
     ? category.featuredSnippet.blockId
     : null;
   content.innerHTML = renderMarkdown(guide.content || '', guide.id, category.id, featuredBlockId);
+
+  // Checklisten direkt beim Lesen abhaken — schreibt "- [x]" ins Markdown
+  content.addEventListener('change', e => {
+    const box = e.target.closest('.guide-task-box[data-task]');
+    if (!box) return;
+    guide.content = toggleGuideTaskInContent(guide.content || '', Number(box.dataset.task));
+    box.closest('.guide-task')?.classList.toggle('done', box.checked);
+    saveGuideCategories();
+  });
 
   main.append(back, header, content);
   showGuideScrollBtn();
@@ -1254,8 +1535,10 @@ function renderSidebarBookmarks(guideId) {
   // Navigationsposition gehört zum Kapitel — beim Kapitelwechsel neu starten
   if (bookmarkNavGuideId !== guideId) { bookmarkNavGuideId = guideId; bookmarkNavIndex = 0; }
 
-  const ids = guideBookmarks[guideId] || [];
-  const blocks = ids.map(id => document.getElementById(id)).filter(Boolean);
+  // In Dokument-Reihenfolge (nicht in der Reihenfolge des Merkens), damit
+  // ↑/↓ wie beim Lesen durch das Kapitel springt
+  const ids = new Set(guideBookmarks[guideId] || []);
+  const blocks = [...document.querySelectorAll('#guide-main .guide-code-block')].filter(b => ids.has(b.id));
   const count = blocks.length;
   bookmarkNavIndex = Math.min(bookmarkNavIndex, Math.max(0, count - 1));
 
@@ -1292,13 +1575,27 @@ function renderSidebarBookmarks(guideId) {
   list.className = 'guide-bm-list';
   blocks.forEach((block, i) => {
     const lang = block.querySelector('.guide-code-lang');
+    const firstLine = (block.querySelector('code')?.textContent || '').split('\n').find(l => l.trim()) || '';
+    const heading = guideHeadingBefore(block);
     const item = document.createElement('button');
-    item.className = 'guide-bm-item';
-    item.innerHTML = `<span class="guide-bm-item-lang">${lang ? escHtml(lang.textContent) : 'code'}</span><span>Codeblock ${i + 1}</span>`;
+    item.className = 'guide-bm-item' + (i === bookmarkNavIndex ? ' current' : '');
+    item.innerHTML = `
+      <span class="guide-bm-item-top"><span class="guide-bm-item-lang">${lang ? escHtml(lang.textContent) : 'code'}</span><span class="guide-bm-item-heading">${heading ? escHtml(heading) : `Codeblock ${i + 1}`}</span></span>
+      <code class="guide-bm-item-preview">${escHtml(firstLine.trim())}</code>`;
     item.addEventListener('click', () => { bookmarkNavIndex = i; jumpToBookmark(block); renderSidebarBookmarks(guideId); });
     list.appendChild(item);
   });
   body.appendChild(list);
+}
+
+// Nächste Überschrift oberhalb eines Elements im Kapitelinhalt
+function guideHeadingBefore(el) {
+  let node = el.previousElementSibling;
+  while (node) {
+    if (/^H[2-6]$/.test(node.tagName)) return node.textContent;
+    node = node.previousElementSibling;
+  }
+  return null;
 }
 
 function hideSidebarBookmarks() {
@@ -1344,20 +1641,39 @@ function renderSidebarForCategory(cat, guide) {
   if (!statsBody || !snippetBody) return;
 
   const stats = getCategoryStats(cat);
-
-  const created  = guide ? guide.createdAt : stats.created;
-  const updated  = guide ? guide.updatedAt : stats.updated;
-  const opened   = guide ? guide.lastOpened : stats.opened;
   const mostReadGuide = stats.mostRead;
+  const row = (label, val, title = '') =>
+    `<div class="b-free-row"><span class="b-free-label">${label}</span><span class="b-free-val${title ? ' guide-stat-truncate' : ''}"${title ? ` title="${title}"` : ''}>${val}</span></div>`;
+
+  // Bei offenem Kapitel zwei klar beschriftete Abschnitte statt einer
+  // Mischung aus Kapitel- und Buchwerten
+  const chapterPart = guide ? `
+    <div class="guide-stats-section">Dieses Kapitel</div>
+    ${row('Erstellt am', fmtDate(guide.createdAt))}
+    ${row('Zuletzt bearbeitet', fmtDate(guide.updatedAt))}
+    ${row('Zuletzt geöffnet', fmtOpenedFull(guide.lastOpened))}
+    ${row('Aufrufe', guide.openCount || 0)}
+    <div class="b-free-divider"></div>
+    <div class="guide-stats-section">Buch „${escHtml(cat.name)}"</div>` : `
+    ${row('Erstellt am', fmtDate(stats.created))}
+    ${row('Zuletzt bearbeitet', fmtDate(stats.updated))}
+    ${row('Zuletzt geöffnet', fmtOpenedFull(stats.opened))}
+    <div class="b-free-divider"></div>`;
+
+  // Alle Tags des Buches mit Häufigkeit — anklickbar als Filter
+  const tagCounts = {};
+  cat.guides.forEach(g => (g.tags || []).forEach(t => { tagCounts[t] = (tagCounts[t] || 0) + 1; }));
+  const tagCloud = Object.entries(tagCounts)
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'de'))
+    .map(([t, n]) => `<button type="button" class="guide-tag guide-tag-link" data-guide-tag="${escHtml(t)}" title="Alle Kapitel mit #${escHtml(t)}">${escHtml(t)} <span class="guide-tag-count">${n}</span></button>`)
+    .join('');
 
   statsBody.innerHTML = `
-    <div class="b-free-row"><span class="b-free-label">Erstellt am</span><span class="b-free-val">${fmtDate(created)}</span></div>
-    <div class="b-free-row"><span class="b-free-label">Zuletzt bearbeitet</span><span class="b-free-val">${fmtDate(updated)}</span></div>
-    <div class="b-free-row"><span class="b-free-label">Zuletzt geöffnet</span><span class="b-free-val">${fmtOpenedFull(opened)}</span></div>
-    <div class="b-free-divider"></div>
-    <div class="b-free-row"><span class="b-free-label">Anzahl Kapitel</span><span class="b-free-val">${stats.count}</span></div>
-    <div class="b-free-row"><span class="b-free-label">Favoriten (Kapitel)</span><span class="b-free-val">${stats.favCount}</span></div>
-    <div class="b-free-row"><span class="b-free-label">Meist gelesenes Kapitel</span><span class="b-free-val guide-stat-truncate" title="${mostReadGuide ? escHtml(mostReadGuide.title) : ''}">${mostReadGuide ? escHtml(mostReadGuide.title) : '–'}</span></div>
+    ${chapterPart}
+    ${row('Anzahl Kapitel', stats.count)}
+    ${row('Favoriten', stats.favCount)}
+    ${row('Meist gelesen', mostReadGuide ? escHtml(mostReadGuide.title) : '–', mostReadGuide ? escHtml(mostReadGuide.title) : '')}
+    ${tagCloud ? `<div class="b-free-divider"></div><div class="guide-stats-section">Tags</div><div class="guide-tag-cloud">${tagCloud}</div>` : ''}
   `;
 
   // Code snippet: only the book's explicitly chosen "featured" snippet.
@@ -1392,14 +1708,86 @@ function renderSidebarForCategory(cat, guide) {
   `;
 }
 
+// "#tag" filtert exakt nach einem Tag (so starten auch Klicks auf Tags),
+// alles andere ist Volltextsuche mit Relevanz: Titel > Tag > Beschreibung >
+// Inhalt; bei Gleichstand Favoriten und zuletzt Geöffnetes zuerst.
+function parseGuideSearch() {
+  const raw = guideSearchQuery.trim();
+  if (/^#\S/.test(raw)) return { tag: raw.slice(1).toLowerCase(), text: '' };
+  return { tag: null, text: raw.toLowerCase() };
+}
+
 function getGuideSearchResults() {
-  const q = guideSearchQuery.toLowerCase().trim();
-  return getAllGuides().filter(g =>
-    g.title.toLowerCase().includes(q) ||
-    (g.description || '').toLowerCase().includes(q) ||
-    (g.content || '').toLowerCase().includes(q) ||
-    (g.tags || []).some(t => t.toLowerCase().includes(q))
-  );
+  const { tag, text } = parseGuideSearch();
+  const scored = getAllGuides().map(g => {
+    const tags = (g.tags || []).map(t => t.toLowerCase());
+    let score = 0;
+    if (tag) {
+      score = tags.includes(tag) ? 1 : 0;
+    } else {
+      const title = g.title.toLowerCase();
+      if (title === text) score += 12;
+      else if (title.startsWith(text)) score += 9;
+      else if (title.includes(text)) score += 7;
+      if (tags.some(t => t === text)) score += 5;
+      else if (tags.some(t => t.includes(text))) score += 3;
+      if ((g.description || '').toLowerCase().includes(text)) score += 2;
+      if ((g.content || '').toLowerCase().includes(text)) score += 1;
+    }
+    return { g, score };
+  }).filter(r => r.score > 0);
+  scored.sort((a, b) =>
+    b.score - a.score ||
+    (b.g.favorite ? 1 : 0) - (a.g.favorite ? 1 : 0) ||
+    String(b.g.lastOpened || '').localeCompare(String(a.g.lastOpened || '')));
+  return scored.map(r => r.g);
+}
+
+// Kurzer Textauszug rund um den ersten Treffer im Inhalt, Treffer markiert
+const GUIDE_EXCERPT_RADIUS = 60;
+function guideSearchExcerpt(guide, text) {
+  if (!text) return '';
+  const plain = guidePlainText(guide.content).replace(/\s+/g, ' ').trim();
+  const idx = plain.toLowerCase().indexOf(text);
+  if (idx === -1) return '';
+  const from = Math.max(0, idx - GUIDE_EXCERPT_RADIUS);
+  const to   = Math.min(plain.length, idx + text.length + GUIDE_EXCERPT_RADIUS);
+  return (from > 0 ? '… ' : '') + guideHighlight(plain.slice(from, to), text) + (to < plain.length ? ' …' : '');
+}
+
+// Escaped den Text und markiert alle Vorkommen des Suchbegriffs
+function guideHighlight(str, text) {
+  if (!text) return escHtml(str);
+  const lower = str.toLowerCase();
+  let out = '', last = 0, i;
+  while ((i = lower.indexOf(text, last)) !== -1) {
+    out += escHtml(str.slice(last, i)) + `<mark class="guide-search-hit">${escHtml(str.slice(i, i + text.length))}</mark>`;
+    last = i + text.length;
+  }
+  return out + escHtml(str.slice(last));
+}
+
+function clearGuideSearch() {
+  const input = document.getElementById('guide-search-input');
+  if (input) input.value = '';
+  guideSearchQuery = '';
+  restoreGuidePreSearchView();
+  renderGuideContent();
+}
+
+// Vor dem Suchen geöffnetes Buch/Kapitel merken, damit "Suche leeren" dorthin
+// zurückführt statt auf die leere Startansicht
+let guidePreSearchView = null;
+function rememberGuidePreSearchView() {
+  if (guideSearchQuery.trim().length >= 2) return; // Suche läuft schon
+  guidePreSearchView = { categoryId: state.activeGuideCategoryId, guideId: activeGuideId };
+}
+function restoreGuidePreSearchView() {
+  const v = guidePreSearchView;
+  guidePreSearchView = null;
+  if (!v) return;
+  if (v.guideId && findGuide(v.guideId)) { activeGuideId = v.guideId; state.activeGuideCategoryId = findGuide(v.guideId).category.id; }
+  else if (v.categoryId && guideCategories.some(c => c.id === v.categoryId)) state.activeGuideCategoryId = v.categoryId;
 }
 
 // Seitenleiste im Suchmodus: Treffer je Buch + Codeblöcke, die den Begriff
@@ -1413,6 +1801,7 @@ function renderSearchSidebar() {
   const snippetLabel = document.getElementById('guide-snippet-label');
   if (!statsBody || !snippetBody) return;
   const q = guideSearchQuery.trim();
+  const { tag } = parseGuideSearch();
   const results = getGuideSearchResults();
 
   const perBook = {};
@@ -1423,12 +1812,16 @@ function renderSearchSidebar() {
     .join('');
 
   statsBody.innerHTML = `
-    <div class="b-free-row"><span class="b-free-label">Suchbegriff</span><span class="b-free-val guide-stat-truncate">„${escHtml(q)}"</span></div>
+    <div class="b-free-row"><span class="b-free-label">${tag ? 'Tag' : 'Suchbegriff'}</span><span class="b-free-val guide-stat-truncate">${tag ? escHtml(q) : `„${escHtml(q)}"`}</span></div>
     <div class="b-free-row"><span class="b-free-label">Treffer</span><span class="b-free-val">${results.length}</span></div>
     ${bookRows ? `<div class="b-free-divider"></div>${bookRows}` : ''}
   `;
 
   snippetLabel.textContent = 'Code-Treffer';
+  if (tag) {
+    snippetBody.innerHTML = `<p class="guide-snippet-empty">Tag-Filter aktiv — Code-Treffer gibt es bei der Textsuche.</p>`;
+    return;
+  }
   const ql = q.toLowerCase();
   const hits = [];
   for (const g of results) {
@@ -1462,7 +1855,13 @@ function renderSearchSidebar() {
 
 function renderGuideSearchResults() {
   const main = document.getElementById('guide-main');
-  main.innerHTML = `<div class="guide-search-header">Suchergebnisse für „<strong>${escHtml(guideSearchQuery.trim())}</strong>"</div>`;
+  const { tag } = parseGuideSearch();
+  main.innerHTML = tag
+    ? `<div class="guide-search-header">Kapitel mit dem Tag <strong>#${escHtml(guideSearchQuery.trim().slice(1))}</strong>
+         <button type="button" class="btn-ghost guide-search-clear">✕ Filter aufheben</button></div>`
+    : `<div class="guide-search-header">Suchergebnisse für „<strong>${escHtml(guideSearchQuery.trim())}</strong>"
+         <button type="button" class="btn-ghost guide-search-clear">✕ Suche leeren</button></div>`;
+  main.querySelector('.guide-search-clear').addEventListener('click', clearGuideSearch);
 
   const results = getGuideSearchResults();
 
@@ -1491,13 +1890,17 @@ function buildSearchChapterRow(result, cat, number) {
   // getAllGuides() liefert Kopien — Favorit/Statistik müssen am Original
   // im guideCategories-Baum geändert werden, sonst speichert save nichts.
   const guide = findGuide(result.id)?.guide || result;
+  const { text } = parseGuideSearch();
+  const excerpt = guideSearchExcerpt(guide, text);
   const row = document.createElement('div');
   row.className = 'guide-chapter-row';
   row.innerHTML = `
     <span class="guide-chapter-num">${number}</span>
     <div class="guide-chapter-title-wrap">
       <span class="guide-tag guide-tag-cat">${escHtml(cat.name)}</span>
-      <span class="guide-chapter-title">${escHtml(guide.title)}</span>
+      <span class="guide-chapter-title">${guideHighlight(guide.title, text)}</span>
+      ${excerpt ? `<span class="guide-search-excerpt">${excerpt}</span>` : ''}
+      ${guide.tags?.length ? `<div class="guide-chapter-tags">${guideTagButtons(guide.tags, 'guide-tag-sm')}</div>` : ''}
     </div>
     <div class="guide-chapter-actions">
       <button class="guide-chapter-btn guide-chapter-fav" title="${guide.favorite ? 'Favorit entfernen' : 'Als Favorit markieren'}">${guide.favorite ? '★' : '☆'}</button>
@@ -1510,7 +1913,7 @@ function buildSearchChapterRow(result, cat, number) {
   const open = () => openGuideChapter(guide.id);
 
   row.addEventListener('click', e => {
-    if (e.target.closest('.guide-chapter-actions')) return;
+    if (e.target.closest('.guide-chapter-actions, [data-guide-tag]')) return;
     open();
   });
   row.querySelector('.guide-chapter-open').addEventListener('click', e => { e.stopPropagation(); open(); });
@@ -1518,7 +1921,7 @@ function buildSearchChapterRow(result, cat, number) {
     e.stopPropagation();
     guide.favorite = !guide.favorite;
     saveGuideCategories();
-    renderGuideContent();
+    keepGuideScroll(renderGuideContent);
   });
 
   return row;
@@ -1546,7 +1949,9 @@ function openGuideModal(categoryId, guideId = null) {
   const tagsIn  = document.getElementById('guide-modal-tags-input');
   const favIn   = document.getElementById('guide-modal-fav');
 
-  title.textContent = guideId ? 'Anleitung bearbeiten' : 'Neue Anleitung';
+  title.textContent = guideId ? 'Kapitel bearbeiten' : 'Neues Kapitel';
+  titleIn.classList.remove('guide-input-invalid');
+  titleIn.placeholder = 'Titel des Kapitels';
 
   if (guideId) {
     const { guide } = findGuide(guideId);
@@ -1568,6 +1973,7 @@ function openGuideModal(categoryId, guideId = null) {
   setGuideModalTab(guideEditorMode);
   guideModal.open();
   setTimeout(() => titleIn.focus(), 50);
+  offerGuideDraftRestore(categoryId, guideId);
 }
 
 function closeGuideModal() {
@@ -1603,6 +2009,180 @@ function setGuideModalTab(tab) {
   document.getElementById('guide-tab-preview').classList.toggle('active', tab === 'preview');
 
   if (tab !== 'editor') renderGuideModalPreview();
+}
+
+// ── Editor-Werkzeuge ──────────────────────────────────────
+
+// Zuletzt verwendete Code-Sprache — wird beim nächsten Codeblock vorgeschlagen
+// (und markiert, damit man sie direkt überschreiben kann)
+let guideLastCodeLang = DB.get('guideLastCodeLang', null) || 'javascript';
+
+function insertGuideSnippet(textarea, snippet) {
+  const start = textarea.selectionStart;
+  const end   = textarea.selectionEnd;
+  const before = textarea.value.substring(0, start);
+  let after    = textarea.value.substring(end);
+  const sel    = textarea.value.substring(start, end);
+  // Zeilenumbruch voranstellen, falls die Einfügestelle mitten in einer Zeile liegt
+  const nl      = (before && !before.endsWith('\n')) ? '\n' : '';
+  // ...und dahinter, falls danach noch Text in derselben Zeile folgt
+  const nlAfter = (after && !after.startsWith('\n')) ? '\n' : '';
+  const lineSnippets = ['code', 'h2', 'h3', 'list', 'olist', 'task', 'quote', 'table', 'hr'];
+  // Bei Zeilenelementen kein führendes Leerzeichen in die neue Folgezeile mitnehmen
+  if (lineSnippets.includes(snippet) && nlAfter) after = after.replace(/^[ \t]+/, '');
+  const eachLine = (text, fn) => text.split('\n').map((l, i) => fn(l.replace(/^\s*(?:[-*+]|\d+\.)\s+(?:\[[ xX]\]\s+)?|^&gt;\s?|^>\s?/, ''), i)).join('\n');
+
+  // prefix + [text = wird danach markiert] + suffix
+  let prefix = '', text = '', suffix = '';
+  switch (snippet) {
+    case 'code':
+      // Mit Markierung: Code einrahmen und die Sprache markieren; ohne: Sprache
+      // markieren, Cursor danach per Enter in die leere Zeile
+      prefix = nl + '```'; text = guideLastCodeLang; suffix = '\n' + sel + '\n```' + nlAfter;
+      break;
+    case 'h2':     prefix = nl + '## ';  text = sel || 'Überschrift';      suffix = nlAfter; break;
+    case 'h3':     prefix = nl + '### '; text = sel || 'Unterüberschrift'; suffix = nlAfter; break;
+    case 'bold':   prefix = '**'; text = sel || 'fett';            suffix = '**'; break;
+    case 'italic': prefix = '*';  text = sel || 'kursiv';          suffix = '*';  break;
+    case 'strike': prefix = '~~'; text = sel || 'durchgestrichen'; suffix = '~~'; break;
+    case 'mark':   prefix = '=='; text = sel || 'markierter Text'; suffix = '=='; break;
+    case 'inline': prefix = '`';  text = sel || 'code';            suffix = '`';  break;
+    case 'xref':   prefix = '[['; text = sel || 'Kapitelname';     suffix = ']]'; break;
+    case 'link':
+      if (/^(https?:\/\/|mailto:)\S+$/.test(sel)) { prefix = '['; text = 'Linktext'; suffix = '](' + sel + ')'; }
+      else { prefix = '[' + (sel || 'Linktext') + ']('; text = 'https://'; suffix = ')'; }
+      break;
+    case 'list':
+    case 'olist':
+    case 'task': {
+      const marker = i => snippet === 'olist' ? `${i + 1}. ` : snippet === 'task' ? '- [ ] ' : '- ';
+      if (sel) { prefix = nl; text = eachLine(sel, (l, i) => marker(i) + l); suffix = nlAfter; }
+      else {
+        prefix = nl + marker(0); text = 'Punkt 1';
+        suffix = '\n' + marker(1) + 'Punkt 2\n' + marker(2) + 'Punkt 3' + nlAfter;
+      }
+      break;
+    }
+    case 'quote':
+      if (sel) { prefix = nl; text = eachLine(sel, l => '> ' + l); suffix = nlAfter; }
+      else { prefix = nl + '> '; text = 'Zitat'; suffix = nlAfter; }
+      break;
+    case 'table':
+      prefix = nl + '| '; text = 'Spalte 1';
+      suffix = ' | Spalte 2 |\n| --- | --- |\n| Wert | Wert |' + nlAfter;
+      break;
+    case 'hr':
+      prefix = nl + '\n---\n' + (nlAfter ? '\n' : ''); text = ''; suffix = '';
+      break;
+    default:
+      return;
+  }
+  textarea.value = before + prefix + text + suffix + after;
+  textarea.focus();
+  textarea.selectionStart = start + prefix.length;
+  textarea.selectionEnd   = start + prefix.length + text.length;
+  // Wie eine echte Eingabe behandeln: Live-Vorschau + Entwurf aktualisieren
+  textarea.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+// Tab / Shift+Tab: ohne Markierung zwei Leerzeichen einfügen bzw. entfernen,
+// mit Markierung über mehrere Zeilen alle Zeilen ein-/ausrücken
+const GUIDE_INDENT = '  ';
+function indentGuideEditor(textarea, outdent) {
+  const { value, selectionStart: s, selectionEnd: e } = textarea;
+  const lineStart = value.lastIndexOf('\n', s - 1) + 1;
+  if (s === e && !outdent) {
+    textarea.value = value.slice(0, s) + GUIDE_INDENT + value.slice(e);
+    textarea.selectionStart = textarea.selectionEnd = s + GUIDE_INDENT.length;
+  } else {
+    const blockEnd = value.indexOf('\n', e - (e > s && value[e - 1] === '\n' ? 1 : 0));
+    const stop = blockEnd === -1 ? value.length : blockEnd;
+    const lines = value.slice(lineStart, stop).split('\n');
+    let firstDelta = 0, total = 0;
+    const changed = lines.map((l, i) => {
+      if (outdent) {
+        const cut = l.startsWith(GUIDE_INDENT) ? GUIDE_INDENT.length : (l.startsWith(' ') || l.startsWith('\t') ? 1 : 0);
+        if (i === 0) firstDelta = -cut;
+        total -= cut;
+        return l.slice(cut);
+      }
+      if (i === 0) firstDelta = GUIDE_INDENT.length;
+      total += GUIDE_INDENT.length;
+      return GUIDE_INDENT + l;
+    }).join('\n');
+    textarea.value = value.slice(0, lineStart) + changed + value.slice(stop);
+    textarea.selectionStart = Math.max(lineStart, s + firstDelta);
+    textarea.selectionEnd   = Math.max(textarea.selectionStart, e + total);
+  }
+  textarea.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+// ── Entwurf (Absturz-/Versehen-Schutz) ────────────────────
+// Solange das Kapitel-Modal offen ist und sich etwas geändert hat, wird der
+// Stand regelmäßig gesichert. Normales Speichern oder Schließen löscht ihn;
+// übrig bleibt er nur, wenn der Tab z.B. abstürzt oder geschlossen wird —
+// dann wird beim nächsten Öffnen desselben Kapitels die Wiederherstellung angeboten.
+let guideDraftTimer = null;
+const GUIDE_DRAFT_KEY = 'guideDraft';
+
+function getGuideModalFields() {
+  return {
+    title:   document.getElementById('guide-modal-title-input').value,
+    desc:    document.getElementById('guide-modal-desc-input').value,
+    tags:    document.getElementById('guide-modal-tags-input').value,
+    content: document.getElementById('guide-modal-content-input').value,
+    fav:     document.getElementById('guide-modal-fav').checked,
+  };
+}
+
+function setGuideModalFields(f) {
+  document.getElementById('guide-modal-title-input').value   = f.title || '';
+  document.getElementById('guide-modal-desc-input').value    = f.desc || '';
+  document.getElementById('guide-modal-tags-input').value    = f.tags || '';
+  document.getElementById('guide-modal-content-input').value = f.content || '';
+  document.getElementById('guide-modal-fav').checked         = !!f.fav;
+}
+
+function scheduleGuideDraftSave() {
+  if (!guideModalCategoryId) return;
+  clearTimeout(guideDraftTimer);
+  guideDraftTimer = setTimeout(() => {
+    if (!guideModalCategoryId) return;
+    if (getGuideModalSnapshot() === guideModalSnapshot) { clearGuideDraftFor(guideModalCategoryId, guideModalGuideId); return; }
+    DB.set(GUIDE_DRAFT_KEY, {
+      categoryId: guideModalCategoryId,
+      guideId: guideModalGuideId || null,
+      savedAt: new Date().toISOString(),
+      ...getGuideModalFields(),
+    });
+  }, 800);
+}
+
+function clearGuideDraftFor(categoryId, guideId) {
+  const d = DB.get(GUIDE_DRAFT_KEY, null);
+  if (d && d.categoryId === categoryId && (d.guideId || null) === (guideId || null)) DB.set(GUIDE_DRAFT_KEY, null);
+}
+
+async function offerGuideDraftRestore(categoryId, guideId) {
+  const d = DB.get(GUIDE_DRAFT_KEY, null);
+  if (!d || d.categoryId !== categoryId || (d.guideId || null) !== (guideId || null)) return;
+  const current = getGuideModalFields();
+  if (['title', 'desc', 'tags', 'content', 'fav'].every(k => d[k] === current[k])) { DB.set(GUIDE_DRAFT_KEY, null); return; }
+  const when = new Date(d.savedAt);
+  const restore = await hubConfirm({
+    title: 'Entwurf wiederherstellen?',
+    message: `Für dieses Kapitel gibt es einen nicht gespeicherten Entwurf vom ${fmtDate(d.savedAt)}, ${when.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} Uhr.`,
+    confirmText: 'Wiederherstellen',
+    cancelText: 'Nicht wiederherstellen',
+  });
+  // Modal inzwischen geschlossen oder auf ein anderes Kapitel gewechselt?
+  if (guideModalCategoryId !== categoryId || (guideModalGuideId || null) !== (guideId || null)) return;
+  // Ohne Wiederherstellen bleibt der Entwurf liegen, bis das Modal regulär
+  // geschlossen wird — ein versehentliches Escape vernichtet ihn also nicht sofort.
+  if (restore) {
+    setGuideModalFields(d);
+    if (guideEditorMode !== 'editor') renderGuideModalPreview();
+  }
 }
 
 // ── Modal event wiring (runs after DOM ready) ─────────────
@@ -1700,12 +2280,29 @@ function initGuides() {
   // Search
   const searchInput = document.getElementById('guide-search-input');
   searchInput.addEventListener('input', () => {
+    const wasActive = guideSearchQuery.trim().length >= 2;
+    if (!wasActive) rememberGuidePreSearchView();
     guideSearchQuery = searchInput.value;
-    if (guideSearchQuery.trim().length >= 2) {
+    const isActive = guideSearchQuery.trim().length >= 2;
+    if (isActive) {
       state.activeGuideCategoryId = null;
       activeGuideId = null;
+    } else if (wasActive) {
+      restoreGuidePreSearchView();
     }
     renderGuideContent();
+  });
+  searchInput.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && searchInput.value) { e.preventDefault(); clearGuideSearch(); }
+  });
+
+  // Tags sind überall im Tab anklickbar (Kapitel, Übersicht, Suche, Seitenleiste)
+  document.getElementById('view-guides').addEventListener('click', e => {
+    const tagBtn = e.target.closest('[data-guide-tag]');
+    if (!tagBtn) return;
+    e.preventDefault();
+    e.stopPropagation();
+    searchGuideTag(tagBtn.dataset.guideTag);
   });
 
   // Modal tabs
@@ -1739,12 +2336,17 @@ function initGuides() {
   guideModal = wireModal('guide-modal-overlay', {
     closeIds: ['guide-modal-close', 'guide-modal-cancel'],
     inputId: 'guide-modal-title-input',
-    onClose: () => { guideModalCategoryId = null; guideModalGuideId = null; guideModalSnapshot = null; },
+    onClose: () => {
+      // Normales Schließen (Speichern oder bewusstes Verwerfen) braucht keinen Entwurf mehr
+      clearTimeout(guideDraftTimer);
+      if (guideModalCategoryId) clearGuideDraftFor(guideModalCategoryId, guideModalGuideId);
+      guideModalCategoryId = null; guideModalGuideId = null; guideModalSnapshot = null;
+    },
     // X/Abbrechen/Backdrop/Escape: bei Änderungen erst nachfragen, damit ein
     // versehentlicher Klick daneben keinen langen Markdown-Text verwirft.
     beforeClose: () => getGuideModalSnapshot() === guideModalSnapshot || hubConfirm({
       title: 'Änderungen verwerfen?',
-      message: 'Die Anleitung hat ungespeicherte Änderungen. Beim Schließen gehen sie verloren.',
+      message: 'Das Kapitel hat ungespeicherte Änderungen. Beim Schließen gehen sie verloren.',
       confirmText: 'Verwerfen',
       cancelText: 'Weiter bearbeiten',
       danger: true,
@@ -1758,7 +2360,19 @@ function initGuides() {
     const content = document.getElementById('guide-modal-content-input').value.trim();
     const tagsRaw = document.getElementById('guide-modal-tags-input').value.trim();
     const favorite = document.getElementById('guide-modal-fav').checked;
-    if (!title || !guideModalCategoryId) return;
+    if (!guideModalCategoryId) return;
+    if (!title) {
+      // Pflichtfeld sichtbar machen statt still nichts zu tun
+      const titleIn = document.getElementById('guide-modal-title-input');
+      titleIn.classList.add('guide-input-invalid');
+      titleIn.placeholder = 'Bitte einen Titel eingeben';
+      titleIn.focus();
+      titleIn.addEventListener('input', () => titleIn.classList.remove('guide-input-invalid'), { once: true });
+      return;
+    }
+    // Sprache des letzten Codeblocks als Vorschlag für den nächsten merken
+    const langs = listGuideCodeBlocks(content, 'x').map(b => b.lang).filter(Boolean);
+    if (langs.length) { guideLastCodeLang = langs[langs.length - 1]; DB.set('guideLastCodeLang', guideLastCodeLang); }
 
     const tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : [];
     const cat  = guideCategories.find(c => c.id === guideModalCategoryId);
@@ -1804,83 +2418,78 @@ function initGuides() {
     }
   });
 
-  // Insert snippet buttons in modal
+  // Schnellbausteine + Tastenkürzel im Editor
   // Markierter Text wird eingerahmt statt überschrieben; ohne Markierung wird
   // ein Platzhalter eingefügt und direkt markiert, damit man ihn überschreiben
-  // kann. Zeilenbasierte Elemente (Überschrift, Liste, Codeblock, Trennlinie)
-  // beginnen immer am Zeilenanfang, sonst rendert der Markdown-Renderer sie nicht.
+  // kann. Zeilenbasierte Elemente (Überschrift, Listen, Codeblock, Zitat,
+  // Tabelle, Trennlinie) beginnen immer am Zeilenanfang, sonst rendert der
+  // Markdown-Renderer sie nicht.
+  const editor = document.getElementById('guide-modal-content-input');
   document.querySelectorAll('.guide-snippet-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const textarea = document.getElementById('guide-modal-content-input');
-      const snippet  = btn.dataset.snippet;
-      const start = textarea.selectionStart;
-      const end   = textarea.selectionEnd;
-      const before = textarea.value.substring(0, start);
-      let after    = textarea.value.substring(end);
-      const sel   = textarea.value.substring(start, end);
-      // Zeilenumbruch voranstellen, falls die Einfügestelle mitten in einer Zeile liegt
-      const nl     = (before && !before.endsWith('\n')) ? '\n' : '';
-      // ...und dahinter, falls danach noch Text in derselben Zeile folgt
-      const nlAfter = (after && !after.startsWith('\n')) ? '\n' : '';
-      // Bei Zeilenelementen kein führendes Leerzeichen in die neue Folgezeile mitnehmen
-      const isLineSnippet = ['code', 'h2', 'h3', 'list', 'hr'].includes(snippet);
-      if (isLineSnippet && nlAfter) after = after.replace(/^[ \t]+/, '');
+    btn.addEventListener('click', () => insertGuideSnippet(editor, btn.dataset.snippet));
+  });
 
-      let prefix = '', text = '', suffix = '';
-      switch (snippet) {
-        case 'code':
-          prefix = nl + '```javascript\n'; text = sel; suffix = '\n```' + nlAfter;
-          break;
-        case 'h2':
-          prefix = nl + '## '; text = sel || 'Überschrift'; suffix = nlAfter;
-          break;
-        case 'h3':
-          prefix = nl + '### '; text = sel || 'Unterüberschrift'; suffix = nlAfter;
-          break;
-        case 'bold':
-          prefix = '**'; text = sel || 'fett'; suffix = '**';
-          break;
-        case 'mark':
-          prefix = '=='; text = sel || 'markierter Text'; suffix = '==';
-          break;
-        case 'xref':
-          prefix = '[['; text = sel || 'Kapitelname'; suffix = ']]';
-          break;
-        case 'list':
-          if (sel) {
-            prefix = nl; suffix = nlAfter;
-            text = sel.split('\n').map(l => l.replace(/^\s*(?:[-*+]|\d+\.)\s+/, '')).map(l => '- ' + l).join('\n');
-          } else {
-            prefix = nl + '- '; text = 'Punkt 1'; suffix = '\n- Punkt 2\n- Punkt 3' + nlAfter;
-          }
-          break;
-        case 'hr':
-          prefix = nl + '\n---\n' + (nlAfter ? '\n' : ''); text = ''; suffix = '';
-          break;
-        default:
-          return;
+  editor.addEventListener('keydown', e => {
+    const mod = e.ctrlKey || e.metaKey;
+    if (mod && !e.altKey) {
+      const key = e.key.toLowerCase();
+      const map = { b: 'bold', i: 'italic', k: 'link' };
+      if (map[key]) { e.preventDefault(); insertGuideSnippet(editor, map[key]); return; }
+      if (key === 's') { e.preventDefault(); document.getElementById('guide-modal-save').click(); return; }
+    }
+    // Tab rückt ein (Shift+Tab aus) statt den Fokus zu verlassen — wichtig für
+    // Code und verschachtelte Listen. Escape gibt den Fokus frei, damit man
+    // per Tastatur trotzdem aus dem Feld kommt.
+    if (e.key === 'Tab' && !mod && !e.altKey && !editor.dataset.tabReleased) {
+      e.preventDefault();
+      indentGuideEditor(editor, e.shiftKey);
+    }
+    if (e.key === 'Escape') editor.dataset.tabReleased = '1';
+  });
+  editor.addEventListener('blur', () => { delete editor.dataset.tabReleased; });
+
+  // Ctrl+S auch aus Titel/Beschreibung/Tags
+  ['guide-modal-title-input', 'guide-modal-desc-input', 'guide-modal-tags-input'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', e => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        document.getElementById('guide-modal-save').click();
       }
-      textarea.value = before + prefix + text + suffix + after;
-      textarea.focus();
-      textarea.selectionStart = start + prefix.length;
-      textarea.selectionEnd   = start + prefix.length + text.length;
     });
   });
 
-  // Grid/List view toggle for the bookshelf
+  // Entwurf automatisch sichern, solange das Modal offen ist
+  ['guide-modal-title-input', 'guide-modal-desc-input', 'guide-modal-tags-input', 'guide-modal-content-input', 'guide-modal-fav']
+    .forEach(id => {
+      const el = document.getElementById(id);
+      el.addEventListener(el.type === 'checkbox' ? 'change' : 'input', scheduleGuideDraftSave);
+    });
+
+  // Kapitel verschieben (Modal)
+  guideMoveModal = wireModal('guide-move-modal-overlay', {
+    closeIds: ['guide-move-modal-close', 'guide-move-cancel'],
+    onClose: () => { guideMoveGuideId = null; },
+  });
+  document.getElementById('guide-move-save').addEventListener('click', () => {
+    const id = guideMoveGuideId;
+    const target = document.getElementById('guide-move-target').value;
+    guideMoveModal.close();
+    moveGuideChapter(id, target);
+  });
+
+  // Grid/List view toggle for the bookshelf — gewählte Ansicht wird gemerkt
   const gridBtn = document.getElementById('lib-view-grid');
   const listBtn = document.getElementById('lib-view-list');
   const shelf   = document.getElementById('guide-shelf');
-  gridBtn.addEventListener('click', () => {
-    shelf.classList.remove('list-mode');
-    gridBtn.classList.add('active');
-    listBtn.classList.remove('active');
-  });
-  listBtn.addEventListener('click', () => {
-    shelf.classList.add('list-mode');
-    listBtn.classList.add('active');
-    gridBtn.classList.remove('active');
-  });
+  const setShelfMode = mode => {
+    shelf.classList.toggle('list-mode', mode === 'list');
+    gridBtn.classList.toggle('active', mode !== 'list');
+    listBtn.classList.toggle('active', mode === 'list');
+    DB.set('guideShelfMode', mode);
+  };
+  gridBtn.addEventListener('click', () => setShelfMode('grid'));
+  listBtn.addEventListener('click', () => setShelfMode('list'));
+  setShelfMode(DB.get('guideShelfMode', 'grid'));
 
   // Close chapter-detail meatball menu on outside click
   document.addEventListener('click', () => {
@@ -1888,6 +2497,7 @@ function initGuides() {
     document.querySelectorAll('.guide-detail-menu-btn.active').forEach(b => b.classList.remove('active'));
   });
 
-  // Initial render
+  // Initial render — dort weitermachen, wo zuletzt gelesen wurde
+  restoreGuideLastView();
   renderGuideContent();
 }
