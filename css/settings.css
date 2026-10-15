@@ -5,7 +5,7 @@
 /* ── Gliederung: Sprungleiste + Bereiche (index.html #view-settings) ── */
 /* Nicht sticky: #main hat overflow:auto, scrollt aber selbst nicht (das
    Fenster scrollt) — sticky hätte dort keinen Bezug. Zurück nach oben geht
-   es stattdessen über "↑ Übersicht" an jedem Bereichstitel. */
+   es stattdessen über den runden Button unten rechts (#settings-scroll-top). */
 .settings-jump {
   display: flex;
   flex-wrap: wrap;
@@ -30,22 +30,76 @@
 .settings-jump-btn:focus-visible { outline: 2px solid var(--sage); outline-offset: 2px; }
 
 .settings-group { margin-bottom: 28px; scroll-margin-top: 16px; }
-.settings-group-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 0 0 10px 2px; }
-.settings-group-top {
-  font-size: calc(11.5px * var(--core-font-scale));
-  color: var(--text-3);
-  padding: 2px 6px;
+.settings-group-head { margin: 0 0 10px; }
+.settings-group-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 2px;
   border-radius: var(--radius-sm);
+  text-align: left;
+  cursor: pointer;
 }
-.settings-group-top:hover { color: var(--text); background: var(--accent-soft); }
+.settings-group-toggle:hover .settings-group-title,
+.settings-group-toggle:hover .settings-group-chevron { color: var(--text); }
+.settings-group-toggle:focus-visible { outline: 2px solid var(--sage); outline-offset: 2px; }
 .settings-group-title {
   font-size: calc(11px * var(--core-font-scale));
   font-weight: 700;
   letter-spacing: .1em;
   text-transform: uppercase;
   color: var(--text-3);
-  margin: 0;
+  transition: color var(--transition);
 }
+/* Chevron als gedrehter Rahmen-Winkel — zeigt nach unten (offen) bzw. rechts (zu) */
+.settings-group-chevron {
+  width: 7px;
+  height: 7px;
+  margin-left: 2px;
+  border-right: 1.6px solid var(--text-3);
+  border-bottom: 1.6px solid var(--text-3);
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform var(--transition), border-color var(--transition);
+}
+.settings-group-toggle::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  margin-left: 8px;
+  background: var(--border);
+}
+.settings-group.collapsed { margin-bottom: 6px; }
+.settings-group.collapsed .settings-group-head { margin-bottom: 0; }
+.settings-group.collapsed .settings-group-chevron { transform: rotate(-45deg); }
+.settings-group.collapsed .settings-grid { display: none; }
+
+/* Nach-oben-Button — gleiche Optik wie #guide-scroll-top (css/guides.css) */
+#settings-scroll-top {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  color: var(--text-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(8px);
+  transition: opacity 0.2s ease, transform 0.2s ease, background var(--transition), color var(--transition);
+  z-index: 50;
+}
+#settings-scroll-top.visible { opacity: 1; pointer-events: auto; transform: translateY(0); }
+#settings-scroll-top:hover { background: var(--text); color: var(--surface); border-color: var(--text); }
+#settings-scroll-top:focus-visible { outline: 2px solid var(--sage); outline-offset: 2px; }
+
 .settings-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -387,5 +441,7 @@
   .settings-select { max-width: 100%; }
   .storage-group-actions { width: 100%; justify-content: flex-end; }
   .settings-row-head { flex-wrap: wrap; }
+  /* über der festen Bottom-Nav, wie #guide-scroll-top */
+  #settings-scroll-top { right: 16px; bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 16px); }
 }
 

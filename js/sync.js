@@ -74,7 +74,7 @@ function isSyncInternalKey(key) {
 // Würden sonst bei jedem Seitenaufruf bzw. Klick einen Upload auslösen.
 const SYNC_LOCAL_ONLY_KEYS = [
   "weatherData", "currentDate", "tabVisibilityOpen", "googleCalSettingsOpen",
-  "sidebarCollapsed",
+  "sidebarCollapsed", "settingsCollapsedGroups",
 ];
 
 // Keys, die nie über die generische DB-Sync-Logik laufen dürfen.

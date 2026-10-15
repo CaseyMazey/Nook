@@ -30,14 +30,52 @@ function settingsViewLabel(id) {
   return tab ? tab.label : id;
 }
 
-// ── Sprungleiste ─────────────────────────────────────────────────────────
-// Chips oben scrollen zum Bereich, "↑ Übersicht" an jedem Bereich zurück;
-// der Chip des gerade sichtbaren Bereichs wird per IntersectionObserver
-// hervorgehoben.
+// ── Bereiche ein-/ausklappen ─────────────────────────────────────────────
+// Titel jeder .settings-group ist ein Button; zugeklappte Bereiche merkt
+// sich jedes Gerät selbst (sync.js: lokaler Key, wie sidebarCollapsed).
+let settingsCollapsedGroups = DB.get('settingsCollapsedGroups', []);
+function saveSettingsCollapsedGroups(){ DB.set('settingsCollapsedGroups', settingsCollapsedGroups); }
+
+function applySettingsGroupCollapse() {
+  document.querySelectorAll('#view-settings .settings-group').forEach(group => {
+    const collapsed = settingsCollapsedGroups.includes(group.id);
+    group.classList.toggle('collapsed', collapsed);
+    group.querySelector('.settings-group-toggle')?.setAttribute('aria-expanded', String(!collapsed));
+  });
+}
+function setSettingsGroupCollapsed(id, collapsed) {
+  settingsCollapsedGroups = settingsCollapsedGroups.filter(g => g !== id);
+  if (collapsed) settingsCollapsedGroups.push(id);
+  saveSettingsCollapsedGroups();
+  applySettingsGroupCollapse();
+}
+applySettingsGroupCollapse();
+
+// ── Sprungleiste + Klapp-Titel ───────────────────────────────────────────
+// Chips oben klappen den Bereich bei Bedarf auf und scrollen hin; der Chip
+// des gerade sichtbaren Bereichs wird per IntersectionObserver hervorgehoben.
 document.getElementById('view-settings')?.addEventListener('click', e => {
-  const btn = e.target.closest('.settings-jump-btn, .settings-group-top');
+  const toggle = e.target.closest('.settings-group-toggle');
+  if (toggle) {
+    const group = toggle.closest('.settings-group');
+    setSettingsGroupCollapsed(group.id, !group.classList.contains('collapsed'));
+    return;
+  }
+  const btn = e.target.closest('.settings-jump-btn');
   if (!btn) return;
+  if (settingsCollapsedGroups.includes(btn.dataset.target)) setSettingsGroupCollapsed(btn.dataset.target, false);
   document.getElementById(btn.dataset.target)?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+});
+
+// ── Nach-oben-Button (unten rechts, wie in den Anleitungen) ──────────────
+// Liegt in #view-settings, ist also nur auf dieser Seite überhaupt da;
+// eingeblendet, sobald die Seite ein Stück gescrollt ist.
+function updateSettingsScrollTop() {
+  document.getElementById('settings-scroll-top')?.classList.toggle('visible', window.scrollY > 300);
+}
+window.addEventListener('scroll', updateSettingsScrollTop, { passive: true });
+document.getElementById('settings-scroll-top')?.addEventListener('click', () => {
+  window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
 });
 if ('IntersectionObserver' in window) {
   const settingsJumpObserver = new IntersectionObserver(entries => {
@@ -858,7 +896,7 @@ const NOOK_DATA_GROUPS = [
   { id: 'look',       label: 'Darstellung & Einstellungen', resettable: false,
     keys: ['theme', 'themeFamily', 'darkMode', 'customThemes', 'themeBackgrounds', 'dayNightToggle',
            'themeAutoMode', 'uiFontScale', 'reduceMotion', 'sidebarCollapsed', 'hiddenTabs', 'tabOrder',
-           'tabVisibilityOpen', 'bottomNavTabs', 'startView', 'hubUserColors', 'colorAutoAdjust', 'userName',
+           'tabVisibilityOpen', 'settingsCollapsedGroups', 'bottomNavTabs', 'startView', 'hubUserColors', 'colorAutoAdjust', 'userName',
            'weatherSettings', 'backupLastExport', 'backupReminderDays', 'backupReminderSince',
            'backupReminderSnoozeUntil'] },
   { id: 'other',      label: 'Spiele & Sonstiges', resettable: false },

@@ -1191,7 +1191,8 @@
  
       <!-- SETTINGS — in Bereiche gegliedert (.settings-group), oben eine
            Sprungleiste (#settings-jump, js/settings.js). Jeder Bereich ist
-           ein zweispaltiges Raster aus Panels, ab 1024px einspaltig. -->
+           ein zweispaltiges Raster aus Panels (ab 1024px einspaltig) und
+           über seinen Titel ein-/ausklappbar. -->
       <section id="view-settings" class="view">
         <div class="view-header"><h1 class="view-title">Einstellungen</h1></div>
         <div class="dash-content">
@@ -1213,7 +1214,7 @@
 
         <!-- ── ALLGEMEIN ─────────────────────────────────────────── -->
         <section class="settings-group" id="settings-group-general">
-          <div class="settings-group-head"><h2 class="settings-group-title">Allgemein</h2><button type="button" class="settings-group-top" data-target="settings-jump">↑ Übersicht</button></div>
+          <h2 class="settings-group-head"><button type="button" class="settings-group-toggle" aria-expanded="true"><span class="settings-group-title">Allgemein</span><span class="settings-group-chevron" aria-hidden="true"></span></button></h2>
           <div class="settings-grid">
             <div class="panel settings-panel">
               <div class="panel-header"><span class="panel-label">Profil</span></div>
@@ -1238,7 +1239,7 @@
 
         <!-- ── DARSTELLUNG ───────────────────────────────────────── -->
         <section class="settings-group" id="settings-group-look">
-          <div class="settings-group-head"><h2 class="settings-group-title">Darstellung</h2><button type="button" class="settings-group-top" data-target="settings-jump">↑ Übersicht</button></div>
+          <h2 class="settings-group-head"><button type="button" class="settings-group-toggle" aria-expanded="true"><span class="settings-group-title">Darstellung</span><span class="settings-group-chevron" aria-hidden="true"></span></button></h2>
           <div class="settings-grid">
             <div class="panel settings-panel">
               <div class="panel-header"><span class="panel-label">Theme</span></div>
@@ -1353,7 +1354,7 @@
 
         <!-- ── NAVIGATION ────────────────────────────────────────── -->
         <section class="settings-group" id="settings-group-nav">
-          <div class="settings-group-head"><h2 class="settings-group-title">Navigation</h2><button type="button" class="settings-group-top" data-target="settings-jump">↑ Übersicht</button></div>
+          <h2 class="settings-group-head"><button type="button" class="settings-group-toggle" aria-expanded="true"><span class="settings-group-title">Navigation</span><span class="settings-group-chevron" aria-hidden="true"></span></button></h2>
           <div class="settings-grid">
             <div class="panel settings-panel">
               <div class="panel-header"><span class="panel-label">Sichtbare Tabs &amp; Reihenfolge</span></div>
@@ -1385,7 +1386,7 @@
 
         <!-- ── HEUTE-SEITE ───────────────────────────────────────── -->
         <section class="settings-group" id="settings-group-today">
-          <div class="settings-group-head"><h2 class="settings-group-title">Heute-Seite</h2><button type="button" class="settings-group-top" data-target="settings-jump">↑ Übersicht</button></div>
+          <h2 class="settings-group-head"><button type="button" class="settings-group-toggle" aria-expanded="true"><span class="settings-group-title">Heute-Seite</span><span class="settings-group-chevron" aria-hidden="true"></span></button></h2>
           <div class="settings-grid">
             <div class="settings-col">
               <div class="panel settings-panel">
@@ -1421,7 +1422,7 @@
 
         <!-- ── INTEGRATIONEN ─────────────────────────────────────── -->
         <section class="settings-group" id="settings-group-integrations">
-          <div class="settings-group-head"><h2 class="settings-group-title">Integrationen</h2><button type="button" class="settings-group-top" data-target="settings-jump">↑ Übersicht</button></div>
+          <h2 class="settings-group-head"><button type="button" class="settings-group-toggle" aria-expanded="true"><span class="settings-group-title">Integrationen</span><span class="settings-group-chevron" aria-hidden="true"></span></button></h2>
           <div class="settings-grid">
             <div class="panel settings-panel">
               <div class="panel-header"><span class="panel-label">Geräte-Sync</span></div>
@@ -1503,7 +1504,7 @@
 
         <!-- ── DATEN ─────────────────────────────────────────────── -->
         <section class="settings-group" id="settings-group-data">
-          <div class="settings-group-head"><h2 class="settings-group-title">Daten</h2><button type="button" class="settings-group-top" data-target="settings-jump">↑ Übersicht</button></div>
+          <h2 class="settings-group-head"><button type="button" class="settings-group-toggle" aria-expanded="true"><span class="settings-group-title">Daten</span><span class="settings-group-chevron" aria-hidden="true"></span></button></h2>
           <div class="settings-grid">
             <div class="panel settings-panel">
               <div class="panel-header"><span class="panel-label">Backup</span></div>
@@ -1543,7 +1544,7 @@
 
         <!-- ── GEFAHRENZONE ──────────────────────────────────────── -->
         <section class="settings-group" id="settings-group-danger">
-          <div class="settings-group-head"><h2 class="settings-group-title">Gefahrenzone</h2><button type="button" class="settings-group-top" data-target="settings-jump">↑ Übersicht</button></div>
+          <h2 class="settings-group-head"><button type="button" class="settings-group-toggle" aria-expanded="true"><span class="settings-group-title">Gefahrenzone</span><span class="settings-group-chevron" aria-hidden="true"></span></button></h2>
           <div class="settings-grid">
             <div class="panel settings-panel settings-danger-panel">
               <div class="settings-row">
@@ -1559,7 +1560,7 @@
 
         <!-- ── ÜBER NOOK ─────────────────────────────────────────── -->
         <section class="settings-group" id="settings-group-about">
-          <div class="settings-group-head"><h2 class="settings-group-title">Über Nook</h2><button type="button" class="settings-group-top" data-target="settings-jump">↑ Übersicht</button></div>
+          <h2 class="settings-group-head"><button type="button" class="settings-group-toggle" aria-expanded="true"><span class="settings-group-title">Über Nook</span><span class="settings-group-chevron" aria-hidden="true"></span></button></h2>
           <div class="settings-grid">
             <div class="panel settings-panel">
               <div class="settings-row">
@@ -1574,6 +1575,11 @@
           </div>
         </section>
 
+        <!-- Nach oben — schwebt unten rechts mit (wie #guide-scroll-top in
+             den Anleitungen), sichtbar sobald gescrollt (js/settings.js). -->
+        <button type="button" id="settings-scroll-top" aria-label="Nach oben" title="Nach oben">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 12V4M4 7l4-4 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
         </div><!-- /dash-content -->
       </section>
 
