@@ -705,3 +705,37 @@
   .mealplan-edit-row > span { padding-top: 0; }
   .mealplan-modal-box .modal-actions { flex-wrap: wrap; }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   GRUPPENPFLICHTEN — Druckliste / PDF-Export (gruppendienste.js)
+   Nur aktiv, solange body.gd-printing gesetzt ist. Papier ist immer
+   hell: Systemfarben Canvas/CanvasText mit color-scheme light statt
+   Theme-Tokens (ein dunkles Theme würde sonst hellgrauen Text auf
+   weißes Papier drucken) — keine festen Farbwerte.
+═══════════════════════════════════════════════════════════ */
+#gd-print { display: none; }
+
+@media print {
+  body.gd-printing { color-scheme: light; background: Canvas !important; background-image: none !important; }
+  body.gd-printing > *:not(#gd-print) { display: none !important; }
+  body.gd-printing #gd-print { display: block; color: CanvasText; background: Canvas; font-family: var(--font); }
+
+  .gd-print-title { font-size: 18pt; font-weight: 700; margin: 0 0 2pt; }
+  .gd-print-sub { font-size: 10pt; margin-bottom: 10pt; color: color-mix(in srgb, CanvasText 65%, Canvas); }
+
+  .gd-print-table { width: 100%; border-collapse: collapse; font-size: 9.5pt; }
+  .gd-print-table thead { display: table-header-group; }
+  .gd-print-table tr { break-inside: avoid; }
+  .gd-print-table th,
+  .gd-print-table td {
+    border: 0.75pt solid color-mix(in srgb, CanvasText 35%, Canvas);
+    padding: 4pt 6pt; text-align: left; vertical-align: top;
+  }
+  .gd-print-table th { font-weight: 700; background: color-mix(in srgb, CanvasText 8%, Canvas); }
+  .gd-print-kw { width: 1%; white-space: nowrap; font-weight: 700; text-align: center !important; }
+  .gd-print-dates { width: 1%; white-space: nowrap; }
+  .gd-print-off { color: color-mix(in srgb, CanvasText 40%, Canvas); }
+  .gd-print-ersatz { font-size: 8.5pt; margin-top: 1pt; color: color-mix(in srgb, CanvasText 65%, Canvas); }
+  .gd-print-now td { background: color-mix(in srgb, CanvasText 5%, Canvas); }
+  body.gd-printing * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

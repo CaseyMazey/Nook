@@ -3351,6 +3351,35 @@
     </div>
   </div>
 
+  <!-- Gruppendienste: Druckliste / PDF-Export über mehrere Monate -->
+  <div id="gd-export-modal-overlay" class="modal-backdrop hidden">
+    <div class="modal-box" style="width:480px;">
+      <div class="modal-head"><span>Als PDF exportieren</span><button class="modal-x" id="gd-export-close">&#10005;</button></div>
+      <div class="modal-row">
+        <label for="gd-export-start">Ab Woche</label>
+        <input type="date" class="modal-input" id="gd-export-start" style="max-width:170px;"/>
+      </div>
+      <div class="modal-row">
+        <label>Zeitraum</label>
+        <div class="gd-chip-picker" id="gd-export-months"></div>
+        <div class="modal-hint" id="gd-export-range-hint"></div>
+      </div>
+      <div class="modal-row">
+        <label>Pflichten</label>
+        <div class="gd-chip-picker" id="gd-export-duties"></div>
+      </div>
+      <div class="modal-row modal-row-inline">
+        <label for="gd-export-ersatz">Ersatz mit aufführen</label>
+        <label class="toggle"><input type="checkbox" id="gd-export-ersatz" checked/><span class="toggle-slider"></span></label>
+      </div>
+      <div class="modal-hint">Im Druckdialog als Ziel „Als PDF speichern“ wählen – oder direkt drucken.</div>
+      <div class="modal-actions">
+        <button type="button" class="btn-ghost" id="gd-export-cancel">Abbrechen</button>
+        <button type="button" class="btn-primary" id="gd-export-print">PDF erstellen</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Gruppendienste: Übersicht aller Pflichten -->
   <div id="gd-overview-modal-overlay" class="modal-backdrop hidden">
     <div class="modal-box" style="width:480px;">

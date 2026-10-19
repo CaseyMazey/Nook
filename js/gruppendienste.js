@@ -302,6 +302,9 @@ function gdBuildWidget() {
           <span id="gd-week-nav-label">KW ${kw}</span>
           <button type="button" class="week-btn" id="gd-week-next" aria-label="Nächste Woche">&#8250;</button>
         </div>
+        <button type="button" class="icon-btn gd-edit-btn" id="gd-export-btn" title="Als PDF exportieren / drucken" aria-label="Als PDF exportieren">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M4.5 6V2.5h7V6M4.5 11.5h-2v-5h11v5h-2M4.5 9.5h7v4h-7z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
+        </button>
         <button type="button" class="icon-btn gd-edit-btn" id="gd-edit-btn" title="Pflichten verwalten" aria-label="Pflichten verwalten">
           <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M11 2.3l2.4 2.4-8.1 8.1-3.1.7.7-3.1 8.1-8.1z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/></svg>
         </button>
@@ -310,6 +313,7 @@ function gdBuildWidget() {
     <div class="gd-body">${bodyHtml}</div>`;
 
   document.getElementById('gd-edit-btn')?.addEventListener('click', gdOpenOverview);
+  document.getElementById('gd-export-btn')?.addEventListener('click', gdOpenExport);
   document.getElementById('gd-week-prev')?.addEventListener('click', () => { gdWidgetViewDate.setDate(gdWidgetViewDate.getDate() - 7); gdBuildWidget(); });
   document.getElementById('gd-week-next')?.addEventListener('click', () => { gdWidgetViewDate.setDate(gdWidgetViewDate.getDate() + 7); gdBuildWidget(); });
   // Accordion-Umschalter: wirkt sich nur auf Mobile aus (siehe gd-body-Regel
@@ -694,6 +698,122 @@ document.getElementById('gd-duty-delete')?.addEventListener('click', async () =>
   gdDutyModal.close();
   gdRenderOverviewList();
   gdBuildWidget();
+});
+
+// =========================
+// PDF-EXPORT — Druckliste über mehrere Monate
+// Liest nur die gespeicherte Planung (gdSchedule), berechnet nichts neu.
+// "PDF" läuft über den Druckdialog des Browsers (dort "Als PDF speichern"),
+// wie die Kapitel-Druckansicht der Anleitungen — keine Zusatzbibliothek.
+// Die Klasse am <body> schaltet die @media-print-Regeln in today.css scharf,
+// Drucken auf anderen Tabs bleibt unverändert.
+// =========================
+const gdExportModal = wireModal('gd-export-modal-overlay', { closeIds: ['gd-export-close', 'gd-export-cancel'] });
+const GD_EXPORT_MONTHS = [1, 3, 6, 12];
+let gdExportMonths = 6;
+let gdExportDutyIds = new Set();
+
+function gdOpenExport() {
+  document.getElementById('gd-export-start').value = dateKey(getWeekStart(gdWidgetViewDate));
+  gdExportDutyIds = new Set(gdDuties.map(d => d.id));
+  gdRenderExportOptions();
+  gdExportModal.open();
+}
+
+function gdExportRange() {
+  const val = document.getElementById('gd-export-start').value;
+  const start = getWeekStart(val ? parseLocalDate(val) : new Date());
+  const end = new Date(start);
+  end.setMonth(end.getMonth() + gdExportMonths);
+  end.setDate(end.getDate() - 1);
+  return { start, end };
+}
+
+// Montage aller Wochen, deren Montag im Zeitraum liegt
+function gdExportWeeks(start, end) {
+  const weeks = [];
+  const cur = new Date(start);
+  while (cur <= end && weeks.length < 60) {
+    weeks.push(new Date(cur));
+    cur.setDate(cur.getDate() + 7);
+  }
+  return weeks;
+}
+
+function gdRenderExportOptions() {
+  document.getElementById('gd-export-months').innerHTML = GD_EXPORT_MONTHS.map(m =>
+    `<button type="button" class="gd-chip${m === gdExportMonths ? ' active' : ''}" data-months="${m}">${m} ${m === 1 ? 'Monat' : 'Monate'}</button>`).join('');
+  document.querySelectorAll('#gd-export-months .gd-chip').forEach(btn => btn.addEventListener('click', () => {
+    gdExportMonths = Number(btn.dataset.months);
+    gdRenderExportOptions();
+  }));
+
+  const dutyWrap = document.getElementById('gd-export-duties');
+  dutyWrap.innerHTML = gdDuties.map(d =>
+    `<button type="button" class="gd-chip${gdExportDutyIds.has(d.id) ? ' active' : ''}" data-id="${d.id}">${d.icon || '📋'} ${gdEsc(d.name)}</button>`).join('');
+  dutyWrap.querySelectorAll('.gd-chip').forEach(btn => btn.addEventListener('click', () => {
+    const id = btn.dataset.id;
+    if (gdExportDutyIds.has(id)) gdExportDutyIds.delete(id); else gdExportDutyIds.add(id);
+    gdRenderExportOptions();
+  }));
+
+  const { start, end } = gdExportRange();
+  const weeks = gdExportWeeks(start, end);
+  document.getElementById('gd-export-range-hint').textContent =
+    `${gdFmtDate(dateKey(start))} – ${gdFmtDate(dateKey(end))} · ${weeks.length} Wochen`;
+  document.getElementById('gd-export-print').disabled = !gdExportDutyIds.size || !weeks.length;
+}
+document.getElementById('gd-export-start')?.addEventListener('change', gdRenderExportOptions);
+
+function gdExportCellHtml(duty, weekId, withErsatz) {
+  const inRange = gdWeekIdsInRange(duty.startDate, duty.endDate).includes(weekId);
+  if (!inRange) return '<td class="gd-print-off">–</td>';
+  const entry = (gdSchedule[duty.id] || {})[weekId];
+  const regular = (entry?.regular || []).map(gdRefName).map(gdEsc);
+  const ersatz  = (entry?.ersatz  || []).map(gdRefName).map(gdEsc);
+  return `<td>${regular.length ? regular.join(', ') : '–'}${withErsatz && ersatz.length ? `<div class="gd-print-ersatz">Ersatz: ${ersatz.join(', ')}</div>` : ''}</td>`;
+}
+
+function gdBuildPrintHtml() {
+  const { start, end } = gdExportRange();
+  const duties = gdDuties.filter(d => gdExportDutyIds.has(d.id));
+  const withErsatz = document.getElementById('gd-export-ersatz').checked;
+  const nowWeek = getWeekId(new Date());
+  const rows = gdExportWeeks(start, end).map(mon => {
+    const fri = new Date(mon); fri.setDate(fri.getDate() + 4);
+    const weekId = getWeekId(mon);
+    return `<tr${weekId === nowWeek ? ' class="gd-print-now"' : ''}>
+      <td class="gd-print-kw">${getISOWeek(mon)}</td>
+      <td class="gd-print-dates">${fmt(mon, { day: '2-digit', month: '2-digit' })} – ${fmt(fri, { day: '2-digit', month: '2-digit', year: 'numeric' })}</td>
+      ${duties.map(d => gdExportCellHtml(d, weekId, withErsatz)).join('')}
+    </tr>`;
+  }).join('');
+  return `
+    <h1 class="gd-print-title">Gruppenpflichten</h1>
+    <div class="gd-print-sub">${gdFmtDate(dateKey(start))} – ${gdFmtDate(dateKey(end))}</div>
+    <table class="gd-print-table">
+      <thead><tr><th>KW</th><th>Woche</th>${duties.map(d => `<th>${d.icon || ''} ${gdEsc(d.name)}</th>`).join('')}</tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+document.getElementById('gd-export-print')?.addEventListener('click', () => {
+  let sheet = document.getElementById('gd-print');
+  if (!sheet) {
+    sheet = document.createElement('div');
+    sheet.id = 'gd-print';
+    document.body.appendChild(sheet);
+  }
+  sheet.innerHTML = gdBuildPrintHtml();
+  gdExportModal.close();
+  document.body.classList.add('gd-printing');
+  const cleanup = () => {
+    document.body.classList.remove('gd-printing');
+    sheet.innerHTML = '';
+    window.removeEventListener('afterprint', cleanup);
+  };
+  window.addEventListener('afterprint', cleanup);
+  window.print();
 });
 
 // Einmalige Migration: Rotationsalgorithmus wurde von getrennten Pro-Pflicht-
