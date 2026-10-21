@@ -88,12 +88,13 @@ const FONT_CATEGORIES = [
   { label: 'Fantasy', fonts: [
     { label: 'Alegreya (Buch, gut lesbar)', stack: "'Alegreya', Georgia, serif" },
     { label: 'Almendra (Mittelalter)',      stack: "'Almendra', Georgia, serif" },
+    { label: 'Rubik Dirt (Endzeit)',        stack: "'Rubik Dirt', system-ui, sans-serif" },
   ]},
 ];
 const DEFAULT_FONT_STACK = FONT_CATEGORIES[0].fonts[0].stack;
 
 // Gleicher CDN wie DM Sans/DM Mono in index.html, alle SIL Open Font License.
-const THEME_WEB_FONTS_URL = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Orbitron:wght@400;700&family=Cinzel:wght@400;600&family=UnifrakturCook:wght@700&family=Press+Start+2P&family=Bangers&family=Permanent+Marker&family=Alegreya:ital,wght@0,400;0,500;0,700;1,400&family=Almendra:wght@400;700&display=swap';
+const THEME_WEB_FONTS_URL = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Orbitron:wght@400;700&family=Cinzel:wght@400;600&family=UnifrakturCook:wght@700&family=Press+Start+2P&family=Bangers&family=Permanent+Marker&family=Alegreya:ital,wght@0,400;0,500;0,700;1,400&family=Almendra:wght@400;700&family=Rubik+Dirt&display=swap';
 
 // Eigene Font-Dateien aus assets/fonts/ — nur frei lizenzierte Schriften,
 // siehe assets/fonts/README.md. Keine automatische Erkennung (unter
@@ -312,6 +313,15 @@ const PRESET_THEMES = [
       cardOpacity: 88, fontSize: 108, bg: { source: 'rpg', size: 'cover', dim: 45 } },
     calendar: { imageTheme: 'rpg' }, startHeader: { banner: 'rpg' }, branding: { theme: 'rpg' }, questboard: { style: 'rpg' },
     graphics: { mode: 'theme', theme: 'rpg' } },
+  // Zombie: aus Kuros Core (Download 2026-10-21) — Farben und Grafik-Set
+  // unverändert. Core nutzt die Schrift „Capture it“, die laut Font-
+  // Metadaten „All Rights Reserved“ ist und daher nicht öffentlich
+  // ausgeliefert werden darf (assets/fonts/README.md) → stattdessen
+  // Rubik Dirt (SIL OFL) für Überschriften/Tabs, Fließtext Nook-Standard.
+  { id: 'preset_zombie', name: 'Zombie', family: 'dark',
+    coreColors: { bg: '#141310', surface: '#211f1a', nav: '#191814', modal: '#27241e', text: '#ddd8cb', border: '#665e50', accent: '#756f4d', font: DEFAULT_FONT_STACK, headingFont: "'Rubik Dirt', system-ui, sans-serif" },
+    cardOpacity: 85, fontSize: 100, bg: { source: 'zombie', size: 'cover', dim: 30 },
+    calendar: { imageTheme: 'zombie' }, startHeader: { banner: 'zombie' }, branding: { theme: 'zombie' }, graphics: { mode: 'theme', theme: 'zombie' } },
   { id: 'preset_lab', name: 'Lab', family: 'dark',
     coreColors: { bg: '#0e1211', surface: '#181d1b', nav: '#121715', modal: '#1c2220', text: '#d8dbd5', border: '#53635c', accent: '#477867', font: DEFAULT_FONT_STACK },
     cardOpacity: 85, fontSize: 100, bg: { source: 'lab', size: 'cover', dim: 40 },
@@ -390,6 +400,7 @@ const GRAPHICS_THEMES = [
   { id: 'royal',     label: 'Royal',     icon: { src: 'assets/themes/royal/icon.png',     type: 'image/png' } },
   { id: 'cyberpunk', label: 'Cyberpunk', icon: { src: 'assets/themes/cyberpunk/icon.png', type: 'image/png' } },
   { id: 'lab',       label: 'Lab',       icon: { src: 'assets/themes/lab/icon.png',       type: 'image/png' } },
+  { id: 'zombie',    label: 'Zombie',    icon: { src: 'assets/themes/zombie/icon.png',    type: 'image/png' } },
   { id: 'rpg',       label: 'RPG',       icon: { src: 'assets/themes/rpg/icon.png',       type: 'image/png' }, questboard: 'rpg' },
 ];
 const DEFAULT_GRAPHICS_THEME = 'cozy';

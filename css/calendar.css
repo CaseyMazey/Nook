@@ -400,6 +400,10 @@
 [data-cal-image-theme="rpg"] .cal-hero-summer { --cal-hero-img: url('../assets/themes/rpg/summer.webp'); }
 [data-cal-image-theme="rpg"] .cal-hero-autumn { --cal-hero-img: url('../assets/themes/rpg/fall.webp'); }
 [data-cal-image-theme="rpg"] .cal-hero-winter { --cal-hero-img: url('../assets/themes/rpg/winter.webp'); }
+[data-cal-image-theme="zombie"] .cal-hero-spring { --cal-hero-img: url('../assets/themes/zombie/spring.webp'); }
+[data-cal-image-theme="zombie"] .cal-hero-summer { --cal-hero-img: url('../assets/themes/zombie/summer.webp'); }
+[data-cal-image-theme="zombie"] .cal-hero-autumn { --cal-hero-img: url('../assets/themes/zombie/fall.webp'); }
+[data-cal-image-theme="zombie"] .cal-hero-winter { --cal-hero-img: url('../assets/themes/zombie/winter.webp'); }
 [data-cal-image-theme="none"] .cal-hero { --cal-hero-img: none; }
 [data-theme-family="dark"] .cal-hero { box-shadow: var(--shadow-md); }
 

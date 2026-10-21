@@ -10,9 +10,16 @@
 // hinten wegfallen, angezeigt werden ohnehin nur die neuesten.
 // =========================
 
-window.NOOK_VERSION = '2026.10.5';
+window.NOOK_VERSION = '2026.10.6';
 
 window.NOOK_CHANGELOG = [
+  {
+    version: '2026.10.6',
+    date: '2026-10-21',
+    items: [
+      'Neues Theme Zombie (aus Kuros Core) mit Hintergrund, Kalenderbildern, Banner und Icon',
+    ],
+  },
   {
     version: '2026.10.5',
     date: '2026-10-21',

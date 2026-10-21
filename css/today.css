@@ -42,6 +42,7 @@
 [data-start-header-theme="cyberpunk"] #today-main-header { --today-header-img: url('../assets/themes/cyberpunk/banner-day.webp'); }
 [data-start-header-theme="lab"] #today-main-header { --today-header-img: url('../assets/themes/lab/banner-day.webp'); }
 [data-start-header-theme="rpg"] #today-main-header { --today-header-img: url('../assets/themes/rpg/banner-day.webp'); }
+[data-start-header-theme="zombie"] #today-main-header { --today-header-img: url('../assets/themes/zombie/banner-day.webp'); }
 [data-start-header-theme="cozy"][data-start-header-daynight="night"] #today-main-header { --today-header-img: url('../assets/themes/cozy/banner-night.webp'); }
 [data-start-header-theme="scifi"][data-start-header-daynight="night"] #today-main-header { --today-header-img: url('../assets/themes/scifi/banner-night.webp'); }
 [data-start-header-theme="forest"][data-start-header-daynight="night"] #today-main-header { --today-header-img: url('../assets/themes/forest/banner-night.webp'); }
@@ -49,6 +50,7 @@
 [data-start-header-theme="cyberpunk"][data-start-header-daynight="night"] #today-main-header { --today-header-img: url('../assets/themes/cyberpunk/banner-night.webp'); }
 [data-start-header-theme="lab"][data-start-header-daynight="night"] #today-main-header { --today-header-img: url('../assets/themes/lab/banner-night.webp'); }
 [data-start-header-theme="rpg"][data-start-header-daynight="night"] #today-main-header { --today-header-img: url('../assets/themes/rpg/banner-night.webp'); }
+[data-start-header-theme="zombie"][data-start-header-daynight="night"] #today-main-header { --today-header-img: url('../assets/themes/zombie/banner-night.webp'); }
 [data-start-header-theme]:not([data-start-header-theme="none"]) #today-main-header::before {
   content: '';
   position: absolute;
