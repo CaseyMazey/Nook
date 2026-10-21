@@ -15,6 +15,12 @@
   --forest-tree-dim:  brightness(1);
   --forest-tint:      transparent;
   --forest-vignette:  transparent;
+  /* Detailansicht (große Bühne): eigene Werte — mehr Kontrast, dunklerer
+     Himmel, Schatten hinter der Textspalte, Früchte/Blüten mit Glanz. */
+  --forest-detail-dim: brightness(1);
+  --forest-decor-dim:  brightness(1);
+  --forest-detail-sky:  transparent;
+  --forest-detail-side: transparent;
 }
 [data-theme-family="dark"] {
   --forest-bg: #1e2218;
@@ -24,6 +30,10 @@
   --forest-tree-dim:  url(#forest-theme-tint) brightness(.66) saturate(.8);
   --forest-tint:      color-mix(in srgb, var(--sage) 55%, var(--bg));
   --forest-vignette:  color-mix(in srgb, var(--bg) 75%, transparent);
+  --forest-detail-dim: brightness(.52) saturate(.75) contrast(1.18);
+  --forest-decor-dim:  url(#forest-theme-tint-soft) brightness(.92) drop-shadow(0 0 6px color-mix(in srgb, var(--sage) 75%, transparent));
+  --forest-detail-sky:  color-mix(in srgb, var(--bg) 70%, transparent);
+  --forest-detail-side: color-mix(in srgb, var(--bg) 80%, transparent);
 }
 
 /* Checkbox accent — von Detailseite + Checklisten weiterhin genutzt */
@@ -102,6 +112,7 @@
    dunkler Rand — beide nur in dunklen Themes sichtbar (Tokens oben). */
 .forest-bg::before,
 .forest-bg::after,
+.pdt-hero-bg::before,
 .pdt-hero-bg::after {
   content: '';
   position: absolute;
@@ -118,6 +129,13 @@
 .pdt-hero-bg::after {
   background: radial-gradient(ellipse at center, transparent 50%, var(--forest-vignette));
   z-index: 1;
+}
+/* Detailansicht: dunklerer Himmel oben + Schatten hinter der linken
+   Textspalte (Lesbarkeit von Fortschritt/Aufgaben auf hellem Bild). */
+.pdt-hero-bg::before {
+  background:
+    linear-gradient(to bottom, var(--forest-detail-sky), transparent 45%),
+    linear-gradient(to right, var(--forest-detail-side) 0%, color-mix(in srgb, var(--forest-detail-side) 55%, transparent) 26%, transparent 46%);
 }
 
 /* Baum-Ebene — renderForest() räumt/befüllt NUR diesen Layer, Hintergrund/
@@ -478,7 +496,7 @@
 .pdt-landscape {
   width: 100%; height: 100%;
   object-fit: cover; object-position: center 68%;
-  filter: var(--forest-scene-dim);
+  filter: var(--forest-detail-dim);
 }
 .pdt-hero-overlay {
   /* Bewusst kein Wash mehr über dem Hintergrundbild — sollte unverfälscht/
@@ -563,6 +581,13 @@
   margin-top: 4px;
 }
 .pdt-meta-sep { display: none; }
+/* Dunkle Themes: Fortschritt/Aufgaben stehen auf einem Bild — etwas
+   hellere Schrift + kräftigere Leiste als auf einer normalen Fläche. */
+[data-theme-family="dark"] .pdt-progress-label { color: var(--text-2); }
+[data-theme-family="dark"] .pdt-progress-pct,
+[data-theme-family="dark"] .pdt-progress-meta,
+[data-theme-family="dark"] .pdt-project-desc { color: var(--text); }
+[data-theme-family="dark"] .pdt-progress-track { background: color-mix(in srgb, var(--text) 20%, transparent); }
 
 /* .pdt-tree-col, #proj-detail-tree -> project-tree.css */
 
