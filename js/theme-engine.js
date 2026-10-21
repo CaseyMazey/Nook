@@ -46,7 +46,7 @@ const CUSTOM_THEME_VARS = [
   '--event-color', '--event-color-bg',
   '--quicknote-bg', '--quicknote-line', '--quicknote-text', '--highlight-bg', '--user-color-neutral',
   '--core-nav-bg', '--core-modal-bg', '--core-card-opacity',
-  '--font', '--font-heading', '--theme-font-scale', '--mono',
+  '--font', '--font-heading', '--nav-font-scale', '--theme-font-scale', '--mono',
 ];
 
 // =========================================================================
@@ -300,14 +300,15 @@ const PRESET_THEMES = [
     cardOpacity: 85, fontSize: 100, bg: { source: 'cyberpunk', size: 'cover', dim: 40 },
     calendar: { imageTheme: 'cyberpunk' }, startHeader: { banner: 'cyberpunk' }, branding: { theme: 'cyberpunk' }, graphics: { mode: 'theme', theme: 'cyberpunk' } },
   // RPG: gemütliche Abenteurer-Taverne — Pergament bei Tag, Kerzenlicht
-  // bei Nacht. Grafik-Set (Hintergrund, Kalender, Banner, Icon) und der
+  // bei Nacht. Text in Alegreya, Überschriften und Tab-Namen in Blackwood
+  // Castle (dieselbe Schrift wie auf den Questboard-Zetteln). Grafik-Set (Hintergrund, Kalender, Banner, Icon) und der
   // Tavernen-Stil des Questboards (css/questboard-rpg.css) sind per
   // scripts/gen-image.py generiert.
   { id: 'preset_rpg', name: 'RPG', family: 'light',
-    coreColors: { bg: '#ebe0c9', surface: '#faf3e3', nav: '#e4d6ba', modal: '#faf3e3', text: '#3b2b1c', border: '#a88a60', accent: '#8b5e34', font: "'Alegreya', Georgia, serif", headingFont: "'Almendra', Georgia, serif" },
+    coreColors: { bg: '#ebe0c9', surface: '#faf3e3', nav: '#e4d6ba', modal: '#faf3e3', text: '#3b2b1c', border: '#a88a60', accent: '#8b5e34', font: "'Alegreya', Georgia, serif", headingFont: '"Blackwood Castle"', navScale: 1.18 },
     cardOpacity: 92, fontSize: 108, bg: { source: 'rpg', size: 'cover', dim: 72 },
     night: { family: 'dark',
-      coreColors: { bg: '#1a130d', surface: '#2a1f15', nav: '#21180f', modal: '#2f2318', text: '#efe2c8', border: '#8a6a45', accent: '#b07a3e', font: "'Alegreya', Georgia, serif", headingFont: "'Almendra', Georgia, serif" },
+      coreColors: { bg: '#1a130d', surface: '#2a1f15', nav: '#21180f', modal: '#2f2318', text: '#efe2c8', border: '#8a6a45', accent: '#b07a3e', font: "'Alegreya', Georgia, serif", headingFont: '"Blackwood Castle"', navScale: 1.18 },
       cardOpacity: 88, fontSize: 108, bg: { source: 'rpg', size: 'cover', dim: 45 } },
     calendar: { imageTheme: 'rpg' }, startHeader: { banner: 'rpg' }, branding: { theme: 'rpg' }, questboard: { style: 'rpg' },
     graphics: { mode: 'theme', theme: 'rpg' } },
@@ -516,6 +517,9 @@ function deriveThemeVars(core, cardOpacityPct, fontSizePct) {
     '--core-modal-bg': mix(core.modal),
     '--font':          font,
     '--font-heading':  headingFont,
+    // Zierschriften laufen oft kleiner — Tab-Namen (in Überschriften-
+    // Schrift) dann etwas größer setzen (Preset-Eigenschaft navScale).
+    '--nav-font-scale': String(core.headingFont ? (core.navScale || 1) : 1),
     '--mono':          font,
     '--core-card-opacity': opacity,
     '--theme-font-scale': ((fontSizePct || 100) / 100).toFixed(2),

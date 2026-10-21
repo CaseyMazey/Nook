@@ -20,7 +20,7 @@ window.NOOK_CHANGELOG = [
       'Neues Theme RPG mit Tag- und Nachtversion, eigenem Hintergrund, Kalenderbildern, Banner und Icon',
       'Questboard im RPG-Theme als Tavernen-Aushang mit Pergament-Zetteln und Wachssiegeln',
       'Theme-Editor: Questboard-Stil wählbar',
-      'RPG mit eigenen Schriften (Alegreya, Almendra); Theme-Editor: eigene Überschriften-Schrift',
+      'RPG mit eigenen Schriften: Alegreya für Text, Blackwood Castle für Überschriften und Tabs; Theme-Editor: eigene Überschriften-Schrift',
     ],
   },
   {

@@ -12,6 +12,7 @@
   /* Überschriften (Seitentitel, Begrüßung, Fenstertitel) — Themes können
      eine eigene Schrift setzen (theme-engine.js: headingFont). */
   --font-heading: var(--font);
+  --nav-font-scale: 1;
   --mono: 'DM Mono', 'Courier New', monospace;
   /* Eigene Themes (js/theme-engine.js) setzen --font UND --mono auf die
      gewählte Theme-Schrift. Echte Code-Darstellung (Guides-Codeblöcke)
@@ -524,7 +525,11 @@ body.bg-frosted .modal-box {
   padding: 10px 12px;
   border-radius: var(--radius-sm);
   color: var(--text-2);
-  font-size: calc(13.5px * var(--core-font-scale));
+  /* Tab-Namen in Sidebar/„Mehr“ folgen der Überschriften-Schrift des
+     Themes (ohne eigene = Fließtext); die winzigen Bottom-Nav-Labels
+     bleiben unten bewusst bei der Fließtext-Schrift. */
+  font-family: var(--font-heading);
+  font-size: calc(13.5px * var(--core-font-scale) * var(--nav-font-scale));
   font-weight: 400;
   text-align: left;
   transition: background var(--transition), color var(--transition);
@@ -660,6 +665,7 @@ body.bg-frosted .modal-box {
     height: 56px;
     padding: 0;
     border-radius: 0;
+    font-family: var(--font);
     font-size: calc(10px * var(--core-font-scale));
     font-weight: 500;
     color: var(--text-2);
