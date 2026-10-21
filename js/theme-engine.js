@@ -310,9 +310,9 @@ const PRESET_THEMES = [
     cardOpacity: 92, fontSize: 108, bg: { source: 'rpg', size: 'cover', dim: 72 },
     night: { family: 'dark',
       coreColors: { bg: '#1a130d', surface: '#2a1f15', nav: '#21180f', modal: '#2f2318', text: '#efe2c8', border: '#8a6a45', accent: '#b07a3e', font: "'Alegreya', Georgia, serif", headingFont: '"Blackwood Castle"', navScale: 1.18 },
-      cardOpacity: 88, fontSize: 108, bg: { source: 'rpg', size: 'cover', dim: 45 },
-      forest: { style: 'map' } },
+      cardOpacity: 88, fontSize: 108, bg: { source: 'rpg', size: 'cover', dim: 45 } },
     calendar: { imageTheme: 'rpg' }, startHeader: { banner: 'rpg' }, branding: { theme: 'rpg' }, questboard: { style: 'rpg' },
+    forest: { style: 'map' },
     graphics: { mode: 'theme', theme: 'rpg' } },
   // Zombie: aus Kuros Core (Download 2026-10-21) — Farben und Grafik-Set
   // unverändert. Core nutzt die Schrift „Capture it“, die laut Font-
