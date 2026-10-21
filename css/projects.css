@@ -156,8 +156,8 @@
 [data-forest-style="map"][data-theme-family="light"] #project-forest,
 [data-forest-style="map"][data-theme-family="light"] .pdt-hero {
   background:
-    radial-gradient(ellipse at center, transparent 45%, color-mix(in srgb, var(--shadow-tint) 22%, transparent)),
-    linear-gradient(color-mix(in srgb, var(--bg) 48%, transparent), color-mix(in srgb, var(--bg) 48%, transparent)),
+    radial-gradient(ellipse at center, transparent 45%, color-mix(in srgb, var(--amber) 28%, transparent)),
+    linear-gradient(color-mix(in srgb, color-mix(in srgb, var(--bg) 62%, var(--deco-orange)) 64%, transparent), color-mix(in srgb, color-mix(in srgb, var(--bg) 62%, var(--deco-orange)) 64%, transparent)),
     url('../assets/questboard/table.webp') center / cover,
     var(--forest-bg);
 }
