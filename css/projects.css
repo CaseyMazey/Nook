@@ -151,6 +151,16 @@
     url('../assets/questboard/table.webp') center / cover,
     var(--forest-bg);
 }
+/* Tagversion: Tischplatte deutlich heller (warmer Schleier aus der
+   Theme-Hintergrundfarbe, sanfterer Rand) statt dunklem Nussbaum. */
+[data-forest-style="map"][data-theme-family="light"] #project-forest,
+[data-forest-style="map"][data-theme-family="light"] .pdt-hero {
+  background:
+    radial-gradient(ellipse at center, transparent 45%, color-mix(in srgb, var(--shadow-tint) 22%, transparent)),
+    linear-gradient(color-mix(in srgb, var(--bg) 48%, transparent), color-mix(in srgb, var(--bg) 48%, transparent)),
+    url('../assets/questboard/table.webp') center / cover,
+    var(--forest-bg);
+}
 [data-forest-style="map"] .forest-bg,
 [data-forest-style="map"] .pdt-hero-bg {
   inset: 8px;
