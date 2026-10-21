@@ -18,3 +18,7 @@ js/sync-config.js
 # Persönliche Referenzdatei (nicht Teil der App)
 Müll-Wasser.xlsx
 Nook Garten.docx
+
+# Rohdateien + Prompt-Log von scripts/gen-image.py (Bild-KI) — nur das
+# fertige, verkleinerte Asset unter assets/<bereich>/ gehoert ins Repo.
+assets/_raw/

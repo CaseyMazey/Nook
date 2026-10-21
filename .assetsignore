@@ -16,6 +16,7 @@
 scripts/
 AI documentation/
 mockups/
+assets/_raw/
 
 # Gimp-Bearbeitungsquelle (.xcf), nicht das eigentliche Laufzeit-Asset
 # (das PNG liegt daneben) — 32 MB, über Cloudflare Pages' 25-MB-Limit
