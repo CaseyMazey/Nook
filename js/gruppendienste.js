@@ -703,10 +703,14 @@ document.getElementById('gd-duty-delete')?.addEventListener('click', async () =>
 // =========================
 // PDF-EXPORT — Druckliste über mehrere Monate
 // Liest nur die gespeicherte Planung (gdSchedule), berechnet nichts neu.
-// "PDF" läuft über den Druckdialog des Browsers (dort "Als PDF speichern"),
-// wie die Kapitel-Druckansicht der Anleitungen — keine Zusatzbibliothek.
-// Die Klasse am <body> schaltet die @media-print-Regeln in today.css scharf,
-// Drucken auf anderen Tabs bleibt unverändert.
+// Zwei Wege aus denselben Daten (gdExportData):
+//   - "PDF speichern": echte PDF-Datei per jsPDF + AutoTable (cdnjs, feste
+//     Version, erst beim ersten Klick per <script>-Tag geladen) und direkter
+//     Download — nicht jeder Druckdialog (z.B. Android/Drucker-Apps) bietet
+//     "Als PDF speichern" an.
+//   - "Drucken": Druckansicht wie bei den Anleitungen; die Klasse am <body>
+//     schaltet die @media-print-Regeln in today.css scharf, Drucken auf
+//     anderen Tabs bleibt unverändert.
 // =========================
 const gdExportModal = wireModal('gd-export-modal-overlay', { closeIds: ['gd-export-close', 'gd-export-cancel'] });
 const GD_EXPORT_MONTHS = [1, 3, 6, 12];
@@ -716,6 +720,7 @@ let gdExportDutyIds = new Set();
 function gdOpenExport() {
   document.getElementById('gd-export-start').value = dateKey(getWeekStart(gdWidgetViewDate));
   gdExportDutyIds = new Set(gdDuties.map(d => d.id));
+  gdExportShowError('');
   gdRenderExportOptions();
   gdExportModal.open();
 }
@@ -761,20 +766,14 @@ function gdRenderExportOptions() {
   const weeks = gdExportWeeks(start, end);
   document.getElementById('gd-export-range-hint').textContent =
     `${gdFmtDate(dateKey(start))} – ${gdFmtDate(dateKey(end))} · ${weeks.length} Wochen`;
-  document.getElementById('gd-export-print').disabled = !gdExportDutyIds.size || !weeks.length;
+  const empty = !gdExportDutyIds.size || !weeks.length;
+  document.getElementById('gd-export-print').disabled = empty;
+  document.getElementById('gd-export-pdf').disabled = empty;
 }
 document.getElementById('gd-export-start')?.addEventListener('change', gdRenderExportOptions);
 
-function gdExportCellHtml(duty, weekId, withErsatz) {
-  const inRange = gdWeekIdsInRange(duty.startDate, duty.endDate).includes(weekId);
-  if (!inRange) return '<td class="gd-print-off">–</td>';
-  const entry = (gdSchedule[duty.id] || {})[weekId];
-  const regular = (entry?.regular || []).map(gdRefName).map(gdEsc);
-  const ersatz  = (entry?.ersatz  || []).map(gdRefName).map(gdEsc);
-  return `<td>${regular.length ? regular.join(', ') : '–'}${withErsatz && ersatz.length ? `<div class="gd-print-ersatz">Ersatz: ${ersatz.join(', ')}</div>` : ''}</td>`;
-}
-
-function gdBuildPrintHtml() {
+// Gemeinsame Datenbasis für PDF-Datei und Druckansicht
+function gdExportData() {
   const { start, end } = gdExportRange();
   const duties = gdDuties.filter(d => gdExportDutyIds.has(d.id));
   const withErsatz = document.getElementById('gd-export-ersatz').checked;
@@ -782,20 +781,125 @@ function gdBuildPrintHtml() {
   const rows = gdExportWeeks(start, end).map(mon => {
     const fri = new Date(mon); fri.setDate(fri.getDate() + 4);
     const weekId = getWeekId(mon);
-    return `<tr${weekId === nowWeek ? ' class="gd-print-now"' : ''}>
-      <td class="gd-print-kw">${getISOWeek(mon)}</td>
-      <td class="gd-print-dates">${fmt(mon, { day: '2-digit', month: '2-digit' })} – ${fmt(fri, { day: '2-digit', month: '2-digit', year: 'numeric' })}</td>
-      ${duties.map(d => gdExportCellHtml(d, weekId, withErsatz)).join('')}
-    </tr>`;
-  }).join('');
+    return {
+      kw: getISOWeek(mon),
+      dates: `${fmt(mon, { day: '2-digit', month: '2-digit' })} – ${fmt(fri, { day: '2-digit', month: '2-digit', year: 'numeric' })}`,
+      isNow: weekId === nowWeek,
+      cells: duties.map(d => {
+        if (!gdWeekIdsInRange(d.startDate, d.endDate).includes(weekId)) return null;
+        const entry = (gdSchedule[d.id] || {})[weekId];
+        return {
+          regular: (entry?.regular || []).map(gdRefName),
+          ersatz: withErsatz ? (entry?.ersatz || []).map(gdRefName) : [],
+        };
+      }),
+    };
+  });
+  return { start, end, duties, rows, range: `${gdFmtDate(dateKey(start))} – ${gdFmtDate(dateKey(end))}` };
+}
+
+function gdBuildPrintHtml(data) {
+  const cellHtml = c => !c
+    ? '<td class="gd-print-off">–</td>'
+    : `<td>${c.regular.length ? c.regular.map(gdEsc).join(', ') : '–'}${c.ersatz.length ? `<div class="gd-print-ersatz">Ersatz: ${c.ersatz.map(gdEsc).join(', ')}</div>` : ''}</td>`;
+  const rows = data.rows.map(r => `<tr${r.isNow ? ' class="gd-print-now"' : ''}>
+      <td class="gd-print-kw">${r.kw}</td>
+      <td class="gd-print-dates">${r.dates}</td>
+      ${r.cells.map(cellHtml).join('')}
+    </tr>`).join('');
   return `
     <h1 class="gd-print-title">Gruppenpflichten</h1>
-    <div class="gd-print-sub">${gdFmtDate(dateKey(start))} – ${gdFmtDate(dateKey(end))}</div>
+    <div class="gd-print-sub">${data.range}</div>
     <table class="gd-print-table">
-      <thead><tr><th>KW</th><th>Woche</th>${duties.map(d => `<th>${d.icon || ''} ${gdEsc(d.name)}</th>`).join('')}</tr></thead>
+      <thead><tr><th>KW</th><th>Woche</th>${data.duties.map(d => `<th>${d.icon || ''} ${gdEsc(d.name)}</th>`).join('')}</tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
 }
+
+// ── jsPDF lazy per <script>-Tag (wie pdf.js im Speiseplan) ──
+const GD_JSPDF_URL = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+const GD_AUTOTABLE_URL = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js';
+let gdJsPdfPromise = null;
+function gdLoadScript(src) {
+  return new Promise((resolve, reject) => {
+    const el = document.createElement('script');
+    el.src = src;
+    el.onload = resolve;
+    el.onerror = () => reject(new Error('Script konnte nicht geladen werden: ' + src));
+    document.head.appendChild(el);
+  });
+}
+function gdLoadJsPdf() {
+  if (window.jspdf && window.jspdf.jsPDF && window.jspdf.jsPDF.API.autoTable) return Promise.resolve(window.jspdf.jsPDF);
+  if (!gdJsPdfPromise) {
+    gdJsPdfPromise = gdLoadScript(GD_JSPDF_URL)
+      .then(() => gdLoadScript(GD_AUTOTABLE_URL))
+      .then(() => window.jspdf.jsPDF)
+      .catch(err => { gdJsPdfPromise = null; throw err; });
+  }
+  return gdJsPdfPromise;
+}
+
+// PDF-Datei bauen. Emojis (Pflicht-Icons) kann die eingebaute PDF-Schrift
+// nicht darstellen, daher nur die Namen. Keine eigenen Farbwerte: Theme
+// "plain" mit den neutralen Linien-Voreinstellungen von AutoTable, die
+// Kopfzeile ist nur fett.
+function gdBuildPdf(jsPDF, data) {
+  const doc = new jsPDF({ orientation: data.duties.length > 3 ? 'landscape' : 'portrait', unit: 'mm', format: 'a4' });
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.text('Gruppenpflichten', 14, 16);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.text(data.range, 14, 22);
+
+  const cellText = c => !c ? '–'
+    : (c.regular.length ? c.regular.join(', ') : '–') + (c.ersatz.length ? `\nErsatz: ${c.ersatz.join(', ')}` : '');
+  doc.autoTable({
+    startY: 27,
+    theme: 'plain',
+    head: [['KW', 'Woche', ...data.duties.map(d => d.name)]],
+    body: data.rows.map(r => [String(r.kw), r.dates, ...r.cells.map(cellText)]),
+    styles: { font: 'helvetica', fontSize: 9, cellPadding: 1.8, lineWidth: 0.2, valign: 'top' },
+    headStyles: { fontStyle: 'bold' },
+    columnStyles: { 0: { halign: 'center', fontStyle: 'bold', cellWidth: 11 }, 1: { cellWidth: 36 } },
+    margin: { left: 14, right: 14 },
+    didDrawPage: () => {
+      const pages = doc.internal.getNumberOfPages();
+      doc.setFontSize(8);
+      doc.text(`Seite ${pages}`, doc.internal.pageSize.getWidth() - 14, doc.internal.pageSize.getHeight() - 8, { align: 'right' });
+    },
+  });
+  return doc;
+}
+
+function gdExportShowError(msg) {
+  const el = document.getElementById('gd-export-error');
+  el.textContent = msg;
+  el.classList.toggle('hidden', !msg);
+}
+
+document.getElementById('gd-export-pdf')?.addEventListener('click', async () => {
+  const btn = document.getElementById('gd-export-pdf');
+  const data = gdExportData();
+  gdExportShowError('');
+  btn.disabled = true;
+  btn.textContent = 'Wird erstellt …';
+  try {
+    const jsPDF = await gdLoadJsPdf();
+    const doc = gdBuildPdf(jsPDF, data);
+    doc.save(`Gruppenpflichten_${dateKey(data.start)}_bis_${dateKey(data.end)}.pdf`);
+    gdExportModal.close();
+  } catch (err) {
+    gdExportShowError(/Script konnte nicht geladen/.test(err.message)
+      ? 'Der PDF-Baustein konnte nicht geladen werden (keine Internetverbindung?). „Drucken“ funktioniert trotzdem.'
+      : 'PDF konnte nicht erstellt werden: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'PDF speichern';
+  }
+});
+
 
 document.getElementById('gd-export-print')?.addEventListener('click', () => {
   let sheet = document.getElementById('gd-print');
@@ -804,7 +908,7 @@ document.getElementById('gd-export-print')?.addEventListener('click', () => {
     sheet.id = 'gd-print';
     document.body.appendChild(sheet);
   }
-  sheet.innerHTML = gdBuildPrintHtml();
+  sheet.innerHTML = gdBuildPrintHtml(gdExportData());
   gdExportModal.close();
   document.body.classList.add('gd-printing');
   const cleanup = () => {
