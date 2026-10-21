@@ -10,6 +10,14 @@
   --quest-gold-soft: color-mix(in srgb, var(--quest-gold) 16%, transparent);
   --quest-paper:     color-mix(in srgb, var(--surface-solid) 90%, var(--deco-orange));
   --quest-wood:      color-mix(in srgb, var(--dash-bg) 82%, var(--amber));
+  /* Schleier über den generierten Texturen (assets/questboard/) — hält
+     Text in jedem Theme lesbar; im Dunkeln deutlich kräftiger. */
+  --quest-wood-veil:  color-mix(in srgb, var(--bg) 8%, transparent);
+  --quest-paper-veil: color-mix(in srgb, var(--surface-solid) 38%, transparent);
+}
+[data-theme-family="dark"] #view-questboard {
+  --quest-wood-veil:  color-mix(in srgb, var(--bg) 62%, transparent);
+  --quest-paper-veil: color-mix(in srgb, var(--surface-solid) 84%, transparent);
 }
 
 .quest-header-actions { display: flex; align-items: center; gap: 10px; }
@@ -26,10 +34,11 @@
 }
 .quest-wallet-pill[hidden] { display: none; }
 
-/* Das Brett selbst: Holzton + feine Maserung aus Text-Farbe */
+/* Das Brett selbst: generierte Holzbretter, Holzton als Fallback */
 .quest-board {
   background:
-    repeating-linear-gradient(90deg, transparent 0 46px, color-mix(in srgb, var(--text) 3%, transparent) 46px 48px),
+    linear-gradient(var(--quest-wood-veil), var(--quest-wood-veil)),
+    url('../assets/questboard/board.webp') center / cover,
     var(--quest-wood);
   border-width: 3px;
   border-color: color-mix(in srgb, var(--quest-wood) 70%, var(--text));
@@ -45,7 +54,10 @@
 
 .quest-panel {
   position: relative;
-  background: var(--quest-paper);
+  background:
+    linear-gradient(var(--quest-paper-veil), var(--quest-paper-veil)),
+    url('../assets/questboard/parchment.webp') center / 360px repeat,
+    var(--quest-paper);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow-sm);
@@ -192,14 +204,15 @@
 }
 .quest-dice-area[hidden] { display: none; }
 .quest-die {
-  width: 48px; height: 48px;
+  width: 56px; height: 56px;
   display: grid; place-items: center;
-  clip-path: polygon(50% 0, 95% 25%, 95% 75%, 50% 100%, 5% 75%, 5% 25%);
-  background: color-mix(in srgb, var(--deco-orange) 75%, var(--text));
+  background: url('../assets/questboard/d20.webp') center / contain no-repeat;
+  filter: drop-shadow(0 2px 3px color-mix(in srgb, var(--shadow-tint) 35%, transparent));
   color: var(--sage-fg);
+  text-shadow: 0 1px 2px color-mix(in srgb, var(--shadow-tint) 70%, transparent);
   font-family: var(--mono);
   font-weight: 700;
-  font-size: calc(18px * var(--core-font-scale));
+  font-size: calc(19px * var(--core-font-scale));
   flex-shrink: 0;
 }
 .quest-die.rolling { animation: quest-roll 280ms linear infinite; }
@@ -284,8 +297,14 @@
 .quest-muted { color: var(--text-3); font-size: calc(12px * var(--core-font-scale)); margin: 0; }
 
 /* ── Schatztruhe ─────────────────────────────────────────────── */
-.quest-chest-total { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
-.quest-chest-total strong { font-family: var(--mono); font-size: calc(26px * var(--core-font-scale)); color: var(--text); }
+.quest-chest-total { display: flex; align-items: center; gap: 12px; }
+.quest-chest-img { width: 72px; height: 72px; flex-shrink: 0; filter: drop-shadow(0 3px 4px color-mix(in srgb, var(--shadow-tint) 25%, transparent)); }
+.quest-chest-sum { display: flex; align-items: center; gap: 6px; color: var(--text-2); font-size: calc(13px * var(--core-font-scale)); }
+.quest-chest-sum strong { font-family: var(--mono); font-size: calc(26px * var(--core-font-scale)); color: var(--text); }
+.quest-chest-sum .quest-coin { width: 22px; height: 22px; }
+
+/* Münz-Grafik in Badges, Preisen und Header-Pille */
+.quest-coin { width: 1.15em; height: 1.15em; vertical-align: -0.2em; margin-right: 3px; }
 .quest-rewards { display: flex; flex-direction: column; gap: 8px; }
 .quest-reward { display: flex; align-items: center; gap: 8px; }
 .quest-reward-icon { font-size: calc(18px * var(--core-font-scale)); width: 24px; text-align: center; }

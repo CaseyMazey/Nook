@@ -62,15 +62,32 @@ def api(method, url, body=None, wait=False):
     if wait:
         headers["Prefer"] = "wait=60"
     data = json.dumps(body).encode() if body is not None else None
-    req = urllib.request.Request(url, data=data, headers=headers, method=method)
-    try:
-        with urllib.request.urlopen(req, timeout=120) as r:
-            return json.load(r)
-    except urllib.error.HTTPError as e:
-        detail = e.read().decode(errors="replace")[:500]
-        if e.code == 402:
-            die("Kein Guthaben mehr auf Replicate (402). Unter replicate.com > Billing aufladen.")
-        die(f"Replicate-API {e.code}: {detail}")
+    for attempt in range(6):
+        req = urllib.request.Request(url, data=data, headers=headers, method=method)
+        try:
+            with urllib.request.urlopen(req, timeout=120) as r:
+                return json.load(r)
+        except urllib.error.HTTPError as e:
+            detail = e.read().decode(errors="replace")[:500]
+            # Gedrosselt (bei < 5 $ Guthaben nur ~6 Anfragen/Minute) → warten
+            if e.code == 429 and attempt < 5:
+                try:
+                    wait_s = int(json.loads(detail).get("retry_after", 10))
+                except ValueError:
+                    wait_s = 10
+                print(f"Gedrosselt, warte {wait_s + 1} s …")
+                time.sleep(wait_s + 1)
+                continue
+            if e.code == 402:
+                die("Kein Guthaben mehr auf Replicate (402). Unter replicate.com > Billing aufladen.")
+            die(f"Replicate-API {e.code}: {detail}")
+        except (urllib.error.URLError, ConnectionError, TimeoutError) as e:
+            # Kurzer Netzwerkaussetzer (z.B. Firmen-Proxy) → nochmal versuchen
+            if attempt < 5:
+                print(f"Verbindung unterbrochen ({e}), neuer Versuch …")
+                time.sleep(3)
+                continue
+            die(f"Keine Verbindung zu Replicate: {e}")
 
 
 def run(model, inputs):

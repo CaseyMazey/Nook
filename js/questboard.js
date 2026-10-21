@@ -46,6 +46,11 @@ if (!Array.isArray(questRewards)) {
   saveQuestRewards();
 }
 
+// Generierte Grafiken (scripts/gen-image.py) — Illustrationen, daher mit
+// eigenen Farben (Ausnahme der Farbregel, siehe CLAUDE.md).
+const QUEST_COIN_IMG = '<img class="quest-coin" src="assets/questboard/coin.webp" alt="" aria-hidden="true">';
+const QUEST_CHEST_IMG = '<img class="quest-chest-img" src="assets/questboard/chest.webp" alt="" aria-hidden="true">';
+
 let questPickedId = null;   // vom Würfel gezogene Side Quest (nur Anzeige)
 let questRolling = false;
 
@@ -126,7 +131,7 @@ function renderQuestboard() {
   const wallet = document.getElementById('quest-wallet-pill');
   if (wallet) {
     wallet.hidden = !coinsOn;
-    wallet.innerHTML = `<span aria-hidden="true">🪙</span> <strong>${questWallet.coins}</strong>`;
+    wallet.innerHTML = `${QUEST_COIN_IMG}<strong>${questWallet.coins}</strong>`;
   }
   renderQuestNoticeBoard();
   renderQuestChecklistColumn('daily');
@@ -138,7 +143,7 @@ function renderQuestboard() {
 
 function questCoinBadge(card) {
   if (!questSettings.coinsEnabled || !card.coins) return '';
-  return `<span class="quest-coin-badge" title="${card.coins} Münzen">🪙 ${card.coins}</span>`;
+  return `<span class="quest-coin-badge" title="${card.coins} Münzen">${QUEST_COIN_IMG}${card.coins}</span>`;
 }
 
 function questCardHead(card, extra = '') {
@@ -336,14 +341,14 @@ function renderQuestChest() {
         <div class="quest-reward-title">${questEsc(r.title)}</div>
         <div class="quest-progress quest-progress-gold"><span style="width:${pct}%"></span></div>
       </div>
-      <button class="quest-reward-buy" data-quest-redeem="${r.id}" ${can ? '' : 'disabled'} title="${can ? 'Einlösen' : `Noch ${r.cost - questWallet.coins} Münzen`}">🪙 ${r.cost}</button>
+      <button class="quest-reward-buy" data-quest-redeem="${r.id}" ${can ? '' : 'disabled'} title="${can ? 'Einlösen' : `Noch ${r.cost - questWallet.coins} Münzen`}">${QUEST_COIN_IMG}${r.cost}</button>
       <button class="quest-icon-btn" data-quest-reward-edit="${r.id}" title="Bearbeiten" aria-label="Belohnung bearbeiten">✎</button>
     </div>`;
   }).join('');
   const last = questWallet.redeemed.slice(-3).reverse().map(x =>
     `<li>${questEsc(x.title)} <span class="quest-muted">· ${new Date(x.at).toLocaleDateString('de-DE')}</span></li>`).join('');
   host.innerHTML = `
-    <div class="quest-chest-total"><span aria-hidden="true">🪙</span><strong>${questWallet.coins}</strong><span class="quest-muted">Gold · insgesamt ${questWallet.earned} verdient</span></div>
+    <div class="quest-chest-total">${QUEST_CHEST_IMG}<div><div class="quest-chest-sum">${QUEST_COIN_IMG}<strong>${questWallet.coins}</strong> Gold</div><span class="quest-muted">insgesamt ${questWallet.earned} verdient</span></div></div>
     <div class="quest-sub-label">Belohnungen</div>
     <div class="quest-rewards">${rewards || '<p class="quest-muted">Noch keine Belohnungen festgelegt.</p>'}</div>
     <button class="btn-ghost quest-add-reward" id="quest-add-reward-btn">+ Belohnung</button>
