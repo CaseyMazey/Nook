@@ -890,6 +890,7 @@ const NOOK_DATA_GROUPS = [
   { id: 'budget',     label: 'Budget',       resettable: true,
     keys: ['kontostand', 'finanzbaumLevels', 'sparplanerScenario', 'gardenActiveGoalId'], prefixes: ['budget'] },
   { id: 'garden',     label: 'Garten',       resettable: true, prefixes: ['garden'] },
+  { id: 'questboard', label: 'Questboard',   resettable: true, prefixes: ['quest'] },
   { id: 'flashcards', label: 'Karteikarten', resettable: true, keys: ['subjects', 'collapsedGroups'], prefixes: ['fc_'] },
   { id: 'guides',     label: 'Anleitungen',  resettable: true, prefixes: ['guide'] },
   { id: 'tools',      label: 'Tools',        resettable: true, prefixes: ['tools', 'noten'] },

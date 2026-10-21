@@ -28,6 +28,7 @@
   <link rel="stylesheet" href="css/positivity.css" />
   <link rel="stylesheet" href="css/national_day.css" />
   <link rel="stylesheet" href="css/tools.css" />
+  <link rel="stylesheet" href="css/questboard.css" />
   <style>
     /* =========================
        TASKS — erledigte sichtbar
@@ -154,6 +155,10 @@
         <svg width="18" height="18" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="12" rx="1.5" stroke="currentColor" stroke-width="1.4" fill="none" opacity=".7"/><rect x="9" y="2" width="5" height="7" rx="1.5" stroke="currentColor" stroke-width="1.4" fill="none" opacity=".7"/><rect x="9" y="11" width="5" height="3" rx="1" fill="currentColor" opacity=".4"/></svg>
         <span>Projekte</span>
       </button>
+      <button class="nav-btn bottom-nav-off" data-view="questboard">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="none"><path d="M3 2.5h10v9.5l-5 2.5-5-2.5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" fill="none" opacity=".7"/><path d="M8 5l.9 1.8 2 .3-1.45 1.4.35 2L8 9.55 6.2 10.5l.35-2L5.1 7.1l2-.3z" fill="currentColor"/></svg>
+        <span>Quests</span>
+      </button>
       <button class="nav-btn bottom-nav-off" data-view="garden">
         <svg width="18" height="18" viewBox="0 0 16 16" fill="none"><path d="M8 14V7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" opacity=".7"/><path d="M8 9C8 9 4 8.5 4 5C7 5 8 7 8 9Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" fill="none" opacity=".7"/><path d="M8 7C8 7 12 6.5 12 3C9 3 8 5 8 7Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" fill="none" opacity=".7"/></svg>
         <span>Garten</span>
@@ -219,6 +224,10 @@
         <li><button class="nav-btn" data-view="projects">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="12" rx="1.5" stroke="currentColor" stroke-width="1.4" fill="none" opacity=".7"/><rect x="9" y="2" width="5" height="7" rx="1.5" stroke="currentColor" stroke-width="1.4" fill="none" opacity=".7"/><rect x="9" y="11" width="5" height="3" rx="1" fill="currentColor" opacity=".4"/></svg>
           Projekte
+        </button></li>
+        <li><button class="nav-btn" data-view="questboard">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 2.5h10v9.5l-5 2.5-5-2.5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" fill="none" opacity=".7"/><path d="M8 5l.9 1.8 2 .3-1.45 1.4.35 2L8 9.55 6.2 10.5l.35-2L5.1 7.1l2-.3z" fill="currentColor"/></svg>
+          Questboard
         </button></li>
         <li><button class="nav-btn" data-view="garden">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 14V7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" opacity=".7"/><path d="M8 9C8 9 4 8.5 4 5C7 5 8 7 8 9Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" fill="none" opacity=".7"/><path d="M8 7C8 7 12 6.5 12 3C9 3 8 5 8 7Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" fill="none" opacity=".7"/></svg>
@@ -371,6 +380,60 @@
         </div><!-- /dash-content -->
       </section>
  
+      <!-- QUESTBOARD (js/questboard.js) — Tavernen-Aushang mit Daily/Weekly/
+           Time/Side Quests, Würfel und optionaler Schatztruhe. Inhalt der
+           Spalten wird komplett per JS gerendert. -->
+      <section id="view-questboard" class="view">
+        <div class="view-header">
+          <h1 class="view-title">Questboard</h1>
+          <div class="quest-header-actions">
+            <span id="quest-wallet-pill" class="quest-wallet-pill" title="Deine Münzen"></span>
+            <button class="btn-primary" id="quest-add-btn">+ Quest</button>
+          </div>
+        </div>
+        <div class="dash-content quest-board">
+          <div class="quest-columns">
+            <div class="quest-col">
+              <section class="quest-panel">
+                <div class="quest-panel-head"><span class="quest-pin quest-pin-notice" aria-hidden="true"></span><span class="panel-label">Aushang</span></div>
+                <div id="quest-notice"></div>
+              </section>
+              <section class="quest-panel">
+                <div class="quest-panel-head"><span class="quest-pin quest-pin-chest" aria-hidden="true"></span><span class="panel-label">Schatztruhe</span></div>
+                <div id="quest-chest"></div>
+              </section>
+            </div>
+            <div class="quest-col">
+              <section class="quest-panel">
+                <div class="quest-panel-head"><span class="quest-pin quest-pin-daily" aria-hidden="true"></span><span class="panel-label">Daily Quests</span><button class="quest-icon-btn" data-quest-add="daily" title="Daily Quest anpinnen" aria-label="Daily Quest anpinnen">+</button></div>
+                <div id="quest-list-daily" class="quest-list"></div>
+              </section>
+              <section class="quest-panel">
+                <div class="quest-panel-head"><span class="quest-pin quest-pin-weekly" aria-hidden="true"></span><span class="panel-label">Weekly &amp; Check Quests</span><button class="quest-icon-btn" data-quest-add="weekly" title="Check Quest anpinnen" aria-label="Check Quest anpinnen">+</button></div>
+                <div id="quest-list-weekly" class="quest-list"></div>
+              </section>
+            </div>
+            <div class="quest-col">
+              <section class="quest-panel">
+                <div class="quest-panel-head"><span class="quest-pin quest-pin-timed" aria-hidden="true"></span><span class="panel-label">Time Quests</span>
+                  <button class="quest-icon-btn" id="quest-sort-timed-btn" title="Nach Uhrzeit sortieren" aria-label="Nach Uhrzeit sortieren">⇅</button>
+                  <button class="quest-icon-btn" data-quest-add="timed" title="Time Quest anpinnen" aria-label="Time Quest anpinnen">+</button></div>
+                <div id="quest-list-timed" class="quest-list"></div>
+              </section>
+              <section class="quest-panel">
+                <div class="quest-panel-head"><span class="quest-pin quest-pin-side" aria-hidden="true"></span><span class="panel-label">Side Quests</span><button class="quest-icon-btn" data-quest-add="side" title="Side Quest anpinnen" aria-label="Side Quest anpinnen">+</button></div>
+                <div id="quest-dice-area" class="quest-dice-area" hidden>
+                  <div id="quest-die" class="quest-die" aria-live="polite"><span id="quest-die-face">?</span></div>
+                  <button class="btn-ghost" id="quest-roll-btn">Würfeln</button>
+                </div>
+                <div id="quest-list-side" class="quest-list"></div>
+              </section>
+            </div>
+          </div>
+        </div>
+        <div id="quest-toast" class="quest-toast" role="status"></div>
+      </section>
+
       <!-- PROJEKTE -->
       <section id="view-projects" class="view">
         <div class="dash-content forest-active" id="project-dash-content">
@@ -1615,6 +1678,10 @@
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="12" rx="1.5" stroke="currentColor" stroke-width="1.4" fill="none" opacity=".7"/><rect x="9" y="2" width="5" height="7" rx="1.5" stroke="currentColor" stroke-width="1.4" fill="none" opacity=".7"/><rect x="9" y="11" width="5" height="3" rx="1" fill="currentColor" opacity=".4"/></svg>
               Projekte
             </button>
+            <button class="nav-btn" data-view="questboard">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 2.5h10v9.5l-5 2.5-5-2.5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" fill="none" opacity=".7"/><path d="M8 5l.9 1.8 2 .3-1.45 1.4.35 2L8 9.55 6.2 10.5l.35-2L5.1 7.1l2-.3z" fill="currentColor"/></svg>
+              Questboard
+            </button>
             <button class="nav-btn" data-view="garden">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 14V7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" opacity=".7"/><path d="M8 9C8 9 4 8.5 4 5C7 5 8 7 8 9Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" fill="none" opacity=".7"/><path d="M8 7C8 7 12 6.5 12 3C9 3 8 5 8 7Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" fill="none" opacity=".7"/></svg>
               Garten
@@ -1709,6 +1776,52 @@
       } catch (e) {}
     })();
   </script>
+
+  <!-- Questboard: Quest-Modal (js/questboard.js) -->
+  <div id="quest-modal-overlay" class="modal-backdrop hidden" data-type="daily">
+    <div class="modal-box" style="width:460px;">
+      <div class="modal-head"><span id="quest-modal-head-title">Neue Quest</span><button class="modal-x" id="quest-modal-close">✕</button></div>
+      <div class="modal-row">
+        <label>Art</label>
+        <div id="quest-type-picker" class="tile-style-picker">
+          <button class="tile-type-btn" data-type="daily">☀ Daily</button>
+          <button class="tile-type-btn" data-type="weekly">☑ Weekly/Check</button>
+          <button class="tile-type-btn" data-type="timed">⏳ Time</button>
+          <button class="tile-type-btn" data-type="side">🎲 Side</button>
+        </div>
+        <span id="quest-type-hint" class="quest-modal-hint"></span>
+      </div>
+      <div class="modal-row"><label>Titel</label><input type="text" class="modal-input" id="quest-modal-title" placeholder="z.B. Morgenroutine, Küche aufräumen..." autocomplete="off"/></div>
+      <div class="modal-row quest-only-checklist"><label>Schritte (einer pro Zeile)</label><textarea class="modal-textarea" id="quest-modal-items" placeholder="Wasser trinken&#10;Bett machen&#10;10 Min. lesen"></textarea></div>
+      <div class="modal-row quest-only-weekly"><label class="quest-toggle"><input type="checkbox" id="quest-modal-reset-weekly"/> Jeden Montag zurücksetzen (Wochenliste)</label></div>
+      <div class="modal-row quest-only-timed">
+        <label>Zeit</label>
+        <div class="quest-time-row">
+          <input type="time" class="modal-time" id="quest-modal-start" aria-label="Beginn"/>
+          <span>bis</span>
+          <input type="time" class="modal-time" id="quest-modal-end" aria-label="Ende (optional)"/>
+          <span>oder</span>
+          <input type="number" class="modal-input quest-num" id="quest-modal-duration" min="0" step="5" placeholder="Min." aria-label="Dauer in Minuten"/>
+        </div>
+      </div>
+      <div class="modal-row quest-only-side"><label class="quest-toggle"><input type="checkbox" id="quest-modal-repeatable"/> Wiederholbar (bleibt nach dem Erledigen auf dem Brett)</label></div>
+      <div class="modal-row" id="quest-modal-coins-row"><label>Belohnung (Münzen)</label><input type="number" class="modal-input quest-num" id="quest-modal-coins" min="0" step="1"/></div>
+      <div class="modal-actions"><button id="quest-modal-delete" class="btn-ghost quest-danger" hidden>Löschen</button><span class="quest-spacer"></span><button id="quest-modal-cancel" class="btn-ghost">Abbrechen</button><button id="quest-modal-save" class="btn-primary">Anpinnen</button></div>
+    </div>
+  </div>
+
+  <!-- Questboard: Belohnungs-Modal (js/questboard.js) -->
+  <div id="quest-reward-modal-overlay" class="modal-backdrop hidden">
+    <div class="modal-box" style="width:400px;">
+      <div class="modal-head"><span id="quest-reward-modal-head-title">Neue Belohnung</span><button class="modal-x" id="quest-reward-modal-close">✕</button></div>
+      <div class="modal-row"><label>Belohnung</label><input type="text" class="modal-input" id="quest-reward-modal-title" placeholder="z.B. Kaffee unterwegs" autocomplete="off"/></div>
+      <div class="modal-row quest-reward-row">
+        <div><label>Symbol</label><input type="text" class="modal-input quest-num" id="quest-reward-modal-icon" maxlength="4"/></div>
+        <div><label>Preis (Münzen)</label><input type="number" class="modal-input quest-num" id="quest-reward-modal-cost" min="1" step="1"/></div>
+      </div>
+      <div class="modal-actions"><button id="quest-reward-modal-delete" class="btn-ghost quest-danger" hidden>Löschen</button><span class="quest-spacer"></span><button id="quest-reward-modal-cancel" class="btn-ghost">Abbrechen</button><button id="quest-reward-modal-save" class="btn-primary">Speichern</button></div>
+    </div>
+  </div>
 
   <!-- Task Modal -->
   <div id="modal-overlay" class="modal-backdrop hidden">
@@ -3545,6 +3658,7 @@
   <script src="js/forest.js"></script>
   <script src="js/garden-catalog.js"></script>
   <script src="js/garden.js"></script>
+  <script src="js/questboard.js"></script>
   <!-- Spiele: games.js ist der Hub, games-list.js die einzige Stelle,
        die beim Hinzufügen/Entfernen eines Spiels angepasst werden muss -->
   <script src="js/games.js"></script>

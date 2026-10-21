@@ -90,6 +90,10 @@ Persönliches Markdown-Bücherregal für Notizen, Code-Beispiele und Dokumentati
 Langfristige Vorhaben im Projektwald — jedes Projekt wächst als eigener, individualisierbarer Baum.
 → [Wiki: Projekte](https://github.com/CaseyMazey/Nook/wiki/Projekte)
 
+### 🛡️ Questboard
+
+Gamifiziertes Planungsbrett im Tavernen-Look: Daily, Weekly/Check, Time und Side Quests, ein Würfel gegen Entscheidungs-Paralyse, Termin-Aushang aus dem Kalender und eine optionale Schatztruhe mit Münzen und eigenen Belohnungen.
+
 ### 🧰 Tools
 
 Taschenrechner, Focus Timer, Converter, Datenübertragungsraten-Rechner mit Lernmodus, Notenmanager.

@@ -10,9 +10,18 @@
 // hinten wegfallen, angezeigt werden ohnehin nur die neuesten.
 // =========================
 
-window.NOOK_VERSION = '2026.10.3';
+window.NOOK_VERSION = '2026.10.4';
 
 window.NOOK_CHANGELOG = [
+  {
+    version: '2026.10.4',
+    date: '2026-10-21',
+    items: [
+      'Neuer Tab Questboard: Daily, Weekly, Time und Side Quests auf einem Brett',
+      'Würfel entscheidet, welche Side Quest als Nächstes dran ist',
+      'Optionale Schatztruhe: Münzen sammeln und eigene Belohnungen einlösen',
+    ],
+  },
   {
     version: '2026.10.3',
     date: '2026-10-15',

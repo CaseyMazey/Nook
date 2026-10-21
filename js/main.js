@@ -449,6 +449,7 @@ const TAB_VISIBILITY_CONFIG = [
   { id: 'pinboard',   label: 'Pinnwand' },
   { id: 'calendar',   label: 'Kalender' },
   { id: 'projects',   label: 'Projekte' },
+  { id: 'questboard', label: 'Questboard' },
   { id: 'garden',     label: 'Garten' },
   { id: 'flashcards', label: 'Karteikarten' },
   { id: 'guides',     label: 'Anleitungen' },
@@ -663,6 +664,7 @@ function renderView(name) {
   if(name==='settings')  { renderSettings(); }
   if(name==='projects')  { renderProjects(); }
   if(name==='garden')    { renderGarden(); }
+  if(name==='questboard'){ renderQuestboard(); }
 }
 
 // =========================
