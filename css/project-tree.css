@@ -21,7 +21,7 @@
   transition: transform 200ms ease, filter 200ms ease;
 }
 .forest-tree-wrap:hover { transform: translateX(-50%) translateY(-6px); z-index: 999 !important; }
-.forest-tree-wrap.archived .forest-tree-img { filter: saturate(1.05); }
+.forest-tree-wrap.archived .forest-tree-img { filter: saturate(1.05) var(--forest-tree-dim); }
 
 /* PNG-Projektbaum — deutlich vom (illustrierten) Hintergrund abgesetzt
    durch Schlagschatten, den der Hintergrund selbst nicht hat. */
@@ -30,10 +30,10 @@
   height: auto;
   display: block;
   pointer-events: none;
-  filter: drop-shadow(0 10px 10px color-mix(in srgb, var(--shadow-tint) 22%, transparent));
+  filter: drop-shadow(0 10px 10px color-mix(in srgb, var(--shadow-tint) 22%, transparent)) var(--forest-tree-dim);
   transition: filter 200ms ease;
 }
-.forest-tree-wrap:hover .forest-tree-img { filter: drop-shadow(0 14px 14px color-mix(in srgb, var(--shadow-tint) 30%, transparent)) brightness(1.03); }
+.forest-tree-wrap:hover .forest-tree-img { filter: drop-shadow(0 14px 14px color-mix(in srgb, var(--shadow-tint) 30%, transparent)) var(--forest-tree-dim) brightness(1.03); }
 
 /* =========================
    PROJEKTKARTE unter dem Baum
@@ -178,7 +178,7 @@
   width: auto;
   display: block;
   pointer-events: none;
-  filter: drop-shadow(0 16px 16px color-mix(in srgb, var(--shadow-tint) 25%, transparent));
+  filter: drop-shadow(0 16px 16px color-mix(in srgb, var(--shadow-tint) 25%, transparent)) var(--forest-tree-dim);
 }
 
 /* Obst-/Blumen-Deko — rein dekorativ, oben auf der Baumkrone platziert

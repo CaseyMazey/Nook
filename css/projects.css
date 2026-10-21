@@ -5,9 +5,23 @@
 :root {
   --forest-bg:    #eeeae0;
   --proj-success: #16a34a;
+  /* Wald + Detail-Landschaft sind Tagbilder (img/forest/). In dunklen
+     Themes: Szene dimmen, Bäume nur leicht (bleiben Blickfang), dazu eine
+     Tönung in Akzent/Hintergrund des Themes — so nimmt der Wald die
+     Stimmung jedes dunklen Themes an (Cyberpunk lila, Sci-Fi blau …),
+     ohne pro Theme etwas pflegen zu müssen. "brightness(1)" statt "none",
+     weil die Werte an bestehende drop-shadow-Filter angehängt werden. */
+  --forest-scene-dim: brightness(1);
+  --forest-tree-dim:  brightness(1);
+  --forest-tint:      transparent;
+  --forest-vignette:  transparent;
 }
 [data-theme-family="dark"] {
   --forest-bg: #1e2218;
+  --forest-scene-dim: brightness(.5) saturate(.7);
+  --forest-tree-dim:  brightness(.8) saturate(.9);
+  --forest-tint:      color-mix(in srgb, var(--sage) 55%, var(--bg));
+  --forest-vignette:  color-mix(in srgb, var(--bg) 75%, transparent);
 }
 
 /* Checkbox accent — von Detailseite + Checklisten weiterhin genutzt */
@@ -80,6 +94,28 @@
   height: 100%;
   object-fit: cover;
   display: block;
+  filter: var(--forest-scene-dim);
+}
+/* Theme-Tönung (Farbton aus dem Theme, Helligkeit aus dem Bild) +
+   dunkler Rand — beide nur in dunklen Themes sichtbar (Tokens oben). */
+.forest-bg::before,
+.forest-bg::after,
+.pdt-hero-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.forest-bg::before {
+  background: var(--forest-tint);
+  mix-blend-mode: color;
+  opacity: .45;
+  z-index: 1;
+}
+.forest-bg::after,
+.pdt-hero-bg::after {
+  background: radial-gradient(ellipse at center, transparent 50%, var(--forest-vignette));
+  z-index: 1;
 }
 
 /* Baum-Ebene — renderForest() räumt/befüllt NUR diesen Layer, Hintergrund/
@@ -440,11 +476,16 @@
 .pdt-landscape {
   width: 100%; height: 100%;
   object-fit: cover; object-position: center 68%;
+  filter: var(--forest-scene-dim);
 }
 .pdt-hero-overlay {
   /* Bewusst kein Wash mehr über dem Hintergrundbild — sollte unverfälscht/
-     kräftig sichtbar bleiben statt blass zu wirken. */
+     kräftig sichtbar bleiben statt blass zu wirken. Nur in dunklen Themes
+     die Theme-Tönung wie im Projektwald (Tokens oben). */
   position: absolute; inset: 0;
+  background: var(--forest-tint);
+  mix-blend-mode: color;
+  opacity: .45;
 }
 
 /* Alle 3 Spalten über dem Hintergrund */
