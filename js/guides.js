@@ -718,6 +718,10 @@ function applyBookColor(el, cat, idx) {
     el.classList.add('guide-book-custom');
     el.style.background = `linear-gradient(160deg, ${v.bg} 0%, ${hexDarken(v.bg, 0.12)} 100%)`;
     el.style.color = v.text;
+    // Rohfarbe für den Zauberbuch-Stil (css/guides-rpg.css): das Leder
+    // wird damit eingefärbt — die themeabhängige Fläche oben wäre im
+    // Dunkeln zu grau.
+    el.style.setProperty('--book-color', cat.coverColor);
   } else {
     const legacyIdx = (typeof cat.coverColor === 'number') ? cat.coverColor : idx;
     el.classList.add('guide-book-' + (legacyIdx % GUIDE_BOOK_COLORS));

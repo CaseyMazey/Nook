@@ -1,0 +1,209 @@
+/* =============================================================
+   ANLEITUNGEN — Stil „rpg“ (Zauberbücher)
+   Lädt nach css/guides.css und greift nur, wenn das aktive Theme den
+   Anleitungen-Stil „rpg“ hat — js/theme-engine.js setzt dann
+   data-guides-style="rpg" auf <html> (z.B. Preset „RPG“).
+   - Regal: jedes Buch wird ein Tome. Die vom Nutzer gewählte Buchfarbe
+     (inline-Hintergrund aus applyBookColor() in guides.js bzw. die
+     Pastell-Palette) bleibt die Grundfarbe; darüber multipliziert eine
+     graue Leder-Textur (tome-leather.webp, zugleich Maske für die Buch-
+     form), obendrauf die Goldbeschläge (tome-gold.webp) unverändert.
+   - Hauptbereich: aufgeschlagenes altes Buch — Pergamentseite
+     (assets/questboard/note.webp) auf einem Ledereinband.
+   - Seitenkarten (Inhalt, Statistiken, Snippet): Zettel mit Reißzwecke.
+   Grafiken sind generierte Illustrationen (scripts/gen-image.py) und
+   behalten ihre Farben; alles übrige aus Theme-Tokens gemischt.
+============================================================= */
+
+/* ── Regal: Tomes (nur Regalansicht, nicht Listenansicht) ───── */
+[data-guides-style="rpg"] .guide-shelf:not(.list-mode) .guide-book {
+  -webkit-mask: url('../assets/questboard/tome-leather.webp') center / 100% 100% no-repeat;
+          mask: url('../assets/questboard/tome-leather.webp') center / 100% 100% no-repeat;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: hidden;
+  /* Titel zwischen Emblem und unteren Goldecken, weg vom Buchrücken
+     (feste px — Prozent-Padding bezöge sich auf die Regalbreite) */
+  min-height: 226px;
+  padding: 60px 20px 54px 30px;
+  gap: 4px;
+  align-items: center;
+  text-align: center;
+  color: color-mix(in srgb, var(--deco-orange) 60%, var(--sheen)) !important;
+  text-shadow: 0 1px 2px color-mix(in srgb, var(--shadow-tint) 85%, transparent);
+}
+[data-guides-style="rpg"] .guide-shelf:not(.list-mode) .guide-book.active { min-height: 242px; }
+/* Lederfarbe = Rohfarbe des Buchs (--book-color aus guides.js bzw. die
+   Pastell-Palette), nachts mit dunklem Schleier statt grau gerechnet. */
+[data-guides-style="rpg"] .guide-book-0 { --book-color: var(--deco-1); }
+[data-guides-style="rpg"] .guide-book-1 { --book-color: var(--deco-2); }
+[data-guides-style="rpg"] .guide-book-2 { --book-color: var(--deco-3); }
+[data-guides-style="rpg"] .guide-book-3 { --book-color: var(--deco-4); }
+[data-guides-style="rpg"] .guide-book-4 { --book-color: var(--deco-5); }
+[data-guides-style="rpg"] .guide-book-5 { --book-color: var(--deco-6); }
+[data-guides-style="rpg"] .guide-shelf:not(.list-mode) .guide-book {
+  --book-night: transparent;
+  background: linear-gradient(var(--book-night), var(--book-night)), var(--book-color, var(--deco-1)) !important;
+}
+[data-guides-style="rpg"][data-theme-family="dark"] .guide-shelf:not(.list-mode) .guide-book {
+  --book-night: color-mix(in srgb, var(--shadow-tint) 32%, transparent);
+}
+/* Leder: multipliziert die Buchfarbe (::before ersetzt den Cozy-Buchrücken) */
+[data-guides-style="rpg"] .guide-shelf:not(.list-mode) .guide-book::before {
+  inset: 0;
+  width: auto;
+  background: url('../assets/questboard/tome-leather.webp') center / 100% 100% no-repeat;
+  mix-blend-mode: multiply;
+  box-shadow: none;
+  z-index: 0;
+}
+/* Goldbeschläge obenauf (::after ersetzt die Cozy-Glanzkante) */
+[data-guides-style="rpg"] .guide-shelf:not(.list-mode) .guide-book::after {
+  left: 0; inset: 0;
+  width: auto;
+  background: url('../assets/questboard/tome-gold.webp') center / 100% 100% no-repeat;
+  z-index: 1;
+}
+[data-guides-style="rpg"] .guide-shelf:not(.list-mode) .guide-book > * { position: relative; z-index: 2; }
+/* Im Dunkeln ist die Buchfarbe schon dunkler — Gold etwas gedimmt */
+[data-guides-style="rpg"][data-theme-family="dark"] .guide-shelf:not(.list-mode) .guide-book::after { filter: brightness(.85); }
+[data-guides-style="rpg"] .guide-shelf:not(.list-mode) .guide-book-title {
+  font-family: var(--font-heading);
+  font-weight: 400;
+  font-size: calc(17px * var(--core-font-scale));
+  letter-spacing: .01em;
+}
+[data-guides-style="rpg"] .guide-shelf:not(.list-mode) .guide-book-meta,
+[data-guides-style="rpg"] .guide-shelf:not(.list-mode) .guide-book-footer { opacity: .92; }
+[data-guides-style="rpg"] .guide-shelf:not(.list-mode) .guide-book-footer { font-size: calc(10px * var(--core-font-scale)); }
+/* Schatten unter dem Buch (die Maske schneidet box-shadow ab) */
+[data-guides-style="rpg"] .guide-shelf:not(.list-mode) { filter: drop-shadow(0 6px 6px color-mix(in srgb, var(--shadow-tint) 35%, transparent)); }
+
+/* ── Gemeinsame Tinte für Pergament (Hauptbuch + Zettel) ─────── */
+[data-guides-style="rpg"] #guide-main,
+[data-guides-style="rpg"] .guide-side-card {
+  --text:   var(--deco-ink);
+  --text-2: color-mix(in srgb, var(--deco-ink) 82%, transparent);
+  --text-3: color-mix(in srgb, var(--deco-ink) 60%, transparent);
+  --border:        color-mix(in srgb, var(--deco-ink) 13%, transparent);
+  --border-strong: color-mix(in srgb, var(--deco-ink) 24%, transparent);
+  --surface:       color-mix(in srgb, var(--deco-ink) 4%, transparent);
+  --surface-2:     color-mix(in srgb, var(--deco-ink) 6%, transparent);
+  --accent-soft:   color-mix(in srgb, var(--deco-ink) 9%, transparent);
+  --code-bg:            color-mix(in srgb, var(--deco-ink) 7%, transparent);
+  --code-border:        color-mix(in srgb, var(--deco-ink) 18%, transparent);
+  --code-header-bg:     color-mix(in srgb, var(--deco-ink) 6%, transparent);
+  --code-header-border: color-mix(in srgb, var(--deco-ink) 14%, transparent);
+  --paper-dim: none;
+  color-scheme: light;
+  color: var(--text);
+  isolation: isolate;
+}
+[data-guides-style="rpg"][data-theme-family="dark"] #guide-main,
+[data-guides-style="rpg"][data-theme-family="dark"] .guide-side-card { --paper-dim: brightness(.82) saturate(.85); }
+
+/* Syntax-Farben auf Papier: kräftig statt der hellen Nacht-Varianten */
+[data-guides-style="rpg"] #guide-main .hl-string,
+[data-guides-style="rpg"] .guide-side-card .hl-string  { color: color-mix(in srgb, var(--sage) 55%, var(--deco-ink)); }
+[data-guides-style="rpg"] #guide-main .hl-keyword,
+[data-guides-style="rpg"] #guide-main .hl-tag,
+[data-guides-style="rpg"] .guide-side-card .hl-keyword,
+[data-guides-style="rpg"] .guide-side-card .hl-tag     { color: color-mix(in srgb, var(--prio-1) 70%, var(--deco-ink)); }
+[data-guides-style="rpg"] #guide-main .hl-literal,
+[data-guides-style="rpg"] #guide-main .hl-number,
+[data-guides-style="rpg"] #guide-main .hl-variable,
+[data-guides-style="rpg"] #guide-main .hl-attr,
+[data-guides-style="rpg"] .guide-side-card .hl-literal,
+[data-guides-style="rpg"] .guide-side-card .hl-number,
+[data-guides-style="rpg"] .guide-side-card .hl-variable,
+[data-guides-style="rpg"] .guide-side-card .hl-attr    { color: color-mix(in srgb, var(--amber) 70%, var(--deco-ink)); }
+
+/* ── Hauptbereich: Pergamentseite auf Ledereinband ───────────── */
+[data-guides-style="rpg"] #guide-main.panel,
+[data-guides-style="rpg"] body.bg-frosted #guide-main.panel {
+  position: relative;
+  background:
+    radial-gradient(ellipse at center, transparent 55%, color-mix(in srgb, var(--shadow-tint) 40%, transparent)),
+    color-mix(in srgb, var(--amber) 38%, var(--shadow-tint)) !important;
+  border: none;
+  border-radius: 10px;
+  box-shadow:
+    inset 0 0 0 2px color-mix(in srgb, var(--deco-orange) 35%, transparent),
+    0 8px 22px color-mix(in srgb, var(--shadow-tint) 40%, transparent) !important;
+  -webkit-backdrop-filter: none !important;
+          backdrop-filter: none !important;
+  padding: 44px 50px 46px;
+  overflow: visible;
+}
+[data-guides-style="rpg"] #guide-main::before {
+  content: '';
+  position: absolute;
+  inset: 12px;
+  z-index: -1;
+  border-style: solid;
+  border-color: transparent;
+  border-width: 26px;
+  border-image: url('../assets/questboard/note.webp') 44 fill / 26px / 0 stretch;
+  filter: var(--paper-dim);
+  pointer-events: none;
+}
+/* Kapitelzeilen wie Einträge in einem Inhaltsverzeichnis */
+[data-guides-style="rpg"] .guide-chapter-row {
+  background: transparent;
+  border-color: transparent;
+  border-bottom-color: var(--border);
+  border-radius: 0;
+}
+[data-guides-style="rpg"] .guide-chapter-row:hover { background: var(--accent-soft); border-color: transparent; border-bottom-color: var(--border-strong); }
+[data-guides-style="rpg"] #guide-main .guide-book-detail-title,
+[data-guides-style="rpg"] #guide-main h1,
+[data-guides-style="rpg"] #guide-main .guide-h1,
+[data-guides-style="rpg"] #guide-main .guide-h2 {
+  font-family: var(--font-heading);
+  font-weight: 400;
+}
+
+/* ── Seitenkarten: Zettel mit Reißzwecke ─────────────────────── */
+[data-guides-style="rpg"] .guide-side-card.panel,
+[data-guides-style="rpg"] body.bg-frosted .guide-side-card.panel {
+  position: relative;
+  background: none !important;
+  border: none !important;
+  border-radius: 0;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+          backdrop-filter: none !important;
+  overflow: visible;
+  padding: 14px 10px 18px;
+  filter: drop-shadow(0 4px 5px color-mix(in srgb, var(--shadow-tint) 30%, transparent));
+  transform: rotate(var(--tilt, 0deg));
+}
+[data-guides-style="rpg"] .guide-side-card::before {
+  content: '';
+  position: absolute; inset: 0;
+  z-index: -1;
+  border-style: solid;
+  border-color: transparent;
+  border-width: 22px;
+  border-image: url('../assets/questboard/note.webp') 44 fill / 22px / 0 stretch;
+  filter: var(--paper-dim);
+  transform: scaleX(var(--flip, 1));
+  pointer-events: none;
+}
+[data-guides-style="rpg"] .guide-side-card::after {
+  content: '';
+  position: absolute;
+  top: -9px; left: 50%;
+  width: 19px; height: 25px;
+  margin-left: -9px;
+  background: url('../assets/questboard/pin.webp') center / contain no-repeat;
+  pointer-events: none;
+}
+[data-guides-style="rpg"] .guide-sidebar > .guide-side-card:nth-child(odd)  { --tilt: -0.6deg; }
+[data-guides-style="rpg"] .guide-sidebar > .guide-side-card:nth-child(even) { --tilt: 0.5deg; --flip: -1; }
+[data-guides-style="rpg"] .guide-sidebar { gap: 24px; padding-top: 6px; }
+[data-guides-style="rpg"] .guide-side-card .panel-header { border-bottom-color: var(--border); }
+
+@media (max-width: 640px) {
+  [data-guides-style="rpg"] #guide-main.panel { padding: 30px 26px 32px; }
+}

@@ -212,7 +212,7 @@ function syncThemeFontTrigger(key = 'font') {
 
 // customThemes: [{ id, name, family, coreColors, cardOpacity, fontSize,
 //   bg, calendar: {imageTheme}, startHeader: {banner}, branding: {theme},
-//   questboard: {style}, pinboard: {style}, forest: {style}, graphics: {mode, theme} }]
+//   questboard: {style}, pinboard: {style}, guides: {style}, forest: {style}, graphics: {mode, theme} }]
 // themeBackgrounds: { [eingebautesThemeId]: {source, data, name, size, dim} }
 let customThemes     = DB.get('customThemes', []);
 let themeBackgrounds = DB.get('themeBackgrounds', {});
@@ -311,7 +311,7 @@ const PRESET_THEMES = [
     night: { family: 'dark',
       coreColors: { bg: '#1a130d', surface: '#2a1f15', nav: '#21180f', modal: '#2f2318', text: '#efe2c8', border: '#8a6a45', accent: '#b07a3e', font: "'Alegreya', Georgia, serif", headingFont: '"Blackwood Castle"', navScale: 1.18 },
       cardOpacity: 88, fontSize: 108, bg: { source: 'rpg', size: 'cover', dim: 45 } },
-    calendar: { imageTheme: 'rpg' }, startHeader: { banner: 'rpg' }, branding: { theme: 'rpg' }, questboard: { style: 'rpg' }, pinboard: { style: 'rpg' },
+    calendar: { imageTheme: 'rpg' }, startHeader: { banner: 'rpg' }, branding: { theme: 'rpg' }, questboard: { style: 'rpg' }, pinboard: { style: 'rpg' }, guides: { style: 'rpg' },
     forest: { style: 'map' },
     graphics: { mode: 'theme', theme: 'rpg' } },
   // Zombie: aus Kuros Core (Download 2026-10-21) — Farben und Grafik-Set
@@ -403,7 +403,7 @@ const GRAPHICS_THEMES = [
   { id: 'cyberpunk', label: 'Cyberpunk', icon: { src: 'assets/themes/cyberpunk/icon.png', type: 'image/png' } },
   { id: 'lab',       label: 'Lab',       icon: { src: 'assets/themes/lab/icon.png',       type: 'image/png' } },
   { id: 'zombie',    label: 'Zombie',    icon: { src: 'assets/themes/zombie/icon.png',    type: 'image/png' } },
-  { id: 'rpg',       label: 'RPG',       icon: { src: 'assets/themes/rpg/icon.png',       type: 'image/png' }, questboard: 'rpg', pinboard: 'rpg' },
+  { id: 'rpg',       label: 'RPG',       icon: { src: 'assets/themes/rpg/icon.png',       type: 'image/png' }, questboard: 'rpg', pinboard: 'rpg', guides: 'rpg' },
 ];
 const DEFAULT_GRAPHICS_THEME = 'cozy';
 
@@ -460,6 +460,19 @@ function applyPinboardStyle(id, override) {
   const ct = getCustomTheme(id);
   const v = override !== undefined ? override : ((ct && ct.pinboard && ct.pinboard.style) || 'cozy');
   document.documentElement.setAttribute('data-pinboard-style', v);
+}
+
+// Anleitungen-Stil (css/guides-rpg.css, [data-guides-style]): 'cozy' =
+// farbige Buchrücken wie bisher, 'rpg' = Zauberbücher (Tomes) im Regal,
+// Kapitel als altes Buch, Seitenkarten als Zettel.
+const GUIDES_STYLES = [
+  { id: 'cozy', label: 'Cozy (Buchrücken)' },
+  { id: 'rpg',  label: 'Zauberbücher (RPG)' },
+];
+function applyGuidesStyle(id, override) {
+  const ct = getCustomTheme(id);
+  const v = override !== undefined ? override : ((ct && ct.guides && ct.guides.style) || 'cozy');
+  document.documentElement.setAttribute('data-guides-style', v);
 }
 
 // Projektwald-Stil (css/projects.css, [data-forest-style]): 'default' =
@@ -714,6 +727,7 @@ function applyThemeEngine(id) {
   applyBranding(id);
   applyQuestboardStyle(id);
   applyPinboardStyle(id);
+  applyGuidesStyle(id);
   applyForestStyle(id);
   // Browser-/PWA-Leiste in der Hintergrundfarbe des aktiven Themes
   const meta = document.querySelector('meta[name="theme-color"]');
@@ -763,6 +777,7 @@ function applyGraphicsThemeToControls(themeId) {
   const gt = findGraphicsTheme(themeId);
   tbEl('questboard-style').value = (gt && gt.questboard) || 'cozy';
   tbEl('pinboard-style').value = (gt && gt.pinboard) || 'cozy';
+  tbEl('guides-style').value = (gt && gt.guides) || 'cozy';
   previewThemeBuilderLive();
 }
 
@@ -859,6 +874,7 @@ function fillThemeBuilderForm(t) {
   tbEl('branding-theme').value = branding;
   tbEl('questboard-style').value = (t.questboard && t.questboard.style) || 'cozy';
   tbEl('pinboard-style').value = (t.pinboard && t.pinboard.style) || 'cozy';
+  tbEl('guides-style').value = (t.guides && t.guides.style) || 'cozy';
   const graphics = detectGraphicsMode(t.graphics || null, calendar, startHeader, branding);
   tbEl('graphics-theme').value = graphics.theme || DEFAULT_GRAPHICS_THEME;
   setGraphicsModeUI(graphics.mode);
@@ -882,6 +898,7 @@ function openThemeBuilder(editId) {
   renderGraphicsOptions('theme-builder-graphics-theme', null);
   tbEl('questboard-style').innerHTML = QUESTBOARD_STYLES.map(q => `<option value="${q.id}">${q.label}</option>`).join('');
   tbEl('pinboard-style').innerHTML = PINBOARD_STYLES.map(q => `<option value="${q.id}">${q.label}</option>`).join('');
+  tbEl('guides-style').innerHTML = GUIDES_STYLES.map(q => `<option value="${q.id}">${q.label}</option>`).join('');
   renderThemeTemplateStrip();
 
   tbEl('title').textContent = isPreset ? 'Theme erstellen' : (existing ? 'Theme bearbeiten' : 'Theme erstellen');
@@ -952,6 +969,7 @@ function previewThemeBuilderLive() {
   applyBranding(null, tbEl('branding-theme').value);
   applyQuestboardStyle(null, tbEl('questboard-style').value);
   applyPinboardStyle(null, tbEl('pinboard-style').value);
+  applyGuidesStyle(null, tbEl('guides-style').value);
 }
 
 // ── "Vorlage"-Leiste: übernimmt die Werte eines vorhandenen Themes
@@ -1028,6 +1046,7 @@ function saveThemeBuilder() {
     branding: { theme: tbEl('branding-theme').value },
     questboard: { style: tbEl('questboard-style').value },
     pinboard: { style: tbEl('pinboard-style').value },
+    guides: { style: tbEl('guides-style').value },
     graphics: { mode: _teBuilderGraphicsMode, theme: tbEl('graphics-theme').value },
   };
 
@@ -1208,7 +1227,7 @@ function initThemeBuilder() {
     tbEl(k).dataset.auto = '0';
     previewThemeBuilderLive();
   }));
-  ['bg-size', 'calendar-image', 'start-header', 'branding-theme', 'questboard-style', 'pinboard-style']
+  ['bg-size', 'calendar-image', 'start-header', 'branding-theme', 'questboard-style', 'pinboard-style', 'guides-style']
     .forEach(k => tbEl(k).addEventListener('change', previewThemeBuilderLive));
 
   // Schriftart-Dropdowns (Fließtext + Überschriften): Trigger togglet,
