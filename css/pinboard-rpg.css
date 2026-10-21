@@ -22,6 +22,9 @@
   --card-border: color-mix(in srgb, var(--deco-ink) 14%, transparent) !important;
   --accent-soft: color-mix(in srgb, var(--deco-ink) 10%, transparent);
   --surface-2:   color-mix(in srgb, var(--deco-ink) 6%, transparent);
+  /* Code-Karten: dunkle Themes setzen sonst einen dunklen --code-bg, auf
+     dem die Tinte unlesbar wäre — auf Papier immer leicht getönt. */
+  --code-bg:     color-mix(in srgb, var(--deco-ink) 7%, transparent);
   --paper-dim: none;
   color-scheme: light;
   isolation: isolate;
