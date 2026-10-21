@@ -138,6 +138,51 @@
     linear-gradient(to right, var(--forest-detail-side) 0%, color-mix(in srgb, var(--forest-detail-side) 55%, transparent) 26%, transparent 46%);
 }
 
+/* ── Wald-Stil „map“ (Theme-Eigenschaft forest.style, z.B. RPG-Nacht) ──
+   Die Projektübersicht wird zur Karte auf Pergament: Waldbild in Sepia,
+   Papier-Textur (assets/questboard/note.webp) multipliziert darüber und
+   als Maske für ausgefranste Ränder, darunter Holzbretter als Tisch.
+   Gilt nur für #project-forest — die Detailansicht bleibt Nachtszene. */
+[data-forest-style="map"] #project-forest {
+  --forest-tree-dim: sepia(1) saturate(1.2) contrast(1.1) brightness(.8);
+  background:
+    linear-gradient(color-mix(in srgb, var(--shadow-tint) 55%, transparent), color-mix(in srgb, var(--shadow-tint) 55%, transparent)),
+    url('../assets/questboard/planks.webp') center / 1100px auto,
+    var(--forest-bg);
+}
+[data-forest-style="map"] .forest-bg {
+  inset: 8px;
+  -webkit-mask: url('../assets/questboard/note.webp') center / 100% 100% no-repeat;
+          mask: url('../assets/questboard/note.webp') center / 100% 100% no-repeat;
+  filter: drop-shadow(0 6px 14px color-mix(in srgb, var(--shadow-tint) 60%, transparent));
+}
+[data-forest-style="map"] .forest-bg-img {
+  filter: sepia(.92) saturate(.78) contrast(1.08) brightness(.97);
+}
+[data-forest-style="map"] .forest-bg::before {
+  background: url('../assets/questboard/note.webp') center / 100% 100% no-repeat;
+  mix-blend-mode: multiply;
+  opacity: .9;
+}
+[data-forest-style="map"] .forest-bg::after {
+  /* angesengte, nachgedunkelte Kartenränder */
+  background: radial-gradient(ellipse at center, transparent 58%, color-mix(in srgb, var(--amber) 45%, var(--shadow-tint)) 120%);
+  mix-blend-mode: multiply;
+  opacity: .8;
+}
+/* Titel wie mit Tinte auf die Karte geschrieben */
+[data-forest-style="map"] .forest-overlay-title {
+  font-family: var(--font-heading);
+  font-weight: 400;
+  color: var(--deco-ink);
+  text-shadow: 0 1px 0 color-mix(in srgb, var(--sheen) 35%, transparent);
+}
+[data-forest-style="map"] .forest-overlay-subtitle {
+  color: color-mix(in srgb, var(--deco-ink) 75%, transparent);
+  text-shadow: none;
+}
+[data-forest-style="map"] .forest-overlay-top { padding: 46px 58px 0; }
+
 /* Baum-Ebene — renderForest() räumt/befüllt NUR diesen Layer, Hintergrund/
    Overlay/Legende bleiben stehen. Eigener Stacking-Context (z-index:1),
    damit selbst der z-index:999 eines gehoverten Baums nie über die

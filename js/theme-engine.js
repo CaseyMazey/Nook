@@ -212,7 +212,7 @@ function syncThemeFontTrigger(key = 'font') {
 
 // customThemes: [{ id, name, family, coreColors, cardOpacity, fontSize,
 //   bg, calendar: {imageTheme}, startHeader: {banner}, branding: {theme},
-//   questboard: {style}, graphics: {mode, theme} }]
+//   questboard: {style}, forest: {style}, graphics: {mode, theme} }]
 // themeBackgrounds: { [eingebautesThemeId]: {source, data, name, size, dim} }
 let customThemes     = DB.get('customThemes', []);
 let themeBackgrounds = DB.get('themeBackgrounds', {});
@@ -310,7 +310,8 @@ const PRESET_THEMES = [
     cardOpacity: 92, fontSize: 108, bg: { source: 'rpg', size: 'cover', dim: 72 },
     night: { family: 'dark',
       coreColors: { bg: '#1a130d', surface: '#2a1f15', nav: '#21180f', modal: '#2f2318', text: '#efe2c8', border: '#8a6a45', accent: '#b07a3e', font: "'Alegreya', Georgia, serif", headingFont: '"Blackwood Castle"', navScale: 1.18 },
-      cardOpacity: 88, fontSize: 108, bg: { source: 'rpg', size: 'cover', dim: 45 } },
+      cardOpacity: 88, fontSize: 108, bg: { source: 'rpg', size: 'cover', dim: 45 },
+      forest: { style: 'map' } },
     calendar: { imageTheme: 'rpg' }, startHeader: { banner: 'rpg' }, branding: { theme: 'rpg' }, questboard: { style: 'rpg' },
     graphics: { mode: 'theme', theme: 'rpg' } },
   // Zombie: aus Kuros Core (Download 2026-10-21) — Farben und Grafik-Set
@@ -375,6 +376,7 @@ function getCustomTheme(id) {
     return Object.assign({}, base, {
       id, family: n.family || 'dark', coreColors: n.coreColors,
       cardOpacity: n.cardOpacity ?? base.cardOpacity, fontSize: n.fontSize ?? base.fontSize, bg: n.bg || null,
+      forest: n.forest || base.forest,
     });
   }
   return customThemes.find(t => t.id === id) || getPresetTheme(id);
@@ -446,6 +448,14 @@ function applyQuestboardStyle(id, override) {
   const ct = getCustomTheme(id);
   const v = override !== undefined ? override : ((ct && ct.questboard && ct.questboard.style) || 'cozy');
   document.documentElement.setAttribute('data-questboard-style', v);
+}
+
+// Projektwald-Stil (css/projects.css, [data-forest-style]): 'default' =
+// Tagbild (in dunklen Themes gedimmt + getönt), 'map' = Übersicht als
+// Karte auf Pergament (RPG-Nacht). Kann je Tag-/Nachtversion abweichen.
+function applyForestStyle(id) {
+  const ct = getCustomTheme(id);
+  document.documentElement.setAttribute('data-forest-style', (ct && ct.forest && ct.forest.style) || 'default');
 }
 
 // Sidebar-Icon + Favicon. 'none' bzw. eingebaute Themes → Nook-Icon.
@@ -691,6 +701,7 @@ function applyThemeEngine(id) {
   applyStartHeaderTheme(id);
   applyBranding(id);
   applyQuestboardStyle(id);
+  applyForestStyle(id);
   // Browser-/PWA-Leiste in der Hintergrundfarbe des aktiven Themes
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.content = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
