@@ -46,7 +46,7 @@ const CUSTOM_THEME_VARS = [
   '--event-color', '--event-color-bg',
   '--quicknote-bg', '--quicknote-line', '--quicknote-text', '--highlight-bg', '--user-color-neutral',
   '--core-nav-bg', '--core-modal-bg', '--core-card-opacity',
-  '--font', '--theme-font-scale', '--mono',
+  '--font', '--font-heading', '--theme-font-scale', '--mono',
 ];
 
 // =========================================================================
@@ -85,11 +85,15 @@ const FONT_CATEGORIES = [
     { label: 'Bangers (Comic)',                stack: "'Bangers', cursive" },
     { label: 'Permanent Marker (Handschrift)', stack: "'Permanent Marker', cursive" },
   ]},
+  { label: 'Fantasy', fonts: [
+    { label: 'Alegreya (Buch, gut lesbar)', stack: "'Alegreya', Georgia, serif" },
+    { label: 'Almendra (Mittelalter)',      stack: "'Almendra', Georgia, serif" },
+  ]},
 ];
 const DEFAULT_FONT_STACK = FONT_CATEGORIES[0].fonts[0].stack;
 
 // Gleicher CDN wie DM Sans/DM Mono in index.html, alle SIL Open Font License.
-const THEME_WEB_FONTS_URL = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Orbitron:wght@400;700&family=Cinzel:wght@400;600&family=UnifrakturCook:wght@700&family=Press+Start+2P&family=Bangers&family=Permanent+Marker&display=swap';
+const THEME_WEB_FONTS_URL = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Orbitron:wght@400;700&family=Cinzel:wght@400;600&family=UnifrakturCook:wght@700&family=Press+Start+2P&family=Bangers&family=Permanent+Marker&family=Alegreya:ital,wght@0,400;0,500;0,700;1,400&family=Almendra:wght@400;700&display=swap';
 
 // Eigene Font-Dateien aus assets/fonts/ — nur frei lizenzierte Schriften,
 // siehe assets/fonts/README.md. Keine automatische Erkennung (unter
@@ -137,11 +141,15 @@ function ensureThemeFontsLoaded() {
 // Baut die Schriftart-Auswahl im Editor als eigenes Dropdown auf (bewusst
 // kein natives <select> — Browser stellen font-family auf <option> nicht
 // zuverlässig dar). #theme-builder-font (hidden) hält den gewählten Stack.
-function renderFontSelect(currentStack) {
-  const hiddenInput = document.getElementById('theme-builder-font');
-  const panel = document.getElementById('theme-builder-font-panel');
+// key: 'font' (Fließtext) oder 'heading-font' (Überschriften; zusätzlich
+// mit der Option „Wie Fließtext“ = leerer Wert).
+function renderFontSelect(currentStack, key = 'font') {
+  const hiddenInput = document.getElementById('theme-builder-' + key);
+  const panel = document.getElementById('theme-builder-' + key + '-panel');
   if (!hiddenInput || !panel) return;
-  if (!currentStack) currentStack = hiddenInput.value || DEFAULT_FONT_STACK;
+  const isHeading = key === 'heading-font';
+  if (isHeading) currentStack = currentStack || '';
+  else if (!currentStack) currentStack = hiddenInput.value || DEFAULT_FONT_STACK;
   panel.innerHTML = '';
 
   const addGroup = (label, fonts) => {
@@ -155,11 +163,12 @@ function renderFontSelect(currentStack) {
       opt.textContent = f.label;
       opt.style.fontFamily = f.stack;
       opt.dataset.stack = f.stack;
-      opt.addEventListener('click', () => selectThemeFont(f.stack));
+      opt.addEventListener('click', () => selectThemeFont(f.stack, key));
       panel.appendChild(opt);
     });
   };
 
+  if (isHeading) addGroup('Überschriften', [{ label: 'Wie Fließtext', stack: '' }]);
   FONT_CATEGORIES.forEach(cat => addGroup(cat.label, cat.fonts));
   const seen = new Set();
   const customFonts = [];
@@ -171,27 +180,27 @@ function renderFontSelect(currentStack) {
   if (customFonts.length) addGroup('Eigene Fonts', customFonts);
 
   hiddenInput.value = currentStack;
-  syncThemeFontTrigger();
+  syncThemeFontTrigger(key);
 }
 
-function selectThemeFont(stack) {
-  document.getElementById('theme-builder-font').value = stack;
-  const panel = document.getElementById('theme-builder-font-panel');
+function selectThemeFont(stack, key = 'font') {
+  document.getElementById('theme-builder-' + key).value = stack;
+  const panel = document.getElementById('theme-builder-' + key + '-panel');
   panel.querySelectorAll('.tb-font-option').forEach(el => {
     el.classList.toggle('active', el.dataset.stack === stack);
   });
   panel.classList.add('hidden');
-  syncThemeFontTrigger();
+  syncThemeFontTrigger(key);
   previewThemeBuilderLive();
 }
 
-function syncThemeFontTrigger() {
-  const hiddenInput = document.getElementById('theme-builder-font');
-  const triggerLabel = document.getElementById('theme-builder-font-trigger-label');
-  const trigger = document.getElementById('theme-builder-font-trigger');
+function syncThemeFontTrigger(key = 'font') {
+  const hiddenInput = document.getElementById('theme-builder-' + key);
+  const triggerLabel = document.getElementById('theme-builder-' + key + '-trigger-label');
+  const trigger = document.getElementById('theme-builder-' + key + '-trigger');
   if (!hiddenInput || !triggerLabel || !trigger) return;
-  const stack = hiddenInput.value || DEFAULT_FONT_STACK;
-  const activeOpt = document.querySelector(`#theme-builder-font-panel .tb-font-option[data-stack="${CSS.escape(stack)}"]`);
+  const stack = key === 'heading-font' ? hiddenInput.value : (hiddenInput.value || DEFAULT_FONT_STACK);
+  const activeOpt = document.querySelector(`#theme-builder-${key}-panel .tb-font-option[data-stack="${CSS.escape(stack)}"]`);
   triggerLabel.textContent = activeOpt ? activeOpt.textContent : stack;
   trigger.style.fontFamily = stack;
 }
@@ -295,11 +304,11 @@ const PRESET_THEMES = [
   // Tavernen-Stil des Questboards (css/questboard-rpg.css) sind per
   // scripts/gen-image.py generiert.
   { id: 'preset_rpg', name: 'RPG', family: 'light',
-    coreColors: { bg: '#ebe0c9', surface: '#faf3e3', nav: '#e4d6ba', modal: '#faf3e3', text: '#3b2b1c', border: '#a88a60', accent: '#8b5e34', font: DEFAULT_FONT_STACK },
-    cardOpacity: 92, fontSize: 100, bg: { source: 'rpg', size: 'cover', dim: 72 },
+    coreColors: { bg: '#ebe0c9', surface: '#faf3e3', nav: '#e4d6ba', modal: '#faf3e3', text: '#3b2b1c', border: '#a88a60', accent: '#8b5e34', font: "'Alegreya', Georgia, serif", headingFont: "'Almendra', Georgia, serif" },
+    cardOpacity: 92, fontSize: 108, bg: { source: 'rpg', size: 'cover', dim: 72 },
     night: { family: 'dark',
-      coreColors: { bg: '#1a130d', surface: '#2a1f15', nav: '#21180f', modal: '#2f2318', text: '#efe2c8', border: '#8a6a45', accent: '#b07a3e', font: DEFAULT_FONT_STACK },
-      cardOpacity: 88, fontSize: 100, bg: { source: 'rpg', size: 'cover', dim: 45 } },
+      coreColors: { bg: '#1a130d', surface: '#2a1f15', nav: '#21180f', modal: '#2f2318', text: '#efe2c8', border: '#8a6a45', accent: '#b07a3e', font: "'Alegreya', Georgia, serif", headingFont: "'Almendra', Georgia, serif" },
+      cardOpacity: 88, fontSize: 108, bg: { source: 'rpg', size: 'cover', dim: 45 } },
     calendar: { imageTheme: 'rpg' }, startHeader: { banner: 'rpg' }, branding: { theme: 'rpg' }, questboard: { style: 'rpg' },
     graphics: { mode: 'theme', theme: 'rpg' } },
   { id: 'preset_lab', name: 'Lab', family: 'dark',
@@ -474,6 +483,9 @@ function deriveThemeVars(core, cardOpacityPct, fontSizePct) {
   const opacity = cardOpacityPct + '%';
   const mix = hex => `color-mix(in srgb, ${hex} ${opacity}, transparent)`;
   const font = core.font || DEFAULT_FONT_STACK;
+  // Optionale eigene Überschriften-Schrift (Seitentitel, Begrüßung,
+  // Fenstertitel) — ohne Angabe dieselbe wie der Fließtext.
+  const headingFont = core.headingFont || font;
   return {
     '--bg':            core.bg,
     '--bg-2':          mixHex(core.bg, tint, 0.05),
@@ -503,6 +515,7 @@ function deriveThemeVars(core, cardOpacityPct, fontSizePct) {
     '--core-nav-bg':   mix(core.nav),
     '--core-modal-bg': mix(core.modal),
     '--font':          font,
+    '--font-heading':  headingFont,
     '--mono':          font,
     '--core-card-opacity': opacity,
     '--theme-font-scale': ((fontSizePct || 100) / 100).toFixed(2),
@@ -529,7 +542,7 @@ function applyCustomThemeVars(id) {
   const ct = getCustomTheme(id);
   if (!ct) return false;
   const core = getThemeCore(ct);
-  if (themeFontNeedsLoading(core.font)) ensureThemeFontsLoaded();
+  if (themeFontNeedsLoading(core.font) || themeFontNeedsLoading(core.headingFont)) ensureThemeFontsLoaded();
   applyVarsToRoot(deriveThemeVars(core, ct.cardOpacity ?? 100, ct.fontSize ?? 100), ct.family);
   return true;
 }
@@ -731,6 +744,7 @@ function readThemeBuilderCore() {
     border:  tbEl('border').value,
     accent:  tbEl('accent').value,
     font:    tbEl('font').value || DEFAULT_FONT_STACK,
+    headingFont: tbEl('heading-font').value || undefined,
     // Nur gespeichert, wenn selbst gewählt — sonst folgen sie der Ableitung
     // (derivedNoteColors) und passen sich an, wenn sich Akzent/Karte ändern.
     quicknote: tbEl('quicknote').dataset.auto === '1' ? undefined : tbEl('quicknote').value,
@@ -779,6 +793,7 @@ function fillThemeBuilderVariant(t) {
   tbEl('opacity').value = t.cardOpacity ?? 100;
   tbEl('fontsize').value = t.fontSize ?? 100;
   renderFontSelect(core.font);
+  renderFontSelect(core.headingFont || '', 'heading-font');
 
   const bg = normalizeBgMeta(t.bg) || { source: 'none' };
   _teBuilderBgData = bg.data || null;
@@ -861,6 +876,7 @@ function openThemeBuilder(editId) {
 function closeThemeBuilder() {
   document.getElementById('theme-builder-overlay').classList.add('hidden');
   tbEl('font-panel').classList.add('hidden');
+  tbEl('heading-font-panel').classList.add('hidden');
   _teBuilderEditId = null;
   _teBuilderBgData = null;
   _teBuilderBgName = null;
@@ -1151,16 +1167,19 @@ function initThemeBuilder() {
   ['bg-size', 'calendar-image', 'start-header', 'branding-theme', 'questboard-style']
     .forEach(k => tbEl(k).addEventListener('change', previewThemeBuilderLive));
 
-  // Schriftart-Dropdown: Trigger togglet, Klick außerhalb schließt.
-  tbEl('font-trigger').addEventListener('click', e => {
-    e.stopPropagation();
-    tbEl('font-panel').classList.toggle('hidden');
-  });
-  document.addEventListener('click', e => {
-    const panel = tbEl('font-panel');
-    if (!panel.classList.contains('hidden') && !panel.contains(e.target) && !tbEl('font-trigger').contains(e.target)) {
-      panel.classList.add('hidden');
-    }
+  // Schriftart-Dropdowns (Fließtext + Überschriften): Trigger togglet,
+  // Klick außerhalb schließt.
+  ['font', 'heading-font'].forEach(key => {
+    tbEl(key + '-trigger').addEventListener('click', e => {
+      e.stopPropagation();
+      tbEl(key + '-panel').classList.toggle('hidden');
+    });
+    document.addEventListener('click', e => {
+      const panel = tbEl(key + '-panel');
+      if (!panel.classList.contains('hidden') && !panel.contains(e.target) && !tbEl(key + '-trigger').contains(e.target)) {
+        panel.classList.add('hidden');
+      }
+    });
   });
 
   // Hintergrund

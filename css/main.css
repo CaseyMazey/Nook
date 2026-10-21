@@ -9,6 +9,9 @@
 :root {
   /* ── Fonts ────────────────────────────────────────────── */
   --font: 'DM Sans', system-ui, sans-serif;
+  /* Überschriften (Seitentitel, Begrüßung, Fenstertitel) — Themes können
+     eine eigene Schrift setzen (theme-engine.js: headingFont). */
+  --font-heading: var(--font);
   --mono: 'DM Mono', 'Courier New', monospace;
   /* Eigene Themes (js/theme-engine.js) setzen --font UND --mono auf die
      gewählte Theme-Schrift. Echte Code-Darstellung (Guides-Codeblöcke)
@@ -744,7 +747,7 @@ body.bg-frosted .modal-box {
 }
 
 .view-title {
-  font-family: var(--font);
+  font-family: var(--font-heading);
   font-size: calc(26px * var(--core-font-scale));
   font-weight: 700;
   letter-spacing: -0.5px;
@@ -985,7 +988,7 @@ body.bg-frosted .modal-box {
 .modal-head,
 .budget-goal-head,
 .dr-result-top { display: flex; justify-content: space-between; align-items: center; }
-.modal-head > span { font-family: var(--font); font-size: calc(17px * var(--core-font-scale)); font-weight: 700; letter-spacing: -0.3px; }
+.modal-head > span { font-family: var(--font-heading); font-size: calc(17px * var(--core-font-scale)); font-weight: 700; letter-spacing: -0.3px; }
 .modal-x { color: var(--text-3); font-size: calc(14px * var(--core-font-scale)); padding: 4px 8px; border-radius: var(--radius-sm); transition: background var(--transition), color var(--transition); }
 .modal-x:hover { background: var(--accent-soft); color: var(--text); }
 
