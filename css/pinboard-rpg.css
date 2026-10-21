@@ -127,4 +127,18 @@
   opacity: 1;
 }
 [data-pinboard-style="rpg"] .desk-card--code .desk-card-body { border-radius: 6px; }
+/* Kopieren-Knopf: auf Papier sonst eine dunkle Fläche (--surface im
+   Nachtmodus) — hier heller Papierton mit Tinte, dezent immer sichtbar. */
+[data-pinboard-style="rpg"] .desk-code-copy {
+  background: color-mix(in srgb, var(--sheen) 55%, transparent);
+  border-color: color-mix(in srgb, var(--deco-ink) 22%, transparent);
+  color: color-mix(in srgb, var(--deco-ink) 75%, transparent);
+  opacity: .55;
+}
+[data-pinboard-style="rpg"] .desk-code-copy:hover,
+[data-pinboard-style="rpg"] .desk-card--code .desk-card-body:hover .desk-code-copy {
+  background: color-mix(in srgb, var(--sheen) 80%, transparent);
+  color: var(--deco-ink);
+  opacity: 1;
+}
 [data-pinboard-style="rpg"] .desk-card--quote .desk-textarea { font-family: var(--font-heading); font-style: normal; }
