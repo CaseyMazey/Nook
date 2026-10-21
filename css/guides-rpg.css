@@ -79,6 +79,79 @@
 /* Schatten unter dem Buch (die Maske schneidet box-shadow ab) */
 [data-guides-style="rpg"] .guide-shelf:not(.list-mode) { filter: drop-shadow(0 6px 6px color-mix(in srgb, var(--shadow-tint) 35%, transparent)); }
 
+/* ── Holz: Bücherschrank fürs Regal, Questboard-Brett darunter ──
+   Gleiche Bretter/Rahmen wie das RPG-Questboard (planks.webp), der
+   Regalboden aus der warmen Nussbaum-Platte (table.webp). */
+[data-guides-style="rpg"] #view-guides {
+  --guides-frame:      color-mix(in srgb, var(--amber) 30%, var(--shadow-tint));
+  --guides-board-veil: color-mix(in srgb, color-mix(in srgb, var(--bg) 55%, var(--amber)) 14%, transparent);
+  --guides-case-veil:  color-mix(in srgb, var(--shadow-tint) 42%, transparent);
+}
+[data-guides-style="rpg"][data-theme-family="dark"] #view-guides {
+  --guides-board-veil: color-mix(in srgb, var(--bg) 55%, transparent);
+  --guides-case-veil:  color-mix(in srgb, var(--shadow-tint) 62%, transparent);
+}
+/* Bücherschrank: dunkle Rückwand, Rahmen, die Bücher stehen auf einem
+   dicken Boden mit Vorderkante */
+[data-guides-style="rpg"] .guide-shelf-wrap {
+  background:
+    linear-gradient(var(--guides-case-veil), var(--guides-case-veil)),
+    url('../assets/questboard/planks.webp') top center / 100% auto repeat-y;
+  border: 10px solid var(--guides-frame);
+  border-bottom: none;
+  border-radius: var(--radius-lg) var(--radius-lg) 6px 6px;
+  box-shadow:
+    inset 0 10px 22px color-mix(in srgb, var(--shadow-tint) 55%, transparent),
+    inset 0 -6px 14px color-mix(in srgb, var(--shadow-tint) 35%, transparent);
+  padding: 22px 16px 0;
+}
+[data-guides-style="rpg"] .guide-shelf-wrap .guide-shelf { padding: 6px 8px 0; }
+[data-guides-style="rpg"] .guide-shelf-board,
+[data-guides-style="rpg"][data-theme-family="dark"] .guide-shelf-board {
+  height: 26px;
+  margin: 0 -26px 0;
+  border-radius: 3px 3px 6px 6px;
+  background:
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--sheen) 22%, transparent) 0,
+      transparent 4px,
+      transparent 15px,
+      color-mix(in srgb, var(--shadow-tint) 45%, transparent) 16px,
+      color-mix(in srgb, var(--shadow-tint) 20%, transparent) 100%),
+    url('../assets/questboard/table.webp') center 40% / 100% auto no-repeat;
+  box-shadow:
+    0 8px 14px color-mix(in srgb, var(--shadow-tint) 40%, transparent),
+    0 -2px 6px color-mix(in srgb, var(--shadow-tint) 35%, transparent);
+}
+[data-guides-style="rpg"] .guide-shelf.list-mode { padding-bottom: 18px; }
+[data-guides-style="rpg"] .guide-shelf-wrap:has(.guide-shelf.list-mode) { border-bottom: 10px solid var(--guides-frame); }
+/* „Neues Buch“-Kachel auf dunkler Rückwand lesbar */
+[data-guides-style="rpg"] .guide-book-add {
+  border-color: color-mix(in srgb, var(--sage-fg) 40%, transparent);
+  color: color-mix(in srgb, var(--sage-fg) 80%, transparent);
+}
+
+/* Brett hinter Kapitel und Zetteln */
+[data-guides-style="rpg"] .guide-detail-grid {
+  background:
+    linear-gradient(var(--guides-board-veil), var(--guides-board-veil)),
+    url('../assets/questboard/planks.webp') top center / 100% auto repeat-y,
+    color-mix(in srgb, var(--dash-bg) 70%, var(--amber));
+  border: 10px solid var(--guides-frame);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--sheen) 10%, transparent),
+    inset 0 6px 18px color-mix(in srgb, var(--shadow-tint) 45%, transparent),
+    var(--dash-shadow);
+  padding: 28px 26px 30px;
+  gap: 26px;
+}
+@media (max-width: 640px) {
+  [data-guides-style="rpg"] .guide-detail-grid { padding: 18px 10px 20px; border-width: 6px; }
+  [data-guides-style="rpg"] .guide-shelf-wrap { border-width: 6px; padding: 16px 8px 0; }
+  [data-guides-style="rpg"] .guide-shelf-board { margin: 0 -14px; }
+}
+
 /* ── Gemeinsame Tinte für Pergament (Hauptbuch + Zettel) ─────── */
 [data-guides-style="rpg"] #guide-main,
 [data-guides-style="rpg"] .guide-side-card {
@@ -154,6 +227,8 @@
   border-bottom-color: var(--border);
   border-radius: 0;
 }
+/* „Öffnen“-Pfeil: nutzt sonst --bg (nachts fast schwarz) */
+[data-guides-style="rpg"] .guide-chapter-open { background: color-mix(in srgb, var(--sheen) 45%, transparent); }
 [data-guides-style="rpg"] .guide-chapter-row:hover { background: var(--accent-soft); border-color: transparent; border-bottom-color: var(--border-strong); }
 [data-guides-style="rpg"] #guide-main .guide-book-detail-title,
 [data-guides-style="rpg"] #guide-main h1,
