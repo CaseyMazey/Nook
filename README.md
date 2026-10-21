@@ -45,7 +45,7 @@ Für Funktionen, die einen sicheren Browser-Kontext brauchen (Google-Calendar-An
 
 Kurzüberblick pro Bereich — die vollständige Nutzer-Doku mit allen Optionen und Details steht im [Wiki](https://github.com/CaseyMazey/Nook/wiki).
 
-### 🏠 Heute 🔧 *Momentan in Bearbeitung*
+### 🏠 Heute
 
 Persönliche Startseite: Unterrichtsblöcke, Wochenaufgaben, Gruppenpflichten-Planer, Mini-Kalender, Wetter, Schnellnotiz, National-Day- und Positivity-Widget.
 → [Wiki: Heute](https://github.com/CaseyMazey/Nook/wiki/Heute)
@@ -90,7 +90,7 @@ Persönliches Markdown-Bücherregal für Notizen, Code-Beispiele und Dokumentati
 Langfristige Vorhaben im Projektwald — jedes Projekt wächst als eigener, individualisierbarer Baum.
 → [Wiki: Projekte](https://github.com/CaseyMazey/Nook/wiki/Projekte)
 
-### 🛡️ Questboard
+### 🛡️ Questboard 🔧 *Momentan in Bearbeitung*
 
 Gamifiziertes Planungsbrett im Tavernen-Look: Daily, Weekly/Check, Time und Side Quests, ein Würfel gegen Entscheidungs-Paralyse, Termin-Aushang aus dem Kalender und eine optionale Schatztruhe mit Münzen und eigenen Belohnungen.
 
