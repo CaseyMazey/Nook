@@ -49,6 +49,7 @@ if (!Array.isArray(questRewards)) {
 // Generierte Grafiken (scripts/gen-image.py) — Illustrationen, daher mit
 // eigenen Farben (Ausnahme der Farbregel, siehe CLAUDE.md).
 const QUEST_COIN_IMG = '<img class="quest-coin" src="assets/questboard/coin.webp" alt="" aria-hidden="true">';
+const QUEST_SEAL_IMG = '<img class="quest-seal" src="assets/questboard/seal.webp" alt="Erledigt" title="Erledigt">';
 const QUEST_CHEST_IMG = '<img class="quest-chest-img" src="assets/questboard/chest.webp" alt="" aria-hidden="true">';
 
 let questPickedId = null;   // vom Würfel gezogene Side Quest (nur Anzeige)
@@ -181,7 +182,8 @@ function renderQuestChecklistColumn(type) {
           <span>${questEsc(i.text)}</span></label></li>`).join('')}
       </ul>
       <div class="quest-progress" aria-label="${done} von ${total} erledigt"><span style="width:${pct}%"></span></div>
-      <div class="quest-card-foot">${complete ? '✓ Quest abgeschlossen' : `${done}/${total}`}</div>
+      <div class="quest-card-foot">${complete ? 'Quest abgeschlossen' : `${done}/${total}`}</div>
+      ${complete ? QUEST_SEAL_IMG : ''}
     </article>`;
   }).join('');
 }
@@ -221,6 +223,7 @@ function renderQuestTimed() {
         </div>
       </div>
       ${questCardHead(card, questIsNow(card) ? '<span class="quest-tag quest-tag-now">Jetzt</span>' : '')}
+      ${card.done ? QUEST_SEAL_IMG : ''}
     </article>`).join('');
 }
 
