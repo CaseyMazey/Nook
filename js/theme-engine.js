@@ -1259,6 +1259,10 @@ if (!THEME_FAMILY[theme] && !getCustomTheme(theme)) {
   setTheme(base && getCustomTheme(base) ? base : 'light');
 }
 else applyThemeEngine(theme);
+// Sonne/Mond-Knopf (today.js) wurde beim Laden geprüft, bevor diese Datei
+// da war — Presets/eigene Themes mit Nachtversion galten da noch als
+// "ohne Tag/Nacht" und der Knopf blieb versteckt. Jetzt neu prüfen.
+if (typeof updateThemeIcon === 'function') updateThemeIcon();
 // settings.js zeigt beim Laden bereits die zuletzt offene View an — ist das
 // die Einstellungsseite, wurde die Theme-Auswahl gezeichnet, BEVOR diese
 // Datei geladen war (also ohne Preset-/eigene Themes). Daher hier einmal
