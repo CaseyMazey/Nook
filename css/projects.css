@@ -139,32 +139,40 @@
 }
 
 /* ── Wald-Stil „map“ (Theme-Eigenschaft forest.style, z.B. RPG-Nacht) ──
-   Die Projektübersicht wird zur Karte auf Pergament: Waldbild in Sepia,
-   Papier-Textur (assets/questboard/note.webp) multipliziert darüber und
-   als Maske für ausgefranste Ränder, darunter Holzbretter als Tisch.
-   Gilt nur für #project-forest — die Detailansicht bleibt Nachtszene. */
-[data-forest-style="map"] #project-forest {
+   Übersicht UND Detailansicht werden zur Karte auf Pergament: Bild in
+   Sepia, Papier-Textur (assets/questboard/note.webp) multipliziert
+   darüber und als Maske für ausgefranste Ränder, darunter eine warme
+   Nussbaum-Tischplatte (assets/questboard/table.webp). */
+[data-forest-style="map"] #project-forest,
+[data-forest-style="map"] .pdt-hero {
   --forest-tree-dim: sepia(1) saturate(1.2) contrast(1.1) brightness(.8);
   background:
-    linear-gradient(color-mix(in srgb, var(--shadow-tint) 55%, transparent), color-mix(in srgb, var(--shadow-tint) 55%, transparent)),
-    url('../assets/questboard/planks.webp') center / 1100px auto,
+    radial-gradient(ellipse at center, transparent 40%, color-mix(in srgb, var(--shadow-tint) 55%, transparent)),
+    url('../assets/questboard/table.webp') center / cover,
     var(--forest-bg);
 }
-[data-forest-style="map"] .forest-bg {
+[data-forest-style="map"] .forest-bg,
+[data-forest-style="map"] .pdt-hero-bg {
   inset: 8px;
   -webkit-mask: url('../assets/questboard/note.webp') center / 100% 100% no-repeat;
           mask: url('../assets/questboard/note.webp') center / 100% 100% no-repeat;
   filter: drop-shadow(0 6px 14px color-mix(in srgb, var(--shadow-tint) 60%, transparent));
 }
-[data-forest-style="map"] .forest-bg-img {
+[data-forest-style="map"] .forest-bg-img,
+[data-forest-style="map"] .pdt-landscape {
   filter: sepia(.92) saturate(.78) contrast(1.08) brightness(.97);
 }
-[data-forest-style="map"] .forest-bg::before {
+[data-forest-style="map"] .forest-bg::before,
+[data-forest-style="map"] .pdt-hero-overlay {
   background: url('../assets/questboard/note.webp') center / 100% 100% no-repeat;
   mix-blend-mode: multiply;
   opacity: .9;
 }
-[data-forest-style="map"] .forest-bg::after {
+/* Nachtszenen-Schatten der Detailansicht (Himmel/Textspalte) entfällt —
+   auf Papier wird stattdessen mit Tinte geschrieben (s.u.). */
+[data-forest-style="map"] .pdt-hero-bg::before { background: none; }
+[data-forest-style="map"] .forest-bg::after,
+[data-forest-style="map"] .pdt-hero-bg::after {
   /* angesengte, nachgedunkelte Kartenränder */
   background: radial-gradient(ellipse at center, transparent 58%, color-mix(in srgb, var(--amber) 45%, var(--shadow-tint)) 120%);
   mix-blend-mode: multiply;
@@ -182,6 +190,30 @@
   text-shadow: none;
 }
 [data-forest-style="map"] .forest-overlay-top { padding: 46px 58px 0; }
+
+/* Detailansicht auf der Karte: Früchte/Blüten als zarte Farbtupfer,
+   linke Spalte in Tinte, Inhalte weg vom ausgefransten Rand. */
+[data-forest-style="map"] .pdt-hero {
+  --forest-decor-dim: sepia(.55) saturate(.9) brightness(.92);
+}
+[data-forest-style="map"] .pdt-left {
+  --text:   var(--deco-ink);
+  --text-2: color-mix(in srgb, var(--deco-ink) 82%, transparent);
+  --text-3: color-mix(in srgb, var(--deco-ink) 62%, transparent);
+  padding: 58px 16px 30px 48px;
+}
+[data-forest-style="map"] .pdt-left .pdt-project-name {
+  font-family: var(--font-heading);
+  font-weight: 400;
+  color: var(--deco-ink);
+  text-shadow: 0 1px 0 color-mix(in srgb, var(--sheen) 35%, transparent);
+}
+[data-forest-style="map"] .pdt-left .pdt-progress-label { color: var(--text-2); }
+[data-forest-style="map"] .pdt-left .pdt-progress-pct,
+[data-forest-style="map"] .pdt-left .pdt-progress-meta,
+[data-forest-style="map"] .pdt-left .pdt-project-desc { color: var(--text); }
+[data-forest-style="map"] .pdt-toolbar { padding: 26px 34px; }
+[data-forest-style="map"] .pdt-info-card { margin: 30px 30px 30px 0; }
 
 /* Baum-Ebene — renderForest() räumt/befüllt NUR diesen Layer, Hintergrund/
    Overlay/Legende bleiben stehen. Eigener Stacking-Context (z-index:1),
