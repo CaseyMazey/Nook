@@ -375,7 +375,11 @@ document.getElementById('theme-picker')?.addEventListener('click', e => {
   if (!btn) return;
   // Klick auf das bereits aktive Tag/Nacht-Theme behält die aktuelle Version.
   if (btn.dataset.themeValue !== themePickerId(theme)) {
-    setTheme(btn.dataset.themeValue);
+    // War das bisherige Theme dunkel und hat das neue eine Nachtversion,
+    // direkt in die Nacht wechseln statt grell in den Tag (Augen schonen).
+    const wasDark = document.documentElement.getAttribute('data-theme-family') === 'dark';
+    const night = nightThemeId(btn.dataset.themeValue);
+    setTheme(wasDark && night ? night : btn.dataset.themeValue);
     applyThemeAuto(true); // bei aktiver Automatik gleich die passende Version
   }
   renderThemeSettings();
