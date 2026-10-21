@@ -18,6 +18,7 @@ window.NOOK_CHANGELOG = [
     date: '2026-10-21',
     items: [
       'Neues Theme Zombie (aus Kuros Core) mit Hintergrund, Kalenderbildern, Banner und Icon',
+      'RPG: Projektwald als Pergament-Karte, Pinnwand als Pergament-Blätter mit farbigen Pins',
     ],
   },
   {

@@ -99,6 +99,9 @@ function buildDeskCardEl(card) {
     el.style.background = 'var(--user-color-bg)';
     el.style.setProperty('--card-fg', 'var(--user-color-text)');
     el.style.setProperty('--card-border', 'var(--user-color-border)');
+    // Pinnwand-Stil „rpg“ (css/pinboard-rpg.css): Karte wird Pergament,
+    // die Kartenfarbe wandert auf den Pin.
+    el.style.setProperty('--card-pin', card.color);
   } else {
     el.style.background = '';
   }

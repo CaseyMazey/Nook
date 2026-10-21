@@ -1,0 +1,100 @@
+/* =============================================================
+   PINNWAND — Stil „rpg“ (Pergament-Blätter)
+   Lädt nach css/pinboard.css und greift nur, wenn das aktive Theme den
+   Pinnwand-Stil „rpg“ hat — js/theme-engine.js setzt dann
+   data-pinboard-style="rpg" auf <html> (z.B. Preset „RPG“).
+   Jede Karte wird ein Pergament-Blatt (dieselbe Grafik wie die
+   Questboard-Zettel, assets/questboard/note.webp); die vom Nutzer gewählte
+   Kartenfarbe (--card-pin, pinboard.js) wird zum Pin oben auf dem Blatt.
+   Inline gesetzte Kartenfarben (pinboard.js) werden hier mit !important
+   überstimmt — nur in diesem Stil.
+============================================================= */
+
+[data-pinboard-style="rpg"] #today-desk { gap: 16px; }
+[data-pinboard-style="rpg"] .desk-col { gap: 18px; }
+
+[data-pinboard-style="rpg"] .desk-card {
+  /* Tinte auf Papier — in jedem Theme dieselbe, das Papier bleibt hell */
+  --text:   var(--deco-ink);
+  --text-2: color-mix(in srgb, var(--deco-ink) 82%, transparent);
+  --text-3: color-mix(in srgb, var(--deco-ink) 58%, transparent);
+  --card-fg:     var(--deco-ink) !important;
+  --card-border: color-mix(in srgb, var(--deco-ink) 14%, transparent) !important;
+  --accent-soft: color-mix(in srgb, var(--deco-ink) 10%, transparent);
+  --surface-2:   color-mix(in srgb, var(--deco-ink) 6%, transparent);
+  --paper-dim: none;
+  color-scheme: light;
+  isolation: isolate;
+  overflow: visible;
+  background: none !important;
+  border: none !important;
+  border-radius: 0;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+          backdrop-filter: none !important;
+  padding: 8px 6px 6px;
+  filter: drop-shadow(0 4px 5px color-mix(in srgb, var(--shadow-tint) 30%, transparent));
+  transform: rotate(var(--tilt, 0deg));
+  transition: transform var(--transition-slow);
+}
+[data-pinboard-style="rpg"][data-theme-family="dark"] .desk-card { --paper-dim: brightness(.8) saturate(.85); }
+
+/* Papier als border-image auf ::before (im Dunkeln gedimmt, ohne den Text
+   mitzudimmen) — gleiche Technik wie die Questboard-Zettel. */
+[data-pinboard-style="rpg"] .desk-card::before {
+  content: '';
+  position: absolute; inset: 0;
+  z-index: -1;
+  border-style: solid;
+  border-color: transparent;
+  border-width: 22px;
+  border-image: url('../assets/questboard/note.webp') 44 fill / 22px / 0 stretch;
+  filter: var(--paper-dim);
+  transform: scaleX(var(--flip, 1));
+  pointer-events: none;
+}
+
+/* Pin in der Kartenfarbe: runder Kopf mit Glanzlicht und Schatten. */
+[data-pinboard-style="rpg"] .desk-card::after {
+  content: '';
+  position: absolute;
+  top: -8px; left: 50%;
+  width: 20px; height: 20px;
+  margin-left: -10px;
+  border-radius: 50%;
+  /* Kartenfarben sind meist Pastell — als Pin kräftiger, wie Glas-Pins */
+  filter: saturate(2.4) brightness(.86) contrast(1.08);
+  background:
+    radial-gradient(circle at 34% 30%, color-mix(in srgb, var(--sheen) 75%, transparent) 0 14%, transparent 42%),
+    radial-gradient(circle at 60% 70%, color-mix(in srgb, var(--shadow-tint) 30%, transparent), transparent 70%),
+    var(--card-pin, var(--sage));
+  box-shadow:
+    0 2px 3px color-mix(in srgb, var(--shadow-tint) 45%, transparent),
+    inset 0 -1px 2px color-mix(in srgb, var(--shadow-tint) 30%, transparent);
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Leichte, wechselnde Schräglage wie angepinnte Zettel */
+[data-pinboard-style="rpg"] .desk-col > .desk-card:nth-child(3n+1) { --tilt: -0.5deg; }
+[data-pinboard-style="rpg"] .desk-col > .desk-card:nth-child(3n+2) { --tilt: 0.45deg; --flip: -1; }
+[data-pinboard-style="rpg"] .desk-col > .desk-card:nth-child(3n)   { --tilt: -0.2deg; }
+[data-pinboard-style="rpg"] .desk-card:hover,
+[data-pinboard-style="rpg"] .desk-card:focus-within { --tilt: 0deg; }
+
+/* Inhalte weg vom ausgefransten Rand */
+[data-pinboard-style="rpg"] .desk-card-header {
+  padding-top: 14px;
+  margin: 0 8px;
+  background: transparent;
+}
+[data-pinboard-style="rpg"] .desk-card-body { margin: 0 8px 6px; }
+[data-pinboard-style="rpg"] .desk-card-title { opacity: .78; }
+[data-pinboard-style="rpg"] .desk-card--important .desk-card-title {
+  font-family: var(--font-heading);
+  text-transform: none;
+  letter-spacing: .01em;
+  opacity: 1;
+}
+[data-pinboard-style="rpg"] .desk-card--code .desk-card-body { border-radius: 6px; }
+[data-pinboard-style="rpg"] .desk-card--quote .desk-textarea { font-family: var(--font-heading); font-style: normal; }
