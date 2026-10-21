@@ -19,7 +19,9 @@
 [data-theme-family="dark"] {
   --forest-bg: #1e2218;
   --forest-scene-dim: brightness(.5) saturate(.7);
-  --forest-tree-dim:  brightness(.8) saturate(.9);
+  /* Bäume: Theme-Farbton wie der Wald (SVG-Filter #forest-theme-tint in
+     index.html) und fast so dunkel — sollen dazugehören, nicht leuchten. */
+  --forest-tree-dim:  url(#forest-theme-tint) brightness(.66) saturate(.8);
   --forest-tint:      color-mix(in srgb, var(--sage) 55%, var(--bg));
   --forest-vignette:  color-mix(in srgb, var(--bg) 75%, transparent);
 }

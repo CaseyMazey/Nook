@@ -119,6 +119,18 @@
   </style>
 </head>
 <body>
+  <!-- Theme-Tönung für Bild-Illustrationen (Projektwald-Bäume, css/
+       project-tree.css über --forest-tree-dim): legt die Theme-Farbe
+       (--forest-tint) per Farbton-Mischung NUR auf die Bildpixel — ein
+       überlagertes Element würde als Rechteck sichtbar oder die Namens-
+       schilder mitfärben. flood-color liest die CSS-Variable live. -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <filter id="forest-theme-tint" color-interpolation-filters="sRGB">
+      <feFlood style="flood-color: var(--forest-tint)" flood-opacity="0.75" result="tint"/>
+      <feBlend in="tint" in2="SourceGraphic" mode="color" result="tinted"/>
+      <feComposite in="tinted" in2="SourceAlpha" operator="in"/>
+    </filter>
+  </svg>
  
   <div id="app">
 
