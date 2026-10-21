@@ -1,0 +1,228 @@
+/* =============================================================
+   QUESTBOARD — Stil „rpg“ (Tavernen-Aushang)
+   Lädt nach css/questboard.css und überschreibt nur, wenn das aktive
+   Theme den Questboard-Stil „rpg“ hat — js/theme-engine.js setzt dann
+   data-questboard-style="rpg" auf <html> (z.B. Preset „RPG“).
+   Breite verwitterte Holzbretter im Rahmen, Bereichstitel als Holzleisten,
+   jede Quest ein eigener angepinnter Pergament-Zettel, Wachssiegel für
+   Erledigtes. Bretter/Zettel/Pins/Siegel/Münze/Truhe/Würfel sind
+   generierte Illustrationen (assets/questboard/, scripts/gen-image.py)
+   und behalten ihre Farben; alles übrige aus Theme-Tokens gemischt.
+============================================================= */
+
+/* Mittelalterliche Titelschrift — liegt schon für den Theme-Editor bei
+   (assets/fonts/README.md: frei für öffentliche Nutzung). */
+@font-face {
+  font-family: 'Quest Blackwood';
+  src: url('../assets/fonts/Blackwood-Castle.ttf') format('truetype');
+  font-display: swap;
+}
+
+[data-questboard-style="rpg"] #view-questboard {
+  --quest-wood:       color-mix(in srgb, var(--dash-bg) 70%, var(--amber));
+  --quest-frame:      color-mix(in srgb, var(--amber) 30%, var(--shadow-tint));
+  --quest-title-font: 'Quest Blackwood', Georgia, serif;
+  /* Schleier über dem Holz: im Hellen nur ein Hauch Wärme, im Dunkeln
+     deutlich abgedunkelt — gedämpft statt knallig. */
+  --quest-wood-veil:  color-mix(in srgb, color-mix(in srgb, var(--bg) 55%, var(--amber)) 14%, transparent);
+  --quest-plank-veil: color-mix(in srgb, var(--shadow-tint) 55%, transparent);
+  /* Pergament bleibt in jedem Theme hell → eigene, feste Tinte. Im
+     Dunkeln wird nur das Papier gedimmt (Kerzenlicht statt Flutlicht). */
+  --quest-ink:        var(--deco-ink);
+  --quest-paper-dim:  none;
+}
+[data-questboard-style="rpg"][data-theme-family="dark"] #view-questboard {
+  --quest-wood-veil:  color-mix(in srgb, var(--bg) 55%, transparent);
+  --quest-plank-veil: color-mix(in srgb, var(--shadow-tint) 72%, transparent);
+  --quest-paper-dim:  brightness(.8) saturate(.85);
+}
+
+/* ── Brett: breite Bretter (planks.webp, senkrecht nahtlos), dunkler Rahmen ──
+   Zweiter Selektor: Themes mit Hintergrundbild machen .dash-content sonst
+   durchsichtig (main.css, body.has-bg-image) — hier ist der Kasten aber
+   das Brett selbst und muss bleiben. */
+[data-questboard-style="rpg"] .quest-board,
+[data-questboard-style="rpg"] body.has-bg-image .quest-board.dash-content {
+  background:
+    linear-gradient(var(--quest-wood-veil), var(--quest-wood-veil)),
+    url('../assets/questboard/planks.webp') top center / 100% auto repeat-y,
+    var(--quest-wood);
+  border: 10px solid var(--quest-frame);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--sheen) 10%, transparent),
+    inset 0 6px 18px color-mix(in srgb, var(--shadow-tint) 45%, transparent),
+    var(--dash-shadow);
+}
+[data-questboard-style="rpg"] .quest-columns { gap: 26px 22px; }
+[data-questboard-style="rpg"] .quest-col { gap: 26px; }
+
+/* Bereich = Holzleiste als Titel + Zettel darunter (kein eigener Kasten) */
+[data-questboard-style="rpg"] .quest-panel {
+  background: none;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  transform: none !important;   /* schlägt die Schräglage der Cozy-Kästen (nth-child) */
+}
+[data-questboard-style="rpg"] .quest-panel-head {
+  margin: 0 auto 16px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  background:
+    linear-gradient(var(--quest-plank-veil), var(--quest-plank-veil)),
+    url('../assets/questboard/planks.webp') center / 900px auto;
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--sheen) 18%, transparent),
+    inset 0 -2px 0 color-mix(in srgb, var(--shadow-tint) 35%, transparent),
+    0 3px 8px color-mix(in srgb, var(--shadow-tint) 35%, transparent);
+  color: var(--sage-fg);
+}
+[data-questboard-style="rpg"] .quest-panel-head .panel-label {
+  font-family: var(--quest-title-font);
+  font-weight: 400;
+  font-size: calc(19px * var(--core-font-scale));
+  letter-spacing: .02em;
+  text-transform: none;
+  color: var(--sage-fg);
+  text-shadow: 0 1px 2px color-mix(in srgb, var(--shadow-tint) 70%, transparent);
+}
+[data-questboard-style="rpg"] .quest-panel-head .quest-icon-btn { color: color-mix(in srgb, var(--sage-fg) 75%, transparent); }
+[data-questboard-style="rpg"] .quest-panel-head .quest-icon-btn:hover:not(:disabled) { background: color-mix(in srgb, var(--sage-fg) 14%, transparent); color: var(--sage-fg); }
+[data-questboard-style="rpg"] .quest-pin { width: 9px; height: 9px; }
+[data-questboard-style="rpg"] .quest-pin-notice { --pin: var(--sage-light); }
+
+/* ── Pergament-Zettel ──────────────────────────────────────────
+   Papier liegt als border-image auf ::before (gedimmt im Dunkeln, ohne
+   den Text mitzudimmen), Reißzwecke als ::after. Auf dem Zettel gelten
+   eigene Text-Tokens (Tinte), damit alle Kind-Elemente lesbar bleiben. */
+[data-questboard-style="rpg"] .quest-note,
+[data-questboard-style="rpg"] .quest-card {
+  --text:   var(--quest-ink);
+  --text-2: color-mix(in srgb, var(--quest-ink) 82%, transparent);
+  --text-3: color-mix(in srgb, var(--quest-ink) 58%, transparent);
+  --track-bg: color-mix(in srgb, var(--quest-ink) 12%, transparent);
+  --border-strong: color-mix(in srgb, var(--quest-ink) 30%, transparent);
+  --sage-bg:     color-mix(in srgb, var(--sage) 20%, transparent);
+  --sage-border: color-mix(in srgb, var(--sage) 45%, transparent);
+  --sage-dark:   color-mix(in srgb, var(--sage) 55%, var(--quest-ink));
+  color-scheme: light;   /* Checkboxen hell wie das Papier, auch im Dunkeln */
+  position: relative;
+  isolation: isolate;
+  padding: 20px 20px 18px;
+  background: none;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  color: var(--text);
+  opacity: 1;
+  filter: drop-shadow(0 4px 5px color-mix(in srgb, var(--shadow-tint) 32%, transparent));
+  transform: rotate(var(--tilt, 0deg));
+  transition: transform var(--transition-slow);
+}
+[data-questboard-style="rpg"] .quest-note::before,
+[data-questboard-style="rpg"] .quest-card::before {
+  content: '';
+  position: absolute; inset: 0;
+  z-index: -1;
+  border-style: solid;
+  border-color: transparent;
+  border-width: 22px;
+  border-image: url('../assets/questboard/note.webp') 44 fill / 22px / 0 stretch;
+  filter: var(--quest-paper-dim);
+  transform: scaleX(var(--flip, 1));
+}
+[data-questboard-style="rpg"] .quest-note::after,
+[data-questboard-style="rpg"] .quest-card::after {
+  content: '';
+  position: absolute;
+  top: -9px; left: 50%;
+  width: 19px; height: 25px;
+  margin-left: -9px;
+  background: url('../assets/questboard/pin.webp') center / contain no-repeat;
+}
+[data-questboard-style="rpg"] .quest-list { gap: 22px; }
+[data-questboard-style="rpg"] .quest-list > :nth-child(3n+1),
+[data-questboard-style="rpg"] .quest-note-tilt-a { --tilt: -0.9deg; }
+[data-questboard-style="rpg"] .quest-list > :nth-child(3n+2),
+[data-questboard-style="rpg"] .quest-note-tilt-b { --tilt: 0.7deg; --flip: -1; }
+[data-questboard-style="rpg"] .quest-list > :nth-child(3n) { --tilt: -0.3deg; }
+[data-questboard-style="rpg"] .quest-note:hover,
+[data-questboard-style="rpg"] .quest-card:hover { --tilt: 0deg; }
+[data-questboard-style="rpg"] .quest-note .btn-ghost,
+[data-questboard-style="rpg"] .quest-card .btn-ghost {
+  background: transparent;
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+[data-questboard-style="rpg"] .quest-note .btn-ghost:hover,
+[data-questboard-style="rpg"] .quest-card .btn-ghost:hover { background: var(--track-bg); }
+
+[data-questboard-style="rpg"] .quest-card-title {
+  font-family: var(--quest-title-font);
+  font-weight: 400;
+  font-size: calc(19px * var(--core-font-scale));
+  line-height: 1.15;
+}
+/* Erledigt = Wachssiegel statt ausgegrautem Zettel */
+[data-questboard-style="rpg"] .quest-card.is-complete { padding-bottom: 34px; }
+[data-questboard-style="rpg"] .quest-card.is-complete .quest-card-title { text-decoration: none; }
+[data-questboard-style="rpg"] .quest-card.is-complete .quest-checklist,
+[data-questboard-style="rpg"] .quest-card.is-complete .quest-timed-row { opacity: .7; }
+[data-questboard-style="rpg"] .quest-seal {
+  display: block;
+  position: absolute;
+  right: 16px; bottom: 6px;
+  width: 44px; height: 44px;
+  transform: rotate(-14deg);
+  pointer-events: none;
+  filter: drop-shadow(0 2px 2px color-mix(in srgb, var(--shadow-tint) 35%, transparent));
+}
+[data-questboard-style="rpg"] .quest-card-timed.is-now {
+  filter: drop-shadow(0 0 7px color-mix(in srgb, var(--deco-purple) 85%, transparent));
+}
+[data-questboard-style="rpg"] .quest-card-side.is-picked {
+  --tilt: 0deg;
+  filter: drop-shadow(0 0 9px var(--deco-orange));
+}
+
+/* Leere Spalte = gestrichelter „Platz für einen Zettel“ auf dem Holz */
+[data-questboard-style="rpg"] .quest-empty {
+  border-color: color-mix(in srgb, var(--sage-fg) 45%, transparent);
+  background: color-mix(in srgb, var(--shadow-tint) 22%, transparent);
+  color: var(--sage-fg);
+}
+[data-questboard-style="rpg"] .quest-empty span { color: color-mix(in srgb, var(--sage-fg) 72%, transparent); }
+[data-questboard-style="rpg"] .quest-empty:hover { background: color-mix(in srgb, var(--shadow-tint) 34%, transparent); }
+
+/* ── Würfel (Grafik), Erledigt-Liste und Hinweise direkt auf dem Holz ── */
+[data-questboard-style="rpg"] .quest-die {
+  width: 56px; height: 56px;
+  clip-path: none;
+  background: url('../assets/questboard/d20.webp') center / contain no-repeat;
+  filter: drop-shadow(0 2px 3px color-mix(in srgb, var(--shadow-tint) 35%, transparent));
+  text-shadow: 0 1px 2px color-mix(in srgb, var(--shadow-tint) 70%, transparent);
+  font-size: calc(19px * var(--core-font-scale));
+}
+[data-questboard-style="rpg"] .quest-dice-area .btn-ghost { background: var(--glass-bg); }
+[data-questboard-style="rpg"] .quest-list > .quest-muted { color: var(--sage-fg); text-shadow: 0 1px 2px color-mix(in srgb, var(--shadow-tint) 60%, transparent); }
+[data-questboard-style="rpg"] .quest-done-list {
+  color: var(--sage-fg);
+  padding: 6px 12px 10px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--shadow-tint) 40%, transparent);
+}
+[data-questboard-style="rpg"] .quest-done-list .quest-icon-btn { color: var(--sage-fg); }
+[data-questboard-style="rpg"] .quest-done-list .btn-ghost { background: var(--glass-bg); }
+
+/* ── Münze, Truhe ─────────────────────────────────────────────── */
+[data-questboard-style="rpg"] .quest-coin-ico .quest-coin { display: inline-block; width: 1.15em; height: 1.15em; vertical-align: -0.2em; margin-right: 3px; }
+[data-questboard-style="rpg"] .quest-coin-emoji { display: none; }
+[data-questboard-style="rpg"] .quest-chest-total { align-items: center; gap: 12px; flex-wrap: nowrap; }
+[data-questboard-style="rpg"] .quest-chest-img { display: block; width: 72px; height: 72px; flex-shrink: 0; filter: drop-shadow(0 3px 4px color-mix(in srgb, var(--shadow-tint) 25%, transparent)); }
+[data-questboard-style="rpg"] .quest-chest-sum { align-items: center; }
+[data-questboard-style="rpg"] .quest-chest-sum .quest-coin { width: 22px; height: 22px; }
+
+@media (max-width: 480px) {
+  [data-questboard-style="rpg"] .quest-board { padding: 18px 10px 20px; border-width: 6px; }
+}

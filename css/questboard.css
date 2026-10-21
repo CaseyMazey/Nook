@@ -1,39 +1,17 @@
 /* =============================================================
    QUESTBOARD (js/questboard.js)
-   Tavernen-Aushang: kleine Holzkacheln im dunklen Rahmen, Bereichstitel
-   als Holzleisten, jede Quest ein eigener angepinnter Pergament-Zettel.
-   Texturen/Zettel/Pins/Siegel sind generierte Illustrationen
-   (assets/questboard/, scripts/gen-image.py) und behalten ihre Farben;
-   alles übrige aus Theme-Tokens gemischt (siehe CLAUDE.md).
+   Standard-Stil („Cozy“): Brett mit angepinnten Pergament-Karten, rein
+   aus Theme-Tokens gemischt (keine festen Werte, siehe CLAUDE.md) —
+   Pin-Farben je Quest-Art über die vorhandenen Deko-Tokens.
+   Themes mit Questboard-Stil „rpg“ (js/theme-engine.js) bekommen
+   zusätzlich css/questboard-rpg.css (Holz, Zettel, Grafiken).
 ============================================================= */
-
-/* Mittelalterliche Titelschrift — liegt schon für den Theme-Editor bei
-   (assets/fonts/README.md: frei für öffentliche Nutzung). */
-@font-face {
-  font-family: 'Quest Blackwood';
-  src: url('../assets/fonts/Blackwood-Castle.ttf') format('truetype');
-  font-display: swap;
-}
 
 #view-questboard {
   --quest-gold:      color-mix(in srgb, var(--deco-orange) 70%, var(--amber));
   --quest-gold-soft: color-mix(in srgb, var(--quest-gold) 16%, transparent);
-  --quest-wood:      color-mix(in srgb, var(--dash-bg) 70%, var(--amber));
-  --quest-frame:     color-mix(in srgb, var(--amber) 30%, var(--shadow-tint));
-  --quest-title-font: 'Quest Blackwood', Georgia, serif;
-  /* Schleier über der Holztextur: im Hellen nur ein Hauch Wärme,
-     im Dunkeln deutlich abgedunkelt — gedämpft, passend zu Cozy. */
-  --quest-wood-veil:  color-mix(in srgb, color-mix(in srgb, var(--bg) 55%, var(--amber)) 20%, transparent);
-  --quest-plank-veil: color-mix(in srgb, var(--shadow-tint) 52%, transparent);
-  /* Pergament bleibt in jedem Theme hell → eigene, feste Tinte. Im
-     Dunkeln wird nur das Papier gedimmt (Kerzenlicht statt Flutlicht). */
-  --quest-ink:        var(--deco-ink);
-  --quest-paper-dim:  none;
-}
-[data-theme-family="dark"] #view-questboard {
-  --quest-wood-veil:  color-mix(in srgb, var(--bg) 58%, transparent);
-  --quest-plank-veil: color-mix(in srgb, var(--shadow-tint) 70%, transparent);
-  --quest-paper-dim:  brightness(.8) saturate(.85);
+  --quest-paper:     color-mix(in srgb, var(--surface-solid) 90%, var(--deco-orange));
+  --quest-wood:      color-mix(in srgb, var(--dash-bg) 82%, var(--amber));
 }
 
 .quest-header-actions { display: flex; align-items: center; gap: 10px; }
@@ -50,135 +28,54 @@
 }
 .quest-wallet-pill[hidden] { display: none; }
 
-/* Das Brett: kleine Holzkacheln (wood-tile.webp, nahtlos), dunkler Rahmen */
+/* Das Brett selbst: Holzton + feine Maserung aus Text-Farbe */
 .quest-board {
   background:
-    linear-gradient(var(--quest-wood-veil), var(--quest-wood-veil)),
-    url('../assets/questboard/wood-tile.webp') 0 0 / 300px repeat,
+    repeating-linear-gradient(90deg, transparent 0 46px, color-mix(in srgb, var(--text) 3%, transparent) 46px 48px),
     var(--quest-wood);
-  border: 10px solid var(--quest-frame);
-  border-radius: var(--radius-lg);
-  box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--sheen) 10%, transparent),
-    inset 0 6px 18px color-mix(in srgb, var(--shadow-tint) 45%, transparent),
-    var(--dash-shadow);
+  border-width: 3px;
+  border-color: color-mix(in srgb, var(--quest-wood) 70%, var(--text));
 }
 
 .quest-columns {
   display: grid;
   grid-template-columns: minmax(250px, 1fr) minmax(260px, 1.1fr) minmax(260px, 1.1fr);
-  gap: 26px 22px;
+  gap: 18px;
   align-items: start;
 }
-.quest-col { display: flex; flex-direction: column; gap: 26px; min-width: 0; }
+.quest-col { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
 
-/* Bereich = Holzleiste als Titel + Zettel darunter (kein eigener Kasten) */
-.quest-panel { position: relative; }
+.quest-panel {
+  position: relative;
+  background: var(--quest-paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 14px 14px 16px;
+}
+.quest-col:nth-child(1) .quest-panel:nth-child(1) { transform: rotate(-0.4deg); }
+.quest-col:nth-child(2) .quest-panel:nth-child(2) { transform: rotate(0.35deg); }
+.quest-col:nth-child(3) .quest-panel:nth-child(1) { transform: rotate(0.3deg); }
 
 .quest-panel-head {
   display: flex; align-items: center; gap: 8px;
-  margin: 0 auto 16px;
-  max-width: 100%;
-  padding: 6px 12px;
-  border-radius: 6px;
-  background:
-    linear-gradient(var(--quest-plank-veil), var(--quest-plank-veil)),
-    url('../assets/questboard/wood-tile.webp') 0 0 / 160px repeat;
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--sheen) 18%, transparent),
-    inset 0 -2px 0 color-mix(in srgb, var(--shadow-tint) 35%, transparent),
-    0 3px 8px color-mix(in srgb, var(--shadow-tint) 35%, transparent);
-  color: var(--sage-fg);
+  margin-bottom: 10px;
 }
-.quest-panel-head .panel-label {
-  flex: 1;
-  font-family: var(--quest-title-font);
-  font-weight: 400;
-  font-size: calc(19px * var(--core-font-scale));
-  letter-spacing: .02em;
-  text-transform: none;
-  color: var(--sage-fg);
-  text-shadow: 0 1px 2px color-mix(in srgb, var(--shadow-tint) 70%, transparent);
-}
-.quest-panel-head .quest-icon-btn { color: color-mix(in srgb, var(--sage-fg) 75%, transparent); }
-.quest-panel-head .quest-icon-btn:hover:not(:disabled) { background: color-mix(in srgb, var(--sage-fg) 14%, transparent); color: var(--sage-fg); }
+.quest-panel-head .panel-label { flex: 1; }
 
-/* Nagelköpfe an der Leiste — Farbpunkt zeigt die Quest-Art */
+/* Pinnnadel */
 .quest-pin {
-  width: 9px; height: 9px; border-radius: 50%;
+  width: 12px; height: 12px; border-radius: 50%;
   flex-shrink: 0;
   background: var(--pin, var(--sage));
-  box-shadow: inset -1.5px -1.5px 0 color-mix(in srgb, var(--shadow-tint) 35%, transparent), 0 1px 1px color-mix(in srgb, var(--shadow-tint) 50%, transparent);
+  box-shadow: inset -2px -2px 0 color-mix(in srgb, var(--shadow-tint) 25%, transparent), 0 1px 2px color-mix(in srgb, var(--shadow-tint) 30%, transparent);
 }
-.quest-pin-notice { --pin: var(--sage-light); }
+.quest-pin-notice { --pin: var(--text-3); }
 .quest-pin-chest  { --pin: var(--quest-gold); }
 .quest-pin-daily  { --pin: var(--sage); }
 .quest-pin-weekly { --pin: var(--deco-blue); }
 .quest-pin-timed  { --pin: var(--deco-purple); }
 .quest-pin-side   { --pin: var(--deco-orange); }
-
-/* ── Pergament-Zettel ──────────────────────────────────────────
-   Papier liegt als border-image auf ::before (gedimmt im Dunkeln, ohne
-   den Text mitzudimmen), Reißzwecke als ::after. Auf dem Zettel gelten
-   eigene Text-Tokens (Tinte), damit alle Kind-Elemente lesbar bleiben. */
-.quest-note, .quest-card {
-  --text:   var(--quest-ink);
-  --text-2: color-mix(in srgb, var(--quest-ink) 82%, transparent);
-  --text-3: color-mix(in srgb, var(--quest-ink) 58%, transparent);
-  --track-bg: color-mix(in srgb, var(--quest-ink) 12%, transparent);
-  --border-strong: color-mix(in srgb, var(--quest-ink) 30%, transparent);
-  --sage-bg:     color-mix(in srgb, var(--sage) 20%, transparent);
-  --sage-border: color-mix(in srgb, var(--sage) 45%, transparent);
-  --sage-dark:   color-mix(in srgb, var(--sage) 55%, var(--quest-ink));
-  color-scheme: light;   /* Checkboxen hell wie das Papier, auch im Dunkeln */
-  position: relative;
-  isolation: isolate;
-  padding: 20px 20px 18px;
-  color: var(--text);
-  filter: drop-shadow(0 4px 5px color-mix(in srgb, var(--shadow-tint) 32%, transparent));
-  transform: rotate(var(--tilt, 0deg));
-  transition: transform var(--transition-slow);
-}
-.quest-note::before, .quest-card::before {
-  content: '';
-  position: absolute; inset: 0;
-  z-index: -1;
-  border-style: solid;
-  border-color: transparent;
-  border-width: 22px;
-  border-image: url('../assets/questboard/note.webp') 44 fill / 22px / 0 stretch;
-  filter: var(--quest-paper-dim);
-  transform: scaleX(var(--flip, 1));
-}
-.quest-note::after, .quest-card::after {
-  content: '';
-  position: absolute;
-  top: -9px; left: 50%;
-  width: 19px; height: 25px;
-  margin-left: -9px;
-  background: url('../assets/questboard/pin.webp') center / contain no-repeat;
-}
-.quest-list > :nth-child(3n+1), .quest-note-tilt-a { --tilt: -0.9deg; }
-.quest-list > :nth-child(3n+2), .quest-note-tilt-b { --tilt: 0.7deg; --flip: -1; }
-.quest-list > :nth-child(3n)   { --tilt: -0.3deg; }
-.quest-note:hover, .quest-card:hover { --tilt: 0deg; }
-.quest-note .btn-ghost, .quest-card .btn-ghost {
-  background: transparent;
-  border-color: var(--border-strong);
-  color: var(--text);
-}
-.quest-note .btn-ghost:hover, .quest-card .btn-ghost:hover { background: var(--track-bg); }
-
-/* Erledigt = Wachssiegel statt ausgegrautem Kasten */
-.quest-card.is-complete { padding-bottom: 34px; }
-.quest-seal {
-  position: absolute;
-  right: 16px; bottom: 6px;
-  width: 44px; height: 44px;
-  transform: rotate(-14deg);
-  pointer-events: none;
-  filter: drop-shadow(0 2px 2px color-mix(in srgb, var(--shadow-tint) 35%, transparent));
-}
 
 .quest-icon-btn {
   background: none; border: 1px solid transparent;
@@ -193,26 +90,33 @@
 .quest-icon-btn:hover:not(:disabled) { background: var(--track-bg); color: var(--text); }
 .quest-icon-btn:disabled { opacity: .3; cursor: default; }
 
-.quest-list { display: flex; flex-direction: column; gap: 22px; }
+.quest-list { display: flex; flex-direction: column; gap: 10px; }
 
-/* ── Quest-Zettel (Inhalt) ───────────────────────────────────── */
+/* ── Karten ─────────────────────────────────────────────────── */
+.quest-card {
+  background: var(--surface-solid);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--pin, var(--sage));
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  box-shadow: var(--shadow-xs);
+  transition: opacity var(--transition-slow), box-shadow var(--transition);
+}
 .quest-card-daily  { --pin: var(--sage); }
 .quest-card-weekly { --pin: var(--deco-blue); }
 .quest-card-timed  { --pin: var(--deco-purple); }
 .quest-card-side   { --pin: var(--deco-orange); }
-.quest-card.is-complete .quest-checklist,
-.quest-card.is-complete .quest-timed-row { opacity: .7; }
+.quest-card.is-complete { opacity: .62; }
 
 .quest-card-head { display: flex; align-items: center; gap: 6px; }
 .quest-card-title {
   flex: 1; min-width: 0;
-  font-family: var(--quest-title-font);
-  font-weight: 400;
-  font-size: calc(19px * var(--core-font-scale));
-  line-height: 1.15;
+  font-weight: 600;
+  font-size: calc(14px * var(--core-font-scale));
   color: var(--text);
   overflow-wrap: anywhere;
 }
+.quest-card.is-complete .quest-card-title { text-decoration: line-through; }
 
 .quest-coin-badge {
   font-family: var(--mono);
@@ -252,24 +156,23 @@
 .quest-progress-gold span { background: var(--quest-gold); }
 .quest-card-foot { margin-top: 5px; font-size: calc(11px * var(--core-font-scale)); color: var(--text-3); font-family: var(--mono); }
 
-/* Leere Spalte = gestrichelter „Platz für einen Zettel“ auf dem Holz */
+/* Leere Spalte = großer Anpinn-Knopf */
 .quest-empty {
   display: flex; flex-direction: column; gap: 3px;
   width: 100%;
   padding: 14px;
-  border: 1.5px dashed color-mix(in srgb, var(--sage-fg) 45%, transparent);
+  border: 1.5px dashed var(--border-strong);
   border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--shadow-tint) 22%, transparent);
-  color: var(--sage-fg);
+  background: transparent;
+  color: var(--text-2);
   font: inherit;
   font-size: calc(13px * var(--core-font-scale));
   font-weight: 600;
   text-align: left;
   cursor: pointer;
-  transform: none;
 }
-.quest-empty span { font-weight: 400; color: color-mix(in srgb, var(--sage-fg) 72%, transparent); font-size: calc(12px * var(--core-font-scale)); }
-.quest-empty:hover { background: color-mix(in srgb, var(--shadow-tint) 34%, transparent); }
+.quest-empty span { font-weight: 400; color: var(--text-3); font-size: calc(12px * var(--core-font-scale)); }
+.quest-empty:hover { background: var(--track-bg); }
 
 /* ── Time Quests ─────────────────────────────────────────────── */
 .quest-timed-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
@@ -281,7 +184,7 @@
 }
 .quest-move { display: flex; gap: 2px; }
 .quest-card-timed.is-now {
-  filter: drop-shadow(0 0 7px color-mix(in srgb, var(--deco-purple) 85%, transparent));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--deco-purple) 45%, transparent), var(--shadow-sm);
 }
 
 /* ── Side Quests + Würfel ────────────────────────────────────── */
@@ -291,15 +194,14 @@
 }
 .quest-dice-area[hidden] { display: none; }
 .quest-die {
-  width: 56px; height: 56px;
+  width: 48px; height: 48px;
   display: grid; place-items: center;
-  background: url('../assets/questboard/d20.webp') center / contain no-repeat;
-  filter: drop-shadow(0 2px 3px color-mix(in srgb, var(--shadow-tint) 35%, transparent));
+  clip-path: polygon(50% 0, 95% 25%, 95% 75%, 50% 100%, 5% 75%, 5% 25%);
+  background: color-mix(in srgb, var(--deco-orange) 75%, var(--text));
   color: var(--sage-fg);
-  text-shadow: 0 1px 2px color-mix(in srgb, var(--shadow-tint) 70%, transparent);
   font-family: var(--mono);
   font-weight: 700;
-  font-size: calc(19px * var(--core-font-scale));
+  font-size: calc(18px * var(--core-font-scale));
   flex-shrink: 0;
 }
 .quest-die.rolling { animation: quest-roll 280ms linear infinite; }
@@ -322,14 +224,9 @@
 }
 .quest-side-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
 .quest-card-side.is-picked {
-  --tilt: 0deg;
-  filter: drop-shadow(0 0 9px var(--deco-orange));
+  box-shadow: 0 0 0 2px var(--deco-orange), var(--shadow-md);
 }
 .quest-card-side.is-picked .quest-side-num { background: var(--deco-orange); }
-
-/* Würfel-Leiste und Erledigt-Liste liegen direkt auf dem Holz */
-.quest-dice-area .btn-ghost { background: var(--glass-bg); }
-.quest-list > .quest-muted { color: var(--sage-fg); text-shadow: 0 1px 2px color-mix(in srgb, var(--shadow-tint) 60%, transparent); }
 
 .quest-done-btn {
   align-self: flex-start;
@@ -344,15 +241,7 @@
 }
 .quest-done-btn:hover { background: var(--sage); color: var(--sage-fg); }
 
-.quest-done-list {
-  font-size: calc(12.5px * var(--core-font-scale));
-  color: var(--sage-fg);
-  padding: 6px 12px 10px;
-  border-radius: 6px;
-  background: color-mix(in srgb, var(--shadow-tint) 40%, transparent);
-}
-.quest-done-list .quest-icon-btn { color: var(--sage-fg); }
-.quest-done-list .btn-ghost { background: var(--glass-bg); }
+.quest-done-list { margin-top: 4px; font-size: calc(12.5px * var(--core-font-scale)); color: var(--text-3); }
 .quest-done-list summary { cursor: pointer; padding: 4px 0; }
 .quest-done-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 2px 0; text-decoration: line-through; }
 .quest-done-row button { text-decoration: none; }
@@ -397,14 +286,16 @@
 .quest-muted { color: var(--text-3); font-size: calc(12px * var(--core-font-scale)); margin: 0; }
 
 /* ── Schatztruhe ─────────────────────────────────────────────── */
-.quest-chest-total { display: flex; align-items: center; gap: 12px; }
-.quest-chest-img { width: 72px; height: 72px; flex-shrink: 0; filter: drop-shadow(0 3px 4px color-mix(in srgb, var(--shadow-tint) 25%, transparent)); }
-.quest-chest-sum { display: flex; align-items: center; gap: 6px; color: var(--text-2); font-size: calc(13px * var(--core-font-scale)); }
+.quest-chest-total { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.quest-chest-sum { display: flex; align-items: baseline; gap: 6px; color: var(--text-2); font-size: calc(13px * var(--core-font-scale)); }
 .quest-chest-sum strong { font-family: var(--mono); font-size: calc(26px * var(--core-font-scale)); color: var(--text); }
-.quest-chest-sum .quest-coin { width: 22px; height: 22px; }
 
-/* Münz-Grafik in Badges, Preisen und Header-Pille */
-.quest-coin { width: 1.15em; height: 1.15em; vertical-align: -0.2em; margin-right: 3px; }
+/* Münze: Emoji im Cozy-Stil, Grafik nur im RPG-Stil. Truhe und Siegel
+   sind reine RPG-Grafiken. */
+.quest-coin-ico .quest-coin,
+.quest-chest-img,
+.quest-seal { display: none; }
+.quest-coin-emoji { margin-right: 3px; }
 .quest-rewards { display: flex; flex-direction: column; gap: 8px; }
 .quest-reward { display: flex; align-items: center; gap: 8px; }
 .quest-reward-icon { font-size: calc(18px * var(--core-font-scale)); width: 24px; text-align: center; }
@@ -486,7 +377,8 @@
   .quest-columns, .quest-col:nth-child(1) { grid-template-columns: 1fr; }
 }
 @media (max-width: 480px) {
-  .quest-board { padding: 18px 10px 20px; border-width: 6px; }
+  .quest-board { padding: 14px 10px 18px; }
+  .quest-panel { transform: none !important; }
   .quest-toast { bottom: calc(84px + env(safe-area-inset-bottom)); }
   .quest-header-actions .btn-primary { padding: 8px 12px; }
 }

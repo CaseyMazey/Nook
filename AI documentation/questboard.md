@@ -22,6 +22,17 @@ Visuell und motivierend, aber ruhig.
 
 ---
 
+# Stile
+
+Das Aussehen hängt am aktiven Theme (Theme-Eigenschaft `questboard.style`, gesetzt als `data-questboard-style` auf `<html>` durch `applyQuestboardStyle()` in `js/theme-engine.js`; im Theme-Editor unter „Grafische Elemente → Questboard“):
+
+- **cozy** (Standard, alle Themes ohne Angabe) — schlichtes Brett aus Theme-Farben, Karten mit farbiger Kante, Münz-Emoji. `css/questboard.css`.
+- **rpg** (Preset „RPG“ bzw. Grafik-Set „RPG“) — Tavernen-Aushang: breite Holzbretter im Rahmen, Holzleisten-Titel in Blackwood Castle, jede Quest ein angepinnter Pergament-Zettel, Wachssiegel für Erledigtes, Münz-/Truhen-/Würfelgrafiken. `css/questboard-rpg.css`, Grafiken in `assets/questboard/`.
+
+Das Markup ist für beide Stile gleich — Grafiken werden per CSS ein- bzw. ausgeblendet. Neuer Stil = Eintrag in `QUESTBOARD_STYLES` + eigene CSS-Datei mit `[data-questboard-style="<id>"]`.
+
+---
+
 # Module
 
 1. **Aushang** — aktueller + nächster Monat, Termine/Fristen. Nur lesend aus dem Kalender.

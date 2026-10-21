@@ -202,7 +202,7 @@ function syncThemeFontTrigger() {
 
 // customThemes: [{ id, name, family, coreColors, cardOpacity, fontSize,
 //   bg, calendar: {imageTheme}, startHeader: {banner}, branding: {theme},
-//   graphics: {mode, theme} }]
+//   questboard: {style}, graphics: {mode, theme} }]
 // themeBackgrounds: { [eingebautesThemeId]: {source, data, name, size, dim} }
 let customThemes     = DB.get('customThemes', []);
 let themeBackgrounds = DB.get('themeBackgrounds', {});
@@ -290,6 +290,18 @@ const PRESET_THEMES = [
     coreColors: { bg: '#080a13', surface: '#111323', nav: '#0c0e19', modal: '#15172a', text: '#e5e2f2', border: '#55456e', accent: '#b92daf', font: DEFAULT_FONT_STACK },
     cardOpacity: 85, fontSize: 100, bg: { source: 'cyberpunk', size: 'cover', dim: 40 },
     calendar: { imageTheme: 'cyberpunk' }, startHeader: { banner: 'cyberpunk' }, branding: { theme: 'cyberpunk' }, graphics: { mode: 'theme', theme: 'cyberpunk' } },
+  // RPG: gemütliche Abenteurer-Taverne — Pergament bei Tag, Kerzenlicht
+  // bei Nacht. Grafik-Set (Hintergrund, Kalender, Banner, Icon) und der
+  // Tavernen-Stil des Questboards (css/questboard-rpg.css) sind per
+  // scripts/gen-image.py generiert.
+  { id: 'preset_rpg', name: 'RPG', family: 'light',
+    coreColors: { bg: '#ebe0c9', surface: '#faf3e3', nav: '#e4d6ba', modal: '#faf3e3', text: '#3b2b1c', border: '#a88a60', accent: '#8b5e34', font: DEFAULT_FONT_STACK },
+    cardOpacity: 92, fontSize: 100, bg: { source: 'rpg', size: 'cover', dim: 72 },
+    night: { family: 'dark',
+      coreColors: { bg: '#1a130d', surface: '#2a1f15', nav: '#21180f', modal: '#2f2318', text: '#efe2c8', border: '#8a6a45', accent: '#b07a3e', font: DEFAULT_FONT_STACK },
+      cardOpacity: 88, fontSize: 100, bg: { source: 'rpg', size: 'cover', dim: 45 } },
+    calendar: { imageTheme: 'rpg' }, startHeader: { banner: 'rpg' }, branding: { theme: 'rpg' }, questboard: { style: 'rpg' },
+    graphics: { mode: 'theme', theme: 'rpg' } },
   { id: 'preset_lab', name: 'Lab', family: 'dark',
     coreColors: { bg: '#0e1211', surface: '#181d1b', nav: '#121715', modal: '#1c2220', text: '#d8dbd5', border: '#53635c', accent: '#477867', font: DEFAULT_FONT_STACK },
     cardOpacity: 85, fontSize: 100, bg: { source: 'lab', size: 'cover', dim: 40 },
@@ -368,6 +380,7 @@ const GRAPHICS_THEMES = [
   { id: 'royal',     label: 'Royal',     icon: { src: 'assets/themes/royal/icon.png',     type: 'image/png' } },
   { id: 'cyberpunk', label: 'Cyberpunk', icon: { src: 'assets/themes/cyberpunk/icon.png', type: 'image/png' } },
   { id: 'lab',       label: 'Lab',       icon: { src: 'assets/themes/lab/icon.png',       type: 'image/png' } },
+  { id: 'rpg',       label: 'RPG',       icon: { src: 'assets/themes/rpg/icon.png',       type: 'image/png' }, questboard: 'rpg' },
 ];
 const DEFAULT_GRAPHICS_THEME = 'cozy';
 
@@ -399,6 +412,19 @@ function applyStartHeaderTheme(id, override) {
   const ct = getCustomTheme(id);
   const v = override !== undefined ? override : ((ct && ct.startHeader && ct.startHeader.banner) || 'none');
   document.documentElement.setAttribute('data-start-header-theme', v);
+}
+
+// Questboard-Stil (css/questboard-rpg.css, [data-questboard-style]).
+// Eingebaute Themes und Themes ohne Angabe → 'cozy' (schlichtes Brett).
+// Ein Grafik-Set kann einen Stil mitbringen (GRAPHICS_THEMES.questboard).
+const QUESTBOARD_STYLES = [
+  { id: 'cozy', label: 'Cozy (schlicht)' },
+  { id: 'rpg',  label: 'Taverne (RPG)' },
+];
+function applyQuestboardStyle(id, override) {
+  const ct = getCustomTheme(id);
+  const v = override !== undefined ? override : ((ct && ct.questboard && ct.questboard.style) || 'cozy');
+  document.documentElement.setAttribute('data-questboard-style', v);
 }
 
 // Sidebar-Icon + Favicon. 'none' bzw. eingebaute Themes → Nook-Icon.
@@ -636,6 +662,7 @@ function applyThemeEngine(id) {
   applyCalendarImageTheme(id);
   applyStartHeaderTheme(id);
   applyBranding(id);
+  applyQuestboardStyle(id);
   // Browser-/PWA-Leiste in der Hintergrundfarbe des aktiven Themes
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.content = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
@@ -681,6 +708,8 @@ function applyGraphicsThemeToControls(themeId) {
   tbEl('calendar-image').value = themeId;
   tbEl('start-header').value = themeId;
   tbEl('branding-theme').value = themeId;
+  const gt = findGraphicsTheme(themeId);
+  tbEl('questboard-style').value = (gt && gt.questboard) || 'cozy';
   previewThemeBuilderLive();
 }
 
@@ -773,6 +802,7 @@ function fillThemeBuilderForm(t) {
   tbEl('calendar-image').value = calendar;
   tbEl('start-header').value = startHeader;
   tbEl('branding-theme').value = branding;
+  tbEl('questboard-style').value = (t.questboard && t.questboard.style) || 'cozy';
   const graphics = detectGraphicsMode(t.graphics || null, calendar, startHeader, branding);
   tbEl('graphics-theme').value = graphics.theme || DEFAULT_GRAPHICS_THEME;
   setGraphicsModeUI(graphics.mode);
@@ -794,6 +824,7 @@ function openThemeBuilder(editId) {
   renderGraphicsOptions('theme-builder-start-header', 'Kein Banner');
   renderGraphicsOptions('theme-builder-branding-theme', 'Nook (Standard)');
   renderGraphicsOptions('theme-builder-graphics-theme', null);
+  tbEl('questboard-style').innerHTML = QUESTBOARD_STYLES.map(q => `<option value="${q.id}">${q.label}</option>`).join('');
   renderThemeTemplateStrip();
 
   tbEl('title').textContent = isPreset ? 'Theme erstellen' : (existing ? 'Theme bearbeiten' : 'Theme erstellen');
@@ -861,6 +892,7 @@ function previewThemeBuilderLive() {
   applyCalendarImageTheme(null, tbEl('calendar-image').value);
   applyStartHeaderTheme(null, tbEl('start-header').value);
   applyBranding(null, tbEl('branding-theme').value);
+  applyQuestboardStyle(null, tbEl('questboard-style').value);
 }
 
 // ── "Vorlage"-Leiste: übernimmt die Werte eines vorhandenen Themes
@@ -935,6 +967,7 @@ function saveThemeBuilder() {
     calendar: { imageTheme: tbEl('calendar-image').value },
     startHeader: { banner: tbEl('start-header').value },
     branding: { theme: tbEl('branding-theme').value },
+    questboard: { style: tbEl('questboard-style').value },
     graphics: { mode: _teBuilderGraphicsMode, theme: tbEl('graphics-theme').value },
   };
 
@@ -1115,7 +1148,7 @@ function initThemeBuilder() {
     tbEl(k).dataset.auto = '0';
     previewThemeBuilderLive();
   }));
-  ['bg-size', 'calendar-image', 'start-header', 'branding-theme']
+  ['bg-size', 'calendar-image', 'start-header', 'branding-theme', 'questboard-style']
     .forEach(k => tbEl(k).addEventListener('change', previewThemeBuilderLive));
 
   // Schriftart-Dropdown: Trigger togglet, Klick außerhalb schließt.

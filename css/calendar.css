@@ -396,6 +396,10 @@
 [data-cal-image-theme="lab"] .cal-hero-summer { --cal-hero-img: url('../assets/themes/lab/summer.webp'); }
 [data-cal-image-theme="lab"] .cal-hero-autumn { --cal-hero-img: url('../assets/themes/lab/fall.webp'); }
 [data-cal-image-theme="lab"] .cal-hero-winter { --cal-hero-img: url('../assets/themes/lab/winter.webp'); }
+[data-cal-image-theme="rpg"] .cal-hero-spring { --cal-hero-img: url('../assets/themes/rpg/spring.webp'); }
+[data-cal-image-theme="rpg"] .cal-hero-summer { --cal-hero-img: url('../assets/themes/rpg/summer.webp'); }
+[data-cal-image-theme="rpg"] .cal-hero-autumn { --cal-hero-img: url('../assets/themes/rpg/fall.webp'); }
+[data-cal-image-theme="rpg"] .cal-hero-winter { --cal-hero-img: url('../assets/themes/rpg/winter.webp'); }
 [data-cal-image-theme="none"] .cal-hero { --cal-hero-img: none; }
 [data-theme-family="dark"] .cal-hero { box-shadow: var(--shadow-md); }
 

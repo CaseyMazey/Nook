@@ -10,9 +10,18 @@
 // hinten wegfallen, angezeigt werden ohnehin nur die neuesten.
 // =========================
 
-window.NOOK_VERSION = '2026.10.4';
+window.NOOK_VERSION = '2026.10.5';
 
 window.NOOK_CHANGELOG = [
+  {
+    version: '2026.10.5',
+    date: '2026-10-21',
+    items: [
+      'Neues Theme RPG mit Tag- und Nachtversion, eigenem Hintergrund, Kalenderbildern, Banner und Icon',
+      'Questboard im RPG-Theme als Tavernen-Aushang mit Pergament-Zetteln und Wachssiegeln',
+      'Theme-Editor: Questboard-Stil wählbar',
+    ],
+  },
   {
     version: '2026.10.4',
     date: '2026-10-21',

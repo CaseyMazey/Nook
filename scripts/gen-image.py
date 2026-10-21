@@ -140,6 +140,7 @@ def main():
     p.add_argument("--quality", choices=["fast", "pro"], default="fast",
                    help="fast = flux-schnell (sehr günstig, zum Ausprobieren), pro = flux-1.1-pro (beste Qualität)")
     p.add_argument("--aspect", default="1:1", help="Seitenverhältnis, z.B. 1:1, 16:9, 3:4")
+    p.add_argument("--size", help="nur --quality pro: exakte Größe BxH (256–1440, Vielfache von 32), z.B. 1440x256 für Banner")
     p.add_argument("--transparent", action="store_true", help="Hintergrund entfernen (nur image)")
     p.add_argument("--max-size", type=int, default=1024, help="längste Kante des fertigen Assets in px (0 = Original)")
     p.add_argument("--webp-quality", type=int, default=85)
@@ -175,6 +176,11 @@ def main():
         inputs = {"prompt": args.prompt, "aspect_ratio": args.aspect, "output_format": "png"}
         if args.seed is not None:
             inputs["seed"] = args.seed
+        if args.size:
+            if args.quality != "pro":
+                die("--size geht nur mit --quality pro")
+            w, h = (int(v) for v in args.size.lower().split("x"))
+            inputs.update({"aspect_ratio": "custom", "width": w, "height": h})
         print(f"Erzeuge Bild mit {model} …")
         url = run(model, inputs)[0]
         raw = download(url)
