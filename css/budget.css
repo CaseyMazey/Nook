@@ -1905,3 +1905,31 @@
   color: var(--status-caution);
 }
 
+
+/* =============================================================
+   BUDGET-MODALS — breiter, lange Formulare zweispaltig
+   (index.html: .budget-modal-wide / .budget-modal-2col an der .modal-box)
+   Sparziel, wiederkehrender Posten und Schuld haben 8–14 Felder und
+   mussten viel gescrollt werden. Ab genug Breite zwei Spalten; Name,
+   Beschreibung, Unterlisten und Finanzierungsquellen über die volle
+   Breite. Auf schmalen Bildschirmen bleibt alles einspaltig.
+============================================================= */
+.modal-box.budget-modal-wide { width: 640px; }
+.modal-box.budget-modal-2col { width: 860px; }
+@media (min-width: 820px) {
+  .modal-box.budget-modal-2col {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 24px;
+    row-gap: 16px;
+    align-content: start;
+    align-items: start;   /* kurze Felder nicht auf die Höhe des Nachbarn strecken */
+  }
+  .budget-modal-2col > .modal-head,
+  .budget-modal-2col > .modal-actions,
+  .budget-modal-2col > .modal-input,
+  .budget-modal-2col > [id$="-funding-list"],
+  .budget-modal-2col > [id$="-items-section"],
+  .budget-modal-2col > .modal-row:has(textarea),
+  .budget-modal-2col > .modal-row:has(+ [id$="-funding-list"]) { grid-column: 1 / -1; }
+}

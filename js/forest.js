@@ -582,8 +582,12 @@ function renderProjectDetail() {
   const subValEl = document.getElementById('proj-detail-sub-val');
   if (subValEl) subValEl.textContent = p.subprojects.length;
 
-  // Baum (PNG, dieselbe Variante wie im Projektwald) + Äpfel/Blüten-Deko
-  updateDetailTreeElements(p);
+  // Baum (PNG, dieselbe Variante wie im Projektwald) + Äpfel/Blüten-Deko.
+  // Abgesichert: ein Fehler in der Deko (z.B. durch ältere/ungewöhnliche
+  // Projektdaten) brach früher das ganze Neuzeichnen ab — Fortschritts-
+  // balken der Kacheln blieben dann beim Abhaken einfach stehen.
+  try { updateDetailTreeElements(p); }
+  catch (err) { console.error('Projekt-Detail: Baum-Deko fehlgeschlagen', err); }
 
   // Mehr-Äste-Button
   const moreBtn = document.getElementById('proj-detail-more-branches');
@@ -614,8 +618,10 @@ function buildDetailTaskRow(task, project, subproject) {
     saveProjects();
     // Erledigt-Status ändert die Fortschrittszahlen im Hero — komplett neu
     // rendern (deckt Baumdeko + Kacheln + Prozent/Zähler in einem Aufwasch ab).
-    renderProjectDetail();
+    // Übersicht (Wald) zuerst, damit sie auch bei einem Fehler in der
+    // Detailansicht aktuell bleibt.
     renderForest();
+    renderProjectDetail();
   });
 
   const label = document.createElement('span');
@@ -735,10 +741,12 @@ function buildMainTasksTile(p) {
   titleWrap.append(chevron, title);
 
   // Umbenennen (#2) — gleiches Icon/Muster wie bei Ästen (subActions oben).
-  // Kein Löschen-Icon: anders als ein Ast ist diese Kachel der feste
-  // Container für project.tasks, kein eigenständiges, entfernbares Objekt.
+  // Löschen: entfernt alle Aufgaben direkt am Projekt (nach Rückfrage) und
+  // blendet die Kachel aus, bis wieder eine Aufgabe ohne Ast angelegt wird
+  // (p.mainTasksHidden, siehe renderDetailTiles()).
   const mainActions = document.createElement('div');
   mainActions.className = 'detail-tile-sub-actions';
+  mainActions.append(buildHideDoneBtn(p, 'mainHideDone'));
   const mainRenameBtn = document.createElement('button');
   mainRenameBtn.type = 'button';
   mainRenameBtn.className = 'detail-task-icon-btn';
@@ -748,7 +756,29 @@ function buildMainTasksTile(p) {
     e.stopPropagation();
     startInlineEdit(title, p, p, () => renderDetailTiles(), 'mainTasksLabel');
   });
-  mainActions.append(mainRenameBtn);
+  const mainDeleteBtn = document.createElement('button');
+  mainDeleteBtn.type = 'button';
+  mainDeleteBtn.className = 'detail-task-icon-btn';
+  mainDeleteBtn.title = 'Ast löschen';
+  mainDeleteBtn.textContent = '✕';
+  mainDeleteBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    const n = p.tasks.length;
+    openConfirmModal(
+      'Ast löschen?',
+      `„${p.mainTasksLabel || 'Hauptaufgaben'}" wird mitsamt ${n === 0 ? 'der leeren Kachel' : `allen ${n} Aufgabe${n === 1 ? '' : 'n'}`} gelöscht. Neue Aufgaben ohne Ast lassen ihn wieder erscheinen. Diese Aktion kann nicht rückgängig gemacht werden.`,
+      'Löschen',
+      'danger',
+      () => {
+        p.tasks = [];
+        p.mainTasksHidden = true;
+        saveProjects();
+        renderForest();
+        renderProjectDetail();
+      }
+    );
+  });
+  mainActions.append(mainRenameBtn, mainDeleteBtn);
 
   const meta = document.createElement('div');
   meta.className = 'detail-tile-meta';
@@ -776,30 +806,59 @@ function buildMainTasksTile(p) {
   const taskList = document.createElement('div');
   taskList.className = 'detail-tile-tasks';
 
-  if (mainTotal === 0) {
-    const hint = document.createElement('div');
-    hint.className = 'detail-tile-empty';
-    hint.textContent = 'Noch keine Aufgaben direkt am Projekt.';
-    taskList.appendChild(hint);
-  } else {
-    stats.coreTasks.forEach(task => taskList.appendChild(buildDetailTaskRow(task, p, null)));
-    if (stats.extraTasks.length > 0) {
-      const divider = document.createElement('div');
-      divider.className = 'detail-tile-divider';
-      divider.textContent = '✦ Extras';
-      taskList.appendChild(divider);
-      stats.extraTasks.forEach(task => taskList.appendChild(buildDetailTaskRow(task, p, null)));
-    }
-  }
-
+  // „+ Aufgabe“ oben, darunter neueste zuerst (nur Anzeige — die
+  // gespeicherte Reihenfolge bleibt chronologisch).
   const addBtn = document.createElement('button');
   addBtn.className = 'detail-tile-add-btn';
   addBtn.textContent = '+ Aufgabe hinzufügen';
   addBtn.addEventListener('click', () => openAddTaskModalFromDetail(p.id, null));
   taskList.appendChild(addBtn);
 
+  const visible = list => (p.mainHideDone ? list.filter(t => !t.done) : list).slice().reverse();
+  if (mainTotal === 0) {
+    const hint = document.createElement('div');
+    hint.className = 'detail-tile-empty';
+    hint.textContent = 'Noch keine Aufgaben direkt am Projekt.';
+    taskList.appendChild(hint);
+  } else {
+    visible(stats.coreTasks).forEach(task => taskList.appendChild(buildDetailTaskRow(task, p, null)));
+    const extras = visible(stats.extraTasks);
+    if (extras.length > 0) {
+      const divider = document.createElement('div');
+      divider.className = 'detail-tile-divider';
+      divider.textContent = '✦ Extras';
+      taskList.appendChild(divider);
+      extras.forEach(task => taskList.appendChild(buildDetailTaskRow(task, p, null)));
+    }
+    appendHiddenDoneHint(taskList, p.mainHideDone ? mainDone : 0);
+  }
+
   tile.append(head, barWrap, taskList);
   return tile;
+}
+
+// Auge-Knopf „Erledigte ein-/ausblenden“ pro Ast (obj = Ast bzw. Projekt
+// für die Hauptaufgaben, key = gespeichertes Feld). Wie bei der Pinnwand.
+function buildHideDoneBtn(obj, key) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'detail-task-icon-btn' + (obj[key] ? ' active' : '');
+  btn.title = obj[key] ? 'Erledigte einblenden' : 'Erledigte ausblenden';
+  btn.textContent = obj[key] ? '🙈' : '👁';
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    obj[key] = !obj[key];
+    saveProjects();
+    renderDetailTiles();
+  });
+  return btn;
+}
+function appendHiddenDoneHint(list, count) {
+  if (!count) return;
+  const hint = document.createElement('div');
+  hint.className = 'detail-tile-empty detail-tile-hidden-hint';
+  hint.textContent = `${count} erledigte ausgeblendet`;
+  list.appendChild(hint);
 }
 
 function renderDetailTiles() {
@@ -807,8 +866,10 @@ function renderDetailTiles() {
   const grid = document.getElementById('proj-detail-tiles');
   grid.innerHTML = '';
 
-  // Haupt-Aufgaben-Kachel — immer an erster Stelle, nie paginiert.
-  grid.appendChild(buildMainTasksTile(p));
+  // Haupt-Aufgaben-Kachel — an erster Stelle, nie paginiert. Gelöscht
+  // (p.mainTasksHidden) bleibt sie weg, bis wieder Aufgaben ohne Ast da sind.
+  if (p.mainTasksHidden && p.tasks.length > 0) { p.mainTasksHidden = false; saveProjects(); }
+  if (!p.mainTasksHidden) grid.appendChild(buildMainTasksTile(p));
 
   const layerStart  = detailSubLayer * 7;
   const visibleSubs = p.subprojects.slice(layerStart, layerStart + 7);
@@ -885,7 +946,7 @@ function renderDetailTiles() {
         }
       );
     });
-    subActions.append(subRenameBtn, subDeleteBtn);
+    subActions.append(buildHideDoneBtn(sp, 'hideDone'), subRenameBtn, subDeleteBtn);
 
     const meta = document.createElement('div');
     meta.className = 'detail-tile-meta';
@@ -914,20 +975,22 @@ function renderDetailTiles() {
     const taskList = document.createElement('div');
     taskList.className = 'detail-tile-tasks';
 
+    const addBtn = document.createElement('button');
+    addBtn.className = 'detail-tile-add-btn';
+    addBtn.textContent = '+ Aufgabe hinzufügen';
+    addBtn.addEventListener('click', () => openAddTaskModalFromDetail(p.id, sp.id));
+    taskList.appendChild(addBtn);
+
     if (sp.tasks.length === 0) {
       const hint = document.createElement('div');
       hint.className = 'detail-tile-empty';
       hint.textContent = 'Noch keine Aufgaben.';
       taskList.appendChild(hint);
     } else {
-      sp.tasks.forEach(task => taskList.appendChild(buildDetailTaskRow(task, p, sp)));
+      (sp.hideDone ? sp.tasks.filter(t => !t.done) : sp.tasks).slice().reverse()
+        .forEach(task => taskList.appendChild(buildDetailTaskRow(task, p, sp)));
+      appendHiddenDoneHint(taskList, sp.hideDone ? stats.done : 0);
     }
-
-    const addBtn = document.createElement('button');
-    addBtn.className = 'detail-tile-add-btn';
-    addBtn.textContent = '+ Aufgabe hinzufügen';
-    addBtn.addEventListener('click', () => openAddTaskModalFromDetail(p.id, sp.id));
-    taskList.appendChild(addBtn);
 
     tile.append(head, barWrap, taskList);
     grid.appendChild(tile);
@@ -947,13 +1010,29 @@ function openTaskDetail(task, sp, project) {
   currentTaskDetail = { task, sp, project };
   document.getElementById('task-detail-title').textContent = task.text;
   document.getElementById('task-detail-sp').textContent    = sp ? sp.title : 'Hauptaufgabe';
-  document.getElementById('task-detail-type').textContent  = task.isExtra ? '✦ Extra' : '◉ Kern';
+  updateTaskDetailTypeBtn(task);
   document.getElementById('task-detail-desc').value        = task.description || '';
   document.getElementById('task-detail-done-cb').checked   = task.done;
   populateTaskCategorySelect(document.getElementById('task-detail-category-select'), document.getElementById('task-detail-category-row'), project, task.categoryId);
   renderTaskDetailChecklist();
   document.getElementById('task-detail-overlay').classList.remove('hidden');
 }
+
+// Kern/Extra im Aufgaben-Detail umschalten (vorher nur Anzeige).
+function updateTaskDetailTypeBtn(task) {
+  const btn = document.getElementById('task-detail-type');
+  btn.textContent = task.isExtra ? '✦ Extra' : '◉ Kern';
+  btn.title = task.isExtra ? 'Zur Kernaufgabe machen' : 'Zur Extra-Aufgabe machen';
+}
+document.getElementById('task-detail-type')?.addEventListener('click', () => {
+  if (!currentTaskDetail) return;
+  const { task } = currentTaskDetail;
+  task.isExtra = !task.isExtra;
+  saveProjects();
+  updateTaskDetailTypeBtn(task);
+  renderForest();
+  if (currentDetailProject) renderProjectDetail();
+});
 
 function closeTaskDetail() {
   document.getElementById('task-detail-overlay').classList.add('hidden');

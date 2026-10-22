@@ -761,9 +761,11 @@
 .pdt-add-branch-btn:hover { border-color: var(--border-strong); color: var(--text); background: var(--bg); }
 
 /* ── AUFGABENKACHELN — luftiger ── */
+/* auto-fit statt auto-fill: wenige Äste teilen sich die volle Breite
+   (1 = ganz, 2 = halb, 3 = Drittel), viele bilden ein Raster. */
 .pdt-tiles-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 16px;
 }
 
@@ -874,6 +876,21 @@
   cursor: pointer; transition: color 120ms, background 120ms;
 }
 .detail-tile-add-btn:hover { color: var(--text); background: var(--bg); }
+/* Button steht jetzt oben in der Liste */
+.detail-tile-tasks > .detail-tile-add-btn:first-child { border-top: none; border-bottom: 1px dashed var(--border); }
+.detail-tile-hidden-hint { font-size: calc(11.5px * var(--core-font-scale)); font-style: italic; }
+/* Kern/Extra im Aufgaben-Detail: anklickbarer Umschalter */
+.task-detail-type-btn {
+  background: none;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  padding: 2px 10px;
+  cursor: pointer;
+  font: inherit;
+  font-size: calc(11px * var(--core-font-scale));
+  color: var(--text-2);
+}
+.task-detail-type-btn:hover { border-color: var(--sage); color: var(--sage-dark); background: var(--sage-bg); }
 
 /* Checkliste im Task-Modal */
 .task-cl-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--border); }

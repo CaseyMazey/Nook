@@ -558,6 +558,26 @@ function applyTabOrder() {
   applyBottomNav();
 }
 
+// =========================
+// MODALS: Text markieren schließt das Fenster nicht mehr
+// Alle Fenster (.modal-backdrop) schließen per Klick auf den Hintergrund.
+// Wer aber IM Fenster Text markiert und die Maus erst daneben loslässt,
+// erzeugt einen click auf dem Hintergrund (gemeinsamer Vorfahr von
+// mousedown- und mouseup-Ziel) — das Fenster ging zu. Zentral für alle:
+// Ein Hintergrund-Klick zählt nur, wenn auch der Mausdruck auf dem
+// Hintergrund selbst begann. Capture-Phase auf document läuft vor den
+// Schließen-Handlern der einzelnen Fenster.
+// =========================
+let _modalPressTarget = null;
+document.addEventListener('mousedown', e => { _modalPressTarget = e.target; }, true);
+document.addEventListener('click', e => {
+  const t = e.target;
+  if (t instanceof Element && t.classList.contains('modal-backdrop') && _modalPressTarget && _modalPressTarget !== t) {
+    e.stopPropagation();
+  }
+  _modalPressTarget = null;
+}, true);
+
 function showView(name) {
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b=>{ b.classList.remove('active'); b.removeAttribute('aria-current'); });
