@@ -94,6 +94,9 @@
   border-radius: 99px;
   overflow: hidden;
 }
+/* Füllfarbe fehlte — nur archivierte Projekte bekamen per JS Orange,
+   aktive Balken blieben unsichtbar. */
+.forest-tree-bar-fill { background: var(--sage); }
 .forest-tree-pct {
   font-size: calc(10px * var(--core-font-scale));
   color: var(--text-3);

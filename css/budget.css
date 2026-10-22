@@ -1201,6 +1201,8 @@
 }
 .gf-week-col { padding: 10px; display: flex; flex-direction: column; gap: 8px; min-height: 60px; }
 .gf-week-col + .gf-week-col { border-left: 1px dashed var(--border); }
+/* Ohne Wochen-Einnahmen nur eine Spalte „Ganzer Monat“ (budget-analysis.js) */
+.gf-week-col--month { grid-column: 1 / -1; min-height: 0; }
 .gf-week-head { display: flex; align-items: baseline; justify-content: center; gap: 6px; margin-bottom: 2px; }
 .gf-week-title { font-size: calc(12px * var(--core-font-scale)); font-weight: 700; color: var(--text); }
 .gf-week-total { font-family: var(--mono); font-size: calc(12px * var(--core-font-scale)); font-weight: 700; }
@@ -1924,12 +1926,26 @@
     row-gap: 16px;
     align-content: start;
     align-items: start;   /* kurze Felder nicht auf die Höhe des Nachbarn strecken */
+    grid-auto-flow: row dense;   /* Lücken mit späteren Einzelfeldern füllen */
   }
+  /* Volle Breite: Kopf/Aktionen, Name, Unterlisten, Finanzierung,
+     Auswahl-Knöpfe (Priorität), Schalter-Zeilen und Pflanzenwahl.
+     Kurze Felder (Beträge, Daten, Kategorie, Beschreibung) paaren sich. */
   .budget-modal-2col > .modal-head,
   .budget-modal-2col > .modal-actions,
   .budget-modal-2col > .modal-input,
   .budget-modal-2col > [id$="-funding-list"],
   .budget-modal-2col > [id$="-items-section"],
-  .budget-modal-2col > .modal-row:has(textarea),
+  .budget-modal-2col > .modal-row-inline,
+  .budget-modal-2col > .modal-row:has(.budget-prio-picker),
+  .budget-modal-2col > .modal-row:has(.goal-plant-selector),
   .budget-modal-2col > .modal-row:has(+ [id$="-funding-list"]) { grid-column: 1 / -1; }
+  /* Pflanzen nebeneinander statt einer langen Liste */
+  .budget-modal-2col .goal-plant-selector {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 8px;
+  }
+  .budget-modal-2col .goal-plant-option { gap: 7px; padding: 8px 10px; min-width: 0; }
+  .budget-modal-2col .goal-plant-name { font-size: calc(12px * var(--core-font-scale)); letter-spacing: 0; overflow-wrap: anywhere; }
 }

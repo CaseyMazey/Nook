@@ -84,9 +84,16 @@ function buildGeldflussIncomeCards(){
 // bewusst NICHT einbezogen — reine Monatsansicht, siehe oben.
 function buildGeldflussConsumers(){
   const list = [];
+  // Nur Zuordnungen zu Einnahmen, die hier als Karte/Balken existieren.
+  // Verwaiste Einträge (Einnahme gelöscht oder auf jährlich umgestellt)
+  // zählten sonst als „bezahlt“, landeten aber auf keiner Karte — die
+  // Ausgabe verschwand dann komplett aus der Ansicht (weder offen noch
+  // zugeordnet). Gespeichert wird dabei nichts, nur die Anzeige ignoriert sie.
+  const validSources = new Set(budgetIncomeSources().filter(r => r.freq !== 'yearly').map(r => r.id));
+  const liveFunding = f => (f || []).filter(e => validSources.has(e.sourceId));
   budgetRecurring.filter(r => r.type === 'expense' && r.freq !== 'yearly').forEach(r => {
     list.push({ kind: 'expense', id: r.id, uid: r.id, name: r.name, amount: recurringMonthlyEquivalent(r),
-      funding: r.funding || [], obj: r });
+      funding: liveFunding(r.funding), obj: r });
   });
   // Alte/abgelaufene einmalige Ausgaben (monthKey liegt vor dem aktuellen
   // Monat) sollen hier nicht mehr auftauchen — nur der aktuelle Monat und
@@ -95,7 +102,7 @@ function buildGeldflussConsumers(){
   const curGfMonthKey = budgetMonthKey(new Date());
   budgetOnetime.filter(e => e.type === 'expense' && !e.paid && e.monthKey >= curGfMonthKey).forEach(e => {
     list.push({ kind: 'expense', id: e.id, uid: e.id, name: e.name, amount: e.amount,
-      funding: e.funding || [], obj: e, isOnetime: true });
+      funding: liveFunding(e.funding), obj: e, isOnetime: true });
   });
   // Archivierte Sparziele/Schulden (siehe archiveGoal()/archiveDebt() in
   // budget-sparziele.js/budget-debts.js) sind erledigt — sie sollen hier
@@ -107,13 +114,13 @@ function buildGeldflussConsumers(){
     const amount = need > 0.005 ? need : remaining;
     if (amount <= 0.005) return;
     list.push({ kind: 'goal', id: g.id, uid: g.id, name: g.name, amount,
-      funding: g.funding || [], obj: g, isMonthly: need > 0.005 });
+      funding: liveFunding(g.funding), obj: g, isMonthly: need > 0.005 });
   });
   budgetDebts.filter(d => !d.archived).forEach(d => {
     const remaining = debtRemaining(d);
     if (remaining <= 0.005) return;
     list.push({ kind: 'debt', id: d.id, uid: d.id, name: d.name, amount: remaining,
-      funding: d.funding || [], obj: d });
+      funding: liveFunding(d.funding), obj: d });
   });
   return list;
 }
@@ -320,10 +327,17 @@ function renderGeldflussIncomeArea(container, incomeCards){
   monatsrestPill.innerHTML = `<span class="gf-monatsrest-label">Monatsrest</span><span class="gf-monatsrest-value ${monatsrestClass}">${fmtEuro(monatsrest)}</span>`;
   container.appendChild(monatsrestPill);
 
+  // Ohne wöchentliche/tägliche Einnahmen sind die 4 Wochenspalten leer —
+  // dann eine einzige Spalte „Ganzer Monat“ statt Woche 1–4.
   const weekGrid = document.createElement('div');
   weekGrid.className = 'gf-week-grid';
-  weekGrid.style.setProperty('--gf-week-count', 4);
-  for (let i = 0; i < 4; i++) {
+  if (!incomeCards.some(c => !c.isBar)) {
+    weekGrid.style.setProperty('--gf-week-count', 1);
+    const monthName = new Date().toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+    weekGrid.innerHTML = `<div class="gf-week-col gf-week-col--month"><div class="gf-week-head"><div class="gf-week-title">Ganzer Monat · ${monthName}</div></div></div>`;
+    container.appendChild(weekGrid);
+  } else weekGrid.style.setProperty('--gf-week-count', 4);
+  for (let i = 0; incomeCards.some(c => !c.isBar) && i < 4; i++) {
     const weekCards = incomeCards.filter(c => !c.isBar && c.week === i);
     const weekTotal = round2(weekCards.reduce((s, c) => s + c.remaining, 0));
     const weekTotalClass = weekTotal > 0.005 ? 'gf-rest-ok' : (weekTotal >= -0.005 ? 'gf-rest-low' : 'gf-rest-over');
@@ -335,7 +349,7 @@ function renderGeldflussIncomeArea(container, incomeCards){
     weekCards.forEach(c => col.appendChild(renderGeldflussIncomeCard(c)));
     weekGrid.appendChild(col);
   }
-  container.appendChild(weekGrid);
+  if (incomeCards.some(c => !c.isBar)) container.appendChild(weekGrid);
 
   const bars = incomeCards.filter(c => c.isBar);
   if (bars.length) {
