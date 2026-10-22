@@ -939,12 +939,15 @@ function renderCalendar() {
       const singleEvs = dayEventEntries.filter(e => !e.isRange);
       const rangeEvs  = dayEventEntries.filter(e => e.isRange);
 
+      // Kalender-Stil „rpg“ (css/calendar-rpg.css): Termine stehen auf hellem
+      // Pergament — auch im Nachtmodus die helle Farbvariante verwenden.
+      const pillsOnDark = isDarkThemeActive() && document.documentElement.getAttribute('data-calendar-style') !== 'rpg';
       singleEvs.forEach(({ ev, isRecurring, isGoogle }) => {
         if (shown >= 3) return; shown++;
         const pill = document.createElement('div');
         pill.className = 'cal-event-pill' + (ev.countdown ? ' countdown-pill' : '');
         if (ev.color) {
-          if (isDarkThemeActive()) {
+          if (pillsOnDark) {
             // Dark: reine Übersetzung der Nutzerfarbe würde auf dunklem Grund
             // unlesbar — Text/Rand kommen aus der zentralen Engine.
             const v = computeUserColorVars(ev.color, true);
@@ -952,9 +955,12 @@ function renderCalendar() {
             pill.style.color = v.text;
             pill.style.borderLeftColor = v.border;
           } else {
-            pill.style.background = hexToRgba(ev.color, 0.16);
-            pill.style.color = ev.color;
-            pill.style.borderLeftColor = ev.color;
+            // Hell: die Rohfarbe als Schrift war bei Pastelltönen (Rosa,
+            // Mint …) auf hellem Grund kaum lesbar — Schrift/Rand im selben
+            // Farbton deutlich abgedunkelt, Fläche etwas kräftiger.
+            pill.style.background = hexToRgba(ev.color, 0.3);
+            pill.style.color = hexDarken(ev.color, 0.58);
+            pill.style.borderLeftColor = hexDarken(ev.color, 0.3);
           }
         }
         pill.textContent = (isRecurring ? '↻ ' : '') + (isGoogle ? 'Ⓖ ' : '') + (ev.time ? ev.time + ' ' : '') + ev.title;
@@ -977,15 +983,15 @@ function renderCalendar() {
                         :                    'cal-span-mid';
         pill.className = `cal-event-pill cal-span ${spanClass}` + (ev.countdown ? ' countdown-pill' : '');
         if (ev.color) {
-          if (isDarkThemeActive()) {
+          if (pillsOnDark) {
             const v = computeUserColorVars(ev.color, true);
             pill.style.background = hexToRgba(ev.color, 0.30);
             pill.style.color = v.text;
             if (rowStart) pill.style.borderLeftColor = v.border;
           } else {
-            pill.style.background = hexToRgba(ev.color, 0.22);
-            pill.style.color = ev.color;
-            if (rowStart) pill.style.borderLeftColor = ev.color;
+            pill.style.background = hexToRgba(ev.color, 0.34);
+            pill.style.color = hexDarken(ev.color, 0.58);
+            if (rowStart) pill.style.borderLeftColor = hexDarken(ev.color, 0.3);
           }
         }
         pill.textContent = isStart ? ((isGoogle ? 'Ⓖ ' : '') + ev.title) : (isEnd ? '↳ Ende' : '');

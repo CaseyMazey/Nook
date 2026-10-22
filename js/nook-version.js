@@ -20,6 +20,7 @@ window.NOOK_CHANGELOG = [
       'Neues Theme Zombie (aus Kuros Core) mit Hintergrund, Kalenderbildern, Banner und Icon',
       'RPG: Projektwald als Pergament-Karte, Pinnwand als Pergament-Blätter mit farbigen Pins',
       'RPG: Anleitungen als Zauberbücher in der Buchfarbe, Kapitel auf Pergament, Seitenkarten als Zettel',
+      'RPG: Kalender als Pergamentblatt auf dem Holzbrett; Termine in hellen Themes besser lesbar',
     ],
   },
   {
