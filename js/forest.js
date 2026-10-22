@@ -558,6 +558,13 @@ function renderProjectDetail() {
 
   document.getElementById('proj-detail-pct').textContent       = pct + '%';
   document.getElementById('proj-detail-bar-fill').style.width  = pct + '%';
+  // Extras = die „110 %“: eigener, dünner Balken, nur wenn es welche gibt
+  const extraWrap = document.getElementById('proj-detail-extra-wrap');
+  if (extraWrap) {
+    extraWrap.hidden = stats.extraTotalAll === 0;
+    document.getElementById('proj-detail-extra-fill').style.width = stats.extraProgress + '%';
+    document.getElementById('proj-detail-extra-count').textContent = `✦ ${stats.extraDoneAll} / ${stats.extraTotalAll} Extras`;
+  }
   document.getElementById('proj-detail-task-count').textContent = `${done} / ${total} Aufgaben`;
   document.getElementById('proj-detail-sub-count').textContent  = `${p.subprojects.length} Unterprojekte`;
   document.getElementById('proj-detail-startdate').textContent  = formatStartDate(p) || '—';
@@ -719,7 +726,6 @@ function buildMainTasksTile(p) {
   const stats = getProjectStats(p);
   const mainTotal = stats.coreTasks.length + stats.extraTasks.length;
   const mainDone  = stats.coreDone + stats.extraDone;
-  const mainPct   = mainTotal === 0 ? 0 : Math.round(mainDone / mainTotal * 100);
 
   const tile = document.createElement('div');
   tile.className = 'detail-tile detail-tile-main' + (mainTasksCollapsed ? ' collapsed' : '');
@@ -782,7 +788,7 @@ function buildMainTasksTile(p) {
 
   const meta = document.createElement('div');
   meta.className = 'detail-tile-meta';
-  meta.textContent = `${mainDone}/${mainTotal}`;
+  meta.textContent = tileMetaText(stats.coreDone, stats.coreTasks.length, stats.extraDone, stats.extraTasks.length);
   head.append(titleWrap, mainActions, meta);
 
   const toggleMainCollapse = () => {
@@ -795,13 +801,7 @@ function buildMainTasksTile(p) {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleMainCollapse(); }
   });
 
-  const barWrap = document.createElement('div');
-  barWrap.className = 'detail-tile-bar-wrap';
-  const barFill = document.createElement('div');
-  barFill.className = 'detail-tile-bar-fill';
-  barFill.style.width = mainPct + '%';
-  if (mainPct === 100 && mainTotal > 0) barFill.style.background = 'var(--status-ok)';
-  barWrap.appendChild(barFill);
+  const barWrap = buildTileBars(stats.coreDone, stats.coreTasks.length, stats.extraDone, stats.extraTasks.length);
 
   const taskList = document.createElement('div');
   taskList.className = 'detail-tile-tasks';
@@ -835,6 +835,30 @@ function buildMainTasksTile(p) {
 
   tile.append(head, barWrap, taskList);
   return tile;
+}
+
+// Fortschritt einer Kachel: Kernbalken (100 % = Ast/Projekt erledigt) und —
+// nur wenn vorhanden — ein dünner Extrabalken (die „110 %“ obendrauf).
+function buildTileBars(coreDone, coreTotal, extraDone, extraTotal) {
+  const wrap = document.createElement('div');
+  wrap.className = 'detail-tile-bars';
+  const bar = (cls, done, total, title) => {
+    const track = document.createElement('div');
+    track.className = 'detail-tile-bar-wrap ' + cls;
+    track.title = title;
+    const fill = document.createElement('div');
+    const pct = total === 0 ? 0 : Math.round(done / total * 100);
+    fill.className = 'detail-tile-bar-fill' + (pct === 100 && total > 0 ? ' complete' : '');
+    fill.style.width = pct + '%';
+    track.appendChild(fill);
+    return track;
+  };
+  wrap.appendChild(bar('is-core', coreDone, coreTotal, `Kernaufgaben: ${coreDone} von ${coreTotal}`));
+  if (extraTotal > 0) wrap.appendChild(bar('is-extra', extraDone, extraTotal, `Extras: ${extraDone} von ${extraTotal}`));
+  return wrap;
+}
+function tileMetaText(coreDone, coreTotal, extraDone, extraTotal) {
+  return `${coreDone}/${coreTotal}` + (extraTotal > 0 ? ` · ✦ ${extraDone}/${extraTotal}` : '');
 }
 
 // Auge-Knopf „Erledigte ein-/ausblenden“ pro Ast (obj = Ast bzw. Projekt
@@ -950,7 +974,7 @@ function renderDetailTiles() {
 
     const meta = document.createElement('div');
     meta.className = 'detail-tile-meta';
-    meta.textContent = `${stats.done}/${stats.total}`;
+    meta.textContent = tileMetaText(stats.done, stats.total, stats.extraDone, stats.extraTotal);
     head.append(titleWrap, subActions, meta);
 
     const toggleCollapse = () => {
@@ -964,13 +988,7 @@ function renderDetailTiles() {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleCollapse(); }
     });
 
-    const barWrap = document.createElement('div');
-    barWrap.className = 'detail-tile-bar-wrap';
-    const barFill = document.createElement('div');
-    barFill.className = 'detail-tile-bar-fill';
-    barFill.style.width = stats.pct + '%';
-    if (stats.pct === 100) barFill.style.background = 'var(--status-ok)';
-    barWrap.appendChild(barFill);
+    const barWrap = buildTileBars(stats.done, stats.total, stats.extraDone, stats.extraTotal);
 
     const taskList = document.createElement('div');
     taskList.className = 'detail-tile-tasks';
@@ -989,7 +1007,7 @@ function renderDetailTiles() {
     } else {
       (sp.hideDone ? sp.tasks.filter(t => !t.done) : sp.tasks).slice().reverse()
         .forEach(task => taskList.appendChild(buildDetailTaskRow(task, p, sp)));
-      appendHiddenDoneHint(taskList, sp.hideDone ? stats.done : 0);
+      appendHiddenDoneHint(taskList, sp.hideDone ? stats.done + stats.extraDone : 0);
     }
 
     tile.append(head, barWrap, taskList);

@@ -70,17 +70,23 @@ function getProjectStats(project) {
   const coreDone   = coreTasks.filter(t => t.done).length;
   const extraDone  = extraTasks.filter(t => t.done).length;
 
-  // Unterprojekt-Aufgaben mit einrechnen (für Hauptfortschritt)
-  let subTotal = 0, subDone = 0;
+  // Unterprojekt-(Ast-)Aufgaben mit einrechnen. Kern = was zum Abschließen
+  // nötig ist (100 %), Extra = die „110 %“ obendrauf — auch in Ästen
+  // getrennt gezählt (vorher zählten Extras in Ästen zum Kernfortschritt).
+  let subTotal = 0, subDone = 0, subExtraTotal = 0, subExtraDone = 0;
   (project.subprojects || []).forEach(sp => {
-    subTotal += sp.tasks.length;
-    subDone  += sp.tasks.filter(t => t.done).length;
+    sp.tasks.forEach(t => {
+      if (t.isExtra) { subExtraTotal++; if (t.done) subExtraDone++; }
+      else           { subTotal++;      if (t.done) subDone++; }
+    });
   });
 
   const totalForProgress = coreTasks.length + subTotal;
   const doneForProgress  = coreDone + subDone;
   const coreProgress     = totalForProgress === 0 ? 0 : Math.round((doneForProgress / totalForProgress) * 100);
-  const extraProgress    = extraTasks.length === 0 ? 0 : Math.round((extraDone / extraTasks.length) * 100);
+  const extraTotalAll    = extraTasks.length + subExtraTotal;
+  const extraDoneAll     = extraDone + subExtraDone;
+  const extraProgress    = extraTotalAll === 0 ? 0 : Math.round((extraDoneAll / extraTotalAll) * 100);
 
   // Offene Aufgaben (nur Hauptprojekt, ohne Unterprojekte)
   const openCore  = coreTasks.filter(t => !t.done).length;
@@ -90,15 +96,22 @@ function getProjectStats(project) {
     coreTasks, extraTasks, coreDone, extraDone,
     coreProgress, extraProgress,
     openCore, openExtra,
-    subTotal, subDone
+    subTotal, subDone,
+    extraTotalAll, extraDoneAll
   };
 }
 
+// Ast: total/done/pct = Kernaufgaben, extra* = Extras (getrennter Balken)
 function getSubprojectStats(sp) {
-  const total = sp.tasks.length;
-  const done  = sp.tasks.filter(t => t.done).length;
+  const core   = sp.tasks.filter(t => !t.isExtra);
+  const extras = sp.tasks.filter(t =>  t.isExtra);
+  const total = core.length;
+  const done  = core.filter(t => t.done).length;
   const pct   = total === 0 ? 0 : Math.round((done / total) * 100);
-  return { total, done, pct };
+  const extraTotal = extras.length;
+  const extraDone  = extras.filter(t => t.done).length;
+  const extraPct   = extraTotal === 0 ? 0 : Math.round((extraDone / extraTotal) * 100);
+  return { total, done, pct, extraTotal, extraDone, extraPct };
 }
 
 function formatStartDate(project) {

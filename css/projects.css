@@ -661,7 +661,13 @@
   height: 7px; background: color-mix(in srgb, var(--text) 8%, transparent);
   border-radius: 99px; overflow: hidden;
 }
-.pdt-progress-fill { height: 100%; border-radius: 99px; transition: width 600ms ease; }
+/* Füllfarben fehlten (Balken blieb leer, nur die Zahl stimmte) */
+.pdt-progress-fill { height: 100%; border-radius: 99px; transition: width 600ms ease; background: var(--sage); }
+.pdt-progress-extra { display: flex; align-items: center; gap: 8px; max-width: 50%; margin-top: -6px; }
+.pdt-progress-extra[hidden] { display: none; }
+.pdt-progress-track--extra { flex: 1; height: 4px; }
+.pdt-progress-fill--extra { background: color-mix(in srgb, var(--deco-orange) 70%, var(--amber)); }
+.pdt-progress-extra span { font-size: calc(10.5px * var(--core-font-scale)); color: var(--text-2); white-space: nowrap; font-family: var(--mono); }
 .pdt-progress-meta {
   display: flex; flex-direction: column; gap: 1px;
   font-size: calc(12px * var(--core-font-scale)); color: var(--text-2); font-family: var(--mono);
@@ -797,14 +803,19 @@
 .detail-tile.collapsed .detail-tile-tasks { display: none; }
 /* Fortschrittsbalken bleibt auch eingeklappt sichtbar — Zustand des
    Unterprojekts soll auf einen Blick erkennbar bleiben. */
-.detail-tile.collapsed .detail-tile-bar-wrap { margin-bottom: 16px; }
+.detail-tile.collapsed .detail-tile-bars { margin-bottom: 16px; }
 
-/* Breitere, sichtbarere Progressbar */
+/* Fortschritt je Kachel: Kernbalken + optional dünner Extrabalken
+   (Füllfarbe fehlte vorher — der Balken war nur bei 100 % sichtbar). */
+.detail-tile-bars { display: flex; flex-direction: column; gap: 5px; margin: 0 18px 14px; }
 .detail-tile-bar-wrap {
-  height: 5px; background: var(--bg);
-  margin: 0 18px 14px; border-radius: 99px; overflow: hidden;
+  height: 5px; background: color-mix(in srgb, var(--text) 9%, transparent);
+  border-radius: 99px; overflow: hidden;
 }
-.detail-tile-bar-fill { height: 100%; border-radius: 99px; transition: width 400ms; }
+.detail-tile-bar-wrap.is-extra { height: 3px; }
+.detail-tile-bar-fill { height: 100%; border-radius: 99px; transition: width 400ms; background: var(--sage); }
+.detail-tile-bar-fill.complete { background: var(--status-ok); }
+.is-extra .detail-tile-bar-fill { background: color-mix(in srgb, var(--deco-orange) 70%, var(--amber)); }
 
 /* Aufgabenliste */
 .detail-tile-tasks { border-top: 1px solid var(--border); padding: 6px 0 8px; }
