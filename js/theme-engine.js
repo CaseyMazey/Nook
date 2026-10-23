@@ -212,7 +212,7 @@ function syncThemeFontTrigger(key = 'font') {
 
 // customThemes: [{ id, name, family, coreColors, cardOpacity, fontSize,
 //   bg, calendar: {imageTheme, style}, startHeader: {banner}, branding: {theme},
-//   questboard: {style}, pinboard: {style}, guides: {style}, today: {style}, forest: {style}, graphics: {mode, theme} }]
+//   questboard: {style}, pinboard: {style}, guides: {style}, today: {style}, pages: {style}, forest: {style}, graphics: {mode, theme} }]
 // themeBackgrounds: { [eingebautesThemeId]: {source, data, name, size, dim} }
 let customThemes     = DB.get('customThemes', []);
 let themeBackgrounds = DB.get('themeBackgrounds', {});
@@ -311,7 +311,7 @@ const PRESET_THEMES = [
     night: { family: 'dark',
       coreColors: { bg: '#1a130d', surface: '#2a1f15', nav: '#21180f', modal: '#2f2318', text: '#efe2c8', border: '#8a6a45', accent: '#b07a3e', font: "'Alegreya', Georgia, serif", headingFont: '"Blackwood Castle"', navScale: 1.18 },
       cardOpacity: 88, fontSize: 108, bg: { source: 'rpg', size: 'cover', dim: 45 } },
-    calendar: { imageTheme: 'rpg', style: 'rpg' }, startHeader: { banner: 'rpg' }, branding: { theme: 'rpg' }, questboard: { style: 'rpg' }, pinboard: { style: 'rpg' }, guides: { style: 'rpg' }, today: { style: 'rpg' },
+    calendar: { imageTheme: 'rpg', style: 'rpg' }, startHeader: { banner: 'rpg' }, branding: { theme: 'rpg' }, questboard: { style: 'rpg' }, pinboard: { style: 'rpg' }, guides: { style: 'rpg' }, today: { style: 'rpg' }, pages: { style: 'rpg' },
     forest: { style: 'map' },
     graphics: { mode: 'theme', theme: 'rpg' } },
   // Zombie: aus Kuros Core (Download 2026-10-21) — Farben und Grafik-Set
@@ -403,7 +403,7 @@ const GRAPHICS_THEMES = [
   { id: 'cyberpunk', label: 'Cyberpunk', icon: { src: 'assets/themes/cyberpunk/icon.png', type: 'image/png' } },
   { id: 'lab',       label: 'Lab',       icon: { src: 'assets/themes/lab/icon.png',       type: 'image/png' } },
   { id: 'zombie',    label: 'Zombie',    icon: { src: 'assets/themes/zombie/icon.png',    type: 'image/png' } },
-  { id: 'rpg',       label: 'RPG',       icon: { src: 'assets/themes/rpg/icon.png',       type: 'image/png' }, questboard: 'rpg', pinboard: 'rpg', guides: 'rpg', calendarStyle: 'rpg', todayStyle: 'rpg' },
+  { id: 'rpg',       label: 'RPG',       icon: { src: 'assets/themes/rpg/icon.png',       type: 'image/png' }, questboard: 'rpg', pinboard: 'rpg', guides: 'rpg', calendarStyle: 'rpg', todayStyle: 'rpg', pagesStyle: 'rpg' },
 ];
 const DEFAULT_GRAPHICS_THEME = 'cozy';
 
@@ -499,6 +499,19 @@ function applyTodayStyle(id, override) {
   const ct = getCustomTheme(id);
   const v = override !== undefined ? override : ((ct && ct.today && ct.today.style) || 'cozy');
   document.documentElement.setAttribute('data-today-style', v);
+}
+
+// Stil der übrigen Seiten (css/pages-rpg.css, [data-pages-style]):
+// Karteikarten, Budget, Spiele, Tools, Einstellungen. 'cozy' = wie bisher,
+// 'rpg' = Brett als Sammelfläche, Karten als angepinnte Pergament-Zettel.
+const PAGES_STYLES = [
+  { id: 'cozy', label: 'Cozy (Standard)' },
+  { id: 'rpg',  label: 'Pergament (RPG)' },
+];
+function applyPagesStyle(id, override) {
+  const ct = getCustomTheme(id);
+  const v = override !== undefined ? override : ((ct && ct.pages && ct.pages.style) || 'cozy');
+  document.documentElement.setAttribute('data-pages-style', v);
 }
 
 // Projektwald-Stil (css/projects.css, [data-forest-style]): 'default' =
@@ -756,6 +769,7 @@ function applyThemeEngine(id) {
   applyGuidesStyle(id);
   applyCalendarStyle(id);
   applyTodayStyle(id);
+  applyPagesStyle(id);
   applyForestStyle(id);
   // Browser-/PWA-Leiste in der Hintergrundfarbe des aktiven Themes
   const meta = document.querySelector('meta[name="theme-color"]');
@@ -808,6 +822,7 @@ function applyGraphicsThemeToControls(themeId) {
   tbEl('guides-style').value = (gt && gt.guides) || 'cozy';
   tbEl('calendar-style').value = (gt && gt.calendarStyle) || 'cozy';
   tbEl('today-style').value = (gt && gt.todayStyle) || 'cozy';
+  tbEl('pages-style').value = (gt && gt.pagesStyle) || 'cozy';
   previewThemeBuilderLive();
 }
 
@@ -907,6 +922,7 @@ function fillThemeBuilderForm(t) {
   tbEl('guides-style').value = (t.guides && t.guides.style) || 'cozy';
   tbEl('calendar-style').value = (t.calendar && t.calendar.style) || 'cozy';
   tbEl('today-style').value = (t.today && t.today.style) || 'cozy';
+  tbEl('pages-style').value = (t.pages && t.pages.style) || 'cozy';
   const graphics = detectGraphicsMode(t.graphics || null, calendar, startHeader, branding);
   tbEl('graphics-theme').value = graphics.theme || DEFAULT_GRAPHICS_THEME;
   setGraphicsModeUI(graphics.mode);
@@ -933,6 +949,7 @@ function openThemeBuilder(editId) {
   tbEl('guides-style').innerHTML = GUIDES_STYLES.map(q => `<option value="${q.id}">${q.label}</option>`).join('');
   tbEl('calendar-style').innerHTML = CALENDAR_STYLES.map(q => `<option value="${q.id}">${q.label}</option>`).join('');
   tbEl('today-style').innerHTML = TODAY_STYLES.map(q => `<option value="${q.id}">${q.label}</option>`).join('');
+  tbEl('pages-style').innerHTML = PAGES_STYLES.map(q => `<option value="${q.id}">${q.label}</option>`).join('');
   renderThemeTemplateStrip();
 
   tbEl('title').textContent = isPreset ? 'Theme erstellen' : (existing ? 'Theme bearbeiten' : 'Theme erstellen');
@@ -1006,6 +1023,7 @@ function previewThemeBuilderLive() {
   applyGuidesStyle(null, tbEl('guides-style').value);
   applyCalendarStyle(null, tbEl('calendar-style').value);
   applyTodayStyle(null, tbEl('today-style').value);
+  applyPagesStyle(null, tbEl('pages-style').value);
 }
 
 // ── "Vorlage"-Leiste: übernimmt die Werte eines vorhandenen Themes
@@ -1084,6 +1102,7 @@ function saveThemeBuilder() {
     pinboard: { style: tbEl('pinboard-style').value },
     guides: { style: tbEl('guides-style').value },
     today: { style: tbEl('today-style').value },
+    pages: { style: tbEl('pages-style').value },
     graphics: { mode: _teBuilderGraphicsMode, theme: tbEl('graphics-theme').value },
   };
 
@@ -1264,7 +1283,7 @@ function initThemeBuilder() {
     tbEl(k).dataset.auto = '0';
     previewThemeBuilderLive();
   }));
-  ['bg-size', 'calendar-image', 'start-header', 'branding-theme', 'questboard-style', 'pinboard-style', 'guides-style', 'calendar-style', 'today-style']
+  ['bg-size', 'calendar-image', 'start-header', 'branding-theme', 'questboard-style', 'pinboard-style', 'guides-style', 'calendar-style', 'today-style', 'pages-style']
     .forEach(k => tbEl(k).addEventListener('change', previewThemeBuilderLive));
 
   // Schriftart-Dropdowns (Fließtext + Überschriften): Trigger togglet,

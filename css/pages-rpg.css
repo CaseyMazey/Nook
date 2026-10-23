@@ -1,0 +1,188 @@
+/* =============================================================
+   ÜBRIGE SEITEN — Stil „rpg“ (Zettel auf dem Holzbrett)
+   Gilt für Karteikarten, Budget, Spiele, Tools und Einstellungen —
+   Seiten ohne eigenen RPG-Stil (Heute/Kalender/Pinnwand/Anleitungen/
+   Questboard haben eigene Dateien, Projekte die Pergament-Karte, der
+   Garten bleibt Illustration). Greift nur bei data-pages-style="rpg",
+   gesetzt von js/theme-engine.js (Preset „RPG“: pages.style).
+   - Sammelfläche (.dash-content) jeder Seite: Questboard-Brett
+   - Karten: Pergament (note.webp) mit Reißzwecke (pin.webp)
+   Schräglage und Schatten sitzen nur auf dem Papier (::before), nicht
+   auf der Karte selbst: transform/filter auf der Karte würden
+   position:fixed-Kinder (Uhrzeit-Picker in den Einstellungen u. a.)
+   an die Karte binden statt ans Fenster.
+   Grafiken behalten ihre Farben; alles übrige aus Theme-Tokens.
+============================================================= */
+
+[data-pages-style="rpg"] {
+  --pages-frame:      color-mix(in srgb, var(--amber) 30%, var(--shadow-tint));
+  --pages-board-veil: color-mix(in srgb, color-mix(in srgb, var(--bg) 55%, var(--amber)) 14%, transparent);
+}
+[data-pages-style="rpg"][data-theme-family="dark"] {
+  --pages-board-veil: color-mix(in srgb, var(--bg) 55%, transparent);
+}
+
+/* ── Brett ───────────────────────────────────────────────────── */
+[data-pages-style="rpg"] :is(#view-flashcards > .dash-content, #budget-dashboard,
+  #view-games .games-mock-wrapper, #view-tools > .dash-content, #view-settings > .dash-content) {
+  background:
+    linear-gradient(var(--pages-board-veil), var(--pages-board-veil)),
+    url('../assets/questboard/planks.webp') top center / 100% auto repeat-y,
+    color-mix(in srgb, var(--dash-bg) 70%, var(--amber));
+  border: 10px solid var(--pages-frame);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--sheen) 10%, transparent),
+    inset 0 6px 18px color-mix(in srgb, var(--shadow-tint) 45%, transparent),
+    var(--dash-shadow);
+}
+
+/* Schrift direkt auf dem Holz: hell mit Schatten */
+[data-pages-style="rpg"] :is(.settings-group-head, #budget-title-block h1, #budget-title-block > p,
+  .sp-source-note, .games-title, .games-subtitle, .games-library-title) {
+  color: var(--sage-fg);
+  text-shadow: 0 1px 2px color-mix(in srgb, var(--shadow-tint) 80%, transparent);
+}
+[data-pages-style="rpg"] :is(#budget-title-block h1, .games-title, .games-library-title) {
+  font-family: var(--font-heading);
+  font-weight: 400;
+  letter-spacing: .03em;
+  text-transform: none;
+}
+[data-pages-style="rpg"] .sp-source-note { background: none; border: none; }
+/* Einstellungs-Gruppen: Titel + Pfeil stecken im Klapp-Knopf */
+[data-pages-style="rpg"] .settings-group-head :is(.settings-group-title, .settings-group-chevron) {
+  color: var(--sage-fg);
+  font-size: calc(12.5px * var(--core-font-scale));
+  letter-spacing: .16em;
+}
+
+/* ── Zettel: Tinte, Papier, Pin ──────────────────────────────── */
+[data-pages-style="rpg"] :is(.fc-stat-card, #view-flashcards .panel, .group-card, #fc-session-panel,
+  .b-main-card, .b-liquidity-card, .b-card, .sp-panel, .sp-scen-card,
+  .game-library-card, .games-side-card, .tool-card, #view-settings .settings-panel) {
+  --text:   var(--deco-ink);
+  --text-2: color-mix(in srgb, var(--deco-ink) 82%, transparent);
+  --text-3: color-mix(in srgb, var(--deco-ink) 58%, transparent);
+  --border:        color-mix(in srgb, var(--deco-ink) 13%, transparent);
+  --border-strong: color-mix(in srgb, var(--deco-ink) 24%, transparent);
+  --surface:       transparent;
+  --surface-2:     color-mix(in srgb, var(--deco-ink) 6%, transparent);
+  --surface-3:     color-mix(in srgb, var(--deco-ink) 4%, transparent);
+  --surface-solid: color-mix(in srgb, var(--sheen) 70%, var(--deco-ink) 4%);
+  --accent-soft:   color-mix(in srgb, var(--deco-ink) 9%, transparent);
+  --highlight-bg:  color-mix(in srgb, var(--deco-ink) 7%, transparent);
+  --sage-dark:     color-mix(in srgb, var(--sage) 60%, var(--deco-ink));
+  --paper-shadow: drop-shadow(0 4px 5px color-mix(in srgb, var(--shadow-tint) 30%, transparent));
+  --paper-dim: brightness(1);
+  color-scheme: light;
+  color: var(--text);
+  isolation: isolate;
+  position: relative;
+  background: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+          backdrop-filter: none !important;
+  overflow: visible !important;
+}
+[data-pages-style="rpg"][data-theme-family="dark"] :is(.fc-stat-card, #view-flashcards .panel, .group-card, #fc-session-panel,
+  .b-main-card, .b-liquidity-card, .b-card, .sp-panel, .sp-scen-card,
+  .game-library-card, .games-side-card, .tool-card, #view-settings .settings-panel) {
+  --paper-dim: brightness(.82) saturate(.85);
+}
+
+[data-pages-style="rpg"] :is(.fc-stat-card, #view-flashcards .panel, .group-card, #fc-session-panel,
+  .b-main-card, .b-liquidity-card, .b-card, .sp-panel, .sp-scen-card,
+  .game-library-card, .games-side-card, .tool-card, #view-settings .settings-panel)::before {
+  content: '';
+  position: absolute; inset: 0;
+  z-index: -1;
+  border-style: solid;
+  border-color: transparent;
+  border-width: 22px;
+  border-image: url('../assets/questboard/note.webp') 44 fill / 22px / 0 stretch;
+  filter: var(--paper-dim) var(--paper-shadow);
+  transform: rotate(var(--tilt, 0deg)) scaleX(var(--flip, 1));
+  pointer-events: none;
+}
+[data-pages-style="rpg"] :is(.fc-stat-card, #view-flashcards .panel, .group-card, #fc-session-panel,
+  .b-main-card, .b-liquidity-card, .b-card, .sp-panel,
+  .games-side-card, .tool-card, #view-settings .settings-panel)::after {
+  content: '';
+  position: absolute;
+  top: -9px; left: 50%;
+  width: 19px; height: 25px;
+  margin-left: -9px;
+  background: url('../assets/questboard/pin.webp') center / contain no-repeat;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Abwechselnde, leichte Schräglage des Papiers */
+[data-pages-style="rpg"] :is(.fc-stat-card, .b-main-card, .sp-scen-card, .game-library-card,
+  .tool-card, #view-settings .settings-panel, .b-card):nth-child(odd)  { --tilt: -0.5deg; }
+[data-pages-style="rpg"] :is(.fc-stat-card, .b-main-card, .sp-scen-card, .game-library-card,
+  .tool-card, #view-settings .settings-panel, .b-card):nth-child(even) { --tilt: 0.45deg; --flip: -1; }
+/* Große Datenblätter (Budget-Panels) gerade — sonst „schwimmen“ Tabellen */
+[data-pages-style="rpg"] :is(.sp-panel, .b-liquidity-card) { --tilt: 0deg; }
+
+/* Kopfzeilen der Blätter: ohne eigene Fläche, feine Tintenlinie */
+[data-pages-style="rpg"] :is(#view-flashcards .panel, .b-card, .sp-panel, .tool-card, #view-settings .settings-panel)
+  :is(.panel-header, .b-card-header, .sp-panel-head, .tool-card-header) {
+  background: transparent;
+  border-bottom-color: var(--border);
+}
+
+/* Karteikarten: Fachtitel und Hinweise direkt auf dem Holz */
+[data-pages-style="rpg"] :is(#subject-detail-title, #subject-detail-meta, #flashcard-placeholder, #group-list > .empty-state) {
+  color: var(--sage-fg) !important;
+  text-shadow: 0 1px 2px color-mix(in srgb, var(--shadow-tint) 80%, transparent);
+}
+/* Lernkarte im Session-Blatt: eigene helle Fläche, damit Vorder-/Rückseite
+   beim Umdrehen sichtbar bleiben */
+[data-pages-style="rpg"] :is(#learn-card-front, #learn-card-back) { background: var(--surface-solid); }
+[data-pages-style="rpg"] .group-header { background: transparent; }
+
+/* Etwas Innenabstand, damit nichts an der Papierkante klebt */
+[data-pages-style="rpg"] :is(.b-main-card, .b-card, .sp-panel, #view-flashcards .panel, #view-settings .settings-panel) { padding: 6px 6px 10px; }
+[data-pages-style="rpg"] .fc-stat-card { padding: 18px 18px 16px; }
+[data-pages-style="rpg"] .tool-card { padding: 26px 24px 24px; }
+
+/* Budget-Hauptkarten: farbige Kopfzeile → Tinte auf Papier */
+[data-pages-style="rpg"] .b-main-card {
+  --b-card-ink-1: var(--deco-ink);
+  --b-card-ink-2: color-mix(in srgb, var(--deco-ink) 85%, transparent);
+  --b-card-ink-3: color-mix(in srgb, var(--deco-ink) 70%, transparent);
+  --b-card-ink-4: color-mix(in srgb, var(--deco-ink) 55%, transparent);
+  --b-card-line-1: color-mix(in srgb, var(--deco-ink) 5%, transparent);
+  --b-card-line-5: color-mix(in srgb, var(--deco-ink) 13%, transparent);
+}
+
+/* Spielekarten: farbiger Streifen oben wird zum Tintenstrich auf dem Papier */
+[data-pages-style="rpg"] .game-library-card::after {
+  top: 18px; left: 26px; right: 26px;
+  width: auto; height: 4px;
+  border-radius: 99px;
+  opacity: .8;
+}
+
+/* Eingaben auf Papier — sonst nachts dunkle Felder auf hellem Blatt */
+[data-pages-style="rpg"] :is(.fc-stat-card, #view-flashcards .panel, .group-card, #fc-session-panel,
+  .b-main-card, .b-liquidity-card, .b-card, .sp-panel, .sp-scen-card,
+  .game-library-card, .games-side-card, .tool-card, #view-settings .settings-panel)
+  :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]), select, textarea) {
+  background-color: color-mix(in srgb, var(--sheen) 45%, transparent);
+  border-color: var(--border-strong);
+  color: var(--deco-ink);
+}
+[data-pages-style="rpg"] :is(#view-flashcards .panel, .b-card, .sp-panel, .tool-card, #view-settings .settings-panel)
+  :is(input, textarea)::placeholder { color: var(--text-3); }
+
+@media (max-width: 640px) {
+  [data-pages-style="rpg"] :is(#view-flashcards > .dash-content, #budget-dashboard,
+    #view-games .games-mock-wrapper, #view-tools > .dash-content, #view-settings > .dash-content) {
+    border-width: 6px;
+  }
+}

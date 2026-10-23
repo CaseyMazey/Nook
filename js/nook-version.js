@@ -24,6 +24,7 @@ window.NOOK_CHANGELOG = [
       'Countdowns: Klick öffnet direkt den Termin; auch für wiederkehrende Termine (zählt bis zum nächsten Vorkommen)',
       'Kalender: Kacheln der rechten Spalte per Ziehen an der Überschrift sortierbar; Tage aus Vor-/Nachmonat anklickbar',
       'RPG: Heute-Seite auf dem Holzbrett, Unterrichtsblöcke und Kacheln als angepinnte Pergament-Zettel; Theme-Editor: Heute-Stil wählbar',
+      'RPG: auch Karteikarten, Budget, Spiele, Tools und Einstellungen als Pergament-Zettel auf dem Holzbrett; Theme-Editor: „Übrige Seiten“',
     ],
   },
   {
