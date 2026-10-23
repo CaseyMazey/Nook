@@ -138,28 +138,24 @@
     linear-gradient(to right, var(--forest-detail-side) 0%, color-mix(in srgb, var(--forest-detail-side) 55%, transparent) 26%, transparent 46%);
 }
 
-/* ── Wald-Stil „map“ (Theme-Eigenschaft forest.style, z.B. RPG-Nacht) ──
+/* ── Wald-Stil „map“ (Theme-Eigenschaft forest.style, z.B. RPG) ──
    Übersicht UND Detailansicht werden zur Karte auf Pergament: Bild in
    Sepia, Papier-Textur (assets/questboard/note.webp) multipliziert
-   darüber und als Maske für ausgefranste Ränder, darunter eine warme
-   Nussbaum-Tischplatte (assets/questboard/table.webp). */
+   darüber und als Maske für ausgefranste Ränder. Ohne Tischplatte
+   darunter — die Karte liegt direkt auf dem Theme-Hintergrund; das
+   Questboard-Brett sitzt stattdessen unter den Ästen (s.u.). */
 [data-forest-style="map"] #project-forest,
 [data-forest-style="map"] .pdt-hero {
   --forest-tree-dim: sepia(1) saturate(1.2) contrast(1.1) brightness(.8);
-  background:
-    radial-gradient(ellipse at center, transparent 40%, color-mix(in srgb, var(--shadow-tint) 55%, transparent)),
-    url('../assets/questboard/table.webp') center / cover,
-    var(--forest-bg);
+  background: none;
 }
-/* Tagversion: Tischplatte deutlich heller (warmer Schleier aus der
-   Theme-Hintergrundfarbe, sanfterer Rand) statt dunklem Nussbaum. */
-[data-forest-style="map"][data-theme-family="light"] #project-forest,
-[data-forest-style="map"][data-theme-family="light"] .pdt-hero {
-  background:
-    radial-gradient(ellipse at center, transparent 45%, color-mix(in srgb, var(--amber) 28%, transparent)),
-    linear-gradient(color-mix(in srgb, color-mix(in srgb, var(--bg) 62%, var(--deco-orange)) 64%, transparent), color-mix(in srgb, color-mix(in srgb, var(--bg) 62%, var(--deco-orange)) 64%, transparent)),
-    url('../assets/questboard/table.webp') center / cover,
-    var(--forest-bg);
+/* Die Sammelfläche drumherum ebenfalls durchsichtig, sonst bliebe ein
+   heller Kasten um die Karte stehen. */
+[data-forest-style="map"] #project-dash-content,
+[data-forest-style="map"] body.has-bg-image #project-dash-content {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
 }
 [data-forest-style="map"] .forest-bg,
 [data-forest-style="map"] .pdt-hero-bg {
@@ -224,6 +220,87 @@
 [data-forest-style="map"] .pdt-left .pdt-project-desc { color: var(--text); }
 [data-forest-style="map"] .pdt-toolbar { padding: 26px 34px; }
 [data-forest-style="map"] .pdt-info-card { margin: 30px 30px 30px 0; }
+
+/* ── Äste & Aufgaben auf dem Questboard-Brett (Stil „map“) ──
+   Brett wie bei Questboard/Kalender/Heute (assets/questboard/planks.webp),
+   die Ast-Kacheln als angepinnte Pergament-Zettel. Schräglage/Schatten
+   nur auf dem Papier (::before), die Kachel selbst bleibt unverändert. */
+[data-forest-style="map"] .pdt-tasks-section {
+  --pt-frame: color-mix(in srgb, var(--amber) 30%, var(--shadow-tint));
+  --pt-veil:  color-mix(in srgb, color-mix(in srgb, var(--bg) 55%, var(--amber)) 14%, transparent);
+  margin-top: 18px;
+  background:
+    linear-gradient(var(--pt-veil), var(--pt-veil)),
+    url('../assets/questboard/planks.webp') top center / 100% auto repeat-y,
+    color-mix(in srgb, var(--dash-bg) 70%, var(--amber));
+  border: 10px solid var(--pt-frame);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--sheen) 10%, transparent),
+    inset 0 6px 18px color-mix(in srgb, var(--shadow-tint) 45%, transparent),
+    var(--dash-shadow);
+}
+[data-forest-style="map"][data-theme-family="dark"] .pdt-tasks-section {
+  --pt-veil: color-mix(in srgb, var(--bg) 55%, transparent);
+}
+[data-forest-style="map"] .pdt-tasks-header :is(h2, h3, .pdt-tasks-title, .pdt-tasks-sub, p) {
+  color: var(--sage-fg);
+  text-shadow: 0 1px 2px color-mix(in srgb, var(--shadow-tint) 80%, transparent);
+}
+[data-forest-style="map"] .pdt-tiles-grid { gap: 22px; padding-top: 10px; }
+[data-forest-style="map"] .detail-tile {
+  --text:   var(--deco-ink);
+  --text-2: color-mix(in srgb, var(--deco-ink) 82%, transparent);
+  --text-3: color-mix(in srgb, var(--deco-ink) 58%, transparent);
+  --border:        color-mix(in srgb, var(--deco-ink) 13%, transparent);
+  --border-strong: color-mix(in srgb, var(--deco-ink) 24%, transparent);
+  --surface:       transparent;
+  --surface-2:     color-mix(in srgb, var(--deco-ink) 6%, transparent);
+  --surface-3:     color-mix(in srgb, var(--deco-ink) 4%, transparent);
+  --accent-soft:   color-mix(in srgb, var(--deco-ink) 9%, transparent);
+  --paper-dim: brightness(1);
+  color-scheme: light;
+  color: var(--text);
+  isolation: isolate;
+  position: relative;
+  background: none;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: visible;
+  padding: 6px 6px 10px;
+}
+[data-forest-style="map"][data-theme-family="dark"] .detail-tile { --paper-dim: brightness(.82) saturate(.85); }
+[data-forest-style="map"] .detail-tile:hover { box-shadow: none; }
+[data-forest-style="map"] .detail-tile::before {
+  content: '';
+  position: absolute; inset: 0;
+  z-index: -1;
+  border-style: solid;
+  border-color: transparent;
+  border-width: 22px;
+  border-image: url('../assets/questboard/note.webp') 44 fill / 22px / 0 stretch;
+  filter: var(--paper-dim) drop-shadow(0 4px 5px color-mix(in srgb, var(--shadow-tint) 30%, transparent));
+  transform: rotate(var(--tilt, 0deg)) scaleX(var(--flip, 1));
+  pointer-events: none;
+}
+[data-forest-style="map"] .detail-tile::after {
+  content: '';
+  position: absolute;
+  top: -9px; left: 50%;
+  width: 19px; height: 25px;
+  margin-left: -9px;
+  background: url('../assets/questboard/pin.webp') center / contain no-repeat;
+  pointer-events: none;
+  z-index: 2;
+}
+[data-forest-style="map"] .detail-tile:nth-child(odd)  { --tilt: -0.5deg; }
+[data-forest-style="map"] .detail-tile:nth-child(even) { --tilt: 0.45deg; --flip: -1; }
+[data-forest-style="map"] .detail-tile :is(input:not([type="checkbox"]), textarea) {
+  background-color: color-mix(in srgb, var(--sheen) 45%, transparent);
+  border-color: var(--border-strong);
+  color: var(--deco-ink);
+}
 
 /* Baum-Ebene — renderForest() räumt/befüllt NUR diesen Layer, Hintergrund/
    Overlay/Legende bleiben stehen. Eigener Stacking-Context (z-index:1),
