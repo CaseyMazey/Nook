@@ -1499,6 +1499,30 @@
                 <p class="settings-status hidden" id="weather-status" role="status"></p>
               </div>
 
+              <!-- Fortschritts-Tracker (js/today-tracker.js) -->
+              <div class="panel settings-panel">
+                <div class="panel-header"><span class="panel-label">Fortschritt verfolgen</span></div>
+                <div class="settings-row">
+                  <div><div class="settings-row-title">Auf der Heute-Seite anzeigen</div><div class="settings-row-sub">z.B. wie weit deine Ausbildung schon ist</div></div>
+                  <label class="toggle"><input type="checkbox" id="setting-tracker-enabled"/><span class="toggle-slider"></span></label>
+                </div>
+                <div id="tracker-settings-fields" class="hidden">
+                  <div class="settings-row">
+                    <div><div class="settings-row-title">Bezeichnung</div></div>
+                    <input type="text" id="setting-tracker-label" class="modal-input settings-input" placeholder="z.B. Ausbildung" autocomplete="off"/>
+                  </div>
+                  <div class="settings-row">
+                    <div><div class="settings-row-title">Start</div></div>
+                    <input type="date" id="setting-tracker-start" class="modal-input settings-input"/>
+                  </div>
+                  <div class="settings-row">
+                    <div><div class="settings-row-title">Ende</div></div>
+                    <input type="date" id="setting-tracker-end" class="modal-input settings-input"/>
+                  </div>
+                  <p class="settings-status hidden" id="tracker-settings-hint" role="status">Das Ende muss nach dem Start liegen.</p>
+                </div>
+              </div>
+
               <div class="panel settings-panel" id="positivity-settings-panel">
                 <div class="panel-header"><span class="panel-label">Positivity</span><span class="positivity-total-badge" id="positivity-total-count"></span></div>
                 <div id="positivity-category-list"></div>
@@ -3697,6 +3721,7 @@
   <script src="js/google-calendar-settings.js"></script>
   <script src="js/today.js"></script>
   <script src="js/today-mealplan.js"></script>
+  <script src="js/today-tracker.js"></script>
   <script src="js/gruppendienste.js"></script>
   <script src="js/pinboard.js"></script>
   <script src="js/flashcards.js"></script>

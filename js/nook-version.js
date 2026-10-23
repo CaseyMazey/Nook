@@ -21,6 +21,7 @@ window.NOOK_CHANGELOG = [
       'RPG: Projektwald als Pergament-Karte, Pinnwand als Pergament-Blätter mit farbigen Pins',
       'RPG: Anleitungen als Zauberbücher in der Buchfarbe, Kapitel auf Pergament, Seitenkarten als Zettel',
       'RPG: Kalender als Pergamentblatt auf dem Holzbrett; Termine in hellen Themes besser lesbar',
+      'Heute: Fortschritt verfolgen (z.B. Ausbildung in Wochen), in den Einstellungen einschaltbar',
     ],
   },
   {
