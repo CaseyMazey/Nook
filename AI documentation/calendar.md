@@ -92,7 +92,8 @@ Sie zeigt:
 - Feiertage
 - Geburtstage
 
-Jeder Tag besitzt eine kompakte Vorschau.
+Jeder Tag besitzt eine kompakte Vorschau. Auch die Tage aus Vor- und
+Nachmonat in den Randzeilen öffnen per Klick ihre Tagesansicht.
 
 Die Anzahl sichtbarer Elemente ist bewusst begrenzt.
 
@@ -201,7 +202,14 @@ Countdowns erscheinen zusätzlich:
 - in der Sidebar
 - im Countdown-Widget
 
-Abgelaufene Countdowns werden automatisch entfernt.
+Auch Terminserien können Countdowns sein (`series.countdown`): gezählt wird
+bis zum nächsten Vorkommen ab heute, danach automatisch bis zum folgenden.
+
+Ein Klick auf einen Countdown öffnet den zugehörigen Termin (bei Serien die
+übliche Abfrage „nur dieser / folgende / alle“). Zentrale Liste:
+`getCountdownItems()` in calendar.js.
+
+Abgelaufene Countdowns (bzw. beendete Serien) werden automatisch entfernt.
 
 ---
 
@@ -323,7 +331,8 @@ Aktuell:
 Jede Karte (und die Wetter-/Mond-Karte im Hero) lässt sich in den
 Kalender-Einstellungen unter „Rechte Spalte“ einzeln ausblenden
 (`calendarSettings.sideCards`). Monatsziele sind standardmäßig nur an,
-wenn bereits Ziele angelegt wurden.
+wenn bereits Ziele angelegt wurden. Die Reihenfolge lässt sich durch Ziehen
+an der Kachel-Überschrift ändern (`calendarSettings.sideOrder`).
 
 Die Sidebar soll den Kalender ergänzen.
 

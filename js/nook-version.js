@@ -21,6 +21,8 @@ window.NOOK_CHANGELOG = [
       'Kalender: neue Karte „Demnächst“ mit den Terminen der nächsten 14 Tage',
       'Kalender: Monatsstatistik neu – Termine mit Vormonatsvergleich, freie Tage, Ø pro Woche, erledigte Aufgaben und Auslastung je Tag',
       'Kalender: „Heute“-Knopf, Monatswechsel per Pfeiltasten; Monatswechsel am 29.–31. überspringt keinen Monat mehr',
+      'Countdowns: Klick öffnet direkt den Termin; auch für wiederkehrende Termine (zählt bis zum nächsten Vorkommen)',
+      'Kalender: Kacheln der rechten Spalte per Ziehen an der Überschrift sortierbar; Tage aus Vor-/Nachmonat anklickbar',
     ],
   },
   {

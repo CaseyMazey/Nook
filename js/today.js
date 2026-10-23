@@ -289,22 +289,11 @@ function updateHeader() {
 }
 
 function updateCountdown() {
-  const now = new Date(); now.setHours(0,0,0,0);
   const container = document.getElementById('countdown-display');
   if (!container) return;
   container.innerHTML = '';
-  const candidates = [];
-  Object.entries(events).forEach(([key, dayEvs]) => {
-    dayEvs.forEach(ev => {
-      if (!ev.countdown) return;
-      const evDate = parseLocalDate(key); evDate.setHours(0,0,0,0);
-      const days = Math.ceil((evDate - now) / MS_PER_DAY);
-      if (days >= 0) candidates.push({ id: ev.id, title: ev.title, daysLeft: days });
-    });
-  });
-  const visible = candidates
-    .filter(c => countdownVisible[c.id] === true)
-    .sort((a, b) => a.daysLeft - b.daysLeft);
+  // Einzeltermine + Serien (nächstes Vorkommen) — zentrale Liste aus calendar.js
+  const visible = getCountdownItems().filter(c => countdownVisible[c.id] === true);
 
   // Show/hide countdowns section — auf Mobile steckt section in
   // #mehr-countdown-slot (siehe js/main.js: placeSidebarWidgets()),
@@ -321,12 +310,16 @@ function updateCountdown() {
     const left  = document.createElement('div'); left.className = 'countdown-entry-left';
     const icon  = document.createElement('span'); icon.className = 'countdown-entry-icon'; icon.textContent = '📅';
     const info  = document.createElement('div'); info.className = 'countdown-entry-info';
-    const label = document.createElement('span'); label.className = 'countdown-label'; label.textContent = item.title;
+    const label = document.createElement('span'); label.className = 'countdown-label'; label.textContent = (item.recurring ? '↻ ' : '') + item.title;
     const sub   = document.createElement('span'); sub.className = 'countdown-sub';
     sub.textContent = item.daysLeft === 0 ? 'Heute!' : item.daysLeft === 1 ? 'in 1 Tag' : `in ${item.daysLeft} Tagen`;
     info.append(label, sub); left.append(icon, info);
     const days  = document.createElement('span'); days.className = 'countdown-days'; days.textContent = item.daysLeft;
-    entry.append(left, days); container.appendChild(entry);
+    entry.append(left, days);
+    // Klick auf einen Countdown öffnet direkt den Termin (statt der Liste)
+    entry.title = 'Termin öffnen';
+    entry.addEventListener('click', e => { e.stopPropagation(); openCountdownEvent(item); });
+    container.appendChild(entry);
   });
 }
 

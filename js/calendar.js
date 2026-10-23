@@ -171,6 +171,29 @@ function computeSeriesOccurrenceDates(series, limitEndDate) {
 }
 
 // Liefert alle Serien-Vorkommen (inkl. Ausnahmen aufgelöst) im Bereich [rangeStart, rangeEnd].
+// Ein einzelnes Vorkommen einer Serie als Termin-Objekt — null, wenn es
+// per Ausnahme gelöscht wurde. Bearbeitete Einzeltage übernehmen ihre Daten
+// aus der Ausnahme.
+function buildSeriesOccurrence(series, d) {
+  const dKey = dateKey(d);
+  const exception = series.exceptions && series.exceptions[dKey];
+  if (exception && exception.type === 'deleted') return null;
+  const base = {
+    id: series.id + '__' + dKey,
+    seriesId: series.id,
+    occurrenceKey: dKey,
+    title: series.title,
+    notes: series.notes || '',
+    time: series.time || '',
+    countdown: !!series.countdown, // Countdown gilt für die ganze Serie (nächstes Vorkommen)
+    color: series.color || null,
+    showInAgenda: series.showInAgenda !== false,
+    isRecurring: true
+  };
+  if (exception && exception.type === 'modified') Object.assign(base, exception.data);
+  return base;
+}
+
 function getSeriesOccurrencesInRange(rangeStart, rangeEnd) {
   const rs = new Date(rangeStart); rs.setHours(0,0,0,0);
   const re = new Date(rangeEnd);   re.setHours(0,0,0,0);
@@ -179,26 +202,27 @@ function getSeriesOccurrencesInRange(rangeStart, rangeEnd) {
     const dates = computeSeriesOccurrenceDates(series, re);
     dates.forEach(d => {
       if (d.getTime() < rs.getTime() || d.getTime() > re.getTime()) return;
-      const dKey = dateKey(d);
-      const exception = series.exceptions && series.exceptions[dKey];
-      if (exception && exception.type === 'deleted') return;
-      const base = {
-        id: series.id + '__' + dKey,
-        seriesId: series.id,
-        occurrenceKey: dKey,
-        title: series.title,
-        notes: series.notes || '',
-        time: series.time || '',
-        countdown: false, // Countdown wird für wiederkehrende Termine nicht unterstützt
-        color: series.color || null,
-        showInAgenda: series.showInAgenda !== false,
-        isRecurring: true
-      };
-      if (exception && exception.type === 'modified') Object.assign(base, exception.data);
-      out.push({ date: new Date(d), event: base });
+      const ev = buildSeriesOccurrence(series, d);
+      if (ev) out.push({ date: new Date(d), event: ev });
     });
   });
   return out;
+}
+
+// Nächstes (nicht gelöschtes) Vorkommen einer Serie ab `fromDate` — oder
+// null, wenn die Serie vorher endet. Suchfenster wächst mit dem Intervall,
+// damit auch „alle 2 Jahre“ gefunden wird.
+function getNextSeriesOccurrence(series, fromDate) {
+  const from = new Date(fromDate); from.setHours(0,0,0,0);
+  const interval = Math.max(1, parseInt(series.rrule?.interval, 10) || 1);
+  const limit = addDays(from, 400 * interval);
+  const dates = computeSeriesOccurrenceDates(series, limit);
+  for (const d of dates) {
+    if (d.getTime() < from.getTime()) continue;
+    const ev = buildSeriesOccurrence(series, d);
+    if (ev) return { date: new Date(d), event: ev };
+  }
+  return null;
 }
 
 // =========================
@@ -312,21 +336,56 @@ function getEventStatusLabel(ev, date) {
 }
 
 // =========================
+// ZENTRALE COUNTDOWN-LISTE
+// =========================
+// Alle aktiven Countdowns, nach Resttagen sortiert — einzige Quelle für
+// Kalender-Seitenleiste, Countdown-Modal und Heute (today.js: updateCountdown).
+//   • Einzel-/Mehrtagestermin: zählt bis zum Start-Datum
+//   • Terminserie (series.countdown): zählt bis zum nächsten Vorkommen ab
+//     heute und läuft danach automatisch auf das folgende weiter
+// Sichtbarkeit steuert weiterhin countdownVisible[id] (id = Termin- bzw. Serien-ID).
+function getCountdownItems() {
+  const items = [];
+  Object.entries(events).forEach(([key, dayEvs]) => {
+    (dayEvs || []).forEach(ev => {
+      if (!ev.countdown) return;
+      const date = parseLocalDate(key);
+      const daysLeft = getDaysUntil(date);
+      if (daysLeft >= 0) items.push({ id: ev.id, title: ev.title, key, date, daysLeft, ev, recurring: false });
+    });
+  });
+  const today = new Date(); today.setHours(0,0,0,0);
+  eventSeries.forEach(series => {
+    if (!series.countdown) return;
+    const next = getNextSeriesOccurrence(series, today);
+    if (!next) return;
+    items.push({ id: series.id, title: next.event.title, key: dateKey(next.date), date: next.date,
+                 daysLeft: getDaysUntil(next.date), ev: next.event, recurring: true });
+  });
+  return items.sort((a, b) => a.daysLeft - b.daysLeft);
+}
+
+// Klick auf einen Countdown öffnet den zugehörigen Termin zum Bearbeiten —
+// bei Serien erst die übliche Abfrage „nur dieser / folgende / alle“.
+function openCountdownEvent(item) {
+  countdownModal.close();
+  if (item.recurring) openEditScopeModal(item.ev, item.date, 'edit');
+  else openEventModal(item.key, item.date, item.ev);
+}
+
+// =========================
 // COUNTDOWN CLEANUP beim Laden
 // =========================
 (function cleanupExpiredCountdowns() {
-  let changed = false;
-  const validCountdownIds = new Set();
+  let changed = false, seriesChanged = false;
+  const validCountdownIds = new Set(getCountdownItems().map(c => c.id));
 
-  Object.entries(events).forEach(([key, dayEvs]) => {
-    dayEvs.forEach(ev => {
-      if (!ev.countdown) return;
-      // Countdown zählt immer bis zum Start-Datum (auch bei mehrtägigen Terminen)
-      const evDate = parseLocalDate(key);
-      const daysLeft = getDaysUntil(evDate);
-      if (daysLeft >= 0) { validCountdownIds.add(ev.id); }
-      else { ev.countdown = false; changed = true; }
-    });
+  // Abgelaufene Einzeltermine bzw. beendete Serien verlieren ihr Countdown-Flag
+  Object.values(events).forEach(dayEvs => (dayEvs || []).forEach(ev => {
+    if (ev.countdown && !validCountdownIds.has(ev.id)) { ev.countdown = false; changed = true; }
+  }));
+  eventSeries.forEach(series => {
+    if (series.countdown && !validCountdownIds.has(series.id)) { series.countdown = false; seriesChanged = true; }
   });
 
   Object.keys(countdownVisible).forEach(id => {
@@ -334,6 +393,7 @@ function getEventStatusLabel(ev, date) {
     if (!validCountdownIds.has(id)) { delete countdownVisible[id]; changed = true; }
   });
   if (changed) { saveEvents(); DB.set('countdownVisible', countdownVisible); }
+  if (seriesChanged) saveEventSeries();
 })();
 
 // =========================
@@ -496,7 +556,7 @@ function openEventModal(key, day, existingEvent = null, editCtx = null) {
   document.getElementById('event-modal-input').value         = dataSrc.title || '';
   document.getElementById('event-modal-notes').value         = dataSrc.notes || '';
   document.getElementById('event-modal-time').value          = dataSrc.time || '';
-  document.getElementById('event-modal-countdown').checked   = existingEvent?.countdown || false;
+  document.getElementById('event-modal-countdown').checked   = editCtx?.series ? !!editCtx.series.countdown : (existingEvent?.countdown || false);
   document.getElementById('event-modal-agenda').checked      = dataSrc.showInAgenda !== false;
   eventColorWidget.setValue(dataSrc.color || DEFAULT_EVENT_COLOR);
   const googlePushCb = document.getElementById('event-modal-google-push');
@@ -518,7 +578,7 @@ function openEventModal(key, day, existingEvent = null, editCtx = null) {
     lockedHint.style.display = '';
   } else if (editCtx?.scope === 'following' || editCtx?.scope === 'series') {
     recurSelect.disabled = false;
-    countdownRow.style.display = 'none';
+    countdownRow.style.display = ''; // Serien-Countdown: zählt bis zum nächsten Vorkommen
     endDateRow.style.display = 'none';
     lockedHint.style.display = 'none';
     setRecurUiFromRule(editCtx.series.rrule);
@@ -604,25 +664,32 @@ document.getElementById('event-modal-save').addEventListener('click', () => {
     if (series.exceptions) {
       Object.keys(series.exceptions).forEach(k => { if (k >= dateKey(occDate)) delete series.exceptions[k]; });
     }
+    // Der Countdown wandert mit auf den neuen Teil (sonst zählten beide)
+    series.countdown = false;
+    delete countdownVisible[series.id];
     saveEventSeries();
 
     if (rrule) {
       const newSeries = {
         id: crypto.randomUUID(),
-        title, notes: notesTxt, time, color, showInAgenda,
+        title, notes: notesTxt, time, color, showInAgenda, countdown,
         startDate: dateKey(occDate),
         rrule,
         exceptions: {}
       };
       eventSeries.push(newSeries);
+      if (countdown) countdownVisible[newSeries.id] = true;
       saveEventSeries();
     } else {
       // Keine Wiederholung mehr gewünscht → normaler Einzeltermin ab diesem Tag
       const k = dateKey(occDate);
       if (!events[k]) events[k] = [];
-      events[k].push({ id: crypto.randomUUID(), title, notes: notesTxt, time, countdown: false, color, showInAgenda });
+      const id = crypto.randomUUID();
+      events[k].push({ id, title, notes: notesTxt, time, countdown, color, showInAgenda });
+      if (countdown) countdownVisible[id] = true;
       saveEvents();
     }
+    DB.set('countdownVisible', countdownVisible);
     finishEventModalSave();
     return;
   }
@@ -633,7 +700,11 @@ document.getElementById('event-modal-save').addEventListener('click', () => {
     series.title = title; series.notes = notesTxt; series.time = time; series.color = color; series.showInAgenda = showInAgenda;
     series.startDate = key; // Verschieben des Serienankers erlaubt
     if (rrule) series.rrule = rrule;
+    if (countdown && !series.countdown) countdownVisible[series.id] = true;
+    if (!countdown) delete countdownVisible[series.id];
+    series.countdown = countdown;
     saveEventSeries();
+    DB.set('countdownVisible', countdownVisible);
     finishEventModalSave();
     return;
   }
@@ -656,13 +727,14 @@ document.getElementById('event-modal-save').addEventListener('click', () => {
     }
     const newSeries = {
       id: crypto.randomUUID(),
-      title, notes: notesTxt, time, color, showInAgenda,
+      title, notes: notesTxt, time, color, showInAgenda, countdown,
       startDate: key,
       rrule,
       exceptions: {}
     };
     eventSeries.push(newSeries);
     saveEventSeries();
+    if (countdown) { countdownVisible[newSeries.id] = true; DB.set('countdownVisible', countdownVisible); }
     finishEventModalSave();
     return;
   }
@@ -1020,7 +1092,7 @@ function renderCalendar() {
       }
 
       el.appendChild(items);
-      if (!otherMonth) el.addEventListener('click', () => openCalDayModal(key, date));
+      el.addEventListener('click', () => openCalDayModal(key, date));
       grid.appendChild(el);
     });
   }
@@ -1203,19 +1275,8 @@ function closeCountdownModal() { countdownModal.close(); }
 
 function renderCountdownList() {
   const list = document.getElementById('countdown-list'); list.innerHTML = '';
-  const allC = [];
-
-  Object.entries(events).forEach(([key, dayEvs]) => {
-    dayEvs.forEach(ev => {
-      if (!ev.countdown) return;
-      const evDate = parseLocalDate(key);
-      const daysLeft = getDaysUntil(evDate);
-      if (daysLeft >= 0) allC.push({ id: ev.id, title: ev.title, daysLeft });
-    });
-  });
-
-  allC.sort((a, b) => a.daysLeft - b.daysLeft)
-      .forEach(c => list.appendChild(makeCountdownRow(c.id, c.title, c.daysLeft)));
+  const allC = getCountdownItems();
+  allC.forEach(c => list.appendChild(makeCountdownRow(c)));
 
   if (allC.length === 0) {
     const p = document.createElement('p'); p.className = 'modal-hint';
@@ -1224,10 +1285,13 @@ function renderCountdownList() {
   }
 }
 
-function makeCountdownRow(id, title, days) {
+function makeCountdownRow(item) {
+  const { id, title, daysLeft: days } = item;
   const row  = document.createElement('div'); row.className = 'countdown-row';
-  const info = document.createElement('div'); info.className = 'countdown-row-info';
-  const name = document.createElement('span'); name.className = 'countdown-row-title'; name.textContent = title;
+  const info = document.createElement('div'); info.className = 'countdown-row-info countdown-row-info--link';
+  info.title = 'Termin öffnen';
+  info.addEventListener('click', () => openCountdownEvent(item));
+  const name = document.createElement('span'); name.className = 'countdown-row-title'; name.textContent = (item.recurring ? '↻ ' : '') + title;
   const badge = document.createElement('span'); badge.className = 'countdown-row-days'; badge.textContent = `${days} Tage`;
   info.append(name, badge);
   const lbl = document.createElement('label'); lbl.className = 'toggle';
@@ -1438,25 +1502,20 @@ function renderCalCountdownCard() {
   if (!card || !list) return;
   list.innerHTML = '';
 
-  const items = [];
-  Object.entries(events).forEach(([key, dayEvs]) => {
-    (dayEvs || []).forEach(ev => {
-      if (!ev.countdown || countdownVisible[ev.id] !== true) return;
-      const evDate = parseLocalDate(key);
-      const days = getDaysUntil(evDate);
-      if (days >= 0) items.push({ title: ev.title, days });
-    });
-  });
+  const items = getCountdownItems().filter(c => countdownVisible[c.id] === true);
 
   if (!calSideEnabled('countdowns') || items.length === 0) { card.classList.add('hidden'); return; }
   card.classList.remove('hidden');
 
-  items.sort((a,b) => a.days - b.days).forEach(it => {
-    const row = document.createElement('div'); row.className = 'cal-side-row';
-    const name = document.createElement('span'); name.className = 'cal-side-row-title'; name.textContent = it.title;
+  items.forEach(it => {
+    const row = document.createElement('div'); row.className = 'cal-side-row cal-side-row--link';
+    row.title = 'Termin öffnen';
+    const name = document.createElement('span'); name.className = 'cal-side-row-title'; name.textContent = (it.recurring ? '↻ ' : '') + it.title;
     const badge = document.createElement('span'); badge.className = 'cal-side-row-badge';
-    badge.textContent = it.days === 0 ? 'Heute' : it.days === 1 ? 'Morgen' : `${it.days} Tage`;
-    row.append(name, badge); list.appendChild(row);
+    badge.textContent = it.daysLeft === 0 ? 'Heute' : it.daysLeft === 1 ? 'Morgen' : `${it.daysLeft} Tage`;
+    row.append(name, badge);
+    row.addEventListener('click', () => openCountdownEvent(it));
+    list.appendChild(row);
   });
 }
 
@@ -1629,6 +1688,7 @@ function renderCalUpcomingCard() {
 // `monthEventsMap` optional: siehe renderCalStatsCard()-Kommentar, wird nur
 // dorthin weitergereicht (die übrigen Sidebar-Karten brauchen sie nicht).
 function renderCalendarSidebar(monthEventsMap) {
+  applyCalSideOrder();
   renderCalSeasonHeader();
   renderCalInfoCard();
   renderCalUpcomingCard();
@@ -1918,6 +1978,64 @@ document.getElementById('cal-setting-show-done-tasks')?.addEventListener('change
   saveCalendarSettings();
   renderCalendar();
 });
+
+// ── Rechte Spalte: Reihenfolge per Ziehen an der Kachel-Überschrift ──
+// Pointer-Events statt HTML5-Drag&Drop, damit es auch auf Touch-Geräten
+// geht. Gespeichert wird nur die Reihenfolge der Kartennamen
+// (calendarSettings.sideOrder); unbekannte/neue Karten hängen hinten an.
+const CAL_SIDE_CARDS = ['upcoming', 'countdowns', 'goals', 'birthdays', 'holidays', 'stats'];
+
+function applyCalSideOrder() {
+  const sidebar = document.getElementById('cal-sidebar');
+  if (!sidebar) return;
+  const order = (calendarSettings.sideOrder || []).filter(k => CAL_SIDE_CARDS.includes(k));
+  CAL_SIDE_CARDS.forEach(k => { if (!order.includes(k)) order.push(k); });
+  order.forEach(k => {
+    const card = document.getElementById('cal-card-' + k);
+    if (card) sidebar.appendChild(card);
+  });
+}
+
+(function initCalSideSorting() {
+  const sidebar = document.getElementById('cal-sidebar');
+  if (!sidebar) return;
+  let drag = null; // { card, startY, active }
+
+  sidebar.addEventListener('pointerdown', e => {
+    const header = e.target.closest('.cal-side-card > .panel-header');
+    if (!header || e.button !== 0 || e.target.closest('button, input, a')) return;
+    drag = { card: header.parentElement, startY: e.clientY, active: false, pointerId: e.pointerId };
+  });
+
+  document.addEventListener('pointermove', e => {
+    if (!drag || e.pointerId !== drag.pointerId) return;
+    if (!drag.active) {
+      if (Math.abs(e.clientY - drag.startY) < 6) return;
+      drag.active = true;
+      drag.card.classList.add('is-sorting');
+      sidebar.classList.add('is-sorting');
+      try { drag.card.setPointerCapture?.(e.pointerId); } catch (_) {}
+    }
+    e.preventDefault();
+    const cards = [...sidebar.querySelectorAll('.cal-side-card:not(.hidden)')].filter(c => c !== drag.card);
+    const before = cards.find(c => { const r = c.getBoundingClientRect(); return e.clientY < r.top + r.height / 2; });
+    if (before) { if (drag.card.nextElementSibling !== before) sidebar.insertBefore(drag.card, before); }
+    else if (cards.length && sidebar.lastElementChild !== drag.card) sidebar.appendChild(drag.card);
+  });
+
+  function endDrag() {
+    if (!drag) return;
+    if (drag.active) {
+      drag.card.classList.remove('is-sorting');
+      sidebar.classList.remove('is-sorting');
+      calendarSettings.sideOrder = [...sidebar.querySelectorAll('.cal-side-card')].map(c => c.id.replace('cal-card-', ''));
+      saveCalendarSettings();
+    }
+    drag = null;
+  }
+  document.addEventListener('pointerup', endDrag);
+  document.addEventListener('pointercancel', endDrag);
+})();
 
 // ── Rechte Spalte: Kacheln ein-/ausblenden ─────────────────────
 document.querySelectorAll('[data-cal-side]').forEach(el => el.addEventListener('change', () => {

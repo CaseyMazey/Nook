@@ -955,6 +955,24 @@
 .cal-hero--no-info #cal-hero-text { max-width: 100%; }
 #cal-info-card.hidden { display: none; }
 
+/* Klickbare Zeilen (Countdowns → Termin öffnen) */
+.cal-side-row--link { cursor: pointer; }
+
+/* Kacheln sortieren: an der Überschrift ziehen (calendar.js: initCalSideSorting) */
+.cal-side-card > .panel-header { cursor: grab; touch-action: none; user-select: none; }
+#cal-sidebar.is-sorting, #cal-sidebar.is-sorting * { cursor: grabbing; }
+.cal-side-card.is-sorting {
+  position: relative;
+  z-index: 3;
+  opacity: 0.85;
+  transform: scale(1.02);
+  box-shadow: var(--shadow-md);
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+/* Vor-/Nachmonatstage sind anklickbar */
+.cal-day.other-month:hover { filter: brightness(0.98); }
+
 /* Alle Kacheln aus → Überschrift „Diesen Monat“ samt Rahmen weg */
 #cal-sidebar.cal-sidebar--empty { display: none; }
 
@@ -973,3 +991,4 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 #calendar-grid.cal-fade { animation: calGridFade 220ms ease; }
+.cal-settings-hint { margin: -4px 0 4px; }

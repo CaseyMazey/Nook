@@ -434,6 +434,9 @@ body.bg-frosted .modal-box {
   justify-content: space-between;
   gap: 10px;
 }
+/* Klick auf einen Countdown öffnet den Termin (calendar.js: openCountdownEvent) */
+.countdown-entry { cursor: pointer; border-radius: 6px; transition: background var(--transition); }
+.countdown-entry:hover { background: var(--accent-soft); }
 .countdown-entry-left {
   display: flex;
   align-items: center;
@@ -1163,6 +1166,8 @@ body.bg-frosted .modal-box {
 }
 .countdown-row:last-child { border-bottom: none; }
 .countdown-row-info { display: flex; flex-direction: column; gap: 2px; }
+.countdown-row-info--link { cursor: pointer; flex: 1; min-width: 0; }
+.countdown-row-info--link:hover .countdown-row-title { text-decoration: underline; text-underline-offset: 2px; }
 .countdown-row-title { font-size: calc(13.5px * var(--core-font-scale)); font-weight: 500; }
 
 /* ── Geteiltes "Bold-Status/Titel-Text"-Muster ─────────────
