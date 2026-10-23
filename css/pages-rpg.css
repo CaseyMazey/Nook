@@ -150,15 +150,31 @@
 [data-pages-style="rpg"] .fc-stat-card { padding: 18px 18px 16px; }
 [data-pages-style="rpg"] .tool-card { padding: 26px 24px 24px; }
 
-/* Budget-Hauptkarten: farbige Kopfzeile → Tinte auf Papier */
-[data-pages-style="rpg"] .b-main-card {
+/* Budget-Karten: eigene Flächen-/Tinten-Tokens (budget.css) aufs Papier
+   umstellen — sonst malt z.B. der aufgeklappte Detailbereich der
+   Hauptkarten (--b-card-panel) einen weißen Kasten aufs Pergament, und
+   nachts wären die hellen Betragsfarben auf hellem Papier unlesbar. */
+[data-pages-style="rpg"] :is(.b-main-card, .b-card, .b-liquidity-card, .sp-panel, .sp-scen-card) {
+  --b-card-panel: transparent;
+  --bg: color-mix(in srgb, var(--deco-ink) 6%, transparent); /* nur Zeilen-Hover in budget.css */
+  --b-card-income-text:  color-mix(in srgb, var(--sage) 45%, var(--deco-ink));
+  --b-card-expense-text: color-mix(in srgb, var(--deco-orange) 40%, var(--deco-ink));
+  --b-card-neutral-text: var(--deco-ink);
   --b-card-ink-1: var(--deco-ink);
-  --b-card-ink-2: color-mix(in srgb, var(--deco-ink) 85%, transparent);
-  --b-card-ink-3: color-mix(in srgb, var(--deco-ink) 70%, transparent);
-  --b-card-ink-4: color-mix(in srgb, var(--deco-ink) 55%, transparent);
+  --b-card-ink-2: color-mix(in srgb, var(--deco-ink) 70%, transparent);
+  --b-card-ink-3: color-mix(in srgb, var(--deco-ink) 64%, transparent);
+  --b-card-ink-4: color-mix(in srgb, var(--deco-ink) 58%, transparent);
+  --b-card-ink-5: color-mix(in srgb, var(--deco-ink) 54%, transparent);
+  --b-card-ink-6: color-mix(in srgb, var(--deco-ink) 50%, transparent);
+  --b-card-ink-7: color-mix(in srgb, var(--deco-ink) 46%, transparent);
   --b-card-line-1: color-mix(in srgb, var(--deco-ink) 5%, transparent);
+  --b-card-line-2: color-mix(in srgb, var(--deco-ink) 7%, transparent);
+  --b-card-line-3: color-mix(in srgb, var(--deco-ink) 9%, transparent);
+  --b-card-line-4: color-mix(in srgb, var(--deco-ink) 11%, transparent);
   --b-card-line-5: color-mix(in srgb, var(--deco-ink) 13%, transparent);
+  --b-card-line-6: color-mix(in srgb, var(--deco-ink) 16%, transparent);
 }
+[data-pages-style="rpg"] .b-main-card-detail { background: transparent; }
 
 /* Spielekarten: farbiger Streifen oben wird zum Tintenstrich auf dem Papier */
 [data-pages-style="rpg"] .game-library-card::after {
