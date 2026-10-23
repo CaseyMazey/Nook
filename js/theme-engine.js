@@ -212,7 +212,7 @@ function syncThemeFontTrigger(key = 'font') {
 
 // customThemes: [{ id, name, family, coreColors, cardOpacity, fontSize,
 //   bg, calendar: {imageTheme, style}, startHeader: {banner}, branding: {theme},
-//   questboard: {style}, pinboard: {style}, guides: {style}, forest: {style}, graphics: {mode, theme} }]
+//   questboard: {style}, pinboard: {style}, guides: {style}, today: {style}, forest: {style}, graphics: {mode, theme} }]
 // themeBackgrounds: { [eingebautesThemeId]: {source, data, name, size, dim} }
 let customThemes     = DB.get('customThemes', []);
 let themeBackgrounds = DB.get('themeBackgrounds', {});
@@ -311,7 +311,7 @@ const PRESET_THEMES = [
     night: { family: 'dark',
       coreColors: { bg: '#1a130d', surface: '#2a1f15', nav: '#21180f', modal: '#2f2318', text: '#efe2c8', border: '#8a6a45', accent: '#b07a3e', font: "'Alegreya', Georgia, serif", headingFont: '"Blackwood Castle"', navScale: 1.18 },
       cardOpacity: 88, fontSize: 108, bg: { source: 'rpg', size: 'cover', dim: 45 } },
-    calendar: { imageTheme: 'rpg', style: 'rpg' }, startHeader: { banner: 'rpg' }, branding: { theme: 'rpg' }, questboard: { style: 'rpg' }, pinboard: { style: 'rpg' }, guides: { style: 'rpg' },
+    calendar: { imageTheme: 'rpg', style: 'rpg' }, startHeader: { banner: 'rpg' }, branding: { theme: 'rpg' }, questboard: { style: 'rpg' }, pinboard: { style: 'rpg' }, guides: { style: 'rpg' }, today: { style: 'rpg' },
     forest: { style: 'map' },
     graphics: { mode: 'theme', theme: 'rpg' } },
   // Zombie: aus Kuros Core (Download 2026-10-21) — Farben und Grafik-Set
@@ -403,7 +403,7 @@ const GRAPHICS_THEMES = [
   { id: 'cyberpunk', label: 'Cyberpunk', icon: { src: 'assets/themes/cyberpunk/icon.png', type: 'image/png' } },
   { id: 'lab',       label: 'Lab',       icon: { src: 'assets/themes/lab/icon.png',       type: 'image/png' } },
   { id: 'zombie',    label: 'Zombie',    icon: { src: 'assets/themes/zombie/icon.png',    type: 'image/png' } },
-  { id: 'rpg',       label: 'RPG',       icon: { src: 'assets/themes/rpg/icon.png',       type: 'image/png' }, questboard: 'rpg', pinboard: 'rpg', guides: 'rpg', calendarStyle: 'rpg' },
+  { id: 'rpg',       label: 'RPG',       icon: { src: 'assets/themes/rpg/icon.png',       type: 'image/png' }, questboard: 'rpg', pinboard: 'rpg', guides: 'rpg', calendarStyle: 'rpg', todayStyle: 'rpg' },
 ];
 const DEFAULT_GRAPHICS_THEME = 'cozy';
 
@@ -486,6 +486,19 @@ function applyCalendarStyle(id, override) {
   const ct = getCustomTheme(id);
   const v = override !== undefined ? override : ((ct && ct.calendar && ct.calendar.style) || 'cozy');
   document.documentElement.setAttribute('data-calendar-style', v);
+}
+
+// Heute-Stil (css/today-rpg.css, [data-today-style]): 'cozy' = wie bisher,
+// 'rpg' = Holzbrett hinter Haupt- und rechter Spalte, Blöcke und Kacheln
+// als angepinnte Pergament-Zettel.
+const TODAY_STYLES = [
+  { id: 'cozy', label: 'Cozy (Standard)' },
+  { id: 'rpg',  label: 'Pergament (RPG)' },
+];
+function applyTodayStyle(id, override) {
+  const ct = getCustomTheme(id);
+  const v = override !== undefined ? override : ((ct && ct.today && ct.today.style) || 'cozy');
+  document.documentElement.setAttribute('data-today-style', v);
 }
 
 // Projektwald-Stil (css/projects.css, [data-forest-style]): 'default' =
@@ -742,6 +755,7 @@ function applyThemeEngine(id) {
   applyPinboardStyle(id);
   applyGuidesStyle(id);
   applyCalendarStyle(id);
+  applyTodayStyle(id);
   applyForestStyle(id);
   // Browser-/PWA-Leiste in der Hintergrundfarbe des aktiven Themes
   const meta = document.querySelector('meta[name="theme-color"]');
@@ -793,6 +807,7 @@ function applyGraphicsThemeToControls(themeId) {
   tbEl('pinboard-style').value = (gt && gt.pinboard) || 'cozy';
   tbEl('guides-style').value = (gt && gt.guides) || 'cozy';
   tbEl('calendar-style').value = (gt && gt.calendarStyle) || 'cozy';
+  tbEl('today-style').value = (gt && gt.todayStyle) || 'cozy';
   previewThemeBuilderLive();
 }
 
@@ -891,6 +906,7 @@ function fillThemeBuilderForm(t) {
   tbEl('pinboard-style').value = (t.pinboard && t.pinboard.style) || 'cozy';
   tbEl('guides-style').value = (t.guides && t.guides.style) || 'cozy';
   tbEl('calendar-style').value = (t.calendar && t.calendar.style) || 'cozy';
+  tbEl('today-style').value = (t.today && t.today.style) || 'cozy';
   const graphics = detectGraphicsMode(t.graphics || null, calendar, startHeader, branding);
   tbEl('graphics-theme').value = graphics.theme || DEFAULT_GRAPHICS_THEME;
   setGraphicsModeUI(graphics.mode);
@@ -916,6 +932,7 @@ function openThemeBuilder(editId) {
   tbEl('pinboard-style').innerHTML = PINBOARD_STYLES.map(q => `<option value="${q.id}">${q.label}</option>`).join('');
   tbEl('guides-style').innerHTML = GUIDES_STYLES.map(q => `<option value="${q.id}">${q.label}</option>`).join('');
   tbEl('calendar-style').innerHTML = CALENDAR_STYLES.map(q => `<option value="${q.id}">${q.label}</option>`).join('');
+  tbEl('today-style').innerHTML = TODAY_STYLES.map(q => `<option value="${q.id}">${q.label}</option>`).join('');
   renderThemeTemplateStrip();
 
   tbEl('title').textContent = isPreset ? 'Theme erstellen' : (existing ? 'Theme bearbeiten' : 'Theme erstellen');
@@ -988,6 +1005,7 @@ function previewThemeBuilderLive() {
   applyPinboardStyle(null, tbEl('pinboard-style').value);
   applyGuidesStyle(null, tbEl('guides-style').value);
   applyCalendarStyle(null, tbEl('calendar-style').value);
+  applyTodayStyle(null, tbEl('today-style').value);
 }
 
 // ── "Vorlage"-Leiste: übernimmt die Werte eines vorhandenen Themes
@@ -1065,6 +1083,7 @@ function saveThemeBuilder() {
     questboard: { style: tbEl('questboard-style').value },
     pinboard: { style: tbEl('pinboard-style').value },
     guides: { style: tbEl('guides-style').value },
+    today: { style: tbEl('today-style').value },
     graphics: { mode: _teBuilderGraphicsMode, theme: tbEl('graphics-theme').value },
   };
 
@@ -1245,7 +1264,7 @@ function initThemeBuilder() {
     tbEl(k).dataset.auto = '0';
     previewThemeBuilderLive();
   }));
-  ['bg-size', 'calendar-image', 'start-header', 'branding-theme', 'questboard-style', 'pinboard-style', 'guides-style', 'calendar-style']
+  ['bg-size', 'calendar-image', 'start-header', 'branding-theme', 'questboard-style', 'pinboard-style', 'guides-style', 'calendar-style', 'today-style']
     .forEach(k => tbEl(k).addEventListener('change', previewThemeBuilderLive));
 
   // Schriftart-Dropdowns (Fließtext + Überschriften): Trigger togglet,

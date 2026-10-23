@@ -23,6 +23,7 @@ window.NOOK_CHANGELOG = [
       'Kalender: „Heute“-Knopf, Monatswechsel per Pfeiltasten; Monatswechsel am 29.–31. überspringt keinen Monat mehr',
       'Countdowns: Klick öffnet direkt den Termin; auch für wiederkehrende Termine (zählt bis zum nächsten Vorkommen)',
       'Kalender: Kacheln der rechten Spalte per Ziehen an der Überschrift sortierbar; Tage aus Vor-/Nachmonat anklickbar',
+      'RPG: Heute-Seite auf dem Holzbrett, Unterrichtsblöcke und Kacheln als angepinnte Pergament-Zettel; Theme-Editor: Heute-Stil wählbar',
     ],
   },
   {
