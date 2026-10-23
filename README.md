@@ -45,7 +45,7 @@ Für Funktionen, die einen sicheren Browser-Kontext brauchen (Google-Calendar-An
 
 Kurzüberblick pro Bereich — die vollständige Nutzer-Doku mit allen Optionen und Details steht im [Wiki](https://github.com/CaseyMazey/Nook/wiki).
 
-### 🏠 Heute
+### 🏠 Heute 🔧 *Momentan in Bearbeitung*
 
 Persönliche Startseite: Unterrichtsblöcke, Wochenaufgaben, Gruppenpflichten-Planer, Mini-Kalender, Wetter, Schnellnotiz, National-Day- und Positivity-Widget.
 → [Wiki: Heute](https://github.com/CaseyMazey/Nook/wiki/Heute)
@@ -55,7 +55,7 @@ Persönliche Startseite: Unterrichtsblöcke, Wochenaufgaben, Gruppenpflichten-Pl
 Freie Karten (Notizen, Checklisten, Code, Zitate, …) in drei Masonry-Spalten, inklusive eigenem Kachel-Designer.
 → [Wiki: Pinnwand](https://github.com/CaseyMazey/Nook/wiki/Pinnwand)
 
-### 📅 Kalender 🔧 *Momentan in Bearbeitung*
+### 📅 Kalender
 
 Vollständige Terminverwaltung mit wiederkehrenden und mehrtägigen Terminen, Feiertagen/Geburtstagen sowie optionaler Google-Calendar-Anbindung *(in Bearbeitung)*.
 → [Wiki: Kalender](https://github.com/CaseyMazey/Nook/wiki/Kalender)
