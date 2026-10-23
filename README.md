@@ -55,7 +55,7 @@ Persönliche Startseite: Unterrichtsblöcke, Wochenaufgaben, Gruppenpflichten-Pl
 Freie Karten (Notizen, Checklisten, Code, Zitate, …) in drei Masonry-Spalten, inklusive eigenem Kachel-Designer.
 → [Wiki: Pinnwand](https://github.com/CaseyMazey/Nook/wiki/Pinnwand)
 
-### 📅 Kalender
+### 📅 Kalender 🔧 *Momentan in Bearbeitung*
 
 Vollständige Terminverwaltung mit wiederkehrenden und mehrtägigen Terminen, Feiertagen/Geburtstagen sowie optionaler Google-Calendar-Anbindung *(in Bearbeitung)*.
 → [Wiki: Kalender](https://github.com/CaseyMazey/Nook/wiki/Kalender)
@@ -90,7 +90,7 @@ Persönliches Markdown-Bücherregal für Notizen, Code-Beispiele und Dokumentati
 Langfristige Vorhaben im Projektwald — jedes Projekt wächst als eigener, individualisierbarer Baum.
 → [Wiki: Projekte](https://github.com/CaseyMazey/Nook/wiki/Projekte)
 
-### 🛡️ Questboard 🔧 *Momentan in Bearbeitung*
+### 🛡️ Questboard
 
 Gamifiziertes Planungsbrett im Tavernen-Look: Daily, Weekly/Check, Time und Side Quests, ein Würfel gegen Entscheidungs-Paralyse, Termin-Aushang aus dem Kalender und eine optionale Schatztruhe mit Münzen und eigenen Belohnungen.
 
