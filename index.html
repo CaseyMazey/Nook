@@ -976,13 +976,19 @@
           <div id="cal-sidebar-col">
             <div class="cal-nav-row">
               <button class="btn-primary" id="cal-add-event-btn">+ Termin</button>
-              <button class="week-btn" id="cal-prev">‹</button>
-              <button class="week-btn" id="cal-next">›</button>
-              <button class="icon-btn" id="cal-settings-btn" title="Bundesland für Feiertage">⚙</button>
+              <button class="week-btn" id="cal-prev" title="Vorheriger Monat (←)">‹</button>
+              <button class="week-btn cal-today-btn" id="cal-today-btn" title="Zum aktuellen Monat">Heute</button>
+              <button class="week-btn" id="cal-next" title="Nächster Monat (→)">›</button>
+              <button class="icon-btn" id="cal-settings-btn" title="Kalender-Einstellungen">⚙</button>
             </div>
 
             <aside id="cal-sidebar" class="dash-content">
               <div class="cal-sidebar-heading">🌿 Diesen Monat</div>
+
+              <div class="panel cal-side-card hidden" id="cal-card-upcoming">
+                <div class="panel-header"><span class="panel-label">Demnächst</span><span class="cal-side-count">14 Tage</span></div>
+                <div id="cal-upcoming-list" class="cal-side-body"></div>
+              </div>
 
               <div class="panel cal-side-card hidden" id="cal-card-countdowns">
                 <div class="panel-header"><span class="panel-label">Countdowns</span></div>
@@ -2115,7 +2121,7 @@
   </div>
 
   <div id="calendar-settings-modal-overlay" class="modal-backdrop hidden">
-    <div class="modal-box" style="width:380px;">
+    <div class="modal-box" style="width:400px;">
       <div class="modal-head"><span>Kalender-Einstellungen</span><button class="modal-x" id="calendar-settings-modal-close">✕</button></div>
 
       <div class="modal-row">
@@ -2157,6 +2163,36 @@
       <div class="cal-settings-toggle-row">
         <span>Abgeschlossene Aufgaben anzeigen</span>
         <label class="toggle"><input type="checkbox" id="cal-setting-show-done-tasks"><span class="toggle-slider"></span></label>
+      </div>
+
+      <div class="cal-settings-section-label">Rechte Spalte</div>
+      <div class="cal-settings-toggle-row">
+        <span>Demnächst (nächste 14 Tage)</span>
+        <label class="toggle"><input type="checkbox" data-cal-side="upcoming"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="cal-settings-toggle-row">
+        <span>Countdowns</span>
+        <label class="toggle"><input type="checkbox" data-cal-side="countdowns"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="cal-settings-toggle-row">
+        <span>Monatsziele</span>
+        <label class="toggle"><input type="checkbox" data-cal-side="goals"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="cal-settings-toggle-row">
+        <span>Geburtstage</span>
+        <label class="toggle"><input type="checkbox" data-cal-side="birthdays"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="cal-settings-toggle-row">
+        <span>Feiertage</span>
+        <label class="toggle"><input type="checkbox" data-cal-side="holidays"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="cal-settings-toggle-row">
+        <span>Monatsstatistik</span>
+        <label class="toggle"><input type="checkbox" data-cal-side="stats"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="cal-settings-toggle-row">
+        <span>Wetter, Mond &amp; Jahreszeit (Kopfbereich)</span>
+        <label class="toggle"><input type="checkbox" data-cal-side="infoCard"><span class="toggle-slider"></span></label>
       </div>
 
       <div class="cal-settings-section-label">Erinnerungen</div>

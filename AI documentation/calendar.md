@@ -272,10 +272,14 @@ Später können Projekte optionale Ziele automatisch erzeugen.
 
 Die Statistik berechnet automatisch:
 
-- Anzahl Termine
-- erledigte Aufgaben
-- aktive Tage
+- Anzahl Termine (Serien je Vorkommen, Mehrtagestermine einmal) mit Vergleich zum Vormonat
+- freie Tage ohne Termin (im laufenden Monat: ab heute noch frei)
 - durchschnittliche Termine pro Woche
+- im Monat erledigte Aufgaben (nach Erledigungsdatum)
+- Auslastungsstreifen: ein Balken je Tag, Klick öffnet den Tag
+
+Die frühere Kennzahl „aktive Tage“ entfällt: offene Aufgaben erscheinen an
+jedem vergangenen Tag, der Wert war dadurch fast immer „alle Tage“.
 
 Sie dient ausschließlich der Übersicht.
 
@@ -309,11 +313,17 @@ Die Sidebar enthält ergänzende Monatsinformationen.
 
 Aktuell:
 
+- Demnächst (Termine der nächsten 14 Tage, unabhängig vom angezeigten Monat)
 - Countdowns
+- Monatsziele
 - Geburtstage
 - Feiertage
-- Monatsziele
 - Statistik
+
+Jede Karte (und die Wetter-/Mond-Karte im Hero) lässt sich in den
+Kalender-Einstellungen unter „Rechte Spalte“ einzeln ausblenden
+(`calendarSettings.sideCards`). Monatsziele sind standardmäßig nur an,
+wenn bereits Ziele angelegt wurden.
 
 Die Sidebar soll den Kalender ergänzen.
 
@@ -325,7 +335,7 @@ Sie ersetzt keine Hauptfunktionen.
 
 Der Nutzer kann:
 
-- Monate wechseln
+- Monate wechseln (Pfeile, Pfeiltasten ← / →, „Heute“-Knopf)
 - Tage öffnen
 - Termine anlegen
 - Termine bearbeiten

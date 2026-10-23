@@ -854,11 +854,11 @@
 .cal-settings-toggle-row span { font-size: calc(13px * var(--core-font-scale)); color: var(--text-2); }
 
 /* =============================================================
-   MONATSSTATISTIK — 3 gleich große Kacheln statt Zeilenliste
+   MONATSSTATISTIK — 2×2 Kacheln + Auslastungsstreifen (ein Balken je Tag)
 ============================================================= */
 .cal-stats-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 8px;
 }
 .cal-stats-tile {
@@ -867,7 +867,8 @@
   align-items: center;
   justify-content: center;
   gap: 4px;
-  padding: 14px 6px;
+  padding: 12px 6px 10px;
+  min-width: 0;
   background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -887,6 +888,75 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
+.cal-stats-tile-sub {
+  font-size: calc(10.5px * var(--core-font-scale));
+  color: var(--text-3);
+  opacity: 0.85;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.cal-stats-strip {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 34px;
+  margin-top: 12px;
+  padding: 0 2px;
+}
+.cal-stats-strip-bar {
+  flex: 1;
+  height: var(--h, 14%);
+  min-width: 2px;
+  border-radius: 2px 2px 1px 1px;
+  background: color-mix(in srgb, var(--sage) 70%, transparent);
+  cursor: pointer;
+  transition: opacity var(--transition), transform var(--transition);
+}
+.cal-stats-strip-bar.is-free { background: color-mix(in srgb, var(--text-3) 22%, transparent); }
+.cal-stats-strip-bar.is-weekend.is-free { background: color-mix(in srgb, var(--text-3) 34%, transparent); }
+.cal-stats-strip-bar.is-today { box-shadow: 0 0 0 1.5px var(--sage-dark); }
+.cal-stats-strip-bar:hover { opacity: 0.75; transform: scaleY(1.08); transform-origin: bottom; }
+
+/* =============================================================
+   DEMNÄCHST — nächste Termine ab heute
+============================================================= */
+.cal-upcoming-row {
+  justify-content: flex-start;
+  cursor: pointer;
+  padding-left: 8px;
+  border-left: 3px solid var(--ev-color, var(--sage));
+  margin: 2px 0;
+}
+.cal-upcoming-row .cal-side-row-title { flex: 1; min-width: 0; }
+.cal-upcoming-when {
+  flex-shrink: 0;
+  min-width: 54px;
+  font-size: calc(11px * var(--core-font-scale));
+  font-weight: 600;
+  color: var(--text-3);
+}
+
+/* Heute-Knopf: breiter als die Pfeile, betont nur im fremden Monat */
+#cal-sidebar-col .cal-today-btn {
+  width: auto;
+  padding: 0 10px;
+  font-size: calc(12px * var(--core-font-scale));
+}
+.cal-today-btn.is-away {
+  background: var(--accent-soft);
+  color: var(--text);
+  border-color: var(--sage);
+}
+
+/* Info-Karte im Hero ausgeblendet → Text darf die volle Breite nutzen */
+.cal-hero--no-info #cal-hero-text { max-width: 100%; }
+#cal-info-card.hidden { display: none; }
+
+/* Alle Kacheln aus → Überschrift „Diesen Monat“ samt Rahmen weg */
+#cal-sidebar.cal-sidebar--empty { display: none; }
 
 /* -- Weiche Hover-Effekte auf den Sidebar-Zeilen -- */
 .cal-side-row, .cal-goal-row, .cal-birthday-item {

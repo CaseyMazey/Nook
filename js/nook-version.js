@@ -10,9 +10,19 @@
 // hinten wegfallen, angezeigt werden ohnehin nur die neuesten.
 // =========================
 
-window.NOOK_VERSION = '2026.10.6';
+window.NOOK_VERSION = '2026.10.7';
 
 window.NOOK_CHANGELOG = [
+  {
+    version: '2026.10.7',
+    date: '2026-10-23',
+    items: [
+      'Kalender: Kacheln der rechten Spalte (und die Wetterkarte) einzeln in den Kalender-Einstellungen ein-/ausblendbar',
+      'Kalender: neue Karte „Demnächst“ mit den Terminen der nächsten 14 Tage',
+      'Kalender: Monatsstatistik neu – Termine mit Vormonatsvergleich, freie Tage, Ø pro Woche, erledigte Aufgaben und Auslastung je Tag',
+      'Kalender: „Heute“-Knopf, Monatswechsel per Pfeiltasten; Monatswechsel am 29.–31. überspringt keinen Monat mehr',
+    ],
+  },
   {
     version: '2026.10.6',
     date: '2026-10-21',

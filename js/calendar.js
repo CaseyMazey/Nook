@@ -839,6 +839,10 @@ function renderCalendar() {
   const month = calDate.getMonth();
   document.getElementById('cal-title').textContent =
     calDate.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+  // „Heute“-Knopf nur hervorheben, wenn gerade ein anderer Monat offen ist
+  const nowForNav = new Date();
+  document.getElementById('cal-today-btn')?.classList.toggle('is-away',
+    nowForNav.getFullYear() !== year || nowForNav.getMonth() !== month);
 
   // ── Header row ─────────────────────────────────────────────
   const kwHead = document.createElement('div');
@@ -1025,8 +1029,27 @@ function renderCalendar() {
   if (typeof renderCalendarSidebar === 'function') renderCalendarSidebar(monthEventsMap);
 }
 
-document.getElementById('cal-prev').addEventListener('click', () => { calDate.setMonth(calDate.getMonth()-1); renderCalendar(); });
-document.getElementById('cal-next').addEventListener('click', () => { calDate.setMonth(calDate.getMonth()+1); renderCalendar(); });
+// Monatswechsel immer über den 1. des Monats: setMonth() auf einem 31.
+// würde sonst über kurze Monate springen (31.10. + 1 Monat = 01.12.).
+function shiftCalMonth(delta) {
+  calDate = new Date(calDate.getFullYear(), calDate.getMonth() + delta, 1);
+  renderCalendar();
+}
+document.getElementById('cal-prev').addEventListener('click', () => shiftCalMonth(-1));
+document.getElementById('cal-next').addEventListener('click', () => shiftCalMonth(1));
+document.getElementById('cal-today-btn')?.addEventListener('click', () => { calDate = new Date(); renderCalendar(); });
+
+// Pfeiltasten ← / → blättern, solange der Kalender offen ist und weder ein
+// Modal noch ein Eingabefeld den Fokus hat.
+document.addEventListener('keydown', e => {
+  if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+  if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+  if (!document.getElementById('view-calendar')?.classList.contains('active')) return;
+  if (document.querySelector('.modal-backdrop:not(.hidden)')) return;
+  if (e.target.closest?.('input, textarea, select, [contenteditable="true"]')) return;
+  e.preventDefault();
+  shiftCalMonth(e.key === 'ArrowLeft' ? -1 : 1);
+});
 
 // =========================
 // CALENDAR DAY MODAL
@@ -1399,6 +1422,9 @@ function renderCalSeasonInfoRow(date) {
 }
 
 function renderCalInfoCard() {
+  const showInfo = calSideEnabled('infoCard');
+  document.getElementById('cal-info-card')?.classList.toggle('hidden', !showInfo);
+  document.getElementById('cal-hero')?.classList.toggle('cal-hero--no-info', !showInfo);
   const now = new Date();
   renderCalWeatherRow();
   renderCalMoonRow(now);
@@ -1422,7 +1448,7 @@ function renderCalCountdownCard() {
     });
   });
 
-  if (items.length === 0) { card.classList.add('hidden'); return; }
+  if (!calSideEnabled('countdowns') || items.length === 0) { card.classList.add('hidden'); return; }
   card.classList.remove('hidden');
 
   items.sort((a,b) => a.days - b.days).forEach(it => {
@@ -1435,57 +1461,168 @@ function renderCalCountdownCard() {
 }
 
 // ── Sidebar: Monatsstatistik-Karte (vollständig automatisch berechnet) ──
-// `monthEventsMap` optional: von renderCalendar() durchgereichte, für den
-// ganzen Monat bereits berechnete Map (siehe getEventsForRange()) — spart
-// hier einen zweiten Voll-Scan über den Monat. Ohne Argument (z.B. bei
-// einem eigenständigen Aufruf) wird sie selbst berechnet, Verhalten bleibt
-// identisch.
+// `monthEventsMap` optional: von renderCalendar() durchgereichte Map (siehe
+// getEventsForRange()) — spart einen zweiten Voll-Scan über den Monat.
+//
+// Kennzahlen bewusst planungs- statt leistungsorientiert:
+//   • Termine      — Termine im Monat (Serien zählen je Vorkommen,
+//                    Mehrtagestermine einmal), mit Vergleich zum Vormonat
+//   • Freie Tage   — Tage ohne Termin; im laufenden Monat „noch frei“ ab heute
+//   • Pro Woche    — Ø Termine pro Woche des Monats
+//   • Erledigt     — Aufgaben mit Erledigungsdatum in diesem Monat
+//                    (unabhängig davon, ob Aufgaben im Raster angezeigt werden)
+// Darunter ein Auslastungsstreifen: ein Balken je Tag, Höhe = Terminanzahl.
+// Früher zählte „Tage aktiv“ jeden Tag mit offener Aufgabe — offene Aufgaben
+// erscheinen aber an jedem vergangenen Tag, der Wert lag also fast immer bei
+// „alle bisherigen Tage“ und war nichtssagend.
+function countCalMonthEvents(eventsMap, year, month) {
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const seen = new Set();
+  const perDay = [];
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dayEvs = eventsMap.get(dateKey(new Date(year, month, d))) || [];
+    perDay.push(dayEvs.length);
+    dayEvs.forEach(({ ev }) => seen.add(ev.id));
+  }
+  return { total: seen.size, perDay };
+}
+
 function renderCalStatsCard(monthEventsMap) {
   const card = document.getElementById('cal-card-stats');
   const list = document.getElementById('cal-stats-list');
   if (!card || !list) return;
   list.innerHTML = '';
-
-  const year = calDate.getFullYear(), month = calDate.getMonth();
-  const daysInMonth = new Date(year, month+1, 0).getDate();
-  const today = new Date(); today.setHours(0,0,0,0);
-  const eventsMap = monthEventsMap || getEventsForRange(new Date(year, month, 1), new Date(year, month, daysInMonth));
-
-  const eventIds = new Set();
-  const taskIds = new Set();
-  const doneTaskIds = new Set();
-  let activeDays = 0;
-
-  for (let d = 1; d <= daysInMonth; d++) {
-    const date = new Date(year, month, d);
-    const dayEvs = eventsMap.get(dateKey(date)) || [];
-    const dayTasks = (calendarSettings.showTasks && typeof getCalendarTasksForDay === 'function') ? getCalendarTasksForDay(date) : [];
-    dayEvs.forEach(({ ev }) => eventIds.add(ev.id));
-    dayTasks.forEach(t => { taskIds.add(t.id); if (t.done) doneTaskIds.add(t.id); });
-    // Nur bereits vergangene Tage (inkl. heute) zählen als "aktiv" —
-    // zukünftige Termine im selben Monat wurden noch nicht erlebt.
-    if (date <= today && (dayEvs.length || dayTasks.length)) activeDays++;
-  }
-
-  if (eventIds.size === 0 && taskIds.size === 0) { card.classList.add('hidden'); return; }
+  if (!calSideEnabled('stats')) { card.classList.add('hidden'); return; }
   card.classList.remove('hidden');
 
+  const year = calDate.getFullYear(), month = calDate.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const eventsMap = monthEventsMap || getEventsForRange(new Date(year, month, 1), new Date(year, month, daysInMonth));
+  const cur = countCalMonthEvents(eventsMap, year, month);
+
+  const prevStart = new Date(year, month - 1, 1);
+  const prevEnd   = new Date(year, month, 0);
+  const prev = countCalMonthEvents(getEventsForRange(prevStart, prevEnd), prevStart.getFullYear(), prevStart.getMonth());
+
+  const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+  let freeDays = 0;
+  cur.perDay.forEach((n, i) => {
+    if (n) return;
+    if (isCurrentMonth && new Date(year, month, i + 1) < today) return;
+    freeDays++;
+  });
+
+  const perWeek = Math.round(cur.total / (daysInMonth / 7) * 10) / 10;
+
+  const mStart = new Date(year, month, 1).getTime();
+  const mEnd   = new Date(year, month + 1, 1).getTime();
+  const doneTasks = tasks.filter(t => isTaskCompleted(t) && t.completedAt >= mStart && t.completedAt < mEnd).length;
+
+  const diff = cur.total - prev.total;
+  const prevName = prevStart.toLocaleDateString('de-DE', { month: 'short' }).replace('.', '');
   const tiles = [
-    ['📅', eventIds.size, 'Termine'],
-    ['✔', doneTaskIds.size, 'Aufgaben'],
-    ['🔥', activeDays, 'Tage aktiv'],
+    ['📅', cur.total, 'Termine', diff === 0 ? `wie im ${prevName}` : `${diff > 0 ? '+' : '−'}${Math.abs(diff)} ggü. ${prevName}`],
+    ['🌿', freeDays, isCurrentMonth ? 'Noch frei' : 'Freie Tage', 'ohne Termin'],
+    ['⌀', perWeek.toLocaleString('de-DE'), 'Pro Woche', 'Termine'],
+    ['✔', doneTasks, 'Erledigt', 'Aufgaben'],
   ];
 
   const grid = document.createElement('div'); grid.className = 'cal-stats-grid';
-  tiles.forEach(([icon, value, label]) => {
+  tiles.forEach(([icon, value, label, sub]) => {
     const tile = document.createElement('div'); tile.className = 'cal-stats-tile';
     const iconEl = document.createElement('div'); iconEl.className = 'cal-stats-tile-icon'; iconEl.textContent = icon;
     const valueEl = document.createElement('div'); valueEl.className = 'cal-stats-tile-value'; valueEl.textContent = value;
     const labelEl = document.createElement('div'); labelEl.className = 'cal-stats-tile-label'; labelEl.textContent = label;
-    tile.append(iconEl, valueEl, labelEl);
+    const subEl = document.createElement('div'); subEl.className = 'cal-stats-tile-sub'; subEl.textContent = sub;
+    tile.append(iconEl, valueEl, labelEl, subEl);
     grid.appendChild(tile);
   });
   list.appendChild(grid);
+
+  // Auslastungsstreifen: ein Balken je Tag, Klick öffnet den Tag
+  const max = Math.max(1, ...cur.perDay);
+  const strip = document.createElement('div'); strip.className = 'cal-stats-strip';
+  strip.setAttribute('aria-label', 'Termine pro Tag');
+  cur.perDay.forEach((n, i) => {
+    const date = new Date(year, month, i + 1);
+    const bar = document.createElement('span');
+    bar.className = 'cal-stats-strip-bar'
+      + (n === 0 ? ' is-free' : '')
+      + (date.getTime() === today.getTime() ? ' is-today' : '')
+      + (date.getDay() === 0 || date.getDay() === 6 ? ' is-weekend' : '');
+    bar.style.setProperty('--h', n ? (30 + 70 * n / max) + '%' : '14%');
+    bar.title = `${date.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' })}: ${n === 0 ? 'frei' : n + (n === 1 ? ' Termin' : ' Termine')}`;
+    bar.addEventListener('click', () => openCalDayModal(dateKey(date), date));
+    strip.appendChild(bar);
+  });
+  list.appendChild(strip);
+}
+
+// ── Sidebar: „Demnächst“ — die nächsten Termine ab heute (14 Tage) ──
+// Unabhängig vom angezeigten Monat: beim Blättern bleibt der Blick nach
+// vorne erhalten. Mehrtagestermine erscheinen einmal (laufende als „läuft“),
+// „In Agenda anzeigen = aus“ wird respektiert. Klick springt zum Tag.
+const CAL_UPCOMING_DAYS = 14;
+const CAL_UPCOMING_MAX  = 6;
+function renderCalUpcomingCard() {
+  const card = document.getElementById('cal-card-upcoming');
+  const list = document.getElementById('cal-upcoming-list');
+  if (!card || !list) return;
+  list.innerHTML = '';
+  if (!calSideEnabled('upcoming')) { card.classList.add('hidden'); return; }
+  card.classList.remove('hidden');
+
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const map = getEventsForRange(today, addDays(today, CAL_UPCOMING_DAYS - 1));
+  const items = [];
+  const seen = new Set();
+  map.forEach((entries, k) => {
+    const date = parseLocalDate(k);
+    entries.forEach(({ ev, isStart }) => {
+      if (ev.showInAgenda === false || seen.has(ev.id)) return;
+      seen.add(ev.id);
+      items.push({ ev, date, running: !isStart });
+    });
+  });
+  items.sort((a, b) => (a.date - b.date) || (a.ev.time || '').localeCompare(b.ev.time || ''));
+
+  if (items.length === 0) {
+    const p = document.createElement('p'); p.className = 'cal-side-empty-hint';
+    p.textContent = `Keine Termine in den nächsten ${CAL_UPCOMING_DAYS} Tagen.`;
+    list.appendChild(p);
+    return;
+  }
+
+  items.slice(0, CAL_UPCOMING_MAX).forEach(({ ev, date, running }) => {
+    const row = document.createElement('div'); row.className = 'cal-side-row cal-upcoming-row';
+    if (ev.color) row.style.setProperty('--ev-color', ev.color);
+    const days = getDaysUntil(date);
+    const when = document.createElement('span'); when.className = 'cal-upcoming-when';
+    when.textContent = running ? 'läuft'
+      : days === 0 ? 'Heute' : days === 1 ? 'Morgen'
+      : date.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' }).replace('., ', ' ');
+    const name = document.createElement('span'); name.className = 'cal-side-row-title';
+    name.textContent = ev.title;
+    row.title = ev.title + (ev.notes ? ' — ' + ev.notes : '');
+    row.append(when, name);
+    if (ev.time && !running) {
+      const t = document.createElement('span'); t.className = 'cal-side-row-badge'; t.textContent = ev.time;
+      row.appendChild(t);
+    }
+    row.addEventListener('click', () => {
+      const target = running ? today : date;
+      calDate = new Date(target.getFullYear(), target.getMonth(), 1);
+      renderCalendar();
+      openCalDayModal(dateKey(target), target);
+    });
+    list.appendChild(row);
+  });
+  if (items.length > CAL_UPCOMING_MAX) {
+    const more = document.createElement('p'); more.className = 'cal-side-empty-hint';
+    more.textContent = `+ ${items.length - CAL_UPCOMING_MAX} weitere`;
+    list.appendChild(more);
+  }
 }
 
 // ── Sidebar: Master-Funktion — wird am Ende von renderCalendar() aufgerufen ──
@@ -1494,20 +1631,26 @@ function renderCalStatsCard(monthEventsMap) {
 function renderCalendarSidebar(monthEventsMap) {
   renderCalSeasonHeader();
   renderCalInfoCard();
+  renderCalUpcomingCard();
   renderCalCountdownCard();
   renderCalBirthdaysCard();
   renderCalHolidaysCard();
   renderCalGoalsCard();
   renderCalStatsCard(monthEventsMap);
+
+  // Überschrift „Diesen Monat“ nur, wenn überhaupt eine Karte sichtbar ist
+  const sidebar = document.getElementById('cal-sidebar');
+  if (sidebar) sidebar.classList.toggle('cal-sidebar--empty', !sidebar.querySelector('.cal-side-card:not(.hidden)'));
 }
 
 // =============================================================
 // =============================================================
 // MONATSPLANER — PHASE 4: MONATSZIELE
 // Kleine Checkliste pro Kalendermonat. Manuell gepflegt (kann
-// später automatisch aus Projekten befüllt werden). Wird im
-// Gegensatz zu den anderen Karten immer angezeigt, da sie die
-// einzige Stelle ist, an der Ziele überhaupt angelegt werden.
+// später automatisch aus Projekten befüllt werden). Sichtbarkeit
+// über Einstellungen > Rechte Spalte (sideCards.goals); wenn
+// sichtbar, dann auch ohne Einträge — sie ist die einzige Stelle,
+// an der Ziele überhaupt angelegt werden.
 // =============================================================
 // =============================================================
 
@@ -1528,6 +1671,7 @@ function renderCalGoalsCard() {
   const progress = document.getElementById('cal-goals-progress');
   if (!card || !list) return;
   list.innerHTML = '';
+  if (!calSideEnabled('goals')) { card.classList.add('hidden'); return; }
   card.classList.remove('hidden');
 
   const key   = monthKeyFor(calDate);
@@ -1609,9 +1753,24 @@ const DEFAULT_CALENDAR_SETTINGS = {
   showTasks: true,
   showDoneTasks: false,
   birthdayReminderDays: 0, // 0 = aus, sonst 1/3/7
+  // Kacheln der rechten Spalte (+ Info-Karte im Hero) einzeln ein-/ausblendbar
+  // (Einstellungen > Rechte Spalte). Monatsziele standardmäßig nur an, wenn
+  // schon einmal Ziele angelegt wurden.
+  sideCards: {
+    upcoming: true, countdowns: true, birthdays: true, holidays: true, stats: true, infoCard: true,
+    goals: Object.values(monthlyGoals).some(list => Array.isArray(list) && list.length > 0),
+  },
 };
-let calendarSettings = Object.assign({}, DEFAULT_CALENDAR_SETTINGS, DB.get('calendarSettings', {}));
+// sideCards einzeln mergen (Object.assign ist flach) — neue Kacheln bekommen
+// so auch bei bereits gespeicherten Einstellungen ihren Standardwert.
+let calendarSettings = (() => {
+  const saved = DB.get('calendarSettings', {});
+  return Object.assign({}, DEFAULT_CALENDAR_SETTINGS, saved, {
+    sideCards: Object.assign({}, DEFAULT_CALENDAR_SETTINGS.sideCards, saved.sideCards),
+  });
+})();
 function saveCalendarSettings(){ DB.set('calendarSettings', calendarSettings); }
+function calSideEnabled(card) { return calendarSettings.sideCards[card] !== false; }
 
 // ── Gauß'sche Osterformel (Ostersonntag, offline berechnet) ──
 function getEasterSunday(year) {
@@ -1688,7 +1847,7 @@ function renderCalHolidaysCard() {
   if (!card || !list) return;
   list.innerHTML = '';
 
-  if (!calendarSettings.showHolidays) { card.classList.add('hidden'); return; }
+  if (!calendarSettings.showHolidays || !calSideEnabled('holidays')) { card.classList.add('hidden'); return; }
 
   const year = calDate.getFullYear(), month = calDate.getMonth();
   const holidays = getHolidaysForYear(year, calendarSettings.bundesland)
@@ -1725,6 +1884,7 @@ document.getElementById('cal-settings-btn')?.addEventListener('click', () => {
   if (showTasksEl)     showTasksEl.checked     = calendarSettings.showTasks;
   if (showDoneTasksEl) showDoneTasksEl.checked = calendarSettings.showDoneTasks;
   if (reminderEl)       reminderEl.value       = String(calendarSettings.birthdayReminderDays);
+  document.querySelectorAll('[data-cal-side]').forEach(el => { el.checked = calSideEnabled(el.dataset.calSide); });
 
   calSettingsModal.open();
 });
@@ -1758,6 +1918,13 @@ document.getElementById('cal-setting-show-done-tasks')?.addEventListener('change
   saveCalendarSettings();
   renderCalendar();
 });
+
+// ── Rechte Spalte: Kacheln ein-/ausblenden ─────────────────────
+document.querySelectorAll('[data-cal-side]').forEach(el => el.addEventListener('change', () => {
+  calendarSettings.sideCards[el.dataset.calSide] = el.checked;
+  saveCalendarSettings();
+  renderCalendar();
+}));
 
 // ── Erinnerungen ──────────────────────────────────────────────
 document.getElementById('calendar-birthday-reminder-select')?.addEventListener('change', e => {
@@ -1822,7 +1989,7 @@ function renderCalBirthdaysCard() {
   if (!card || !list) return;
   list.innerHTML = '';
 
-  if (!calendarSettings.showBirthdays) { card.classList.add('hidden'); return; }
+  if (!calendarSettings.showBirthdays || !calSideEnabled('birthdays')) { card.classList.add('hidden'); return; }
   card.classList.remove('hidden');
 
   const month = calDate.getMonth() + 1;
