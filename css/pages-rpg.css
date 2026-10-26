@@ -476,262 +476,28 @@
   text-shadow: none;
 }
 
-/* ── Finanzierung: Krämerladen-Regal ─────────────────────────
-   Kein Papier: das ganze Tab liegt direkt auf dem Brett.
-   - Einnahme = Regalfach (dunkle Rückwand, Seitenpfosten, Regalboden)
-     mit eingebranntem Namensschild; Rest neben einem Münzstapel
-   - zugeordnete Posten = beschriftete Holzklötzchen im Fach
-   - nicht zugeordnete Posten = Klötzchen im Weidenkorb darunter
-   Farb-Zustand der Einnahme (gf-income-c1…c4) als gemalter Streifen am
-   Namensschild. Ziehen & Ablegen bleibt unverändert. */
-[data-pages-style="rpg"] #finanzanalyse-panel {
-  --wood-dark:  color-mix(in srgb, var(--amber) 32%, var(--deco-ink));
-  --wood-mid:   color-mix(in srgb, var(--amber) 58%, var(--deco-ink));
-  --wood-light: color-mix(in srgb, var(--amber) 55%, var(--sheen));
-  --wood-pale:  color-mix(in srgb, var(--amber) 28%, var(--sheen));
-  --text:   color-mix(in srgb, var(--sheen) 92%, transparent);
-  --text-2: color-mix(in srgb, var(--sheen) 78%, transparent);
-  --text-3: color-mix(in srgb, var(--sheen) 62%, transparent);
-  --border: color-mix(in srgb, var(--sheen) 18%, transparent);
-  color-scheme: normal;
+/* ── Finanzierung: vorerst schlichte Cozy-Optik ───────────────
+   Krämerladen (CSS-Holz) wieder entfernt — wirkte unecht. Bis zum
+   zweiten Anlauf mit gezeichneten Grafiken bleibt dieses Blatt ohne
+   RPG-Papier: Fläche/Farben wie im normalen Theme (Tokens erben). */
+[data-pages-style="rpg"] #view-budget #finanzanalyse-panel {
+  --text: inherit; --text-2: inherit; --text-3: inherit;
+  --border: inherit; --border-strong: inherit;
+  --surface: inherit; --surface-2: inherit; --surface-3: inherit;
+  --accent-soft: inherit; --sage-dark: inherit;
+  --b-card-panel: inherit; --bg: inherit;
+  color-scheme: inherit;
   color: var(--text);
-  padding: 4px 0 0;
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--b-radius) !important;
+  box-shadow: var(--b-shadow) !important;
+  overflow: hidden !important;
+  padding: 0;
 }
-/* Papier und Pin dieses Blatts abschalten */
-[data-pages-style="rpg"] #finanzanalyse-panel::before,
-[data-pages-style="rpg"] #finanzanalyse-panel::after { display: none; }
-[data-pages-style="rpg"] #finanzanalyse-panel > .sp-panel-head { border-bottom: none; }
-[data-pages-style="rpg"] #finanzanalyse-panel .sp-panel-title {
-  font-family: var(--font-heading);
-  font-weight: 400;
-  font-size: calc(20px * var(--core-font-scale));
-  color: var(--sage-fg);
-  text-shadow: 0 1px 2px color-mix(in srgb, var(--shadow-tint) 80%, transparent);
-}
-[data-pages-style="rpg"] #view-budget #finanzanalyse-panel .sp-source-note {
-  color: var(--sage-fg);
-  text-shadow: 0 1px 2px color-mix(in srgb, var(--shadow-tint) 80%, transparent);
-}
-
-/* Wochen-/Monatskopf: eingebrannte Holzleiste */
-[data-pages-style="rpg"] #view-budget .gf-week-grid {
-  background: transparent;
-  border: none;
-  border-radius: 0;
-  overflow: visible;
-  gap: 14px;
-}
-[data-pages-style="rpg"] #view-budget .gf-week-col { padding: 0; }
-[data-pages-style="rpg"] #view-budget .gf-week-col + .gf-week-col { border: none; }
-[data-pages-style="rpg"] #view-budget .gf-week-head {
-  padding: 6px 12px;
-  margin-bottom: 6px;
-  border-radius: 3px;
-  border: 1px solid var(--wood-dark);
-  background:
-    linear-gradient(color-mix(in srgb, var(--wood-pale) 55%, transparent), color-mix(in srgb, var(--wood-pale) 55%, transparent)),
-    url('../assets/questboard/planks.webp') center / 300% auto;
-  box-shadow: 0 2px 4px color-mix(in srgb, var(--shadow-tint) 40%, transparent);
-}
-[data-pages-style="rpg"] #view-budget .gf-week-head :is(.gf-week-title, .gf-week-total) {
-  font-family: var(--font-heading);
-  font-weight: 400;
-  font-size: calc(15px * var(--core-font-scale));
-  color: color-mix(in srgb, var(--deco-ink) 88%, var(--amber));
-  text-shadow: 0 1px 0 color-mix(in srgb, var(--sheen) 35%, transparent);
-}
-
-/* Einnahme = Regalfach */
-[data-pages-style="rpg"] #view-budget :is(.gf-income-card, .gf-income-bar) {
-  --fach-accent: var(--wood-light);
-  position: relative;
-  background:
-    linear-gradient(color-mix(in srgb, var(--deco-ink) 55%, transparent), color-mix(in srgb, var(--deco-ink) 40%, transparent)),
-    url('../assets/questboard/planks.webp') center / 160% auto !important;
-  border-style: solid;
-  border-color: var(--wood-mid);
-  border-width: 6px 8px 11px;
-  border-bottom-color: var(--wood-light);
-  border-radius: 3px;
-  box-shadow:
-    inset 0 12px 16px -6px color-mix(in srgb, var(--deco-ink) 70%, transparent),
-    inset 0 -2px 0 color-mix(in srgb, var(--deco-ink) 35%, transparent),
-    0 4px 8px color-mix(in srgb, var(--shadow-tint) 50%, transparent);
-  padding: 10px 12px 12px;
-}
-[data-pages-style="rpg"] #view-budget .gf-income-c1 { --fach-accent: var(--b-green); }
-[data-pages-style="rpg"] #view-budget .gf-income-c2 { --fach-accent: var(--b-olive); }
-[data-pages-style="rpg"] #view-budget .gf-income-c3 { --fach-accent: var(--b-red); }
-[data-pages-style="rpg"] #view-budget .gf-income-c4 { --fach-accent: var(--b-blue); }
-
-/* Namensschild: helles Holz, eingebrannte Schrift, Farbstreifen + Nägel */
-[data-pages-style="rpg"] #view-budget :is(.gf-bar-main, .gf-income-head) {
-  align-self: center;
-  margin: 0 auto;
-  padding: 5px 16px 5px 18px;
-  border-radius: 3px;
-  border: 1px solid var(--wood-dark);
-  border-left: 5px solid var(--fach-accent);
-  background:
-    radial-gradient(circle, var(--wood-dark) 0 1.3px, transparent 1.8px) right 5px center / 6px 6px no-repeat,
-    linear-gradient(color-mix(in srgb, var(--wood-pale) 60%, transparent), color-mix(in srgb, var(--wood-pale) 60%, transparent)),
-    url('../assets/questboard/planks.webp') center / 280% auto;
-  box-shadow: 0 2px 3px color-mix(in srgb, var(--shadow-tint) 50%, transparent);
-  --text:   var(--deco-ink);
-  --text-3: color-mix(in srgb, var(--deco-ink) 65%, transparent);
-  color: var(--deco-ink);
-}
-[data-pages-style="rpg"] #view-budget .gf-income-head { width: fit-content; }
-[data-pages-style="rpg"] #view-budget .gf-bar-main { width: fit-content; max-width: 100%; }
-[data-pages-style="rpg"] #view-budget .gf-income-bar { display: flex; flex-direction: column; align-items: stretch; gap: 10px; }
-[data-pages-style="rpg"] #view-budget .gf-bar-wrap { gap: 16px; }
-[data-pages-style="rpg"] #view-budget :is(.gf-bar-name, .gf-income-name) {
-  font-family: var(--font-heading);
-  font-weight: 400;
-  font-size: calc(15px * var(--core-font-scale));
-  color: color-mix(in srgb, var(--deco-ink) 90%, var(--amber)) !important;
-}
-/* Rest neben einem Münzstapel */
-[data-pages-style="rpg"] #view-budget :is(.gf-bar-rest, .gf-rest-hero)::before {
-  content: '';
-  display: inline-block;
-  width: 18px; height: 20px;
-  margin-right: 6px;
-  vertical-align: -3px;
-  background:
-    url('../assets/questboard/coin.webp') 50% 0 / 14px auto no-repeat,
-    url('../assets/questboard/coin.webp') 50% 5px / 14px auto no-repeat,
-    url('../assets/questboard/coin.webp') 50% 10px / 14px auto no-repeat;
-  filter: drop-shadow(0 1px 1px color-mix(in srgb, var(--shadow-tint) 50%, transparent));
-}
-/* Wochen-Modus: Rest steht im dunklen Fach → helle Zustandsfarben */
-[data-pages-style="rpg"] #view-budget .gf-income-card > .gf-rest-hero { text-align: center; }
-[data-pages-style="rpg"] #view-budget .gf-income-card > .gf-rest-ok   { color: color-mix(in srgb, var(--b-green) 45%, var(--sheen)); }
-[data-pages-style="rpg"] #view-budget .gf-income-card > .gf-rest-low  { color: color-mix(in srgb, var(--b-olive) 45%, var(--sheen)); }
-[data-pages-style="rpg"] #view-budget .gf-income-card > .gf-rest-over { color: color-mix(in srgb, var(--b-red) 50%, var(--sheen)); }
-
-/* Holzklötzchen: im Fach und im Korb */
-[data-pages-style="rpg"] #view-budget :is(.gf-stack-item, .gf-consumer-card) {
-  --text:   var(--deco-ink);
-  --text-2: color-mix(in srgb, var(--deco-ink) 82%, transparent);
-  --text-3: color-mix(in srgb, var(--deco-ink) 62%, transparent);
-  color: var(--deco-ink);
-  background:
-    linear-gradient(color-mix(in srgb, var(--wood-pale) 62%, transparent), color-mix(in srgb, var(--wood-pale) 62%, transparent)),
-    url('../assets/questboard/planks.webp') center / 420% auto !important;
-  border: 1px solid var(--wood-mid);
-  border-radius: 3px;
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--sheen) 40%, transparent),
-    0 2px 0 var(--wood-mid),
-    0 3px 5px color-mix(in srgb, var(--shadow-tint) 45%, transparent);
-}
-[data-pages-style="rpg"] #view-budget .gf-stack-item:hover,
-[data-pages-style="rpg"] #view-budget .gf-consumer-card:hover {
-  background:
-    linear-gradient(color-mix(in srgb, var(--wood-pale) 45%, transparent), color-mix(in srgb, var(--wood-pale) 45%, transparent)),
-    url('../assets/questboard/planks.webp') center / 420% auto !important;
-}
-[data-pages-style="rpg"] #view-budget .gf-stack-item--over {
-  border-color: var(--b-red);
-  box-shadow: 0 2px 0 var(--b-red), 0 0 0 1px color-mix(in srgb, var(--b-red) 40%, transparent);
-  color: var(--b-red);
-}
-[data-pages-style="rpg"] #view-budget .gf-stack-item + .gf-stack-item { margin-top: 6px; }
-/* Monatsmodus: Klötzchen stehen nebeneinander auf dem Regalboden */
-[data-pages-style="rpg"] #view-budget .gf-stack--bar {
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: center;
-  align-items: flex-end;
-  padding-top: 4px;
-}
-[data-pages-style="rpg"] #view-budget .gf-stack--bar .gf-stack-item {
-  flex: 0 1 auto;
-  width: auto;
-  min-width: 130px;
-  padding: 9px 14px 8px;
-  font-size: calc(12px * var(--core-font-scale));
-}
-/* Klötzchen im Korb: gemalter Farbstreifen je Art */
-[data-pages-style="rpg"] #view-budget .gf-consumer-card { border-left-width: 5px; }
-[data-pages-style="rpg"] #view-budget .gf-consumer-card.gf-consumer-red    { border-left-color: var(--b-red); }
-[data-pages-style="rpg"] #view-budget .gf-consumer-card.gf-consumer-blue   { border-left-color: var(--b-blue); }
-[data-pages-style="rpg"] #view-budget .gf-consumer-card.gf-consumer-purple { border-left-color: var(--b-purple); }
-
-/* Weidenkorb für alles, was noch keinem Fach zugeordnet ist */
-[data-pages-style="rpg"] #view-budget .gf-consumer-grid {
-  --wicker-a: color-mix(in srgb, var(--amber) 48%, var(--sheen));
-  --wicker-b: color-mix(in srgb, var(--amber) 75%, var(--deco-ink));
-  position: relative;
-  padding: 18px 18px 22px;
-  border: 7px solid var(--wicker-b);
-  border-radius: 12px 12px 34px 34px / 12px 12px 22px 22px;
-  /* Geflecht: waagerechte, gerundete Stränge (hell → Grundton → Schatten)
-     über senkrechten Staken, die in den Fugen durchscheinen */
-  background:
-    repeating-linear-gradient(180deg,
-      color-mix(in srgb, var(--wicker-a) 70%, var(--sheen)) 0 2px,
-      var(--wicker-a) 2px 7px,
-      color-mix(in srgb, var(--wicker-a) 55%, var(--wicker-b)) 7px 10px,
-      color-mix(in srgb, var(--wicker-b) 85%, var(--deco-ink)) 10px 12px),
-    repeating-linear-gradient(90deg, transparent 0 26px, color-mix(in srgb, var(--wicker-b) 45%, transparent) 26px 30px),
-    var(--wicker-a);
-  background-blend-mode: normal, multiply, normal;
-  box-shadow:
-    inset 0 8px 14px color-mix(in srgb, var(--deco-ink) 30%, transparent),
-    0 6px 12px color-mix(in srgb, var(--shadow-tint) 50%, transparent);
-}
-/* Korbrand oben: geflochtener Wulst */
-[data-pages-style="rpg"] #view-budget .gf-consumer-grid::before {
-  content: '';
-  position: absolute;
-  left: -7px; right: -7px; top: -11px;
-  height: 10px;
-  border-radius: 6px;
-  background: repeating-linear-gradient(115deg, var(--wicker-b) 0 4px, var(--wicker-a) 4px 8px);
-  box-shadow: 0 2px 3px color-mix(in srgb, var(--shadow-tint) 45%, transparent);
-}
-[data-pages-style="rpg"] #view-budget .gf-group-title {
-  color: var(--deco-ink);
-  font-family: var(--font-heading);
-  font-weight: 400;
-  font-size: calc(15px * var(--core-font-scale));
-  text-shadow: 0 1px 0 color-mix(in srgb, var(--sheen) 45%, transparent);
-}
-[data-pages-style="rpg"] #view-budget .gf-group-count { color: color-mix(in srgb, var(--deco-ink) 60%, transparent); }
-[data-pages-style="rpg"] #view-budget .gf-group :is(.empty-state, .gf-empty, p) {
-  color: color-mix(in srgb, var(--deco-ink) 70%, transparent);
-}
-[data-pages-style="rpg"] #view-budget .gf-add-btn {
-  border: 1.5px dashed color-mix(in srgb, var(--deco-ink) 40%, transparent);
-  background: color-mix(in srgb, var(--sheen) 25%, transparent);
-  color: color-mix(in srgb, var(--deco-ink) 75%, transparent);
-}
-[data-pages-style="rpg"] #view-budget .gf-add-btn:hover { background: color-mix(in srgb, var(--sheen) 45%, transparent); color: var(--deco-ink); }
-
-/* Monatsrest: Messingschild */
-[data-pages-style="rpg"] #view-budget .gf-monatsrest-pill {
-  border-radius: 6px;
-  border: 1px solid var(--brass-lo);
-  padding: 8px 22px;
-  background:
-    var(--rivet) left 5px center / 8px 8px no-repeat,
-    var(--rivet) right 5px center / 8px 8px no-repeat,
-    linear-gradient(170deg, var(--brass-hi), var(--brass) 45%, var(--brass-lo));
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--sheen) 55%, transparent),
-    0 3px 6px color-mix(in srgb, var(--shadow-tint) 40%, transparent);
-}
-[data-pages-style="rpg"] #view-budget .gf-monatsrest-label { color: var(--brass-ink); opacity: .8; }
-[data-pages-style="rpg"] #view-budget .gf-monatsrest-value {
-  font-family: var(--font-heading);
-  font-weight: 400;
-  font-size: calc(18px * var(--core-font-scale));
-  color: var(--brass-ink);
-  text-shadow: 0 1px 0 color-mix(in srgb, var(--sheen) 45%, transparent);
-}
+[data-pages-style="rpg"] #view-budget #finanzanalyse-panel::before,
+[data-pages-style="rpg"] #view-budget #finanzanalyse-panel::after { display: none; }
+[data-pages-style="rpg"] #view-budget #finanzanalyse-panel .sp-source-note { color: var(--text-3); text-shadow: none; }
 
 /* ── Sparziel-Karten AUF dem Blatt: gerahmte Kassenbuch-Einträge ── */
 [data-pages-style="rpg"] #view-budget .sp-panel .sp-plan-card {
