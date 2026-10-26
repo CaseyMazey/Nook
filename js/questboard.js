@@ -659,3 +659,17 @@ function questRedeem(rewardId) {
     else renderQuestTimed();
   }, 60000);
 })();
+
+
+// =========================
+// SUCHQUELLE (js/hub-search.js, AI documentation/search.md) — nur lesen;
+// open() springt zum Eintrag über die Funktionen dieses Tabs.
+// =========================
+registerSearchProvider({
+  id: 'questboard', label: 'Quests', icon: '🛡️', view: 'questboard',
+  items: () => questCards.map(card => ({
+    id: card.id, title: card.title || 'Quest', sub: (QUEST_TYPES[card.type] || {}).label || 'Quest',
+    text: (card.items || []).map(i => i && i.text).filter(Boolean).join('\n'),
+    open: () => { showView('questboard'); openQuestModal(card.type, card.id); },
+  })),
+});

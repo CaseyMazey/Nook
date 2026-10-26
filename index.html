@@ -12,6 +12,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/hub-search.css" />
   <link rel="stylesheet" href="css/budget.css" />
   <link rel="stylesheet" href="css/calendar.css" />
   <link rel="stylesheet" href="css/google-calendar.css" />
@@ -232,6 +233,13 @@
         </button>
         </div>
       </div>
+
+      <!-- Globale Suche (js/hub-search.js) -->
+      <button id="sidebar-search-btn" type="button" title="Suchen (Strg + K)" aria-label="Suchen" onclick="openHubSearch()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span class="sidebar-search-label">Suchen</span>
+        <kbd class="sidebar-search-kbd">Strg K</kbd>
+      </button>
  
       <ul id="nav-list">
         <li><button class="nav-btn active" data-view="today">
@@ -1729,6 +1737,11 @@
           <button id="mehr-close-btn" class="modal-x" aria-label="Schließen">✕</button>
           <h1 class="view-title">Mehr</h1>
         </div>
+
+        <button type="button" class="mehr-search-btn" onclick="openHubSearch()">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          In Nook suchen …
+        </button>
 
         <div class="mehr-section">
           <span class="panel-label mehr-section-label">Organisieren</span>
@@ -3786,6 +3799,7 @@
 
   <script src="js/main.js"></script>
   <script src="js/hub-utils.js"></script>
+  <script src="js/hub-search.js"></script>
   <!-- Supabase-SDK per CDN (UMD-Build, kein npm/Build-Step für die Kern-App
        nötig) — stellt window.supabase bereit, das js/sync.js direkt danach
        nutzt. Explizit der UMD-Pfad, nicht das bloße Paket (das würde den

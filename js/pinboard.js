@@ -480,3 +480,18 @@ function makePaperCbElement(done, bg, onToggle) {
 // Karten werden unabhängig davon vorbereitet, welche View gerade aktiv ist.
 // =========================
 renderDesk();
+
+
+// =========================
+// SUCHQUELLE (js/hub-search.js, AI documentation/search.md) — nur lesen;
+// open() springt zum Eintrag über die Funktionen dieses Tabs.
+// =========================
+registerSearchProvider({
+  id: 'pinboard', label: 'Pinnwand', icon: '📌', view: 'pinboard',
+  items: () => (deskCards || []).map(card => ({
+    id: card.id, title: card.title || 'Karte',
+    text: [card.content, ...(card.items || []).map(i => i && i.text), card.betrieb, card.schule]
+      .filter(v => typeof v === 'string' && v).join('\n'),
+    open: () => { showView('pinboard'); searchFlashElement(`.desk-card[data-id="${card.id}"]`); },
+  })),
+});

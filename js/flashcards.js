@@ -828,3 +828,22 @@ function exportCard(fc){
   URL.revokeObjectURL(url);
 }
 
+
+// =========================
+// SUCHQUELLE (js/hub-search.js, AI documentation/search.md) — nur lesen;
+// open() springt zum Eintrag über die Funktionen dieses Tabs.
+// =========================
+registerSearchProvider({
+  id: 'flashcards', label: 'Karteikarten', icon: '🗂️', view: 'flashcards',
+  items: () => subjects.flatMap(subj => (subj.groups || []).flatMap(group => (group.cards || []).map(fc => ({
+    id: fc.id, title: fc.front || '(leere Karte)', sub: `${subj.name} › ${group.name}`, text: fc.back || '',
+    open: () => {
+      showView('flashcards');
+      closeSessionPanel();
+      state.activeSubjectId = subj.id;
+      renderSubjectList();
+      renderSubjectDetail();
+      openFcModal(subj.id, group.id, fc);
+    },
+  })))),
+});

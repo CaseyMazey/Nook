@@ -3525,3 +3525,33 @@ function bindSecondaryButtons() {
   if (typeof bindMonthNav === 'function') bindMonthNav();
 }
 bindSecondaryButtons();
+
+
+// =========================
+// SUCHQUELLE (js/hub-search.js, AI documentation/search.md) — nur lesen;
+// open() springt zum Eintrag über die Funktionen dieses Tabs.
+// =========================
+registerSearchProvider({
+  id: 'budget', label: 'Budget', icon: '💰', view: 'budget',
+  items: () => {
+    const out = [];
+    const toOverview = () => { showView('budget'); setBudgetSubtab('budget'); };
+    budgetRecurring.forEach(r => out.push({ id: r.id, icon: r.type === 'income' ? '➕' : '➖', title: r.name,
+      sub: `Wiederkehrend · ${r.type === 'income' ? '+' : '-'}${fmtEuro(r.amount)}`,
+      open: () => { toOverview(); openRecurringModal(r); } }));
+    budgetOnetime.forEach(e => {
+      const [y, m] = e.monthKey.split('-').map(Number);
+      out.push({ id: e.id, icon: e.type === 'income' ? '➕' : '➖', title: e.name,
+        sub: `Einmalig · ${String(e.day || 1).padStart(2, '0')}.${String(m).padStart(2, '0')}.${y} · ${e.type === 'income' ? '+' : '-'}${fmtEuro(e.amount)}`,
+        open: () => { budgetMonth = new Date(y, m - 1, 1); toOverview(); openOnetimeModal(e); } });
+    });
+    budgetGoals.forEach(g => out.push({ id: g.id, icon: '🎯', title: g.name,
+      sub: `Sparziel${g.archived ? ' (Archiv)' : ''} · ${fmtEuro(g.current)} / ${fmtEuro(g.target)}`,
+      text: [g.description, g.category].filter(Boolean).join(' '),
+      open: () => { showView('budget'); openEditGoalModal(g); } }));
+    budgetDebts.forEach(d => out.push({ id: d.id, icon: '💳', title: d.name,
+      sub: `Schuld${d.archived ? ' (Archiv)' : ''} · ${fmtEuro(d.originalAmount)}`,
+      open: () => { showView('budget'); openEditDebtModal(d); } }));
+    return out;
+  },
+});

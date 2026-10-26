@@ -2505,3 +2505,18 @@ function initGuides() {
   restoreGuideLastView();
   renderGuideContent();
 }
+
+
+// =========================
+// SUCHQUELLE (js/hub-search.js, AI documentation/search.md) — nur lesen;
+// open() springt zum Eintrag über die Funktionen dieses Tabs.
+// =========================
+registerSearchProvider({
+  id: 'guides', label: 'Anleitungen', icon: '📖', view: 'guides',
+  items: () => guideCategories.flatMap(cat => (cat.guides || []).map(g => ({
+    id: g.id, title: g.title || 'Ohne Titel', sub: cat.name,
+    text: [g.description, g.content].filter(v => typeof v === 'string' && v).join('\n'),
+    keywords: Array.isArray(g.tags) ? g.tags : [],
+    open: () => { showView('guides'); openGuideChapter(g.id); },
+  }))),
+});

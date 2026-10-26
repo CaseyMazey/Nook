@@ -794,3 +794,30 @@ document.getElementById('add-project-btn').addEventListener('click', () => openP
 // ruft switchToForestView() bereits unconditional bei eigenem Laden auf,
 // was renderForest() intern anstößt. Ein Aufruf hier wäre zu früh —
 // renderForest() existiert erst, sobald forest.js geladen ist.
+
+
+// =========================
+// SUCHQUELLE (js/hub-search.js, AI documentation/search.md) — nur lesen;
+// open() springt zum Eintrag über die Funktionen dieses Tabs.
+// =========================
+registerSearchProvider({
+  id: 'projects', label: 'Projekte', icon: '📁', view: 'projects',
+  items: () => {
+    const out = [];
+    projects.filter(p => !p.archived).forEach(p => {
+      const openProject = () => { showView('projects'); openProjectDetail(p.id); };
+      out.push({ id: p.id, title: p.name, sub: 'Projekt', text: p.description || '', open: openProject });
+      const addTasks = (list, sp) => (list || []).forEach(t => out.push({
+        id: t.id, icon: t.done ? '✔️' : '▫️', title: t.text,
+        sub: `${p.name} › ${sp ? sp.title : (p.mainTasksLabel || 'Hauptaufgaben')}`, text: t.description || '',
+        open: () => { openProject(); openTaskDetail(t, sp || null, p); },
+      }));
+      addTasks(p.tasks, null);
+      (p.subprojects || []).forEach(sp => {
+        out.push({ id: sp.id, icon: '🌿', title: sp.title, sub: `${p.name} › Ast`, open: openProject });
+        addTasks(sp.tasks, sp);
+      });
+    });
+    return out;
+  },
+});

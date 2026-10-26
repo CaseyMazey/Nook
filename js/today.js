@@ -1103,3 +1103,17 @@ updateThemeIcon();
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') renderWeather();
 });
+
+
+// =========================
+// SUCHQUELLE (js/hub-search.js, AI documentation/search.md) — nur lesen;
+// open() springt zum Eintrag über die Funktionen dieses Tabs.
+// =========================
+registerSearchProvider({
+  id: 'tasks', label: 'Aufgaben (Heute)', icon: '✅', view: 'today',
+  items: () => tasks.map(t => ({
+    id: t.id, icon: t.status === 'completed' ? '✔️' : '▫️', title: t.title || 'Aufgabe',
+    sub: 'Aufgaben dieser Woche', text: t.notes || '',
+    open: () => { showView('today'); openTaskModal(t); },
+  })),
+});

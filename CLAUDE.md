@@ -37,6 +37,8 @@ Most tabs are one `js/<tab>.js` + one `css/<tab>.css`. Larger tabs are split int
 
 `js/hub-utils.js` holds cross-tab shared utilities loaded right after `main.js`: the user color system (`HUB_PALETTE_HEX`, `hubUserColors`, `initColorPickerWidget`, `computeUserColorVars`/`applyUserColorVars` — theme-aware derived colors from one base hex) and the shared code-block renderer (`renderCodeBlock`, used by Guides and Pinboard code cards). Reach for these instead of re-implementing color pickers or code blocks in a new tab.
 
+`js/hub-search.js` (loaded right after `hub-utils.js`) is the global search (`Strg/⌘ + K`). Like the games launcher it knows no tab: each tab registers its own read-only source at the end of its own file via `registerSearchProvider({ id, label, icon, view, items })`, where each item has an `open()` that jumps there using that tab's existing functions. A new tab with user content should register a provider too. Contract: `AI documentation/search.md` (search never writes data except `searchRecent`).
+
 ### Games: self-registering plugin architecture
 
 `js/games.js` is a pure launcher/container — it has zero knowledge of any individual game. It only knows the IDs in `games/games-list.js` (`window.GAMES_LIST`), and renders whatever registers itself via `window.registerGame(config)` into `window.GameHub.registry`.

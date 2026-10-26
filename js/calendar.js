@@ -2228,3 +2228,35 @@ document.getElementById('birthday-add-btn')?.addEventListener('click', () => {
 document.getElementById('birthday-name-input')?.addEventListener('keydown', e => {
   if (e.key === 'Enter') document.getElementById('birthday-add-btn').click();
 });
+
+
+// =========================
+// SUCHQUELLE (js/hub-search.js, AI documentation/search.md) — nur lesen;
+// open() springt zum Eintrag über die Funktionen dieses Tabs.
+// =========================
+registerSearchProvider({
+  id: 'calendar', label: 'Kalender', icon: '📅', view: 'calendar',
+  items: () => {
+    const out = [];
+    const fmt = d => d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' });
+    const goTo = d => { showView('calendar'); calDate = new Date(d.getFullYear(), d.getMonth(), 1); renderCalendar(); };
+    Object.entries(events).forEach(([key, dayEvs]) => (dayEvs || []).forEach(ev => {
+      const date = parseLocalDate(key);
+      out.push({ id: ev.id, title: ev.title || 'Termin', sub: fmt(date) + (ev.time ? ' · ' + ev.time : ''), text: ev.notes || '',
+        open: () => { goTo(date); openEventModal(key, date, ev); } });
+    }));
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    eventSeries.forEach(series => {
+      const next = getNextSeriesOccurrence(series, today);
+      out.push({ id: series.id, icon: '🔁', title: series.title || 'Terminserie',
+        sub: next ? 'Serie · nächster Termin ' + fmt(next.date) : 'Serie (beendet)', text: series.notes || '',
+        open: () => {
+          if (next) { goTo(next.date); openEditScopeModal(next.event, next.date, 'edit'); }
+          else if (series.startDate) goTo(parseLocalDate(series.startDate));
+        } });
+    });
+    birthdays.forEach(b => out.push({ id: b.id, icon: '🎂', title: b.name,
+      sub: `Geburtstag · ${b.day}.${b.month}.`, open: () => { showView('calendar'); openBirthdayModal(); } }));
+    return out;
+  },
+});
