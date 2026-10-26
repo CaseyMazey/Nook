@@ -35,7 +35,9 @@ const TR_IRON    = ['#8E8780', '#5E5852', '#403B36', '#2A2622'];
 const TR_LEATHER = ['#B07A4C', '#8B5A33', '#643D20', '#432812'];
 const TR_CLAY    = ['#E6A07C', '#C7704A', '#9A5034', '#6C3420'];
 
-const trSvg = body => `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">${body}</svg>`;
+// viewBox um den leeren Rand beschnitten (Inhalt liegt in 6…74 / 8…76) —
+// die Schätze füllen ihre Fläche so besser als im vollen 80×80-Raster.
+const trSvg = body => `<svg viewBox="6 8 68 68" fill="none" xmlns="http://www.w3.org/2000/svg">${body}</svg>`;
 const trShadow = (rx = 18, cy = 67) => `<ellipse cx="40" cy="${cy}" rx="${rx}" ry="4" fill="#5A3D1C" opacity=".2"/>`;
 
 // Funkel-Stern; anim = sanftes Blinken (CSS .tr-twinkle, respektiert reduzierte Bewegung)
