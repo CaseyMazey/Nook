@@ -116,11 +116,21 @@ function buildGeldflussConsumers(){
     list.push({ kind: 'goal', id: g.id, uid: g.id, name: g.name, amount,
       funding: liveFunding(g.funding), obj: g, isMonthly: need > 0.005 });
   });
+  // Schulden mit Fälligkeitsdatum: Restschuld auf die Monate bis dahin
+  // verteilt (Monatsrate, wie bei Sparzielen mit Wunschtermin) — vorher
+  // stand hier immer die GESAMTE Restschuld, die beim Ziehen dann als
+  // monatliche Finanzierung eingetragen wurde. Ohne Datum bleibt es der
+  // Gesamtbetrag (Anzeige „gesamt“).
   budgetDebts.filter(d => !d.archived).forEach(d => {
     const remaining = debtRemaining(d);
     if (remaining <= 0.005) return;
-    list.push({ kind: 'debt', id: d.id, uid: d.id, name: d.name, amount: remaining,
-      funding: liveFunding(d.funding), obj: d });
+    let amount = remaining, isMonthly = false;
+    if (d.dueDate && typeof sparplanerMonthsUntil === 'function') {
+      const months = Math.max(1, sparplanerMonthsUntil(new Date(d.dueDate + 'T00:00:00')));
+      amount = round2(remaining / months); isMonthly = true;
+    }
+    list.push({ kind: 'debt', id: d.id, uid: d.id, name: d.name, amount,
+      funding: liveFunding(d.funding), obj: d, isMonthly });
   });
   return list;
 }
@@ -252,7 +262,7 @@ function renderGeldflussStack(stackEl, stack, recurringId, cardUid){
     const mini = document.createElement('div');
     mini.className = 'gf-stack-item' + (item.over ? ' gf-stack-item--over' : '');
     mini.style.setProperty('--gf-i', i);
-    mini.innerHTML = `<span class="gf-drag-handle" aria-hidden="true">⠿</span><span>${GELDFLUSS_ICON[item.kind] || ''} ${item.name}</span><span>${fmtEuro(item.amount)}</span>`;
+    mini.innerHTML = `<span class="gf-drag-handle" aria-hidden="true">⠿</span><span>${GELDFLUSS_ICON[item.kind] || ''} ${escHtml(item.name)}</span><span>${fmtEuro(item.amount)}</span>`;
     mini.title = 'Klicken zum Entfernen — oder auf eine andere Einnahme ziehen';
     // Klicken UND Ziehen laufen jetzt über denselben Mechanismus
     // (makeGeldflussDraggable erkennt anhand der Bewegung, was gemeint
@@ -281,7 +291,7 @@ function renderGeldflussIncomeCard(card){
   // Kartendesign, nur andere Gewichtung — auf Wunsch umgestellt).
   el.innerHTML = `
     <div class="gf-income-head">
-      <span class="gf-income-name">${resolveIncomeIcon(card.recurringId, card.name)} ${card.name}</span>
+      <span class="gf-income-name">${resolveIncomeIcon(card.recurringId, card.name)} ${escHtml(card.name)}</span>
     </div>
     <div class="gf-rest gf-rest-hero ${restClass}">Rest ${fmtEuro(card.remaining)}</div>
     <div class="gf-stack"></div>
@@ -306,7 +316,7 @@ function renderGeldflussIncomeBar(card){
 
   el.innerHTML = `
     <div class="gf-bar-main">
-      <span class="gf-bar-name">${resolveIncomeIcon(card.recurringId, card.name)} ${card.name}</span>
+      <span class="gf-bar-name">${resolveIncomeIcon(card.recurringId, card.name)} ${escHtml(card.name)}</span>
       <span class="gf-bar-rest ${restClass}">Rest ${fmtEuro(card.remaining)}</span>
       <span class="gf-bar-amount-sub">von ${fmtEuro(card.amount)}</span>
     </div>
@@ -333,8 +343,10 @@ function renderGeldflussIncomeArea(container, incomeCards){
   weekGrid.className = 'gf-week-grid';
   if (!incomeCards.some(c => !c.isBar)) {
     weekGrid.style.setProperty('--gf-week-count', 1);
-    const monthName = new Date().toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
-    weekGrid.innerHTML = `<div class="gf-week-col gf-week-col--month"><div class="gf-week-head"><div class="gf-week-title">Ganzer Monat · ${monthName}</div></div></div>`;
+    // Der Planer ist eine monatsunabhängige Vorlage (siehe Dateikopf) —
+    // vorher stand hier der laufende Monat, egal welcher Monat oben gewählt
+    // war, was nach „gilt nur für Oktober“ aussah.
+    weekGrid.innerHTML = `<div class="gf-week-col gf-week-col--month"><div class="gf-week-head"><div class="gf-week-title" title="Gilt für jeden Monat, bis du es änderst">Ganzer Monat · Vorlage</div></div></div>`;
     container.appendChild(weekGrid);
   } else weekGrid.style.setProperty('--gf-week-count', 4);
   for (let i = 0; incomeCards.some(c => !c.isBar) && i < 4; i++) {
@@ -368,9 +380,9 @@ function renderGeldflussConsumerCard(cons, colorClass){
   el.innerHTML = `
     <span class="gf-consumer-left">
       <span class="gf-drag-handle" aria-hidden="true">⠿</span>
-      <span class="gf-consumer-name">${GELDFLUSS_ICON[cons.kind] || ''} ${cons.name}</span>
+      <span class="gf-consumer-name">${GELDFLUSS_ICON[cons.kind] || ''} ${escHtml(cons.name)}</span>
     </span>
-    <span class="gf-consumer-amount">${fmtEuro(remainder)}${cons.kind === 'goal' && cons.isMonthly ? '/Monat' : ''}</span>`;
+    <span class="gf-consumer-amount">${fmtEuro(remainder)}${cons.isMonthly ? '/Monat' : (cons.kind !== 'expense' ? ' gesamt' : '')}</span>`;
   makeGeldflussDraggable(el, cons, remainder, null, undefined, undefined, el.querySelector('.gf-drag-handle'));
   return el;
 }

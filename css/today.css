@@ -757,3 +757,23 @@
 .today-tracker-pct { font-family: var(--mono); font-size: calc(13px * var(--core-font-scale)); color: var(--sage-dark); font-weight: 600; flex-shrink: 0; }
 [data-theme-family="dark"] .today-tracker-pct { color: var(--sage-light); }
 @media (max-width: 480px) { .today-tracker { max-width: none; } }
+
+/* =============================================================
+   „HEUTE FÄLLIG“ (js/today-budget.js) — nur lesende Zeile mit den heute
+   anstehenden Budget-Posten; Klick öffnet den Budget-Tab.
+============================================================= */
+.today-budget-due {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px;
+  margin-top: 8px; padding: 5px 12px; max-width: 520px;
+  border: 1px solid var(--border); border-radius: 99px;
+  background: color-mix(in srgb, var(--surface-solid) 60%, transparent);
+  color: var(--text-2); font: inherit; font-size: calc(12.5px * var(--core-font-scale));
+  text-align: left; cursor: pointer; transition: border-color var(--transition);
+}
+.today-budget-due:hover { border-color: var(--sage-border); }
+.today-budget-due-label { color: var(--text-3); font-weight: 600; }
+.today-budget-due-item { display: inline-flex; gap: 5px; align-items: baseline; }
+.today-budget-due-item b { font-family: var(--mono); font-weight: 600; }
+.today-budget-due-item b.income  { color: color-mix(in srgb, var(--status-ok) 50%, var(--text)); }
+.today-budget-due-item b.expense { color: color-mix(in srgb, var(--status-danger) 70%, var(--text)); }
+@media (max-width: 480px) { .today-budget-due { max-width: none; border-radius: var(--radius); } }

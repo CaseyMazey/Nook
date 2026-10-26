@@ -1,6 +1,6 @@
 // =========================
 // BUDGET — SPARPLÄNE
-// Teil 3/3 des Budget-Moduls. Eigenständiges Datenmodell
+// Teil des Budget-Moduls (Reihenfolge siehe budget.js). Eigenständiges Datenmodell
 // (budgetSavingsPlans), unabhängig von Sparprognose/Übersicht.
 // Muss NACH budget.js geladen werden.
 // =========================
@@ -24,7 +24,7 @@
 //       EINZIGE Datenquelle für Finanzierungsquellen und Reservierung —
 //       ein Plan hält dafür keine eigenen Werte mehr (siehe
 //       budget-sparziele.js).
-//     linkedToBudget (Legacy-Alias, nicht mehr aktiv genutzt),
+//     linkedToBudget (Legacy, wird nicht mehr geschrieben; Altdaten ok),
 //     createdAt }
 // Muss NACH budget.js und budget-sparziele.js geladen werden.
 // =========================
@@ -146,9 +146,24 @@ function sparplanAddInterval(date, interval){
 }
 function sparplanGenerateDates(startStr, endStr, interval){
   const dates = [];
-  let cur = new Date(startStr + 'T00:00:00');
+  const start = new Date(startStr + 'T00:00:00');
   const end = new Date(endStr + 'T00:00:00');
-  if (cur > end) return [cur];
+  if (start > end) return [start];
+  if (interval === 'monthly') {
+    // Monatlich immer vom STARTTAG aus rechnen und auf das Monatsende
+    // kappen — schrittweises setMonth(+1) vom 31. sprang über kurze Monate
+    // (31.01. → 03.03.).
+    const day = start.getDate();
+    for (let k = 0; k < 2000; k++) {
+      const y = start.getFullYear(), m = start.getMonth() + k;
+      const dim = new Date(y, m + 1, 0).getDate();
+      const d = new Date(y, m, Math.min(day, dim));
+      if (d > end) break;
+      dates.push(d);
+    }
+    return dates;
+  }
+  let cur = new Date(start);
   let guard = 0;
   while (cur <= end && guard < 2000) {
     dates.push(new Date(cur));
@@ -338,7 +353,7 @@ function buildSparplanCard(plan){
   const card = document.createElement('div'); card.className = 'sp-plan-card';
   card.innerHTML = `
     <div class="sp-plan-card-head">
-      <span class="sp-plan-card-name">${plan.image ? plan.image + ' ' : '🐷 '}${plan.name}</span>
+      <span class="sp-plan-card-name">${plan.image ? plan.image + ' ' : '🐷 '}${escHtml(plan.name)}</span>
       <span class="budget-badge sp-plan-badge">${SP_INTERVAL_META[plan.interval]?.label || plan.interval}</span>
     </div>
     <div class="budget-goal-bar sp-plan-bar"><div class="budget-goal-fill" style="width:${pct}%"></div></div>
@@ -457,7 +472,7 @@ function renderSpwGoalSelect(){
     spwGoalId = null;
     return;
   }
-  sel.innerHTML = budgetGoals.map(g => `<option value="${g.id}">${g.name} (${fmtEuro(g.target)})</option>`).join('');
+  sel.innerHTML = budgetGoals.map(g => `<option value="${g.id}">${escHtml(g.name)} (${fmtEuro(g.target)})</option>`).join('');
   spwGoalId = sel.value || null;
 }
 
@@ -650,7 +665,7 @@ function updateSpwFixedPreview() {
 function applySpwFixedGenerate() {
   const { amount, count } = readSpwFixedParams();
   if (!amount || amount <= 0 || !count || count <= 0) {
-    alert('Bitte Betrag und Anzahl angeben.'); return;
+    hubAlert('Angaben fehlen', 'Bitte Betrag und Anzahl angeben.'); return;
   }
   spwCustomEntries.push(...sparplanGenFixed({ amount, count }).map(a => ({ amount: a })));
   spwGeneratorMethodsUsed.add('fixed');
@@ -688,7 +703,7 @@ function renderSpwRandomPreview() {
 function applySpwRandomGenerate() {
   const { min, max, count, multipleOf } = readSpwRandomParams();
   if (!Number.isFinite(min) || !Number.isFinite(max) || min < 0 || max <= min || !count || count <= 0) {
-    alert('Bitte einen gültigen Von/Bis-Betrag und eine Anzahl angeben.'); return;
+    hubAlert('Angaben fehlen', 'Bitte einen gültigen Von/Bis-Betrag und eine Anzahl angeben.'); return;
   }
   spwRandomPreview = sparplanGenRandom({ min, max, count, multipleOf });
   renderSpwRandomPreview();
@@ -812,11 +827,13 @@ function openSparplanWizard(editPlan = null) {
     showSpwStep('variant');
   }
 
-  document.getElementById('sparplan-wizard-modal-overlay').classList.remove('hidden');
+  sparplanWizardModal.open();
 }
-function closeSparplanWizard() {
-  document.getElementById('sparplan-wizard-modal-overlay').classList.add('hidden');
-}
+// (20) Gemeinsamer Modal-Helfer statt eigener Backdrop-/Button-Logik
+const sparplanWizardModal = wireModal('sparplan-wizard-modal-overlay', {
+  closeIds: ['sparplan-wizard-close', 'sparplan-wizard-cancel'],
+});
+function closeSparplanWizard() { sparplanWizardModal.close(); }
 
 document.querySelectorAll('.sp-wizard-variant-btn[data-variant]').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -905,11 +922,6 @@ document.getElementById('spw-random-apply').addEventListener('click', () => {
 });
 
 document.getElementById('sparplan-wizard-back').addEventListener('click', () => { spwVariant = null; showSpwStep('variant'); });
-document.getElementById('sparplan-wizard-close').addEventListener('click', closeSparplanWizard);
-document.getElementById('sparplan-wizard-cancel').addEventListener('click', closeSparplanWizard);
-document.getElementById('sparplan-wizard-modal-overlay').addEventListener('click', e => {
-  if (e.target === document.getElementById('sparplan-wizard-modal-overlay')) closeSparplanWizard();
-});
 
 document.getElementById('sparplan-wizard-save').addEventListener('click', () => {
   // Beim Bearbeiten: bereits erledigte Raten bleiben unangetastet (Historie
@@ -932,7 +944,7 @@ document.getElementById('sparplan-wizard-save').addEventListener('click', () => 
     const end    = document.getElementById('spw-target-end').value;
     const interval = document.getElementById('spw-target-interval').value;
     if (!name || !amount || amount <= 0 || !start || !end || start > end) {
-      alert('Bitte Name, Zielbetrag sowie ein gültiges Start- und Zieldatum angeben.'); return;
+      hubAlert('Angaben fehlen', 'Bitte Name, Zielbetrag sowie ein gültiges Start- und Zieldatum angeben.'); return;
     }
     const dates = sparplanGenerateDates(start, end, interval).filter(d => !doneDateStrs.has(sparplanDateStr(d)));
     // Bereits eingezahlte Raten zählen auf den Zielbetrag — nur der REST
@@ -946,7 +958,7 @@ document.getElementById('sparplan-wizard-save').addEventListener('click', () => 
       : [];
     plan = { id: editPlan ? editPlan.id : sparplanNewId(), name, image: editPlan ? editPlan.image : null,
       targetAmount: round2(amount), startDate: start, endDate: end, interval, method: spwMethod,
-      entries: [...doneEntries, ...freshEntries], linkedToBudget: false,
+      entries: [...doneEntries, ...freshEntries],
       createdAt: editPlan ? editPlan.createdAt : Date.now() };
 
   } else if (spwVariant === 'rate') {
@@ -956,13 +968,13 @@ document.getElementById('sparplan-wizard-save').addEventListener('click', () => 
     const end   = document.getElementById('spw-rate-end').value;
     const interval = document.getElementById('spw-rate-interval').value;
     if (!name || !rate || rate <= 0 || !start || !end || start > end) {
-      alert('Bitte Name, Sparrate sowie ein gültiges Start- und Enddatum angeben.'); return;
+      hubAlert('Angaben fehlen', 'Bitte Name, Sparrate sowie ein gültiges Start- und Enddatum angeben.'); return;
     }
     const dates   = sparplanGenerateDates(start, end, interval).filter(d => !doneDateStrs.has(sparplanDateStr(d)));
     const amounts = new Array(dates.length).fill(round2(rate));
     plan = { id: editPlan ? editPlan.id : sparplanNewId(), name, image: editPlan ? editPlan.image : null,
       targetAmount: null, startDate: start, endDate: end, interval, method: 'constant',
-      entries: [...doneEntries, ...sparplanBuildEntries(dates, amounts)], linkedToBudget: false,
+      entries: [...doneEntries, ...sparplanBuildEntries(dates, amounts)],
       createdAt: editPlan ? editPlan.createdAt : Date.now() };
 
   } else if (spwVariant === 'custom') {
@@ -971,7 +983,7 @@ document.getElementById('sparplan-wizard-save').addEventListener('click', () => 
     // Woche 2, ...), es gibt keine Kalenderdaten zum Sortieren.
     const valid = spwCustomEntries.filter(e => e.amount > 0);
     if (!name || (doneEntries.length === 0 && valid.length === 0)) {
-      alert('Bitte einen Namen und mindestens eine gültige Rate angeben.'); return;
+      hubAlert('Angaben fehlen', 'Bitte einen Namen und mindestens eine gültige Rate angeben.'); return;
     }
     const stamp = Date.now().toString(36);
     // Kein Zielbetrag: die Summe ergibt sich ausschließlich aus den
@@ -983,7 +995,7 @@ document.getElementById('sparplan-wizard-save').addEventListener('click', () => 
       targetAmount: null, startDate: null, endDate: null, interval: spwInterval, method: 'custom',
       generatorMethods: [...spwGeneratorMethodsUsed],
       entries: [...doneEntries, ...valid.map((e, i) => ({ id: `spe_${stamp}_${i}`, amount: round2(e.amount), done: false }))],
-      linkedToBudget: false, createdAt: editPlan ? editPlan.createdAt : Date.now() };
+      createdAt: editPlan ? editPlan.createdAt : Date.now() };
   }
 
   if (!plan) return;
@@ -1064,12 +1076,13 @@ let spDetailPlanId  = null;
 function openSparplanDetail(id) {
   spDetailPlanId  = id;
   renderSparplanDetailBody();
-  document.getElementById('sparplan-detail-modal-overlay').classList.remove('hidden');
+  sparplanDetailModal.open();
 }
-function closeSparplanDetail() {
-  document.getElementById('sparplan-detail-modal-overlay').classList.add('hidden');
-  spDetailPlanId = null;
-}
+const sparplanDetailModal = wireModal('sparplan-detail-modal-overlay', {
+  closeIds: ['sparplan-detail-close', 'sparplan-detail-done-btn'],
+  onClose: () => { spDetailPlanId = null; },
+});
+function closeSparplanDetail() { sparplanDetailModal.close(); }
 
 function renderSparplanDetailBody() {
   const plan = getSparplanById(spDetailPlanId);
@@ -1107,7 +1120,7 @@ function renderSparplanDetailBody() {
   // editierbar (keine doppelte Bearbeitungslogik für dieselben Felder).
   const linkedGoal = plan.goalId ? (budgetGoals.find(g => g.id === plan.goalId) || null) : null;
   const goalRow = linkedGoal
-    ? `<div class="sp-detail-row"><span>Sparziel</span><span>🔗 ${linkedGoal.name}</span></div>`
+    ? `<div class="sp-detail-row"><span>Sparziel</span><span>🔗 ${escHtml(linkedGoal.name)}</span></div>`
     : '';
 
   // Finanzierung — lebt seit der Sparziele-Umstellung am verknüpften
@@ -1120,7 +1133,7 @@ function renderSparplanDetailBody() {
 
   body.innerHTML = `
     <div class="sp-detail-stammdaten">
-      <div class="sp-detail-row"><span>Name</span><span>${plan.name}</span></div>
+      <div class="sp-detail-row"><span>Name</span><span>${escHtml(plan.name)}</span></div>
       <div class="sp-detail-row"><span>Zielbetrag</span><span>${fmtEuro(target)}</span></div>
       ${zeitraumRow}
       <div class="sp-detail-row"><span>Intervall</span><span>${SP_INTERVAL_META[plan.interval]?.label || plan.interval}</span></div>
@@ -1184,6 +1197,7 @@ function sparplanApplyDeposit(plan, entry){
     name: `Sparrate — ${plan.name}`,
     date: sparplanDateStr(new Date()),
     monthKey: budgetMonthKey(new Date()),
+    day: new Date().getDate(),
     type: 'expense',
     amount: entry.amount,
     priority: 'need',
@@ -1244,15 +1258,11 @@ document.getElementById('sparplan-detail-edit-btn').addEventListener('click', ()
   closeSparplanDetail();
   openSparplanWizard(plan);
 });
-document.getElementById('sparplan-detail-close').addEventListener('click', closeSparplanDetail);
-document.getElementById('sparplan-detail-done-btn').addEventListener('click', closeSparplanDetail);
-document.getElementById('sparplan-detail-modal-overlay').addEventListener('click', e => {
-  if (e.target === document.getElementById('sparplan-detail-modal-overlay')) closeSparplanDetail();
-});
-document.getElementById('sparplan-detail-delete').addEventListener('click', () => {
+document.getElementById('sparplan-detail-delete').addEventListener('click', async () => {
   if (!spDetailPlanId) return;
-  if (!confirm('Diesen Sparplan wirklich löschen?')) return;
-  budgetSavingsPlans = budgetSavingsPlans.filter(p => p.id !== spDetailPlanId);
+  const delId = spDetailPlanId;
+  if (!(await hubConfirm({ title: 'Sparplan löschen?', message: 'Der Sparplan und seine Raten-Historie werden entfernt.', confirmText: 'Löschen', danger: true }))) return;
+  budgetSavingsPlans = budgetSavingsPlans.filter(p => p.id !== delId);
   saveBudgetSavingsPlans();
   closeSparplanDetail();
   renderSparplaeneGrid();

@@ -78,7 +78,6 @@ Das Dashboard besteht aus mehreren Bereichen:
 7. Wiederkehrende Zahlungen
 8. Einmalige Zahlungen
 9. Sparziele
-10. Finanztipp
 
 ---
 
@@ -91,7 +90,7 @@ Der Header enthält:
 - Monatsnavigation
 - Kontostand
 - Aktionen
-- Einstellungen für den Finanzgarten
+- Menü (Zahnrad): Finanzbaum konfigurieren (nur die Schwellen — die Stufen-Namen sind fest), Taschengeld-Berechnung, Archiv, Monatsrückblick, Monat als CSV exportieren
 
 ---
 
@@ -188,7 +187,7 @@ Zusätzlich zu den Sparziel-Pflanzen wächst ein eigener Finanzbaum mit dem Kont
 
 Der Finanzgarten dient ausschließlich der Motivation.
 
-Im RPG-Stil (Theme-Eigenschaft „Übrige Seiten“ = Pergament, `data-pages-style="rpg"`) wird der Finanzgarten zur **Schatzkammer** (js/budget-schatzkammer.js): Jede Pflanze hat ein Schatz-Gegenstück mit denselben 6 Stufen — Sonnenblume → Sonnenamulett, Kaktus → Smaragd-Geode, Bonsai → Schatztruhe, Zimmerpflanze → Tonkrug, Kirschblüte → Krone; der Finanzbaum wird zum Schatzhort. Namen und Symbole wechseln mit (auch in der Pflanzenauswahl), gespeichert bleibt immer der Pflanzen-Schlüssel (`plantType`). Eigene Stufen-Namen des Finanzbaums bleiben erhalten, nur die Standard-Namen werden übersetzt.
+Im RPG-Stil (Theme-Eigenschaft „Übrige Seiten“ = Pergament, `data-pages-style="rpg"`) wird der Finanzgarten zur **Schatzkammer** (js/budget-schatzkammer.js): Jede Pflanze hat ein Schatz-Gegenstück mit denselben 6 Stufen — Sonnenblume → Sonnenamulett, Kaktus → Smaragd-Geode, Bonsai → Schatztruhe, Zimmerpflanze → Tonkrug, Kirschblüte → Krone; der Finanzbaum wird zum Schatzhort. Namen und Symbole wechseln mit (auch in der Pflanzenauswahl), gespeichert bleibt immer der Pflanzen-Schlüssel (`plantType`). Die Stufen-Namen des Finanzbaums sind fest (konfigurierbar sind nur die Schwellen) und werden im RPG-Stil mit übersetzt.
 
 ---
 
@@ -302,7 +301,7 @@ Jeder Eintrag besitzt:
 
 # Einmalige Zahlungen
 
-Einmalige Zahlungen gelten nur für einen bestimmten Monat.
+Einmalige Zahlungen gelten nur für einen bestimmten Monat — dem Monat des gewählten Datums (nicht zwingend dem gerade angezeigten). Sie lassen sich nachträglich bearbeiten (✎); bei einer bereits erledigten Buchung wird der Kontostand dabei korrigiert.
 
 Sie eignen sich beispielsweise für:
 
@@ -358,7 +357,7 @@ Zum Beispiel:
 
 # Zahlungsstatus
 
-Einträge können als bezahlt markiert werden.
+Einträge können als bezahlt markiert werden. Der Status wiederkehrender Posten liegt in EINEM Objekt `budgetPaid` (`{ 'YYYY-MM': { <id>: true } }`); die früheren Einzel-Keys `rec_paid_<id>_<monat>` werden beim Laden einmalig übernommen und entfernt. Beim Löschen eines Postens wird sein Status mit entfernt.
 
 Bezahlte Einträge:
 
@@ -395,11 +394,33 @@ sein.
 
 ---
 
-# Finanztipp
+# Taschengeld (optional)
 
-Am unteren Ende des Dashboards erscheint ein wechselnder Finanztipp.
+Persönliche Einnahme, die monatlich aus Tagessätzen berechnet wird (js/budget-taschengeld.js, Einstellungen im Zahnrad-Menü). Im Kalender des Fensters werden die Tage angeklickt, an denen man da ist und bezahlt wird; ein Monat mit markierten Tagen wird exakt daraus berechnet. Monate ohne Markierung werden mit den Regeln geschätzt (Freitag immer bezahlt, Heimfahrt-Wochenenden ohne Sa/So, Feiertage zählen wie ihr Wochentag). Sobald das Taschengeld als erhalten markiert ist, wird der Betrag des Monats fixiert. Taschengeld ist kein Eintrag in budgetRecurring, sondern eine virtuelle Einnahme (`budgetIncomeSources()`).
 
-Die Tipps dienen ausschließlich als Motivation und Orientierung.
+---
+
+# Archiv
+
+Erfüllte Sparziele und beglichene Schulden können archiviert werden. Archivierte Einträge zählen nirgends mehr mit (keine Reservierung, keine Finanzierung, keine Prognose) und lassen sich im Archiv wiederherstellen.
+
+---
+
+# Sparziel einzahlen / abheben / Schuld bezahlen
+
+Im Betrag-Fenster ist „Kontostand anpassen“ standardmäßig an (die letzte Wahl wird gemerkt): Einzahlen und Tilgen ziehen den Betrag vom Kontostand ab und legen eine erledigte Einmalbuchung an, Abheben schreibt ihn gut — dieselbe Regel wie bei einer erledigten Sparplan-Rate.
+
+---
+
+# Monatsrückblick & CSV-Export
+
+Der Monatsrückblick (Zahnrad-Menü) zeigt ruhige Balken für Einnahmen und Ausgaben der letzten sechs Monate (wiederkehrende Posten nach heutigem Stand + Einmalbuchungen) und den Durchschnitts-Saldo; ein Klick öffnet den Monat. Der CSV-Export schreibt den angezeigten Monat (Semikolon, Dezimalkomma, UTF-8) — für Excel/Numbers, keine Buchhaltungsfunktion.
+
+---
+
+# Heute-Seite
+
+Die Heute-Seite zeigt optional eine nur lesende Zeile „Heute fällig“ (js/today-budget.js, Einstellungen > Heute fällig). Sie hakt nichts ab; ein Klick öffnet Budget.
 
 ---
 
@@ -427,8 +448,9 @@ Budget speichert unter anderem:
 - Pflanzen
 - Monatsdaten
 - Finanzgarten-Einstellungen
+- Taschengeld-Einstellungen und markierte Tage
 
-Alle Daten werden lokal gespeichert.
+Alle Daten werden lokal gespeichert (Keys mit Präfix `budget…` plus `kontostand`, `finanzbaumLevels`, `sparplanerScenario`, `gardenActiveGoalId` — siehe `NOOK_DATA_GROUPS` in settings.js).
 
 ---
 
@@ -436,13 +458,16 @@ Alle Daten werden lokal gespeichert.
 
 Budget ist auf mehrere Dateien aufgeteilt, die zusammen den Sub-Tab-Verbund bilden (feste Ladereihenfolge):
 
-- **budget.js** — Datenmodell-Kern, Monatsverwaltung, Berechnungen, Übersicht-Rendering, Finanzgarten, Sub-Tab-Switcher
+- **budget.js** — Datenmodell-Kern, Monatsverwaltung, Berechnungen, Übersicht-Rendering, Finanzgarten, Sub-Tab-Switcher, Monatsrückblick, CSV-Export
+- **budget-schatzkammer.js** — Schatzkammer-Grafiken und -Namen für den RPG-Stil
+- **budget-taschengeld.js** — Taschengeld-Berechnung und Tage-Kalender
 - **budget-sparziele.js** — Rendering der Sparziele (Datenquelle bleibt budgetGoals aus budget.js)
 - **budget-financing.js** — Finanzierungs-/Reservierungs-Engine ("Jedem Euro einen Job"), gemeinsamer Funding-Editor
 - **budget-debts.js** — Schulden/Raten
 - **budget-analysis.js** — Geldfluss-Planer (Drag & Drop)
 - **budget-sparprognose.js** — Sparprognose (Szenarien, Zeitstrahl, Was-wäre-wenn)
 - **budget-sparplaene.js** — Sparpläne (eigenständige Spar-Vorhaben mit Einträgen)
+- (**today-budget.js** gehört zur Heute-Seite und liest nur)
 
 Zusammen sind sie verantwortlich für:
 
@@ -526,17 +551,16 @@ Neue Funktionen sollen nicht:
 
 Geplante Erweiterungen:
 
-- Statistiken über mehrere Monate
 - Diagramme
 - Kategorien
 - CSV-Import
-- CSV-Export
-- Erinnerungen für Zahlungen
 - automatische Sparvorschläge
 - mehrere Konten
 - Budget-Vorlagen
-- Jahresübersicht
+- Jahresübersicht (der Monatsrückblick deckt die letzten 6 Monate ab)
 - Cloud-Synchronisation
+
+Umgesetzt: Monatsrückblick (Statistik über mehrere Monate), CSV-Export, „Heute fällig“ auf der Heute-Seite (Erinnerung).
 
 ---
 

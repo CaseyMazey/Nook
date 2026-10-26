@@ -92,8 +92,15 @@ function renderFundingEditor(container, funding, totalAmount, classPrefix){
     container.innerHTML = '<div class="empty-state" style="font-size:12px;">Noch keine Einnahmen im Budget-Tab angelegt.</div>';
     return;
   }
+  // Mehrere Zuordnungen zur SELBEN Einnahme (z. B. Woche 1 + Woche 3 aus
+  // dem Geldfluss-Planer) werden hier zu einer Summe zusammengefasst — vorher
+  // gewann der letzte Eintrag, die übrigen gingen beim Speichern verloren.
+  // Die Original-Einträge merkt sich der Container: readFundingEditor()
+  // übernimmt sie unverändert (inkl. id/cardUid), solange die Summe je
+  // Quelle gleich bleibt.
   const byId = {};
-  (funding || []).forEach(f => { byId[f.sourceId] = f.amount; });
+  (funding || []).forEach(f => { byId[f.sourceId] = round2((byId[f.sourceId] || 0) + (f.amount || 0)); });
+  container._origFunding = (funding || []).map(f => ({ ...f }));
   container.innerHTML = incomes.map(r => {
     const checked = byId[r.id] !== undefined;
     // "max." bezieht sich immer auf den Monatsbetrag der Einnahme (auch
@@ -105,7 +112,7 @@ function renderFundingEditor(container, funding, totalAmount, classPrefix){
     <div class="fin-row" data-recid="${r.id}">
       <label class="fin-row-check">
         <input type="checkbox" class="${classPrefix}-toggle" data-recid="${r.id}" ${checked ? 'checked' : ''}/>
-        ${r.name} <span class="fin-row-max">(max. ${monthlyMax.toFixed(2)} €/Monat)</span>
+        ${escHtml(r.name)} <span class="fin-row-max">(max. ${fmtEuro(monthlyMax)}/Monat)</span>
       </label>
       <input type="number" class="modal-input fin-row-amount ${classPrefix}-amount${checked ? '' : ' hidden'}"
              data-recid="${r.id}" step="0.01" min="0" placeholder="0.00" value="${checked ? byId[r.id] : ''}"/>
@@ -154,9 +161,16 @@ function updateFundingDiff(container, totalAmount, classPrefix){
 
 function readFundingEditor(container, classPrefix){
   if (!container) return [];
-  return Array.from(container.querySelectorAll(`.${classPrefix}-toggle:checked`)).map(cb => {
+  const orig = container._origFunding || [];
+  return Array.from(container.querySelectorAll(`.${classPrefix}-toggle:checked`)).flatMap(cb => {
     const amountInput = container.querySelector(`.${classPrefix}-amount[data-recid="${cb.dataset.recid}"]`);
-    return { sourceId: cb.dataset.recid, amount: round2(parseFloat(amountInput?.value) || 0) };
+    const amount = round2(parseFloat(amountInput?.value) || 0);
+    // Unveränderte Summe → die ursprünglichen Einzel-Einträge behalten
+    // (Pins auf Wochen-Karten, IDs). Geändert → ein neuer Eintrag.
+    const prev = orig.filter(f => f.sourceId === cb.dataset.recid);
+    const prevSum = round2(prev.reduce((s, f) => s + (f.amount || 0), 0));
+    if (prev.length && Math.abs(prevSum - amount) < 0.005) return prev.map(f => ({ ...f }));
+    return [{ id: crypto.randomUUID(), sourceId: cb.dataset.recid, amount }];
   });
 }
 
@@ -221,23 +235,37 @@ function goalReservationIsActive(goal){
 // monthKey ist optional und wird ausschließlich für einmalige Ausgaben
 // ausgewertet (die gelten nur in ihrem eigenen Monat) — wiederkehrende
 // Ausgaben und Sparziel-Reservierungen gelten monatsunabhängig.
-function financingAllocatedForIncome(recurringId, monthKey){
-  let total = 0;
-  budgetRecurring.filter(r => r.type === 'expense').forEach(e => {
-    (e.funding || []).forEach(f => { if (f.sourceId === recurringId) total += f.amount; });
-  });
-  budgetOnetime.forEach(e => {
-    if (monthKey && e.monthKey !== monthKey) return;
-    (e.funding || []).forEach(f => { if (f.sourceId === recurringId) total += f.amount; });
-  });
+// EIN Iterator über alle Finanzierungs-Einträge aller Verbraucher —
+// vorher liefen vier fast gleiche Schleifen mit leicht unterschiedlichen
+// Filtern nebeneinander (Ursache, dass archivierte Ziele an einer Stelle
+// noch Geld belegten, an einer anderen nicht).
+//   opts.monthKey    — einmalige Ausgaben nur aus diesem Monat (sonst alle)
+//   opts.reservedOnly — nur Sparziele/Schulden (die „reservierten“ Beträge)
+// Archivierte Sparziele/Schulden zählen nie; Sparziele nur, wenn ihre
+// Reservierung aktiv ist (goalReservationIsActive), Schulden bei reserveActive.
+function forEachFunding(cb, opts = {}){
+  const { monthKey = null, reservedOnly = false } = opts;
+  if (!reservedOnly) {
+    budgetRecurring.filter(r => r.type === 'expense').forEach(e =>
+      (e.funding || []).forEach(f => cb(f, { kind: 'Ausgabe', name: e.name, obj: e })));
+    budgetOnetime.forEach(e => {
+      if (monthKey && e.monthKey !== monthKey) return;
+      (e.funding || []).forEach(f => cb(f, { kind: 'Einmalig', name: e.name, obj: e }));
+    });
+  }
   budgetGoals.forEach(g => {
-    if (!goalReservationIsActive(g)) return;
-    (g.funding || []).forEach(f => { if (f.sourceId === recurringId) total += f.amount; });
+    if (g.archived || !goalReservationIsActive(g)) return;
+    (g.funding || []).forEach(f => cb(f, { kind: 'Sparziel', name: g.name, obj: g }));
   });
   budgetDebts.forEach(d => {
-    if (!d.reserveActive) return;
-    (d.funding || []).forEach(f => { if (f.sourceId === recurringId) total += f.amount; });
+    if (d.archived || !d.reserveActive) return;
+    (d.funding || []).forEach(f => cb(f, { kind: 'Schuld', name: d.name, obj: d }));
   });
+}
+
+function financingAllocatedForIncome(recurringId, monthKey){
+  let total = 0;
+  forEachFunding(f => { if (f.sourceId === recurringId) total += f.amount; }, { monthKey });
   return round2(total);
 }
 function financingFreeForIncome(recurringId, monthKey){
@@ -250,21 +278,9 @@ function financingFreeForIncome(recurringId, monthKey){
 }
 function financingBreakdownForIncome(recurringId, monthKey){
   const items = [];
-  budgetRecurring.filter(r => r.type === 'expense').forEach(e => {
-    (e.funding || []).forEach(f => { if (f.sourceId === recurringId && f.amount > 0) items.push({ name: e.name, amount: f.amount, kind: 'Ausgabe' }); });
-  });
-  budgetOnetime.forEach(e => {
-    if (monthKey && e.monthKey !== monthKey) return;
-    (e.funding || []).forEach(f => { if (f.sourceId === recurringId && f.amount > 0) items.push({ name: e.name, amount: f.amount, kind: 'Einmalig' }); });
-  });
-  budgetGoals.forEach(g => {
-    if (!goalReservationIsActive(g)) return;
-    (g.funding || []).forEach(f => { if (f.sourceId === recurringId && f.amount > 0) items.push({ name: g.name, amount: f.amount, kind: 'Sparziel' }); });
-  });
-  budgetDebts.forEach(d => {
-    if (!d.reserveActive) return;
-    (d.funding || []).forEach(f => { if (f.sourceId === recurringId && f.amount > 0) items.push({ name: d.name, amount: f.amount, kind: 'Schuld' }); });
-  });
+  forEachFunding((f, c) => {
+    if (f.sourceId === recurringId && f.amount > 0) items.push({ name: c.name, amount: f.amount, kind: c.kind });
+  }, { monthKey });
   return items;
 }
 // Warnt, wenn eine aktiv zugeordnete Finanzierung nicht mehr zum Betrag
@@ -302,27 +318,37 @@ function financingWarningsForConsumer(funding, totalAmount){
 // einmal bei der Zielprognose ignoriert), was die ETA fälschlich nach
 // hinten verschiebt (gemeldeter Berechnungsfehler).
 function goalOwnMonthlyReserved(goal){
-  if (!goalReservationIsActive(goal)) return 0;
+  if (goal.archived || !goalReservationIsActive(goal)) return 0;
   return round2((goal.funding || []).reduce((s, f) => s + f.amount, 0));
 }
 function sparplanTotalReserved(){
-  const goalsTotal = budgetGoals
-    .filter(g => goalReservationIsActive(g) && !g.archived)
-    .reduce((s, g) => s + (g.funding || []).reduce((s2, f) => s2 + f.amount, 0), 0);
-  const debtsTotal = budgetDebts
-    .filter(d => d.reserveActive && !d.archived)
-    .reduce((s, d) => s + (d.funding || []).reduce((s2, f) => s2 + f.amount, 0), 0);
-  return round2(goalsTotal + debtsTotal);
+  let total = 0;
+  forEachFunding(f => { total += f.amount; }, { reservedOnly: true });
+  return round2(total);
 }
 function sparplanReservedForIncome(recurringId){
   let total = 0;
-  budgetGoals.forEach(g => {
-    if (!goalReservationIsActive(g) || g.archived) return;
-    (g.funding || []).forEach(f => { if (f.sourceId === recurringId) total += f.amount; });
-  });
-  budgetDebts.forEach(d => {
-    if (!d.reserveActive || d.archived) return;
-    (d.funding || []).forEach(f => { if (f.sourceId === recurringId) total += f.amount; });
-  });
+  forEachFunding(f => { if (f.sourceId === recurringId) total += f.amount; }, { reservedOnly: true });
   return round2(total);
+}
+
+// Entfernt alle Zuordnungen zu einer gelöschten Einnahme bei allen
+// Verbrauchern (Ausgaben, Einmalbuchungen, Sparziele, Schulden) — sonst
+// bleiben verwaiste Einträge zurück (Warnung „Quelle gelöscht“).
+function removeFundingForSource(sourceId){
+  let changed = { rec: false, ot: false, goals: false, debts: false };
+  const strip = (obj, key) => {
+    if (!Array.isArray(obj.funding)) return;
+    const before = obj.funding.length;
+    obj.funding = obj.funding.filter(f => f.sourceId !== sourceId);
+    if (obj.funding.length !== before) changed[key] = true;
+  };
+  budgetRecurring.forEach(r => strip(r, 'rec'));
+  budgetOnetime.forEach(e => strip(e, 'ot'));
+  budgetGoals.forEach(g => strip(g, 'goals'));
+  budgetDebts.forEach(d => strip(d, 'debts'));
+  if (changed.rec) saveBudgetRecurring();
+  if (changed.ot) saveBudgetOnetime();
+  if (changed.goals) saveBudgetGoals();
+  if (changed.debts) saveBudgetDebts();
 }

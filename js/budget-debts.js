@@ -68,7 +68,7 @@ function buildDebtCard(debt){
 
   card.innerHTML = `
     <div class="sp-plan-card-head">
-      <span class="sp-plan-card-name">💳 ${debt.name}</span>
+      <span class="sp-plan-card-name">💳 ${escHtml(debt.name)}</span>
       ${priorityBadge(debt.priority || 'need')}
     </div>
     <div class="budget-goal-bar sp-plan-bar"><div class="budget-goal-fill" style="width:${pct}%"></div></div>

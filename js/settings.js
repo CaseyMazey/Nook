@@ -20,6 +20,7 @@ function renderSettings(){
   renderAboutSettings();
   if (typeof renderPositivitySettings === 'function') renderPositivitySettings();
   if (typeof renderTodayTrackerSettings === 'function') renderTodayTrackerSettings();
+  if (typeof renderTodayBudgetDueSettings === 'function') renderTodayBudgetDueSettings();
   if (typeof renderGoogleCalendarSettings === 'function') renderGoogleCalendarSettings();
 }
 
@@ -883,7 +884,7 @@ const BACKUP_CACHE_KEYS = ['weatherData', 'currentDate'];
 
 const NOOK_DATA_GROUPS = [
   { id: 'today',      label: 'Heute',        resettable: true,
-    keys: ['tasks', 'blocks', 'notes', 'quicknote', 'berichtsheft', 'mealPlanWeeks', 'todayTracker',
+    keys: ['tasks', 'blocks', 'notes', 'quicknote', 'berichtsheft', 'mealPlanWeeks', 'todayTracker', 'todayBudgetDue',
            'gdDuties', 'gdGroups', 'gdPeople', 'gdSchedule', 'gdScheduleAlgoV2'] },
   { id: 'positivity', label: 'Positivity',   resettable: true, prefixes: ['positivity'] },
   { id: 'pinboard',   label: 'Pinnwand',     resettable: true,

@@ -1,6 +1,6 @@
 // =========================
 // BUDGET — SPARPROGNOSE
-// Teil 2/3 des Budget-Moduls. Szenarien/Zeitstrahl/Was-wäre-wenn,
+// Teil des Budget-Moduls (Reihenfolge siehe budget.js). Szenarien/Zeitstrahl/Was-wäre-wenn,
 // abgeleitet aus budgetRecurring/budgetGoals (siehe budget.js).
 // Muss NACH budget.js geladen werden.
 // =========================
@@ -80,25 +80,11 @@ function sparplanerTaschengeldAmount(scenario) {
   return tgScenarioAmount(scenario, budgetMonth.getFullYear(), budgetMonth.getMonth() + 1);
 }
 
+// Rate = Summe des Rechenwegs — vorher rechneten Rate und Breakdown
+// dieselbe Formel getrennt nach (Gefahr, dass Anzeige und Ergebnis
+// auseinanderlaufen).
 function sparplanerScenarioRate(scenario) {
-  const b = sparplanerBuckets();
-  const sum = arr => arr.reduce((s, r) => s + recurringMonthlyEquivalent(r), 0);
-  const fixedNet = round2(sum(b.fixedIncome) - sum(b.fixedExpense));
-  const reserved = sparplanerReservedTotal();
-  const tg = sparplanerTaschengeldAmount(scenario);
-
-  if (scenario === 'garant') return round2(fixedNet + tg - reserved);
-
-  if (scenario === 'real') {
-    const varIncomeAvg  = round2(b.varIncome.reduce((s, r) => s + sparplanerRange(r).avg, 0));
-    const varExpenseAvg = round2(b.varExpense.reduce((s, r) => s + sparplanerRange(r).avg, 0));
-    return round2(fixedNet + varIncomeAvg - varExpenseAvg + tg - reserved);
-  }
-
-  // Optimistisch: maximale variable Einnahmen, minimale variable Ausgaben
-  const varIncomeMax = round2(b.varIncome.reduce((s, r) => s + sparplanerRange(r).max, 0));
-  const varExpenseMin = round2(b.varExpense.reduce((s, r) => s + sparplanerRange(r).min, 0));
-  return round2(fixedNet + varIncomeMax - varExpenseMin + tg - reserved);
+  return sparplanerScenarioBreakdown(scenario).total;
 }
 
 // Liefert die einzelnen Bestandteile einer Szenario-Berechnung —
@@ -159,7 +145,19 @@ function sparplanerAllocationOrder() {
   });
 }
 
+// (24) Während EINES renderSparplaner()-Durchlaufs werden die ETAs je Rate
+// zwischengespeichert — Szenarien, Zeitstrahl, Simulator und
+// Zusammenfassung fragen sonst dieselbe Rate mehrfach ab (je bis zu 1200
+// simulierte Monate). Außerhalb eines Renders (Simulator-Schieber) ohne Cache.
+let sparplanerEtaMemo = null;
 function sparplanerETAs(monthlyRate) {
+  const key = round2(monthlyRate || 0);
+  if (sparplanerEtaMemo && sparplanerEtaMemo.has(key)) return sparplanerEtaMemo.get(key);
+  const res = sparplanerETAsCompute(key);
+  if (sparplanerEtaMemo) sparplanerEtaMemo.set(key, res);
+  return res;
+}
+function sparplanerETAsCompute(monthlyRate) {
   const goals = sparplanerActiveGoals();
   const order = sparplanerAllocationOrder();
   const n = order.length;
@@ -275,12 +273,17 @@ function renderSparplaner() {
   const rates = sparplanerAllRates();
   const activeRate = sparplanerSimRate !== null ? sparplanerSimRate : rates[sparplanerScenario];
 
-  renderSparplanScenarios(rates);
-  renderSparplanIncomeExpense();
-  renderSparplanGoals(rates);
-  renderSparplanTimeline(activeRate);
-  renderSparplanSimulator(rates);
-  renderSparplanSummary(rates);
+  sparplanerEtaMemo = new Map();
+  try {
+    renderSparplanScenarios(rates);
+    renderSparplanIncomeExpense();
+    renderSparplanGoals(rates);
+    renderSparplanTimeline(activeRate);
+    renderSparplanSimulator(rates);
+    renderSparplanSummary(rates);
+  } finally {
+    sparplanerEtaMemo = null;
+  }
 }
 
 // fmtEuro() lebt jetzt in budget.js (lädt zuerst) — siehe dortiger
@@ -334,7 +337,7 @@ function renderSparplanIncomeExpense() {
     const right = range
       ? `<span class="sp-row-range">${range.min.toLocaleString('de-DE',{minimumFractionDigits:0,maximumFractionDigits:2})}–${range.max.toLocaleString('de-DE',{minimumFractionDigits:0,maximumFractionDigits:2})} €</span><span class="sp-row-amt ${r.type}">Ø ${fmtEuro(range.avg)}</span>`
       : `<span></span><span class="sp-row-amt ${r.type}">${r.type === 'income' ? '+' : '−'}${fmtEuro(Math.abs(r.amount))}${suffix}</span>`;
-    return `<div class="sp-row"><span class="sp-row-name">${r.name}</span>${right}</div>`;
+    return `<div class="sp-row"><span class="sp-row-name">${escHtml(r.name)}</span>${right}</div>`;
   }
 
   function group(label, cls, entries, totalLabel, total) {
@@ -386,7 +389,15 @@ function renderSparplanGoals(rates) {
     opt:    sparplanerETAs(rates.opt),
   };
 
-  const rows = activeGoals.map((g, i) => {
+  // Zeilen in der TATSÄCHLICHEN Verteil-Reihenfolge (Priorität, darin die
+  // manuelle Reihenfolge) — vorher zeigte die Nummer die Array-Reihenfolge,
+  // verteilt wurde aber nach Priorität. ▲▼ verschieben deshalb nur noch
+  // innerhalb derselben Priorität; zwischen Prioritäten entscheidet die
+  // Priorität selbst (änderbar beim Bearbeiten des Ziels).
+  const order = sparplanerAllocationOrder();
+  const prioOf = idx => activeGoals[idx].priority || 'need';
+  const rows = order.map((i, pos) => {
+    const g = activeGoals[i];
     const pct = g.target > 0 ? Math.min(100, Math.round((g.current / g.target) * 100)) : 0;
     const emoji = gardenPlantEmoji(g.plantType);
     const gEta = etaByScenario.garant[i], rEta = etaByScenario.real[i], oEta = etaByScenario.opt[i];
@@ -409,28 +420,27 @@ function renderSparplanGoals(rates) {
       }
     }
 
-    // Falls dieses Sparziel einen Sparplan besitzt: zusätzlich zeigen, welche
-    // Rate im Intervall des Plans nötig ist, um dessen ETA sicher zu halten.
-    // sparplanForGoal()/sparplanRequiredRateLabel() leben in
-    // budget-sparplaene.js — defensiv per typeof geprüft.
     let linkedPlanHint = '';
     if (typeof sparplanForGoal === 'function') {
       const linkedPlan = sparplanForGoal(g.id);
       if (linkedPlan && typeof sparplanRequiredRateLabel === 'function') {
         const label = sparplanRequiredRateLabel(linkedPlan);
-        if (label) linkedPlanHint = `<div class="sp-source-note" style="margin:2px 0 0;">🔗 Um „${linkedPlan.name}" wie geplant zu erreichen: ${label}</div>`;
+        if (label) linkedPlanHint = `<div class="sp-source-note" style="margin:2px 0 0;">🔗 Um „${escHtml(linkedPlan.name)}" wie geplant zu erreichen: ${label}</div>`;
       }
     }
 
+    const upIdx   = pos > 0 && prioOf(order[pos - 1]) === prioOf(i) ? order[pos - 1] : null;
+    const downIdx = pos < order.length - 1 && prioOf(order[pos + 1]) === prioOf(i) ? order[pos + 1] : null;
+    const lockTitle = 'Zwischen verschiedenen Prioritäten entscheidet die Priorität — änderbar beim Bearbeiten des Ziels';
     return `
       <div class="sp-goal-row">
         <div class="sp-goal-order">
-          <button class="sp-order-btn" data-i="${i}" data-dir="-1" ${i===0?'disabled':''} title="Nach oben">▲</button>
-          <span class="sp-goal-prio">${i + 1}</span>
-          <button class="sp-order-btn" data-i="${i}" data-dir="1" ${i===activeGoals.length-1?'disabled':''} title="Nach unten">▼</button>
+          <button class="sp-order-btn" data-a="${i}" data-b="${upIdx ?? ''}" ${upIdx === null ? `disabled title="${lockTitle}"` : 'title="Nach oben"'}>▲</button>
+          <span class="sp-goal-prio">${pos + 1}</span>
+          <button class="sp-order-btn" data-a="${i}" data-b="${downIdx ?? ''}" ${downIdx === null ? `disabled title="${lockTitle}"` : 'title="Nach unten"'}>▼</button>
         </div>
         <div class="sp-goal-name">
-          <div class="sp-goal-name-top">${emoji} ${g.name} ${priorityBadge(g.priority || 'need')} <span class="sp-goal-target">${fmtEuro(g.target)}</span></div>
+          <div class="sp-goal-name-top">${emoji} ${escHtml(g.name)} ${priorityBadge(g.priority || 'need')} <span class="sp-goal-target">${fmtEuro(g.target)}</span></div>
           <div class="sp-goal-bar"><div class="sp-goal-fill" style="width:${pct}%"></div></div>
           <div class="sp-goal-progress-txt">${fmtEuro(g.current)} / ${fmtEuro(g.target)}</div>
           ${linkedPlanHint}
@@ -447,25 +457,32 @@ function renderSparplanGoals(rates) {
   el.innerHTML = `
     <div class="sp-goal-table-head"><span></span><span>Ziel</span><span>Fortschritt</span><span>ETA (G/R/O)</span><span>Vergleich</span></div>
     ${rows}
-    <div class="sp-source-note">↕ Priorität per ▲ ▼ ändern — sobald ein Ziel erreicht ist, fließt der volle Sparbetrag automatisch ins nächste. Wunschtermin (ETA) lässt sich beim Bearbeiten eines Ziels setzen.</div>`;
+    <div class="sp-source-note">↕ Reihenfolge = Verteilung des Sparbetrags: zuerst nach Priorität (Muss → Brauche → Möchte), innerhalb einer Priorität per ▲ ▼. Sobald ein Ziel erreicht ist, fließt der volle Sparbetrag automatisch ins nächste.</div>`;
 
   el.querySelectorAll('.sp-order-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      const i = parseInt(btn.dataset.i, 10);
-      const dir = parseInt(btn.dataset.dir, 10);
-      const j = i + dir;
-      if (j < 0 || j >= activeGoals.length) return;
-      // Im ECHTEN budgetGoals-Array per ID (nicht per Index) tauschen —
-      // activeGoals ist nur eine gefilterte Sicht, dazwischen können
-      // archivierte Ziele liegen, deren Position dabei unangetastet bleibt.
-      const idxA = budgetGoals.findIndex(x => x.id === activeGoals[i].id);
-      const idxB = budgetGoals.findIndex(x => x.id === activeGoals[j].id);
+      if (btn.dataset.b === '') return;
+      const a = activeGoals[parseInt(btn.dataset.a, 10)];
+      const b = activeGoals[parseInt(btn.dataset.b, 10)];
+      // Im ECHTEN budgetGoals-Array per ID tauschen — dazwischen können
+      // archivierte Ziele liegen, deren Position unangetastet bleibt.
+      const idxA = budgetGoals.findIndex(x => x.id === a.id);
+      const idxB = budgetGoals.findIndex(x => x.id === b.id);
       if (idxA === -1 || idxB === -1) return;
       [budgetGoals[idxA], budgetGoals[idxB]] = [budgetGoals[idxB], budgetGoals[idxA]];
       saveBudgetGoals();
       renderSparplaner();
     });
   });
+}
+
+// Das Ziel, das als Erstes Geld bekommt (Verteil-Reihenfolge), samt Index
+// in sparplanerActiveGoals() — für Simulator und Zusammenfassung.
+function sparplanerTopGoal() {
+  const goals = sparplanerActiveGoals();
+  if (!goals.length) return null;
+  const idx = sparplanerAllocationOrder()[0];
+  return { goal: goals[idx], idx };
 }
 
 function renderSparplanTimeline(activeRate) {
@@ -564,7 +581,7 @@ function renderSparplanTimeline(activeRate) {
         <div class="sp-tl-card" style="top:${connectorH + 6}px">
           <div class="sp-tl-month">${sparplanerFormatEtaDate(p.e.date)}</div>
           <div class="sp-tl-icon">${gardenPlantEmoji(g.plantType)}</div>
-          <div class="sp-tl-goal">${g.name}</div>
+          <div class="sp-tl-goal">${escHtml(g.name)}</div>
           <div class="sp-tl-amt">${fmtEuro(g.target)} erreicht</div>
         </div>
       </div>`;
@@ -589,10 +606,11 @@ function renderSparplanSimulator(rates) {
   const min = Math.min(0, Math.floor(baseRate - Math.abs(baseRate || 100)));
   const max = Math.ceil(Math.abs(baseRate || 100) * 2) + Math.abs(baseRate || 100);
 
-  const topGoal = sparplanerActiveGoals()[0];
+  const top = sparplanerTopGoal();
+  const topGoal = top && top.goal;
   const simEtas = sparplanerETAs(current);
   const topEtaHtml = topGoal
-    ? `<div class="sp-sim-hint">${gardenPlantEmoji(topGoal.plantType)} ${topGoal.name} bei diesem Betrag: <b>${simEtas[0].reached ? 'bereits erreicht' : sparplanerFormatEtaDate(simEtas[0].date)}</b></div>`
+    ? `<div class="sp-sim-hint">${gardenPlantEmoji(topGoal.plantType)} ${escHtml(topGoal.name)} bei diesem Betrag: <b>${simEtas[top.idx].reached ? 'bereits erreicht' : sparplanerFormatEtaDate(simEtas[top.idx].date)}</b></div>`
     : `<div class="sp-sim-hint">Noch keine Sparziele angelegt.</div>`;
 
   el.innerHTML = `
@@ -626,10 +644,10 @@ function renderSparplanSimulatorHintOnly() {
   const valueEl = document.querySelector('#sparplan-simulator .sp-sim-value');
   const hintEl  = document.querySelector('#sparplan-simulator .sp-sim-hint');
   if (valueEl) valueEl.textContent = fmtEuro(sparplanerSimRate);
-  const topGoal = sparplanerActiveGoals()[0];
-  if (hintEl && topGoal) {
-    const e = sparplanerETAs(sparplanerSimRate)[0];
-    hintEl.innerHTML = `${gardenPlantEmoji(topGoal.plantType)} ${topGoal.name} bei diesem Betrag: <b>${e.reached ? 'bereits erreicht' : sparplanerFormatEtaDate(e.date)}</b>`;
+  const top = sparplanerTopGoal();
+  if (hintEl && top) {
+    const e = sparplanerETAs(sparplanerSimRate)[top.idx];
+    hintEl.innerHTML = `${gardenPlantEmoji(top.goal.plantType)} ${escHtml(top.goal.name)} bei diesem Betrag: <b>${e.reached ? 'bereits erreicht' : sparplanerFormatEtaDate(e.date)}</b>`;
   }
 }
 
@@ -641,23 +659,24 @@ function renderSparplanSummary(rates) {
   bullets.push(`Garantiert stehen dir ${fmtEuro(rates.garant)} / Monat sicher zur Verfügung, realistisch im Schnitt ${fmtEuro(rates.real)}.`);
   const reservedTotal = sparplanerReservedTotal();
   if (reservedTotal > 0) {
-    bullets.push(`Davon sind ${fmtEuro(reservedTotal)} / Monat bereits für deine Sparpläne reserviert und in diesen Beträgen herausgerechnet.`);
+    bullets.push(`Davon sind ${fmtEuro(reservedTotal)} / Monat bereits für Sparziele und Schulden reserviert und in diesen Beträgen herausgerechnet.`);
   }
 
-  const topGoal = sparplanerActiveGoals()[0];
+  const top = sparplanerTopGoal();
+  const topGoal = top && top.goal;
   if (topGoal) {
-    const rEta = sparplanerETAs(rates.real)[0];
+    const rEta = sparplanerETAs(rates.real)[top.idx];
     if (rEta.reached) {
-      bullets.push(`Dein wichtigstes Ziel „${topGoal.name}“ ist bereits erreicht. 🎉`);
+      bullets.push(`Dein wichtigstes Ziel „${escHtml(topGoal.name)}“ ist bereits erreicht. 🎉`);
     } else if (rEta.date) {
       const cmp = sparplanerCompareEta(topGoal, rEta.date);
-      bullets.push(`„${topGoal.name}“ erreichst du im realistischen Szenario voraussichtlich ${sparplanerFormatEtaDate(rEta.date)}.`);
+      bullets.push(`„${escHtml(topGoal.name)}“ erreichst du im realistischen Szenario voraussichtlich ${sparplanerFormatEtaDate(rEta.date)}.`);
       if (cmp && cmp.diffMonths !== -Infinity) {
         if (cmp.diffMonths > 0) bullets.push(`🟢 Das ist etwa ${cmp.diffMonths} Monate früher als dein Wunschtermin.`);
         else if (cmp.diffMonths < 0) bullets.push(`🔴 Nach aktueller Planung verfehlst du deinen Wunschtermin um ${Math.abs(cmp.diffMonths)} Monate.`);
       }
     } else {
-      bullets.push(`Bei der aktuellen Sparrate ist kein Zeitpunkt für „${topGoal.name}“ absehbar.`);
+      bullets.push(`Bei der aktuellen Sparrate ist kein Zeitpunkt für „${escHtml(topGoal.name)}“ absehbar.`);
     }
   }
 
@@ -733,7 +752,7 @@ function openSparplanSavedByModal() {
   kRow.classList.toggle('hidden', kontostand === null);
   document.getElementById('sparplan-savedby-include-kontostand').checked = false;
 
-  document.getElementById('sparplan-savedby-modal-overlay').classList.remove('hidden');
+  savedByModal.open();
   setTimeout(() => document.getElementById('sparplan-savedby-date').focus(), 50);
 }
 
@@ -748,13 +767,10 @@ if (savedByBtn) savedByBtn.addEventListener('click', openSparplanSavedByModal);
   });
 });
 
-document.getElementById('sparplan-savedby-close').addEventListener('click', () =>
-  document.getElementById('sparplan-savedby-modal-overlay').classList.add('hidden'));
-document.getElementById('sparplan-savedby-cancel').addEventListener('click', () =>
-  document.getElementById('sparplan-savedby-modal-overlay').classList.add('hidden'));
-document.getElementById('sparplan-savedby-modal-overlay').addEventListener('click', e => {
-  if (e.target === document.getElementById('sparplan-savedby-modal-overlay'))
-    document.getElementById('sparplan-savedby-modal-overlay').classList.add('hidden');
+// (20) Gemeinsamer Modal-Helfer — Enter im Datumsfeld rechnet, Escape schließt
+const savedByModal = wireModal('sparplan-savedby-modal-overlay', {
+  closeIds: ['sparplan-savedby-close', 'sparplan-savedby-cancel'],
+  inputId: 'sparplan-savedby-date', saveId: 'sparplan-savedby-calc',
 });
 
 document.getElementById('sparplan-savedby-calc').addEventListener('click', () => {

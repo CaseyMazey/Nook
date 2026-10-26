@@ -1,9 +1,11 @@
 // =========================
 // BUDGET — KERN (Übersicht + Finanzgarten)
-// Teil 1/3 des Budget-Moduls. Enthält Datenmodell, Helpers, Übersicht-
-// Rendering, Finanzgarten und den Sub-Tab-Switcher, der budget.js,
-// budget-sparprognose.js und budget-sparplaene.js verbindet.
-// Lade-Reihenfolge: budget.js -> budget-sparprognose.js -> budget-sparplaene.js
+// Kern des Budget-Moduls. Enthält Datenmodell, Helpers, Übersicht-
+// Rendering, Finanzgarten und den Sub-Tab-Switcher für alle Budget-Teile.
+// Lade-Reihenfolge (index.html): budget.js -> budget-schatzkammer.js ->
+// budget-taschengeld.js -> budget-sparziele.js -> budget-financing.js ->
+// budget-analysis.js -> budget-debts.js -> budget-sparprognose.js ->
+// budget-sparplaene.js (-> today-budget.js liest nur)
 // =========================
 
 // =========================
@@ -20,7 +22,7 @@ let budgetGoals     = DB.get('budgetGoals', []);
 let budgetDebts      = DB.get('budgetDebts', []);
 let budgetMonth     = new Date();
 
-let budgetActiveSubtab   = DB.get('budgetActiveSubtab', 'budget');       // 'budget' | 'sparplan' | 'sparplaene'
+let budgetActiveSubtab   = DB.get('budgetActiveSubtab', 'budget');       // ein tab-Wert aus BUDGET_SUBTABS
 function saveBudgetActiveSubtab(){ DB.set('budgetActiveSubtab', budgetActiveSubtab); }
 
 // =========================
@@ -55,6 +57,11 @@ function fmtEuro(v) {
   const r = round2(v);
   return (r < 0 ? '-' : '') + Math.abs(r).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
 }
+// Mit Vorzeichen: „+150,00 €“ / „-12,50 €“ (0 → „+0,00 €“). Vorher stand an
+// mehreren Stellen toFixed(2) mit Punkt („+150.00 €“).
+function fmtEuroSigned(v) {
+  return (round2(v) < 0 ? '' : '+') + fmtEuro(v);
+}
 
 // Umrechnungsfaktor "Betrag pro Vorkommen" → "Betrag pro Monat", auf
 // Basis von 365,25/12 ≈ 30,4375 Tagen/Monat (Schaltjahre eingerechnet).
@@ -74,6 +81,16 @@ function recurringMonthlyEquivalent(entry) {
 }
 
 function isoDateYMD(y, m, d) { return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
+// Heutiges Datum als 'YYYY-MM-DD' in LOKALER Zeit — toISOString() rechnet
+// in UTC und lieferte zwischen 0 und 2 Uhr noch „gestern“.
+function todayIso() { const n = new Date(); return isoDateYMD(n.getFullYear(), n.getMonth() + 1, n.getDate()); }
+// Fester Bezugspunkt für 2-wöchentliche Posten ohne gespeichertes anchorDate.
+const BIWEEKLY_FALLBACK_ANCHOR = '2024-01-01';
+// Nutzertext (Posten-/Ziel-/Plan-Namen) sicher in HTML-Vorlagen einsetzen —
+// ein „<“ im Namen hat sonst die ganze Zeile zerschossen.
+function escHtml(v) {
+  return String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
 
 // Echte Zahltermine eines wiederkehrenden Postens INNERHALB eines
 // bestimmten Monats — im Gegensatz zu recurringMonthlyEquivalent()
@@ -101,7 +118,10 @@ function recurringOccurrencesInMonth(entry, year, month) {
     }
   } else if (entry.freq === 'biweekly') {
     const weekday = entry.weekday ?? 1;
-    const anchor = entry.anchorDate ? new Date(entry.anchorDate + 'T00:00:00') : new Date(year, month - 1, 1);
+    // Ohne gespeichertes anchorDate (Altdaten) ein FESTER Bezugspunkt statt
+    // des jeweiligen Monatsanfangs — sonst begann der 14-Tage-Rhythmus jeden
+    // Monat von vorn und sprang an der Monatsgrenze.
+    const anchor = new Date((entry.anchorDate || BIWEEKLY_FALLBACK_ANCHOR) + 'T00:00:00');
     // Anker auf den ersten zum Wochentag passenden Tag ausrichten, damit
     // der 14-Tage-Rhythmus einen festen Bezugspunkt hat.
     const anchorAligned = new Date(anchor);
@@ -208,13 +228,82 @@ function priorityClass(p) {
   if (p === 'want') return 'budget-badge-want';
   return 'budget-badge-need';
 }
+// (17) Gemeinsame Muss/Brauche/Möchte-Knöpfe der Modals (Sparziel, Schuld,
+// Einmalbuchung): bindet die Klicks und liefert den Setter für die
+// aktive Markierung. IDs nach dem Muster `${prefix}-prio-${p}`.
+function wirePriorityButtons(prefix, onChange) {
+  const set = p => ['must','need','want'].forEach(x =>
+    document.getElementById(`${prefix}-prio-${x}`)?.classList.toggle('active', x === p));
+  ['must','need','want'].forEach(p => {
+    document.getElementById(`${prefix}-prio-${p}`)?.addEventListener('click', () => { onChange(p); set(p); });
+  });
+  return set;
+}
 function priorityBadge(p) {
   return `<span class="budget-badge ${priorityClass(p)}">${priorityLabel(p)}</span>`;
 }
 
-function recurringPaidKey(id, mk) { return `rec_paid_${id}_${mk}`; }
-function isRecurringPaid(id, mk)   { return DB.get(recurringPaidKey(id, mk), false); }
-function setRecurringPaid(id, mk, val) { DB.set(recurringPaidKey(id, mk), val); }
+// Bezahlt-Status wiederkehrender Posten: { 'YYYY-MM': { <id>: true } }.
+// Vorher ein eigener localStorage-Key je Posten und Monat
+// (rec_paid_<id>_<monat>) — wuchs unbegrenzt, wurde pro Zeile neu gelesen,
+// beim Löschen nie aufgeräumt und landete in der Datensicherung unter
+// „Sonstiges“ statt „Budget“. Die Migration unten übernimmt die alten Keys
+// einmalig und entfernt sie.
+let budgetPaid = DB.get('budgetPaid', {});
+function saveBudgetPaid() { DB.set('budgetPaid', budgetPaid); }
+(function migrateRecPaidKeys() {
+  const old = [];
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith('rec_paid_')) old.push(k);
+    }
+  } catch { return; }
+  if (!old.length) return;
+  old.forEach(k => {
+    const m = /^rec_paid_(.+)_(\d{4}-\d{2})$/.exec(k);
+    if (m && DB.get(k, false) === true) (budgetPaid[m[2]] = budgetPaid[m[2]] || {})[m[1]] = true;
+  });
+  if (DB.set('budgetPaid', budgetPaid)) old.forEach(k => { try { localStorage.removeItem(k); } catch {} });
+})();
+function isRecurringPaid(id, mk) { return !!(budgetPaid[mk] && budgetPaid[mk][id]); }
+function setRecurringPaid(id, mk, val) {
+  if (val) (budgetPaid[mk] = budgetPaid[mk] || {})[id] = true;
+  else if (budgetPaid[mk]) { delete budgetPaid[mk][id]; if (!Object.keys(budgetPaid[mk]).length) delete budgetPaid[mk]; }
+  saveBudgetPaid();
+}
+// Beim Löschen eines Postens seinen Bezahlt-Status in allen Monaten entfernen
+function removeRecurringPaid(id) {
+  let changed = false;
+  Object.keys(budgetPaid).forEach(mk => {
+    if (budgetPaid[mk][id]) { delete budgetPaid[mk][id]; changed = true; }
+    if (!Object.keys(budgetPaid[mk]).length) delete budgetPaid[mk];
+  });
+  if (changed) saveBudgetPaid();
+}
+
+// (15) Offene (nicht erledigte) Ausgaben eines Monats nach Priorität — die
+// EINE Quelle für Status-Ampel, Karte „Verfügbar“ und Monatsprognose
+// (vorher rechneten alle drei die Muss→Brauche→Möchte-Summen selbst).
+// recItems optional, wenn der Aufrufer getMonthRecurringItems() schon hat.
+function openExpensesByPriority(mk, recItems) {
+  const y = parseInt(mk.slice(0, 4), 10), m = parseInt(mk.slice(5, 7), 10);
+  const items = recItems || getMonthRecurringItems(y, m);
+  const res = { must: 0, need: 0, want: 0 };
+  const add = (p, amt) => { p = p || 'need'; if (p in res) res[p] += amt; };
+  items.forEach(i => { if (i.type === 'expense' && !isRecurringPaid(i.id, mk)) add(i.priority, i.amount); });
+  budgetOnetime.forEach(e => { if (e.monthKey === mk && e.type === 'expense' && !e.paid) add(e.priority, e.amount); });
+  res.must = round2(res.must); res.need = round2(res.need); res.want = round2(res.want);
+  res.total = round2(res.must + res.need + res.want);
+  return res;
+}
+// Kaskade Kontostand → Muss → Brauche → Möchte
+function priorityCascade(start, open) {
+  const afterMust = start - open.must;
+  const afterNeed = afterMust - open.need;
+  const afterWant = afterNeed - open.want;
+  return { afterMust, afterNeed, afterWant };
+}
 
 // =========================
 // CENTRAL PROJECTION
@@ -233,18 +322,16 @@ function calcMonthProjection() {
   const curRecItems    = getMonthRecurringItems(curYear, curMonth);
 
   // Offene (nicht erledigte) Buchungen dieses Monats
+  const openExp = openExpensesByPriority(curMk, curRecItems);
   let pendingIncome  = 0;
-  let pendingExpense = 0;
   curRecItems.forEach(item => {
-    if (!isRecurringPaid(item.id, curMk)) {
-      if (item.type === 'income') pendingIncome  += item.amount;
-      else                        pendingExpense += item.amount;
-    }
+    if (item.type === 'income' && !isRecurringPaid(item.id, curMk)) pendingIncome += item.amount;
   });
-  budgetOnetime.filter(e => e.monthKey === curMk && !e.paid).forEach(e => {
-    if (e.type === 'income') pendingIncome  += e.amount;
-    else                     pendingExpense += e.amount;
-  });
+  budgetOnetime.filter(e => e.monthKey === curMk && !e.paid && e.type === 'income').forEach(e => { pendingIncome += e.amount; });
+  // Ausgaben ohne Priorität „none“ zählen hier wie bisher mit
+  let pendingExpense = openExp.total;
+  curRecItems.forEach(i => { if (i.type === 'expense' && !isRecurringPaid(i.id, curMk) && !['must','need','want'].includes(i.priority || 'need')) pendingExpense += i.amount; });
+  budgetOnetime.forEach(e => { if (e.monthKey === curMk && e.type === 'expense' && !e.paid && !['must','need','want'].includes(e.priority || 'need')) pendingExpense += e.amount; });
 
   // Monatsende-Prognose: aktueller Kontostand + alle noch offenen Buchungen
   const endOfMonth = kontostand + pendingIncome - pendingExpense;
@@ -275,12 +362,7 @@ function calcMonthProjection() {
   const needCovered = afterNeed >= 0;
   const wantCovered = afterWant >= 0;
 
-  const openMust = curRecItems
-    .filter(i => i.type === 'expense' && i.priority === 'must' && !isRecurringPaid(i.id, curMk))
-    .reduce((s, i) => s + i.amount, 0)
-    + budgetOnetime
-      .filter(e => e.monthKey === curMk && e.type === 'expense' && e.priority === 'must' && !e.paid)
-      .reduce((s, e) => s + e.amount, 0);
+  const openMust = openExp.must;
 
   return {
     kontostand, pendingIncome, pendingExpense, endOfMonth,
@@ -309,9 +391,11 @@ function getMonthRecurringItems(year, month) {
     } else if (r.freq === 'yearly') {
       day = r.dateDay;
     } else {
-      // Kein fixer Tag im Monat vorhanden (Phase 1) — als Platzhalter
-      // den heutigen Tag nehmen, Betrag ist der Monats-Äquivalent-Wert.
-      day = new Date().getDate();
+      // Eine Zeile pro Monat mit dem Monats-Äquivalent-Betrag; als Tag das
+      // ERSTE echte Vorkommen in diesem Monat (vorher: immer „heute“, auch
+      // in fremden Monaten — verfälschte „Ausgaben vor Gehalt“).
+      const occ = recurringOccurrencesInMonth(r, year, month);
+      day = occ.length ? parseInt(occ[0].date.slice(8), 10) : 1;
       amount = recurringMonthlyEquivalent(r);
       isAverage = true;
     }
@@ -369,27 +453,10 @@ function calcFinancialStatus(mk) {
   const useMk = mk || budgetMonthKey(new Date());
   const useYear  = parseInt(useMk.slice(0,4));
   const useMonth = parseInt(useMk.slice(5,7));
-  const curRecItems = getMonthRecurringItems(useYear, useMonth);
-
-  // Offene Ausgaben nach Priorität — NUR type === 'expense', NUR nicht bezahlt
-  const openByPrio = { must: 0, need: 0, want: 0 };
-  curRecItems
-    .filter(i => i.type === 'expense' && !isRecurringPaid(i.id, useMk))
-    .forEach(i => {
-      const p = i.priority || 'need';
-      if (p === 'must' || p === 'need' || p === 'want') openByPrio[p] += i.amount;
-    });
-  budgetOnetime
-    .filter(e => e.monthKey === useMk && e.type === 'expense' && !e.paid)
-    .forEach(e => {
-      const p = e.priority || 'need';
-      if (p === 'must' || p === 'need' || p === 'want') openByPrio[p] += e.amount;
-    });
+  const openByPrio = openExpensesByPriority(useMk, getMonthRecurringItems(useYear, useMonth));
 
   // Kumulative Deckungsprüfung: Kontostand → Muss → Rest → Brauche → Rest → Möchte
-  const afterMust   = kontostand - openByPrio.must;
-  const afterNeed   = afterMust  - openByPrio.need;
-  const afterWant   = afterNeed  - openByPrio.want;
+  const { afterMust, afterNeed, afterWant } = priorityCascade(kontostand, openByPrio);
   const mustCovered = afterMust >= 0;
   const needCovered = mustCovered && afterNeed >= 0;
   const wantCovered = needCovered && afterWant >= 0;
@@ -400,7 +467,7 @@ function calcFinancialStatus(mk) {
   else if (!wantCovered)  status = 'yellow';
   else                    status = 'green';
 
-  const fmt = v => Math.abs(v).toLocaleString('de-DE', {minimumFractionDigits:2});
+  const fmt = v => fmtEuro(Math.abs(v)).replace(' €', '');
 
   const checks = [];
   if (mustCovered) {
@@ -450,7 +517,7 @@ function renderFinancialStatus(fs) {
       ksDisplay.textContent = '—';
       ksDisplay.className = 'b-ks-value';
     } else {
-      ksDisplay.textContent = (kontostand >= 0 ? '+' : '') + kontostand.toFixed(2) + ' €';
+      ksDisplay.textContent = fmtEuroSigned(kontostand);
       ksDisplay.className = 'b-ks-value' + (kontostand < 0 ? ' negative' : '');
     }
   }
@@ -579,7 +646,7 @@ function renderKontostandHeader() {
     valEl.textContent = 'nicht gesetzt';
     valEl.className = 'b-ks-pill-value';
   } else {
-    valEl.textContent = (kontostand >= 0 ? '+' : '') + kontostand.toLocaleString('de-DE', { minimumFractionDigits: 2 }) + ' €';
+    valEl.textContent = fmtEuroSigned(kontostand);
     valEl.className = 'b-ks-pill-value ' + (kontostand < 0 ? 'negative' : 'positive');
   }
   const btn = document.getElementById('budget-ks-header-btn');
@@ -590,9 +657,12 @@ function renderKontostandHeader() {
 }
 
 function renderMainCards(month, mk) {
-  const recIncomes  = getMonthRecurringItems(month.getFullYear(), month.getMonth()+1).filter(i => i.type === 'income');
+  // (23) Posten des Monats EINMAL berechnen (vorher zweimal
+  // getMonthRecurringItems für denselben Monat, inkl. Taschengeld-Rechnung)
+  const recItems    = getMonthRecurringItems(month.getFullYear(), month.getMonth()+1);
+  const recIncomes  = recItems.filter(i => i.type === 'income');
   const otIncomes   = budgetOnetime.filter(e => e.monthKey === mk && e.type === 'income');
-  const recExpenses = getMonthRecurringItems(month.getFullYear(), month.getMonth()+1).filter(i => i.type === 'expense');
+  const recExpenses = recItems.filter(i => i.type === 'expense');
   const otExpenses  = budgetOnetime.filter(e => e.monthKey === mk && e.type === 'expense');
 
   function makeClickableRow(day, monthNum, name, amount, sign, paid, onToggle) {
@@ -601,9 +671,9 @@ function renderMainCards(month, mk) {
     el.title = paid ? 'Als offen markieren' : 'Als erledigt markieren';
     el.innerHTML = `
       <span class="b-main-row-day">${String(day).padStart(2,'0')}.${String(monthNum).padStart(2,'0')}</span>
-      <span class="b-main-row-name">${name}</span>
+      <span class="b-main-row-name">${escHtml(name)}</span>
       <span class="b-main-row-check">${paid ? '✓' : ''}</span>
-      <span class="b-main-row-amount ${sign === '+' ? 'income' : 'expense'}">${sign}${amount.toFixed(2)} €</span>`;
+      <span class="b-main-row-amount ${sign === '+' ? 'income' : 'expense'}">${sign}${fmtEuro(amount)}</span>`;
     el.addEventListener('click', onToggle);
     return el;
   }
@@ -659,10 +729,9 @@ function renderMainCards(month, mk) {
       incomeList.appendChild(rowEl);
     });
   }
-  const fmtOpenIn = openIncome.toLocaleString('de-DE',{minimumFractionDigits:2});
-  incomeTotal.innerHTML = `<span class="b-main-total-label">Offen</span><span class="b-main-total-value income">+${fmtOpenIn} €</span>`;
+  incomeTotal.innerHTML = `<span class="b-main-total-label">Offen</span><span class="b-main-total-value income">+${fmtEuro(openIncome)}</span>`;
   const incSum = document.getElementById('b-income-summary-val');
-  if (incSum) incSum.textContent = '+' + fmtOpenIn + ' €';
+  if (incSum) incSum.textContent = '+' + fmtEuro(openIncome);
 
   // ── KARTE 2: Ausgaben ───
   const expenseList  = document.getElementById('b-expense-list');
@@ -716,10 +785,9 @@ function renderMainCards(month, mk) {
   });
 
   if(!hasExp) expenseList.innerHTML = '<div class="b-main-empty">Keine Ausgaben in diesem Monat.</div>';
-  const fmtOpenOut = openExpTotal.toLocaleString('de-DE',{minimumFractionDigits:2});
-  expenseTotal.innerHTML = `<span class="b-main-total-label">Offen</span><span class="b-main-total-value expense">-${fmtOpenOut} €</span>`;
+  expenseTotal.innerHTML = `<span class="b-main-total-label">Offen</span><span class="b-main-total-value expense">-${fmtEuro(openExpTotal)}</span>`;
   const expSum = document.getElementById('b-expense-summary-val');
-  if (expSum) expSum.textContent = '-' + fmtOpenOut + ' €';
+  if (expSum) expSum.textContent = '-' + fmtEuro(openExpTotal);
 
   // ── KARTE 3: Verfügbar — zeigt dieselbe Prioritätsberechnung wie der Status ───
   const freeContent = document.getElementById('b-free-content');
@@ -731,20 +799,12 @@ function renderMainCards(month, mk) {
     if (freeSummary) { freeSummary.textContent = '—'; freeSummary.className = 'b-mcs-value'; }
   } else {
     // Dieselbe Berechnung wie calcFinancialStatus — nach Priorität kaskadierend
-    const openMust = recExpenses.filter(i=>i.priority==='must'&&!isRecurringPaid(i.id,mk)).reduce((s,i)=>s+i.amount,0)
-                   + otExpenses.filter(e=>e.priority==='must'&&!e.paid).reduce((s,e)=>s+e.amount,0);
-    const openNeed = recExpenses.filter(i=>(i.priority||'need')==='need'&&!isRecurringPaid(i.id,mk)).reduce((s,i)=>s+i.amount,0)
-                   + otExpenses.filter(e=>(e.priority||'need')==='need'&&!e.paid).reduce((s,e)=>s+e.amount,0);
-    const openWant = recExpenses.filter(i=>i.priority==='want'&&!isRecurringPaid(i.id,mk)).reduce((s,i)=>s+i.amount,0)
-                   + otExpenses.filter(e=>e.priority==='want'&&!e.paid).reduce((s,e)=>s+e.amount,0);
-    const openAll  = openMust + openNeed + openWant;
-
-    const afterMust = kontostand - openMust;
-    const afterNeed = afterMust  - openNeed;
-    const afterWant = afterNeed  - openWant;
+    const open = openExpensesByPriority(mk, recItems);
+    const openMust = open.must, openNeed = open.need, openWant = open.want;
+    const { afterMust, afterNeed, afterWant } = priorityCascade(kontostand, open);
     const vbl       = afterWant;
-    const fmt = v => v.toLocaleString('de-DE',{minimumFractionDigits:2});
-    const fmtAbs = v => Math.abs(v).toLocaleString('de-DE',{minimumFractionDigits:2});
+    const fmt    = v => fmtEuro(v).replace(' €', '');
+    const fmtAbs = v => fmtEuro(Math.abs(v)).replace(' €', '');
 
     // Prioritätszeilen
     const mustRow = openMust > 0
@@ -873,7 +933,8 @@ function renderOnetimeList(mk) {
     entries.forEach(e => {
       onetimeList.appendChild(makeBudgetRow({
         name:e.name, amount:e.amount, type:e.type, priority:e.priority||'need', paid:e.paid||false,
-        onDel: ()=>{ budgetOnetime=budgetOnetime.filter(x=>x.id!==e.id); saveBudgetOnetime(); renderBudget(); },
+        onEdit: ()=>openOnetimeModal(e),
+        onDel: async ()=>{ if (!(await confirmBudgetDelete('Buchung', e.name))) return; deleteBudgetOnetime(e.id); renderBudget(); },
         onPaidToggle: ()=>{
           const nowPaid = !e.paid; e.paid = nowPaid;
           kontostand = (kontostand || 0) + (nowPaid ? (e.type==='income' ? e.amount : -e.amount) : (e.type==='income' ? -e.amount : e.amount));
@@ -923,7 +984,7 @@ function renderRecurringList(mk) {
       recList.appendChild(makeBudgetRow({
         name:r.name, amount:r.amount, type:r.type, priority:r.priority||'need', paid:recPaid, subtitleHtml:freqChip,
         onEdit: ()=>openRecurringModal(r),
-        onDel:  ()=>{ budgetRecurring=budgetRecurring.filter(x=>x.id!==r.id); saveBudgetRecurring(); renderBudget(); },
+        onDel:  async ()=>{ if (!(await confirmBudgetDelete('Posten', r.name))) return; deleteBudgetRecurring(r.id); renderBudget(); },
         onPaidToggle: ()=>{
           const np = !recPaid; setRecurringPaid(r.id, mk, np);
           kontostand = (kontostand || 0) + (np ? (r.type==='income' ? r.amount : -r.amount) : (r.type==='income' ? -r.amount : r.amount));
@@ -934,7 +995,7 @@ function renderRecurringList(mk) {
     const total=entries.reduce((s,r)=>s+r.amount,0);
     const sumRow=document.createElement('div');
     sumRow.className='b-sum-row'+(freqOverride==='yearly'?' b-sum-row-yearly':'');
-    sumRow.innerHTML=`<span class="b-sum-label">${sumLabel}</span><span class="b-sum-value ${type==='income'?'income':'expense'}">${type==='income'?'+':'-'}${total.toLocaleString('de-DE',{minimumFractionDigits:2})} \u20ac</span>`;
+    sumRow.innerHTML=`<span class="b-sum-label">${sumLabel}</span><span class="b-sum-value ${type==='income'?'income':'expense'}">${type==='income'?'+':'-'}${fmtEuro(total)}</span>`;
     recList.appendChild(sumRow);
   }
   renderRecSubgroup(allRecIncomes,   'income', 'Einnahmen','Summe Einnahmen',null);
@@ -954,7 +1015,7 @@ function renderLiquidity() {
 
   // Update kontostand adjust button binding (the button is in the static HTML)
   const ksBtn = document.getElementById('kontostand-edit-btn');
-  if (ksBtn) ksBtn.addEventListener('click', openKontostandModal);
+  if (ksBtn && !ksBtn._ksBound) { ksBtn._ksBound = true; ksBtn.addEventListener('click', openKontostandModal); }
 
   const proj = calcMonthProjection();
 
@@ -999,8 +1060,8 @@ function renderLiquidity() {
     if (!items.length) return '';
     return items.map(i => `
       <div class="b-liq-expense-item">
-        <span>${i.name} ${priorityBadge(i.priority)}</span>
-        <span class="expense">-${i.amount.toLocaleString('de-DE',{minimumFractionDigits:2})} €</span>
+        <span>${escHtml(i.name)} ${priorityBadge(i.priority)}</span>
+        <span class="expense">-${fmtEuro(i.amount)}</span>
       </div>`).join('');
   }).join('');
 
@@ -1013,17 +1074,17 @@ function renderLiquidity() {
     </div>
     <div class="b-liq-row">
       <span class="b-liq-row-label">Du startest mit</span>
-      <span class="b-liq-row-value ${endOfMonth >= 0 ? 'income' : 'expense'}">${endOfMonth >= 0 ? '+' : ''}${endOfMonth.toLocaleString('de-DE',{minimumFractionDigits:2})} €</span>
+      <span class="b-liq-row-value ${endOfMonth >= 0 ? 'income' : 'expense'}">${fmtEuroSigned(endOfMonth)}</span>
     </div>
     <div class="b-liq-row">
       <span class="b-liq-row-label">Ausgaben vor ${firstIncomeDay > 28 ? 'Monatsende' : 'Tag ' + firstIncomeDay} (vor Gehalt)</span>
-      <span class="b-liq-row-value expense">-${totalBeforeSalary.toLocaleString('de-DE',{minimumFractionDigits:2})} €</span>
+      <span class="b-liq-row-value expense">-${fmtEuro(totalBeforeSalary)}</span>
     </div>
     ${expenseGroupHTML ? `<div class="b-liq-expense-list">${expenseGroupHTML}</div>` : ''}
     <div class="b-liq-divider"></div>
     <div class="b-liq-total-row">
       <span class="b-liq-total-label">${canAfford ? 'Puffer nach Ausgaben' : 'Fehlender Betrag'}</span>
-      <span class="b-liq-total-value ${canAfford ? 'income' : 'expense'}">${canAfford ? '+' : ''}${gap.toLocaleString('de-DE',{minimumFractionDigits:2})} €</span>
+      <span class="b-liq-total-value ${canAfford ? 'income' : 'expense'}">${fmtEuroSigned(gap)}</span>
     </div>`;
 
   container.appendChild(card);
@@ -1879,18 +1940,6 @@ function buildPlantSvg(stage, plantType) {
   return plantSet[stage] || plantSet.seed;
 }
 
-// Kept for backward compat (used in progress bar color)
-function getColors(plantType) {
-  const MAP = {
-    sunflower:     { stem: '#8B9E3A', leaf: '#A8BC48' },
-    cactus:        { stem: '#4A9E5C', leaf: '#5CB87A' },
-    bonsai:        { stem: '#6B4226', leaf: '#5A8A3C' },
-    potplant:      { stem: '#5C8A3C', leaf: '#7AAF50' },
-    cherryblossom: { stem: '#7A4A2A', leaf: '#6B8C3E' },
-  };
-  return MAP[plantType] || MAP.sunflower;
-}
-
 function renderFinanzgarten() {
   const card = document.getElementById('budget-garden-card');
   if (!card) return;
@@ -1898,7 +1947,7 @@ function renderFinanzgarten() {
   // Finanzbaum
   const treeLevel = getTreeStage(kontostand);
   const treeKsStr = kontostand !== null
-    ? kontostand.toLocaleString('de-DE', { minimumFractionDigits: 2 }) + ' €'
+    ? fmtEuro(kontostand)
     : '—';
 
   // Active goal — persisted by ID. Archivierte Ziele (siehe archiveGoal()
@@ -1941,7 +1990,7 @@ function renderFinanzgarten() {
       </div>
       ${gardenGoals.length > 0 ? `
         <button class="b-garden-select-btn" id="garden-select-goal-btn">
-          ${activeGoal ? `${plantEmoji} ${activeGoal.name}` : 'Ziel wählen'}
+          ${activeGoal ? `${plantEmoji} ${escHtml(activeGoal.name)}` : 'Ziel wählen'}
           <span class="b-garden-select-arrow">▾</span>
         </button>` : ''}
     </div>
@@ -1969,8 +2018,8 @@ function renderFinanzgarten() {
         ${activeGoal ? `
           <div class="b-garden-stage-label">${goalPct}%</div>
           <div class="b-garden-svg">${buildPlantSvg(goalStage, plantType)}</div>
-          <div class="b-garden-plant-name">${activeGoal.name}</div>
-          <div class="b-garden-plant-val">${activeGoal.current.toLocaleString('de-DE',{minimumFractionDigits:2})} / ${activeGoal.target.toLocaleString('de-DE',{minimumFractionDigits:2})} €</div>
+          <div class="b-garden-plant-name">${escHtml(activeGoal.name)}</div>
+          <div class="b-garden-plant-val">${fmtEuro(activeGoal.current).replace(' €', '')} / ${fmtEuro(activeGoal.target)}</div>
           ${goalHasOptionalSplit ? `
             <div class="b-garden-track-toggle" title="Welcher Gesamtpreis als Sparziel verfolgt wird">
               <button class="b-garden-track-btn${!goalTrackFull ? ' active' : ''}" data-track="required">Pflicht ${fmtEuro(goalRequiredTotal)}</button>
@@ -1978,7 +2027,7 @@ function renderFinanzgarten() {
             </div>
           ` : ''}
           <div class="b-garden-progress-bar">
-            <div class="b-garden-progress-fill" style="width:${goalPct}%; background: linear-gradient(to right, ${getColors(plantType).leaf}, ${getColors(plantType).stem})"></div>
+            <div class="b-garden-progress-fill" style="width:${goalPct}%"></div>
           </div>
         ` : `
           <div class="b-garden-stage-label" style="opacity:.4">—</div>
@@ -2008,7 +2057,7 @@ function renderFinanzgarten() {
         item.className = 'b-garden-dropdown-item' + (g.id === activeGoal?.id ? ' active' : '');
         const emoji = gardenPlantEmoji(g.plantType);
         const pct   = g.target > 0 ? Math.min(100, Math.round((g.current / g.target) * 100)) : 0;
-        item.innerHTML = `<span>${emoji} ${g.name}</span><span class="b-garden-dd-pct">${pct}%</span>`;
+        item.innerHTML = `<span>${emoji} ${escHtml(g.name)}</span><span class="b-garden-dd-pct">${pct}%</span>`;
         item.addEventListener('click', (ev) => {
           ev.stopPropagation();
           DB.set('gardenActiveGoalId', g.id);
@@ -2082,6 +2131,39 @@ document.getElementById('kontostand-save').addEventListener('click', () => {
 // BUDGET ROW
 // =========================
 
+// =========================
+// LÖSCHEN — einheitlich mit Rückfrage (30) und Aufräumen (31)
+// =========================
+function confirmBudgetDelete(kind, name) {
+  return hubConfirm({
+    title: `${kind} löschen?`,
+    message: `„${name}“ wird endgültig entfernt.`,
+    confirmText: 'Löschen', danger: true,
+  });
+}
+function deleteBudgetRecurring(id) {
+  const r = budgetRecurring.find(x => x.id === id);
+  budgetRecurring = budgetRecurring.filter(x => x.id !== id);
+  saveBudgetRecurring();
+  removeRecurringPaid(id);
+  // Gelöschte Einnahme: alle Finanzierungen, die auf sie zeigen, entfernen
+  if (r && r.type === 'income' && typeof removeFundingForSource === 'function') removeFundingForSource(id);
+}
+function deleteBudgetOnetime(id) {
+  budgetOnetime = budgetOnetime.filter(x => x.id !== id);
+  saveBudgetOnetime();
+}
+function deleteBudgetGoal(id) {
+  budgetGoals = budgetGoals.filter(g => g.id !== id);
+  saveBudgetGoals();
+  if (DB.get('gardenActiveGoalId', null) === id) DB.set('gardenActiveGoalId', null);
+  // Verknüpfte Sparpläne nicht ins Leere zeigen lassen
+  if (typeof budgetSavingsPlans !== 'undefined' && budgetSavingsPlans.some(p => p.goalId === id)) {
+    budgetSavingsPlans.forEach(p => { if (p.goalId === id) p.goalId = null; });
+    saveBudgetSavingsPlans();
+  }
+}
+
 function makeBudgetRow({ name, amount, type, priority, paid, subtitle, subtitleHtml, onEdit, onDel, onPaidToggle }) {
   const row = document.createElement('div');
   row.className = 'budget-row' + (paid ? ' budget-row-paid' : '');
@@ -2127,7 +2209,7 @@ function makeBudgetRow({ name, amount, type, priority, paid, subtitle, subtitleH
 
   const amt = document.createElement('span');
   amt.className = 'budget-row-amount';
-  amt.textContent = (type === 'income' ? '+' : '-') + amount.toFixed(2) + ' €';
+  amt.textContent = (type === 'income' ? '+' : '-') + fmtEuro(amount);
   amt.style.color = type === 'income' ? 'var(--budget-income)' : 'var(--budget-expense)';
 
   const del = document.createElement('button');
@@ -2158,25 +2240,34 @@ function renderBudgetTimeline(){
   const tl = document.getElementById('budget-timeline');
   tl.innerHTML = '';
   const now = new Date(); now.setHours(0,0,0,0);
+  const end = new Date(now); end.setDate(end.getDate() + 59);
   const upcoming = [];
-
-  for (let offset = 0; offset < 60; offset++) {
-    const d  = new Date(now); d.setDate(now.getDate() + offset);
-    const dy = d.getDate(), dm = d.getMonth() + 1;
-    const mk = budgetMonthKey(d);
-    budgetRecurring.forEach(r => {
-      let match = false;
-      if (r.freq === 'monthly' && r.day === dy) match = true;
-      if (r.freq === 'yearly' && r.dateDay === dy && r.dateMonth === dm) match = true;
-      if (match) {
-        upcoming.push({
-          date: new Date(d), name: r.name, amount: r.amount,
-          type: r.type, priority: r.priority || 'need',
-          paid: isRecurringPaid(r.id, mk)
-        });
-      }
-    });
+  // Nächste 60 Tage: wiederkehrende Posten über ihre echten Termine
+  // (recurringOccurrencesInMonth — auch wöchentlich/2-wöchentlich; täglich
+  // bewusst nicht, das würde die Liste fluten) plus Einmalbuchungen.
+  const months = [];
+  for (let d = new Date(now.getFullYear(), now.getMonth(), 1); d <= end; d.setMonth(d.getMonth() + 1)) {
+    months.push([d.getFullYear(), d.getMonth() + 1]);
   }
+  const startStr = isoDateYMD(now.getFullYear(), now.getMonth() + 1, now.getDate());
+  const endStr   = isoDateYMD(end.getFullYear(), end.getMonth() + 1, end.getDate());
+  months.forEach(([y, m]) => {
+    const mk = `${y}-${String(m).padStart(2, '0')}`;
+    budgetRecurring.forEach(r => {
+      if (r.freq === 'daily') return;
+      recurringOccurrencesInMonth(r, y, m).forEach(o => {
+        if (o.date < startStr || o.date > endStr) return;
+        upcoming.push({ date: new Date(o.date + 'T00:00:00'), name: r.name, amount: r.amount,
+          type: r.type, priority: r.priority || 'need', paid: isRecurringPaid(r.id, mk) });
+      });
+    });
+    budgetOnetime.filter(e => e.monthKey === mk).forEach(e => {
+      const ds = isoDateYMD(y, m, e.day || 1);
+      if (ds < startStr || ds > endStr) return;
+      upcoming.push({ date: new Date(ds + 'T00:00:00'), name: e.name, amount: e.amount,
+        type: e.type, priority: e.priority || 'need', paid: !!e.paid });
+    });
+  });
 
   const prioOrder = { must: 0, need: 1, want: 2, none: 1 };
   upcoming.sort((a,b) => {
@@ -2198,7 +2289,7 @@ function renderBudgetTimeline(){
       badgeEl.textContent = priorityLabel(item.priority);
     }
     const am = document.createElement('span'); am.className = 'budget-timeline-amount';
-    am.textContent = (item.type === 'income' ? '+' : '-') + item.amount.toFixed(2) + ' €';
+    am.textContent = (item.type === 'income' ? '+' : '-') + fmtEuro(item.amount);
     am.style.color = item.type === 'income' ? 'var(--budget-income)' : 'var(--budget-expense)';
     row.append(ds, nm, badgeEl, am);
     tl.appendChild(row);
@@ -2228,8 +2319,8 @@ function renderBudgetGoals(){
     // sparplanForGoal() lebt in budget-sparplaene.js (später geladen),
     // daher defensiv per typeof prüfen (gleiches Muster wie bindMonthNav).
     const linkedPlan = typeof sparplanForGoal === 'function' ? sparplanForGoal(goal.id) : null;
-    const linkHint = linkedPlan ? ` <span class="budget-badge" title="Verknüpfter Sparplan">🔗 ${linkedPlan.name}</span>` : '';
-    nm.innerHTML = `<span class="budget-goal-emoji">${emoji}</span> ${goal.name} ${priorityBadge(goal.priority || 'need')}${linkHint}`;
+    const linkHint = linkedPlan ? ` <span class="budget-badge" title="Verknüpfter Sparplan">🔗 ${escHtml(linkedPlan.name)}</span>` : '';
+    nm.innerHTML = `<span class="budget-goal-emoji">${emoji}</span> ${escHtml(goal.name)} ${priorityBadge(goal.priority || 'need')}${linkHint}`;
 
     const actions = document.createElement('div'); actions.className = 'budget-goal-actions';
     const editBtn = document.createElement('button'); editBtn.className = 'budget-edit-btn';
@@ -2243,12 +2334,11 @@ function renderBudgetGoals(){
       actions.append(archiveBtn);
     }
     const del  = document.createElement('button'); del.className = 'task-delete'; del.textContent = '✕';
-    del.addEventListener('click', () => {
-      budgetGoals = budgetGoals.filter(g => g.id !== goal.id);
-      // If the active garden goal was deleted, clear the stored ID
-      const activeId = DB.get('gardenActiveGoalId', null);
-      if (activeId === goal.id) DB.set('gardenActiveGoalId', null);
-      saveBudgetGoals(); renderBudgetGoals(); renderFinanzgarten(); renderSparplaner();
+    del.addEventListener('click', async () => {
+      if (!(await confirmBudgetDelete('Sparziel', goal.name))) return;
+      deleteBudgetGoal(goal.id);
+      renderBudget();
+      if (typeof renderSparziele === 'function') renderSparziele();
     });
     actions.append(del);
     head.append(nm, actions);
@@ -2258,7 +2348,7 @@ function renderBudgetGoals(){
     const info = document.createElement('div'); info.className = 'budget-goal-info-row';
     const txt  = document.createElement('span');
     txt.style.cssText = 'font-size:12px;color:var(--text-3);font-family:var(--mono);';
-    txt.textContent = `${goal.current.toFixed(2)} € / ${goal.target.toFixed(2)} € (${pct}%)`;
+    txt.textContent = `${fmtEuro(goal.current)} / ${fmtEuro(goal.target)} (${pct}%)`;
     const btns = document.createElement('div'); btns.style.cssText = 'display:flex;gap:6px;';
     const dep  = document.createElement('button'); dep.className = 'btn-ghost'; dep.style.cssText = 'font-size:11px;padding:3px 10px;'; dep.textContent = 'Einzahlen';
     dep.addEventListener('click', () => openGoalTx(goal, 'deposit'));
@@ -2360,7 +2450,7 @@ function openRecurringModal(entry = null) {
       document.getElementById('recurring-date-day').value   = '';
       document.getElementById('recurring-date-month').value = '';
       document.getElementById('recurring-weekday').value    = entry.weekday ?? '1';
-      document.getElementById('recurring-anchor-date').value = entry.anchorDate || new Date().toISOString().slice(0,10);
+      document.getElementById('recurring-anchor-date').value = entry.anchorDate || todayIso();
     } else if (entry.freq === 'yearly') {
       document.getElementById('recurring-day').value        = '';
       document.getElementById('recurring-date-day').value   = entry.dateDay   || '';
@@ -2375,7 +2465,7 @@ function openRecurringModal(entry = null) {
     ['recurring-name','recurring-amount','recurring-day','recurring-date-day','recurring-date-month','recurring-var-min','recurring-var-max']
       .forEach(id => document.getElementById(id).value = '');
     document.getElementById('recurring-weekday').value = '1';
-    document.getElementById('recurring-anchor-date').value = new Date().toISOString().slice(0,10);
+    document.getElementById('recurring-anchor-date').value = todayIso();
     recurringType = 'income'; recurringFreq = 'monthly'; recurringPriority = 'need'; recurringCertainty = 'fixed';
     recurringIcon = '💶';
     document.getElementById('recurring-sparplan-include').checked = true;
@@ -2511,7 +2601,7 @@ document.getElementById('recurring-save').addEventListener('click', () => {
     } else if (recurringFreq === 'biweekly') {
       e.weekday = parseInt(document.getElementById('recurring-weekday').value);
       if (isNaN(e.weekday)) e.weekday = 1;
-      e.anchorDate = document.getElementById('recurring-anchor-date').value || new Date().toISOString().slice(0,10);
+      e.anchorDate = document.getElementById('recurring-anchor-date').value || todayIso();
     } else if (recurringFreq === 'yearly') {
       e.dateDay   = parseInt(document.getElementById('recurring-date-day').value)   || 1;
       e.dateMonth = parseInt(document.getElementById('recurring-date-month').value) || 1;
@@ -2576,26 +2666,34 @@ const onetimeModal = wireModal('onetime-modal-overlay', {
   saveId: 'onetime-save',
 });
 
-document.getElementById('add-onetime-btn').addEventListener('click', () => {
-  document.getElementById('onetime-name').value = '';
-  document.getElementById('onetime-amount').value = '';
-  // Heutiges Datum als Standard
-  const todayIso = new Date().toISOString().slice(0, 10);
+// editingOnetimeId !== null → onetime-save aktualisiert die bestehende Buchung
+let editingOnetimeId = null;
+function openOnetimeModal(entry = null) {
+  editingOnetimeId = entry ? entry.id : null;
+  document.getElementById('onetime-name').value = entry ? entry.name : '';
+  document.getElementById('onetime-amount').value = entry ? entry.amount : '';
+  // Standard: heute — oder der 1. des angezeigten Monats, wenn ein anderer
+  // Monat offen ist (die Buchung soll dort landen, wo man gerade plant).
   const dateField = document.getElementById('onetime-date');
-  if (dateField) dateField.value = todayIso;
-  onetimeType = 'expense'; onetimePriority = 'need';
+  const nowD = new Date();
+  const shown = budgetMonthKey(budgetMonth);
+  if (dateField) dateField.value = entry
+    ? `${entry.monthKey}-${String(entry.day || 1).padStart(2, '0')}`
+    : (shown === budgetMonthKey(nowD) ? todayIso() : `${shown}-01`);
+  onetimeType = entry ? entry.type : 'expense';
+  onetimePriority = entry && ['must','need','want'].includes(entry.priority) ? entry.priority : 'need';
   ['income','expense'].forEach(t =>
-    document.getElementById(`onetime-type-${t}`).classList.toggle('active', t === 'expense'));
-  ['must','need','want'].forEach(p =>
-    document.getElementById(`onetime-prio-${p}`).classList.toggle('active', p === 'need'));
-  document.getElementById('onetime-prio-row').classList.remove('hidden');
+    document.getElementById(`onetime-type-${t}`).classList.toggle('active', t === onetimeType));
+  setOnetimePriorityButtons(onetimePriority);
+  document.getElementById('onetime-prio-row').classList.toggle('hidden', onetimeType !== 'expense');
   updateOnetimeFundingVisibility();
   if (typeof renderFundingEditor === 'function') {
-    renderFundingEditor(document.getElementById('onetime-funding-list'), [], currentOnetimeAmount, 'onetime-funding');
+    renderFundingEditor(document.getElementById('onetime-funding-list'), entry ? (entry.funding || []) : [], currentOnetimeAmount, 'onetime-funding');
   }
   onetimeModal.open();
   setTimeout(() => document.getElementById('onetime-name').focus(), 50);
-});
+}
+document.getElementById('add-onetime-btn').addEventListener('click', () => openOnetimeModal());
 
 document.getElementById('onetime-amount').addEventListener('input', () => {
   if (onetimeType === 'expense' && typeof updateFundingDiff === 'function') {
@@ -2612,35 +2710,44 @@ document.getElementById('onetime-amount').addEventListener('input', () => {
     updateOnetimeFundingVisibility();
   });
 });
-['must','need','want'].forEach(p => {
-  document.getElementById(`onetime-prio-${p}`).addEventListener('click', () => {
-    onetimePriority = p;
-    ['must','need','want'].forEach(x =>
-      document.getElementById(`onetime-prio-${x}`).classList.toggle('active', x === p));
-  });
-});
+const setOnetimePriorityButtons = wirePriorityButtons('onetime', p => { onetimePriority = p; });
 
 document.getElementById('onetime-save').addEventListener('click', () => {
   const name = document.getElementById('onetime-name').value.trim();
   if (!name) return;
   const amount = parseFloat(document.getElementById('onetime-amount').value) || 0;
-  // Tag aus Datumsfeld lesen — Fallback: heutiger Tag
+  // Monat UND Tag aus dem Datumsfeld — vorher landete die Buchung immer im
+  // gerade angezeigten Monat, egal welches Datum gewählt war.
   const dateField = document.getElementById('onetime-date');
-  let day = new Date().getDate();
-  if (dateField && dateField.value) {
-    const parsed = new Date(dateField.value);
-    if (!isNaN(parsed)) day = parsed.getDate();
+  let day = new Date().getDate(), monthKey = budgetMonthKey(budgetMonth);
+  if (dateField && /^\d{4}-\d{2}-\d{2}$/.test(dateField.value)) {
+    monthKey = dateField.value.slice(0, 7);
+    day = parseInt(dateField.value.slice(8, 10), 10);
   }
-  budgetOnetime.push({
-    id: crypto.randomUUID(), name, type: onetimeType, amount,
-    monthKey: budgetMonthKey(budgetMonth),
+  const fields = {
+    name, type: onetimeType, amount, monthKey, day,
     priority: onetimeType === 'expense' ? onetimePriority : 'none',
-    paid: false,
-    day,
-    ...(onetimeType === 'expense' && typeof readFundingEditor === 'function'
-      ? { funding: readFundingEditor(document.getElementById('onetime-funding-list'), 'onetime-funding') }
-      : {}),
-  });
+    funding: onetimeType === 'expense' && typeof readFundingEditor === 'function'
+      ? readFundingEditor(document.getElementById('onetime-funding-list'), 'onetime-funding')
+      : undefined,
+  };
+  const existing = editingOnetimeId ? budgetOnetime.find(e => e.id === editingOnetimeId) : null;
+  if (existing) {
+    // Bereits erledigte Buchung geändert: alte Wirkung auf den Kontostand
+    // zurücknehmen, neue anwenden (sonst stimmt der Kontostand nicht mehr)
+    if (existing.paid && kontostand !== null) {
+      const eff = e => e.type === 'income' ? e.amount : -e.amount;
+      kontostand = round2(kontostand - eff(existing) + eff(fields));
+      saveKontostand();
+    }
+    Object.assign(existing, fields);
+    if (!existing.funding) delete existing.funding;
+  } else {
+    const entry = { id: crypto.randomUUID(), ...fields, paid: false };
+    if (!entry.funding) delete entry.funding;
+    budgetOnetime.push(entry);
+  }
+  editingOnetimeId = null;
   saveBudgetOnetime();
   onetimeModal.close();
   renderBudget();
@@ -2658,16 +2765,7 @@ let editingGoalId = null;
 // Button-Logik wie die Ausgaben-Priorität (priorityBadge(), .budget-prio-btn).
 let goalPriority = 'need';
 
-function setGoalPriorityButtons(p) {
-  ['must','need','want'].forEach(x => {
-    const btn = document.getElementById(`goal-prio-${x}`);
-    if (btn) btn.classList.toggle('active', x === p);
-  });
-}
-['must','need','want'].forEach(p => {
-  const btn = document.getElementById(`goal-prio-${p}`);
-  if (btn) btn.addEventListener('click', () => { goalPriority = p; setGoalPriorityButtons(p); });
-});
+const setGoalPriorityButtons = wirePriorityButtons('goal', p => { goalPriority = p; });
 
 // ── Sparziel-Posten ("Aus Posten zusammensetzen") ───────────────────
 // Alternative Eingabemethode für den Zielbetrag: Statt einer Zahl trägt
@@ -2854,15 +2952,12 @@ function openEditGoalModal(goal) {
   setTimeout(() => document.getElementById('goal-name').focus(), 50);
 }
 
-document.getElementById('goal-delete').addEventListener('click', () => {
+document.getElementById('goal-delete').addEventListener('click', async () => {
   if (!editingGoalId) return;
   const goal = budgetGoals.find(g => g.id === editingGoalId);
   if (!goal) return;
-  if (!confirm(`Sparziel "${goal.name}" wirklich löschen?`)) return;
-  budgetGoals = budgetGoals.filter(g => g.id !== goal.id);
-  const activeId = DB.get('gardenActiveGoalId', null);
-  if (activeId === goal.id) DB.set('gardenActiveGoalId', null);
-  saveBudgetGoals();
+  if (!(await confirmBudgetDelete('Sparziel', goal.name))) return;
+  deleteBudgetGoal(goal.id);
   closeGoalModal();
   renderBudgetGoals();
   renderFinanzgarten();
@@ -2933,16 +3028,7 @@ document.getElementById('goal-save').addEventListener('click', () => {
 let editingDebtId = null;
 let debtPriority = 'need';
 
-function setDebtPriorityButtons(p) {
-  ['must','need','want'].forEach(x => {
-    const btn = document.getElementById(`debt-prio-${x}`);
-    if (btn) btn.classList.toggle('active', x === p);
-  });
-}
-['must','need','want'].forEach(p => {
-  const btn = document.getElementById(`debt-prio-${p}`);
-  if (btn) btn.addEventListener('click', () => { debtPriority = p; setDebtPriorityButtons(p); });
-});
+const setDebtPriorityButtons = wirePriorityButtons('debt', p => { debtPriority = p; });
 
 const debtModal = wireModal('debt-modal-overlay', {
   closeIds: ['debt-modal-close', 'debt-cancel'],
@@ -2995,11 +3081,11 @@ function openEditDebtModal(debt) {
   setTimeout(() => document.getElementById('debt-name').focus(), 50);
 }
 
-document.getElementById('debt-delete').addEventListener('click', () => {
+document.getElementById('debt-delete').addEventListener('click', async () => {
   if (!editingDebtId) return;
   const debt = budgetDebts.find(d => d.id === editingDebtId);
   if (!debt) return;
-  if (!confirm(`Schuld "${debt.name}" wirklich löschen?`)) return;
+  if (!(await confirmBudgetDelete('Schuld', debt.name))) return;
   budgetDebts = budgetDebts.filter(d => d.id !== debt.id);
   saveBudgetDebts();
   closeDebtModal();
@@ -3050,11 +3136,29 @@ const goalTxModal = wireModal('goal-tx-modal-overlay', {
   saveId: 'goal-tx-save',
   onClose: () => { goalTxTarget = null; },
 });
+// „Kontostand anpassen“: dieselbe Regel wie bei einer erledigten Sparplan-
+// Rate (sparplanApplyDeposit) — Geld, das ins Sparziel/in die Tilgung geht,
+// verlässt den Kontostand und erscheint als bezahlte Buchung im Monat.
+// Vorher änderte „Einzahlen“ den Kontostand nie, eine Sparplan-Rate schon —
+// dasselbe Geld bewegte sich je nach Weg unterschiedlich. Die zuletzt
+// gewählte Einstellung wird gemerkt (budgetTxAdjustKs).
+function prepareGoalTxKsRow() {
+  const row = document.getElementById('goal-tx-ks-row');
+  const cb  = document.getElementById('goal-tx-ks');
+  const sub = document.getElementById('goal-tx-ks-sub');
+  if (!row || !cb) return;
+  row.classList.toggle('hidden', kontostand === null);
+  cb.checked = DB.get('budgetTxAdjustKs', true);
+  if (sub) sub.textContent = goalTxMode === 'withdraw'
+    ? 'Betrag wird dem Kontostand gutgeschrieben und als Buchung vermerkt'
+    : 'Betrag wird vom Kontostand abgezogen und als Buchung vermerkt';
+}
 function openGoalTx(goal, mode) {
   goalTxTarget = goal; goalTxMode = mode; goalTxKind = 'goal';
   document.getElementById('goal-tx-title').textContent =
     mode === 'deposit' ? `Einzahlen — ${goal.name}` : `Abheben — ${goal.name}`;
   document.getElementById('goal-tx-amount').value = '';
+  prepareGoalTxKsRow();
   goalTxModal.open();
   setTimeout(() => document.getElementById('goal-tx-amount').focus(), 50);
 }
@@ -3062,28 +3166,49 @@ function openDebtTx(debt) {
   goalTxTarget = debt; goalTxMode = 'pay'; goalTxKind = 'debt';
   document.getElementById('goal-tx-title').textContent = `Bezahlen — ${debt.name}`;
   document.getElementById('goal-tx-amount').value = '';
+  prepareGoalTxKsRow();
   goalTxModal.open();
   setTimeout(() => document.getElementById('goal-tx-amount').focus(), 50);
 }
+// Bezahlte Buchung für den laufenden Monat + Kontostand-Änderung
+function bookKontostandMovement(name, amount, type, priority) {
+  if (kontostand === null || amount <= 0.005) return;
+  const now = new Date();
+  budgetOnetime.push({
+    id: crypto.randomUUID(), name, type, amount: round2(amount),
+    monthKey: budgetMonthKey(now), day: now.getDate(),
+    priority: type === 'expense' ? (priority || 'need') : 'none', paid: true,
+  });
+  saveBudgetOnetime();
+  kontostand = round2(kontostand + (type === 'income' ? amount : -amount));
+  saveKontostand();
+}
 document.getElementById('goal-tx-save').addEventListener('click', () => {
   if (!goalTxTarget) return;
-  const amt = parseFloat(document.getElementById('goal-tx-amount').value) || 0;
+  const amt = Math.abs(parseFloat(document.getElementById('goal-tx-amount').value) || 0);
+  if (amt <= 0.005) return;
+  const adjustKs = kontostand !== null && document.getElementById('goal-tx-ks')?.checked;
+  if (kontostand !== null) DB.set('budgetTxAdjustKs', !!document.getElementById('goal-tx-ks')?.checked);
   if (goalTxKind === 'debt') {
-    goalTxTarget.paidAmount = Math.min(goalTxTarget.originalAmount,
-      Math.max(0, (goalTxTarget.paidAmount || 0) + amt));
+    const before = goalTxTarget.paidAmount || 0;
+    goalTxTarget.paidAmount = round2(Math.min(goalTxTarget.originalAmount, Math.max(0, before + amt)));
     saveBudgetDebts();
+    if (adjustKs) bookKontostandMovement(`Tilgung — ${goalTxTarget.name}`, goalTxTarget.paidAmount - before, 'expense', goalTxTarget.priority);
     if (typeof renderSchulden === 'function') renderSchulden();
     if (typeof renderFinanzanalyse === 'function') renderFinanzanalyse();
   } else {
-    goalTxTarget.current = Math.max(0,
-      goalTxMode === 'deposit' ? goalTxTarget.current + amt : goalTxTarget.current - amt);
+    const before = goalTxTarget.current || 0;
+    goalTxTarget.current = round2(Math.max(0, goalTxMode === 'deposit' ? before + amt : before - amt));
     saveBudgetGoals();
-    renderBudgetGoals();
-    renderFinanzgarten();
-    renderSparplaner();
+    if (adjustKs) {
+      const delta = goalTxTarget.current - before;
+      if (delta > 0) bookKontostandMovement(`Sparziel — ${goalTxTarget.name}`, delta, 'expense', 'need');
+      else bookKontostandMovement(`Aus Sparziel — ${goalTxTarget.name}`, -delta, 'income');
+    }
     if (typeof renderSparziele === 'function') renderSparziele();
   }
   goalTxModal.close();
+  renderBudget();
 });
 
 // =========================
@@ -3142,6 +3267,97 @@ document.getElementById('finanzbaum-config-save').addEventListener('click', () =
 // restoreDebt in budget-debts.js) löscht nichts — nur dieses Modal zeigt
 // an, was aktuell archiviert ist, und bietet die Wiederherstellung an.
 // =========================
+
+// =========================
+// MONATSRÜCKBLICK (33) — ruhige Balken, keine Tabellen
+// =========================
+const budgetRueckblickModal = wireModal('budget-rueckblick-modal-overlay', {
+  closeIds: ['budget-rueckblick-modal-close'],
+});
+
+// Summen eines Monats: wiederkehrende Posten (Stand heute) + Einmalbuchungen
+function budgetMonthTotals(y, m) {
+  const mk = `${y}-${String(m).padStart(2, '0')}`;
+  let income = 0, expense = 0;
+  getMonthRecurringItems(y, m).forEach(i => { if (i.type === 'income') income += i.amount; else expense += i.amount; });
+  budgetOnetime.forEach(e => {
+    if (e.monthKey !== mk) return;
+    if (e.type === 'income') income += e.amount; else expense += e.amount;
+  });
+  return { mk, income: round2(income), expense: round2(expense) };
+}
+
+function renderBudgetRueckblick() {
+  const body = document.getElementById('budget-rueckblick-body');
+  if (!body) return;
+  const months = [];
+  for (let k = 5; k >= 0; k--) {
+    const d = new Date(budgetMonth.getFullYear(), budgetMonth.getMonth() - k, 1);
+    months.push({ date: d, ...budgetMonthTotals(d.getFullYear(), d.getMonth() + 1) });
+  }
+  const max = Math.max(1, ...months.map(x => Math.max(x.income, x.expense)));
+  const avgSaldo = round2(months.reduce((s, x) => s + x.income - x.expense, 0) / months.length);
+  body.innerHTML = months.map(x => {
+    const saldo = round2(x.income - x.expense);
+    const label = x.date.toLocaleDateString('de-DE', { month: 'short', year: '2-digit' });
+    return `
+      <button type="button" class="b-rb-row${x.mk === budgetMonthKey(budgetMonth) ? ' current' : ''}" data-mk="${x.mk}" title="${escHtml(budgetMonthLabel(x.date))} öffnen">
+        <span class="b-rb-month">${escHtml(label)}</span>
+        <span class="b-rb-bars">
+          <span class="b-rb-bar income" style="width:${(x.income / max * 100).toFixed(1)}%"></span>
+          <span class="b-rb-bar expense" style="width:${(x.expense / max * 100).toFixed(1)}%"></span>
+        </span>
+        <span class="b-rb-vals">
+          <span class="income">+${fmtEuro(x.income)}</span>
+          <span class="expense">-${fmtEuro(x.expense)}</span>
+        </span>
+        <span class="b-rb-saldo ${saldo < 0 ? 'expense' : 'income'}">${fmtEuroSigned(saldo)}</span>
+      </button>`;
+  }).join('') + `
+    <div class="b-rb-foot">
+      <span><i class="b-rb-key income"></i>Einnahmen</span>
+      <span><i class="b-rb-key expense"></i>Ausgaben</span>
+      <span class="b-rb-avg">Ø Saldo: <b class="${avgSaldo < 0 ? 'expense' : 'income'}">${fmtEuroSigned(avgSaldo)}</b></span>
+    </div>`;
+  body.querySelectorAll('.b-rb-row').forEach(btn => btn.addEventListener('click', () => {
+    const [y, m] = btn.dataset.mk.split('-').map(Number);
+    budgetMonth = new Date(y, m - 1, 1);
+    budgetRueckblickModal.close();
+    renderBudget();
+  }));
+}
+
+// =========================
+// CSV-EXPORT (34) — angezeigter Monat, Excel-tauglich (Semikolon,
+// Dezimalkomma, UTF-8 mit BOM). Download per Blob-Link (klappt auch
+// unter file://, kein fetch nötig).
+// =========================
+function exportBudgetMonthCsv(month) {
+  const y = month.getFullYear(), m = month.getMonth() + 1;
+  const mk = budgetMonthKey(month);
+  const num = v => round2(v).toFixed(2).replace('.', ',');
+  const cell = v => /[;"\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v);
+  const rows = [['Datum', 'Name', 'Art', 'Typ', 'Priorität', 'Betrag', 'Status']];
+  const date = d => `${String(d).padStart(2, '0')}.${String(m).padStart(2, '0')}.${y}`;
+  getMonthRecurringItems(y, m).forEach(i => rows.push([
+    date(i.day || 1), (i.isAverage ? 'Ø ' : '') + i.name, 'wiederkehrend',
+    i.type === 'income' ? 'Einnahme' : 'Ausgabe', i.type === 'income' ? '' : priorityLabel(i.priority || 'need'),
+    num(i.type === 'income' ? i.amount : -i.amount), isRecurringPaid(i.id, mk) ? 'erledigt' : 'offen',
+  ]));
+  budgetOnetime.filter(e => e.monthKey === mk).forEach(e => rows.push([
+    date(e.day || 1), e.name, 'einmalig',
+    e.type === 'income' ? 'Einnahme' : 'Ausgabe', e.type === 'income' ? '' : priorityLabel(e.priority || 'need'),
+    num(e.type === 'income' ? e.amount : -e.amount), e.paid ? 'erledigt' : 'offen',
+  ]));
+  const head = rows.shift();
+  rows.sort((a, b) => a[0].localeCompare(b[0]));
+  const csv = '\ufeff' + [head, ...rows].map(r => r.map(cell).join(';')).join('\r\n');
+  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  const a = document.createElement('a');
+  a.href = url; a.download = `budget-${mk}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
 
 const budgetArchivModal = wireModal('budget-archiv-modal-overlay', {
   closeIds: ['budget-archiv-modal-close'],
@@ -3241,6 +3457,8 @@ if (budgetHeaderMenuBtn) {
       <button type="button" class="b-header-dropdown-item" id="budget-header-menu-finanzbaum">🌳 Finanzbaum konfigurieren</button>
       <button type="button" class="b-header-dropdown-item" id="budget-header-menu-taschengeld">🪙 Taschengeld-Berechnung</button>
       <button type="button" class="b-header-dropdown-item" id="budget-header-menu-archiv">📦 Archiv</button>
+      <button type="button" class="b-header-dropdown-item" id="budget-header-menu-rueckblick">📊 Monatsrückblick</button>
+      <button type="button" class="b-header-dropdown-item" id="budget-header-menu-csv">⬇️ Monat als CSV exportieren</button>
     `;
     const rect = budgetHeaderMenuBtn.getBoundingClientRect();
     menu.style.top   = (rect.bottom + 6) + 'px';
@@ -3259,6 +3477,15 @@ if (budgetHeaderMenuBtn) {
       closeBudgetHeaderMenu();
       renderBudgetArchiv();
       budgetArchivModal.open();
+    });
+    document.getElementById('budget-header-menu-rueckblick').addEventListener('click', () => {
+      closeBudgetHeaderMenu();
+      renderBudgetRueckblick();
+      budgetRueckblickModal.open();
+    });
+    document.getElementById('budget-header-menu-csv').addEventListener('click', () => {
+      closeBudgetHeaderMenu();
+      exportBudgetMonthCsv(budgetMonth);
     });
   });
 }

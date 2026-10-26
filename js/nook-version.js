@@ -10,9 +10,23 @@
 // hinten wegfallen, angezeigt werden ohnehin nur die neuesten.
 // =========================
 
-window.NOOK_VERSION = '2026.10.8';
+window.NOOK_VERSION = '2026.10.9';
 
 window.NOOK_CHANGELOG = [
+  {
+    version: '2026.10.9',
+    date: '2026-10-26',
+    items: [
+      'Budget: Einzahlen, Abheben und Tilgen können den Kontostand direkt mit anpassen (wie eine erledigte Sparplan-Rate)',
+      'Budget: Einmalbuchungen lassen sich bearbeiten und landen im Monat des gewählten Datums',
+      'Budget: Rückfrage vor jedem Löschen; gelöschte Einnahmen und Sparziele hinterlassen keine verwaisten Verknüpfungen mehr',
+      'Budget: Monatsrückblick (letzte 6 Monate) und CSV-Export des Monats im Zahnrad-Menü',
+      'Heute: optionale Zeile „Heute fällig“ mit den Budget-Posten des Tages',
+      'Budget: Prognose zeigt Ziele in der echten Verteil-Reihenfolge; „Demnächst“ kennt jetzt auch wöchentliche Posten und Einmalbuchungen',
+      'Budget: Farben im Dunkelmodus gut lesbar, Beträge überall im gleichen Format (150,00 €)',
+      'Budget: Korrekturen – archivierte Ziele belegen kein Geld mehr, mehrfache Finanzierungen gehen beim Bearbeiten nicht verloren, Sparpläne am 31. springen nicht mehr über kurze Monate',
+    ],
+  },
   {
     version: '2026.10.8',
     date: '2026-10-26',

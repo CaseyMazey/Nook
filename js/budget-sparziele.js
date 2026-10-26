@@ -131,7 +131,7 @@ function buildSparzielCard(goal){
   // Geschichte noch einmal erzählen.
   card.innerHTML = `
     <div class="sp-plan-card-head">
-      <span class="sp-plan-card-name">${emoji} ${goal.name}</span>
+      <span class="sp-plan-card-name">${emoji} ${escHtml(goal.name)}</span>
       ${priorityBadge(goal.priority || 'need')}
     </div>
     <div class="budget-goal-bar sp-plan-bar"><div class="budget-goal-fill" style="width:${pct}%"></div></div>

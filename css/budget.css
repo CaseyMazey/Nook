@@ -9,26 +9,31 @@
 
 /* ── Budget-spezifische Tokens ────────────────────────────── */
 :root {
-  /* Greens (income, positive) */
-  --b-green:      #2d5a3d;
-  --b-green-soft: color-mix(in srgb, var(--bg) 80%, #2d5a3d 8%);
-  --b-green-mid:  #4a7c5a;
+  /* Akzente — aus Theme-Tokens abgeleitet: der Farbton wird mit --text
+     gemischt, dadurch dunkel auf hellen und hell auf dunklen Themes
+     (vorher feste Hex-Werte ohne Dark-Variante → dunkelgrün auf dunkel).
+     Die *-soft-Flächen sind transparente Tönungen und passen so überall. */
+  --b-green:      color-mix(in srgb, var(--status-ok) 45%, var(--text));
+  --b-green-mid:  color-mix(in srgb, var(--status-ok) 60%, var(--text-2));
+  --b-green-soft: color-mix(in srgb, var(--b-green) 10%, transparent);
 
   /* Olive (want / neutral) */
-  --b-olive:      #6b7c5a;
-  --b-olive-soft: color-mix(in srgb, var(--bg) 80%, #6b7c5a 8%);
+  --b-olive:      color-mix(in srgb, var(--sage) 75%, var(--text));
+  --b-olive-soft: color-mix(in srgb, var(--b-olive) 10%, transparent);
 
   /* Red (expense, negative) */
-  --b-red:        #c0392b;
-  --b-red-soft:   color-mix(in srgb, var(--bg) 85%, #c0392b 6%);
+  --b-red:        color-mix(in srgb, var(--status-danger) 70%, var(--text));
+  --b-red-soft:   color-mix(in srgb, var(--b-red) 9%, transparent);
 
   /* Blue (Sparziele im Geldfluss) / Purple (Schulden im Geldfluss) —
      einzige Stellen in Nook, an denen diese beiden Töne vorkommen;
      an anderer Stelle bitte bestehende Töne wiederverwenden. */
-  --b-blue:        #3a5a7c;
-  --b-blue-soft:   color-mix(in srgb, var(--bg) 82%, #3a5a7c 7%);
-  --b-purple:      #6b4c7c;
-  --b-purple-soft: color-mix(in srgb, var(--bg) 82%, #6b4c7c 7%);
+  --b-blue-hue:    #3a6a9c;
+  --b-purple-hue:  #7d4c9c;
+  --b-blue:        color-mix(in srgb, var(--b-blue-hue) 60%, var(--text));
+  --b-blue-soft:   color-mix(in srgb, var(--b-blue) 11%, transparent);
+  --b-purple:      color-mix(in srgb, var(--b-purple-hue) 60%, var(--text));
+  --b-purple-soft: color-mix(in srgb, var(--b-purple) 11%, transparent);
 
   /* Neutral helpers */
   --b-warm-gray:  var(--text-3);
@@ -104,12 +109,6 @@
 
 /* Dark mode overrides for budget-specific tokens */
 [data-theme-family="dark"] {
-  --b-green-soft: rgba(45,90,61,0.18);
-  --b-olive-soft: rgba(107,124,90,0.16);
-  --b-red-soft:   rgba(192,57,43,0.16);
-  --b-blue-soft:   rgba(58,90,124,0.20);
-  --b-purple-soft: rgba(107,76,124,0.20);
-
   --b-status-amber-text: #f5c242;
 
   /* Finanzgarten — dunklere Erde/Papier-Optik, Illustrationen bleiben lesbar */
@@ -161,6 +160,12 @@
   --b-card-line-5: rgba(255,255,255,0.13);
   --b-card-line-6: rgba(255,255,255,0.16);
   --b-card-panel:  rgba(0,0,0,0.22);
+}
+
+/* Fortschritt der Sparziel-Pflanze — vorher Inline-Verlauf aus festen
+   Pflanzenfarben (getColors), jetzt Theme-Tokens */
+.b-garden-progress-fill {
+  background: linear-gradient(to right, var(--sage-light), var(--b-garden-pip));
 }
 
 /* ── View override ────────────────────────────────────────── */
@@ -1997,4 +2002,34 @@
   }
   .budget-modal-2col .goal-plant-option { gap: 7px; padding: 8px 10px; min-width: 0; }
   .budget-modal-2col .goal-plant-name { font-size: calc(12px * var(--core-font-scale)); letter-spacing: 0; overflow-wrap: anywhere; }
+}
+
+/* ── Monatsrückblick (Kopfzeilen-Menü) ───────────────────── */
+.b-rb { display: flex; flex-direction: column; gap: 4px; }
+.b-rb-row {
+  display: grid; grid-template-columns: 58px 1fr auto 92px; align-items: center; gap: 10px;
+  padding: 7px 8px; border: 1px solid transparent; border-radius: var(--b-radius-sm);
+  background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer;
+}
+.b-rb-row:hover { background: color-mix(in srgb, var(--text) 4%, transparent); }
+.b-rb-row.current { border-color: var(--sage-border); background: var(--sage-bg); }
+.b-rb-month { font-size: 12.5px; font-weight: 600; color: var(--text-2); }
+.b-rb-bars { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.b-rb-bar { display: block; height: 7px; min-width: 2px; border-radius: 99px; }
+.b-rb-bar.income  { background: var(--b-green); }
+.b-rb-bar.expense { background: var(--b-red); }
+.b-rb-vals { display: flex; flex-direction: column; align-items: flex-end; font-family: var(--mono); font-size: 11px; line-height: 1.35; }
+.b-rb-saldo { font-family: var(--mono); font-size: 12.5px; font-weight: 700; text-align: right; }
+.b-rb .income  { color: var(--b-green); }
+.b-rb .expense { color: var(--b-red); }
+.b-rb-foot { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 8px; padding-top: 10px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-3); }
+.b-rb-foot span { display: inline-flex; align-items: center; gap: 6px; }
+.b-rb-key { display: inline-block; width: 12px; height: 7px; border-radius: 99px; }
+.b-rb-key.income  { background: var(--b-green); }
+.b-rb-key.expense { background: var(--b-red); }
+.b-rb-avg { margin-left: auto; }
+.b-rb-avg b { font-family: var(--mono); }
+@media (max-width: 480px) {
+  .b-rb-row { grid-template-columns: 46px 1fr 80px; }
+  .b-rb-vals { display: none; }
 }

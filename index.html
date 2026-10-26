@@ -1531,6 +1531,15 @@
                 </div>
               </div>
 
+              <!-- Heute fällig (js/today-budget.js) -->
+              <div class="panel settings-panel">
+                <div class="panel-header"><span class="panel-label">Budget auf der Heute-Seite</span></div>
+                <div class="settings-row">
+                  <div><div class="settings-row-title">„Heute fällig“ anzeigen</div><div class="settings-row-sub">Posten aus dem Budget, die heute anstehen — nur zur Info, ein Klick öffnet das Budget</div></div>
+                  <label class="toggle"><input type="checkbox" id="setting-today-budget-due"/><span class="toggle-slider"></span></label>
+                </div>
+              </div>
+
               <div class="panel settings-panel" id="positivity-settings-panel">
                 <div class="panel-header"><span class="panel-label">Positivity</span><span class="positivity-total-badge" id="positivity-total-count"></span></div>
                 <div id="positivity-category-list"></div>
@@ -2570,6 +2579,10 @@
     <div class="modal-box" style="width:360px;">
       <div class="modal-head"><span id="goal-tx-title">Einzahlen</span><button class="modal-x" id="goal-tx-close">&#10005;</button></div>
       <div class="modal-row"><label>Betrag (&#8364;)</label><input type="number" class="modal-input" id="goal-tx-amount" placeholder="0.00" step="0.01" min="0"/></div>
+      <div class="modal-row modal-row-inline" id="goal-tx-ks-row">
+        <div><div class="settings-row-title">Kontostand anpassen</div><div class="settings-row-sub" id="goal-tx-ks-sub">Betrag wird vom Kontostand abgezogen und als Buchung vermerkt</div></div>
+        <label class="toggle"><input type="checkbox" id="goal-tx-ks"/><span class="toggle-slider"></span></label>
+      </div>
       <div class="modal-actions"><button id="goal-tx-cancel" class="btn-ghost">Abbrechen</button><button id="goal-tx-save" class="btn-primary">OK</button></div>
     </div>
   </div>
@@ -2851,6 +2864,18 @@
   </div>
 
   <!-- Budget-Archiv (erfüllte Sparziele / beglichene Schulden) -->
+  <!-- Monatsrückblick (js/budget.js: renderBudgetRueckblick) -->
+  <div id="budget-rueckblick-modal-overlay" class="modal-backdrop hidden">
+    <div class="modal-box" style="width:480px;">
+      <div class="modal-head">
+        <span>&#128202; Monatsrückblick</span>
+        <button class="modal-x" id="budget-rueckblick-modal-close">&#10005;</button>
+      </div>
+      <p class="modal-hint" style="padding:8px 0 6px;">Einnahmen und Ausgaben der letzten sechs Monate — wiederkehrende Posten nach heutigem Stand, dazu die Einmalbuchungen des jeweiligen Monats. Klick auf einen Monat öffnet ihn.</p>
+      <div id="budget-rueckblick-body" class="b-rb"></div>
+    </div>
+  </div>
+
   <div id="budget-archiv-modal-overlay" class="modal-backdrop hidden">
     <div class="modal-box" style="width:480px;max-height:76vh;display:flex;flex-direction:column;">
       <div class="modal-head">
@@ -3799,6 +3824,7 @@
   <script src="js/budget-debts.js"></script>
   <script src="js/budget-sparprognose.js"></script>
   <script src="js/budget-sparplaene.js"></script>
+  <script src="js/today-budget.js"></script>
   <script src="js/projects.js"></script>
   <script src="js/project-tree.js"></script>
   <script src="js/forest.js"></script>
