@@ -23,7 +23,8 @@ window.NOOK_CHANGELOG = [
       'Taschengeld: Tage zum Anklicken im Kalender – bezahlt wird jeder angeklickte Tag; Monate ohne Klicks werden geschätzt („Schätzung übernehmen“ macht daraus Klicks)',
       'Taschengeld: kein eigener Feiertagssatz mehr – Feiertage zählen wie ihr Wochentag',
       'RPG-Budget: Kontostand als Wirtshausschild, Reiter als Lederriemen, Monatsauswahl als Messingschild',
-      'RPG-Budget: Finanzierung und Sparziele als Kassenbuch mit Tintenrahmen, Sparpläne als Zettel, Prognose-Zusammenfassung als Kreidetafel, Monatsrest als Messingschild',
+      'RPG-Budget: Sparziele als Kassenbuch mit Tintenrahmen, Sparpläne als Zettel, Prognose-Zusammenfassung als Kreidetafel, Monatsrest als Messingschild',
+      'RPG-Budget: Finanzierung als Krämerladen – Einnahmen sind Regalfächer mit Namensschild und Münzstapel, Posten sind Holzklötzchen, Offenes liegt im Weidenkorb',
     ],
   },
   {
