@@ -486,11 +486,13 @@
    Kein Papier: das Blatt selbst liegt direkt auf dem Brett. */
 [data-pages-style="rpg"] #view-budget #finanzanalyse-panel {
   --art-dim: brightness(1);
-  --text:   color-mix(in srgb, var(--sheen) 92%, transparent);
-  --text-2: color-mix(in srgb, var(--sheen) 78%, transparent);
-  --text-3: color-mix(in srgb, var(--sheen) 62%, transparent);
+  --text:   var(--sheen);
+  --text-2: color-mix(in srgb, var(--sheen) 92%, transparent);
+  --text-3: color-mix(in srgb, var(--sheen) 84%, transparent);
   --border: color-mix(in srgb, var(--sheen) 20%, transparent);
   color-scheme: normal;
+  /* kleine Schrift direkt auf dem dunklen Holz: leichter Schatten hebt sie ab */
+  text-shadow: 0 1px 2px color-mix(in srgb, var(--shadow-tint) 70%, transparent);
   color: var(--text);
   padding: 4px 0 0;
 }
@@ -562,8 +564,9 @@
 /* Einnahme = Holzkiste */
 [data-pages-style="rpg"] #view-budget :is(.gf-income-card, .gf-income-bar) {
   --text:   var(--deco-ink);
-  --text-2: color-mix(in srgb, var(--deco-ink) 80%, transparent);
-  --text-3: color-mix(in srgb, var(--deco-ink) 60%, transparent);
+  --text-2: color-mix(in srgb, var(--deco-ink) 90%, transparent);
+  --text-3: color-mix(in srgb, var(--deco-ink) 80%, transparent);
+  text-shadow: none;
   position: relative;
   isolation: isolate;
   background: none !important;
@@ -818,3 +821,40 @@
   cursor: pointer;
 }
 [data-pages-style="rpg"] #sparplan-savedby-btn:hover { background: linear-gradient(170deg, var(--sheen), var(--brass-hi) 45%, var(--brass)); }
+
+
+/* ── Budget-Akzente auf Papier/Holz ─────────────────────────────
+   budget.css leitet --b-green/-red/… aus --text ab — berechnet auf :root.
+   Nachts ist --text dort hell, die Akzente würden also hell auf hellem
+   Pergament/Holz landen (umgestellte --text-Werte der Zettel erben sie
+   nicht, weil der Wert schon auf :root ausgerechnet ist). Im RPG-Budget
+   liegt alles auf hellen Flächen → hier mit Tinte neu berechnen. */
+[data-pages-style="rpg"] #view-budget {
+  --b-green:      color-mix(in srgb, var(--status-ok) 55%, var(--deco-ink));
+  --b-green-mid:  color-mix(in srgb, var(--status-ok) 65%, var(--deco-ink));
+  --b-green-soft: color-mix(in srgb, var(--b-green) 12%, transparent);
+  --b-olive:      color-mix(in srgb, var(--sage) 55%, var(--deco-ink));
+  --b-olive-soft: color-mix(in srgb, var(--b-olive) 12%, transparent);
+  --b-red:        color-mix(in srgb, var(--status-danger) 75%, var(--deco-ink));
+  --b-red-soft:   color-mix(in srgb, var(--b-red) 10%, transparent);
+  --b-blue:        color-mix(in srgb, var(--b-blue-hue) 70%, var(--deco-ink));
+  --b-blue-soft:   color-mix(in srgb, var(--b-blue) 12%, transparent);
+  --b-purple:      color-mix(in srgb, var(--b-purple-hue) 70%, var(--deco-ink));
+  --b-purple-soft: color-mix(in srgb, var(--b-purple) 12%, transparent);
+  --b-status-amber-text: color-mix(in srgb, var(--status-warning) 60%, var(--deco-ink));
+}
+/* Taschengeld-Zeile der Prognose-Karten: Gelb auf Pergament war kaum lesbar */
+[data-pages-style="rpg"] #view-budget .sp-scen-tg-line { color: color-mix(in srgb, var(--status-warning) 60%, var(--deco-ink)); }
+/* Kleine Schrift in der Finanzierung: auf Holz brauchte die schmale 11-px-
+   Mono-Schrift mehr Größe und Gewicht, um lesbar zu bleiben */
+[data-pages-style="rpg"] #view-budget #finanzanalyse-panel .sp-source-note {
+  font-size: calc(13.5px * var(--core-font-scale));
+  line-height: 1.5;
+  color: var(--text);
+}
+[data-pages-style="rpg"] #view-budget :is(.gf-income-card, .gf-income-bar) :is(.gf-bar-amount-sub, .gf-income-amount-sub) {
+  font-family: inherit;
+  font-size: calc(13px * var(--core-font-scale));
+  font-weight: 600;
+  color: var(--text-2);
+}
