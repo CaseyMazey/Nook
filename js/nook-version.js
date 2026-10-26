@@ -24,6 +24,7 @@ window.NOOK_CHANGELOG = [
       'Taschengeld: kein eigener Feiertagssatz mehr – Feiertage zählen wie ihr Wochentag',
       'RPG-Budget: Kontostand als Wirtshausschild, Reiter als Lederriemen, Monatsauswahl als Messingschild',
       'RPG-Budget: Sparziele als Kassenbuch mit Tintenrahmen, Sparpläne als Zettel, Prognose-Zusammenfassung als Kreidetafel, Monatsrest als Messingschild',
+      'RPG-Budget: Finanzierung mit gezeichneten Holzkisten (Einnahmen), Kraftpapier-Anhängern (Posten) und einem Weidenkorb für alles Offene',
     ],
   },
   {
