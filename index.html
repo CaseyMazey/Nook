@@ -2883,7 +2883,7 @@
         <label class="toggle"><input type="checkbox" id="tg-enabled"/><span class="toggle-slider"></span></label>
       </div>
       <div id="tg-settings-body" class="hidden">
-        <p class="modal-hint" style="margin:10px 0 14px;">Taschengeld wird für jeden Monat automatisch aus diesen Regeln berechnet und erscheint als Einnahme im Budget.</p>
+        <p class="modal-hint" style="margin:10px 0 14px;">Taschengeld erscheint als Einnahme im Budget. Bezahlt werden die Tage, die du unten im Kalender anklickst.</p>
 
         <div class="modal-row">
           <label>Sätze pro Tag</label>
@@ -2891,9 +2891,30 @@
             <div class="tg-rate-field"><span>Mo–Fr</span><input type="number" class="modal-input" id="tg-rate-weekday" step="0.5" min="0"/><span>€</span></div>
             <div class="tg-rate-field"><span>Samstag</span><input type="number" class="modal-input" id="tg-rate-saturday" step="0.5" min="0"/><span>€</span></div>
             <div class="tg-rate-field"><span>Sonntag</span><input type="number" class="modal-input" id="tg-rate-sunday" step="0.5" min="0"/><span>€</span></div>
-            <div class="tg-rate-field"><span>Feiertag</span><input type="number" class="modal-input" id="tg-rate-holiday" step="0.5" min="0"/><span>€</span></div>
           </div>
+          <p class="modal-hint" style="margin:2px 0 0;">Feiertage zählen wie ihr Wochentag.</p>
         </div>
+
+        <div class="modal-row">
+          <label>Tage, an denen du da bist</label>
+          <div class="tg-cal">
+            <div class="tg-cal-head">
+              <button type="button" class="week-btn" id="tg-cal-prev" title="Vorheriger Monat">‹</button>
+              <span id="tg-cal-title"></span>
+              <button type="button" class="week-btn" id="tg-cal-next" title="Nächster Monat">›</button>
+            </div>
+            <div class="tg-cal-grid" id="tg-cal-grid"></div>
+            <div class="tg-cal-foot">
+              <span id="tg-cal-sum"></span>
+              <button type="button" class="btn-ghost tg-cal-action" id="tg-cal-adopt" title="Die gestrichelt markierten (geschätzten) Tage als angeklickt übernehmen">Schätzung übernehmen</button>
+              <button type="button" class="btn-ghost tg-cal-action" id="tg-cal-clear" title="Alle Klicks dieses Monats entfernen — dann wird er wieder geschätzt">Monat leeren</button>
+            </div>
+          </div>
+          <p class="modal-hint" style="margin:4px 0 0;">Klick auf einen Tag = da und bezahlt. Monate ohne angeklickte Tage (z.&nbsp;B. kommende) schätzt Nook mit den Regeln unten — gestrichelt im Kalender.</p>
+        </div>
+
+        <details class="tg-estimate">
+          <summary>Schätzung für Monate ohne angeklickte Tage</summary>
 
         <div class="modal-row modal-row-inline">
           <label>Heimfahrten (jede 2. Woche)</label>
@@ -2909,11 +2930,7 @@
           <div id="tg-absence-list"></div>
           <button type="button" class="btn-ghost" id="tg-absence-add" style="align-self:flex-start;font-size:12px;margin-top:4px;">+ Abwesenheit hinzufügen</button>
         </div>
-
-        <div class="modal-row">
-          <label>Feiertage</label>
-          <p class="modal-hint" id="tg-bundesland-hint" style="margin:0;"></p>
-        </div>
+        </details>
       </div>
       <div class="modal-actions">
         <button id="taschengeld-settings-cancel" class="btn-ghost">Abbrechen</button>

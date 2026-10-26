@@ -30,6 +30,10 @@ const TASCHENGELD_DEFAULTS = {
   // beim Rechnen immer auf den Montag dieser Woche normalisiert.
   homeTrip: { enabled: false, weekday: 5, anchorMonday: null },
   absences: [], // [{ id, name, start: 'YYYY-MM-DD', end: 'YYYY-MM-DD' }]
+  // Im Kalender angeklickte Tage, an denen ich da bin: { 'YYYY-MM-DD': true }.
+  // Hat ein Monat mindestens einen angeklickten Tag, zählen NUR diese Tage.
+  // Monate ohne angeklickte Tage werden mit homeTrip/absences geschätzt.
+  presentDays: {},
 };
 
 function loadBudgetTaschengeld() {
@@ -39,6 +43,7 @@ function loadBudgetTaschengeld() {
     rates: Object.assign({}, TASCHENGELD_DEFAULTS.rates, saved.rates || {}),
     homeTrip: Object.assign({}, TASCHENGELD_DEFAULTS.homeTrip, saved.homeTrip || {}),
     absences: Array.isArray(saved.absences) ? saved.absences : [],
+    presentDays: (saved.presentDays && typeof saved.presentDays === 'object') ? saved.presentDays : {},
   };
 }
 let budgetTaschengeld = loadBudgetTaschengeld();
@@ -75,8 +80,8 @@ function tgMondayOf(date) {
 // Heimfahrt-Wochen: jede 2. Woche ab der Ausgangswoche (anchorMonday).
 // Modulo mit +14 abgesichert, damit auch ein Anker in der Zukunft (oder
 // eine krumme Kalenderwochen-Differenz) korrekt bleibt.
-function tgIsHomeTripWeek(date) {
-  const cfg = budgetTaschengeld.homeTrip;
+function tgIsHomeTripWeek(date, tg = budgetTaschengeld) {
+  const cfg = tg.homeTrip;
   if (!cfg.enabled || !cfg.anchorMonday) return false;
   const monday = tgMondayOf(date);
   const anchor = tgMondayOf(new Date(cfg.anchorMonday + 'T00:00:00'));
@@ -84,8 +89,14 @@ function tgIsHomeTripWeek(date) {
   return ((diffDays % 14) + 14) % 14 === 0;
 }
 
-function tgFindAbsence(dateStr) {
-  return budgetTaschengeld.absences.find(a => a.start && a.end && dateStr >= a.start && dateStr <= a.end) || null;
+function tgFindAbsence(dateStr, tg = budgetTaschengeld) {
+  return tg.absences.find(a => a.start && a.end && dateStr >= a.start && dateStr <= a.end) || null;
+}
+
+// Hat dieser Monat angeklickte Tage? Dann gilt der Kalender statt der Schätzung.
+function tgMonthHasMarks(year, month, tg = budgetTaschengeld) {
+  const prefix = `${year}-${String(month).padStart(2, '0')}-`;
+  return Object.keys(tg.presentDays || {}).some(k => k.startsWith(prefix) && tg.presentDays[k]);
 }
 
 // =========================
@@ -97,29 +108,33 @@ function tgFindAbsence(dateStr) {
 // Garantiert/Optimistisch) bauen NUR auf diesem Array auf — es gibt
 // bewusst keine zweite, abweichende Tagesklassifikation.
 //
-// Heimfahrt-Regel: in einer Heimfahrt-Woche gibt es für Samstag und
-// Sonntag kein Taschengeld. Der Freitag wird immer bezahlt, auch wenn
-// danach nach Hause gefahren wird (Klarstellung der Nutzerin, Okt. 2026).
-// Nur eine Abwesenheit (Urlaub, Praktikum …) streicht auch Werktage.
+// Zwei Modi je Monat:
+//  • Kalender (Monat hat angeklickte Tage): bezahlt wird genau jeder
+//    angeklickte Tag — Heimfahrt/Abwesenheit spielen keine Rolle.
+//  • Schätzung (nichts angeklickt, z.B. kommende Monate für die Prognose):
+//    Heimfahrt-Wochen ohne Sa/So (der Freitag wird immer bezahlt),
+//    Abwesenheiten ohne jeden Tag.
+// Feiertage zählen wie ihr Wochentag (Mo–Fr-Satz bzw. Sa/So-Satz) —
+// es gibt keinen eigenen Feiertagssatz (Klarstellung der Nutzerin, Okt. 2026).
 // =========================
-function computeTaschengeldDays(year, month) {
-  const rates = budgetTaschengeld.rates;
+function computeTaschengeldDays(year, month, tg = budgetTaschengeld) {
+  const rates = tg.rates;
   const daysInMonth = new Date(year, month, 0).getDate();
-
-  const bl = (typeof calendarSettings !== 'undefined' && calendarSettings.bundesland) ? calendarSettings.bundesland : null;
-  const holidays = (typeof getHolidaysForYear === 'function') ? getHolidaysForYear(year, bl) : [];
-  const holidaySet = new Set(holidays.map(h => isoDateYMD(h.date.getFullYear(), h.date.getMonth() + 1, h.date.getDate())));
+  const calendarMode = tgMonthHasMarks(year, month, tg);
 
   const days = [];
   for (let d = 1; d <= daysInMonth; d++) {
     const date = new Date(year, month - 1, d);
     const dateStr = isoDateYMD(year, month, d);
     const dow = date.getDay(); // 0 = Sonntag ... 6 = Samstag
-    const category = holidaySet.has(dateStr) ? 'holiday' : (dow === 6 ? 'saturday' : dow === 0 ? 'sunday' : 'weekday');
-    const homeTripWeek = tgIsHomeTripWeek(date);
+    const category = dow === 6 ? 'saturday' : dow === 0 ? 'sunday' : 'weekday';
+    const marked = !!(tg.presentDays && tg.presentDays[dateStr]);
+    const homeTripWeek = !calendarMode && tgIsHomeTripWeek(date, tg);
     days.push({
       date: dateStr, dow, category, rate: rates[category] ?? 0,
-      isAbsence: !!tgFindAbsence(dateStr),
+      calendarMode, isMarked: marked,
+      // Kalender-Modus: nicht angeklickt = nicht da (zählt wie Abwesenheit)
+      isAbsence: calendarMode ? !marked : !!tgFindAbsence(dateStr, tg),
       isHomeTripWeek: homeTripWeek,
       // Sa/So einer Heimfahrt-Woche — die eigentlich "verlorenen" Tage.
       isHomeTripAffected: homeTripWeek && (dow === 6 || dow === 0),
@@ -135,9 +150,9 @@ function computeTaschengeldDays(year, month) {
 // tgScenarioAmount — beide sind bei Taschengeld deterministisch und
 // daher identisch, anders als bei variablen Budget-Posten mit echter
 // Min/Max-Bandbreite).
-// Priorität je Tag: Abwesenheit > Heimfahrt (Sa/So) > Feiertag > Sa/So > Mo-Fr.
-function computeTaschengeldBreakdown(year, month) {
-  const days = computeTaschengeldDays(year, month);
+// Priorität je Tag: Abwesenheit/nicht angeklickt > Heimfahrt (Sa/So) > Sa/So > Mo-Fr.
+function computeTaschengeldBreakdown(year, month, tg = budgetTaschengeld) {
+  const days = computeTaschengeldDays(year, month, tg);
   const counts = { weekday: 0, saturday: 0, sunday: 0, holiday: 0 };
   let homeTripDeducted = 0, absenceDeducted = 0;
 
@@ -147,16 +162,17 @@ function computeTaschengeldBreakdown(year, month) {
     counts[day.category]++;
   });
 
-  const rates = budgetTaschengeld.rates;
+  const rates = tg.rates;
   const amounts = {
     weekday:  round2(counts.weekday  * rates.weekday),
     saturday: round2(counts.saturday * rates.saturday),
     sunday:   round2(counts.sunday   * rates.sunday),
-    holiday:  round2(counts.holiday  * rates.holiday),
+    holiday:  0, // kein eigener Feiertagssatz mehr (Feld bleibt nur für Altdaten)
   };
-  const total = round2(amounts.weekday + amounts.saturday + amounts.sunday + amounts.holiday);
+  const total = round2(amounts.weekday + amounts.saturday + amounts.sunday);
+  const calendarMode = days.length > 0 && days[0].calendarMode;
 
-  return { counts, rates, amounts, total, homeTripDeducted, absenceDeducted };
+  return { counts, rates, amounts, total, homeTripDeducted, absenceDeducted, calendarMode };
 }
 
 // Heimfahrt-Wochenenden, die für den Optimistisch-Bonus grundsätzlich in
@@ -303,7 +319,6 @@ function openTaschengeldBreakdownModal(year, month) {
     { label: 'Mo–Fr',     count: bd.counts.weekday,  rate: bd.rates.weekday,  amount: bd.amounts.weekday },
     { label: 'Samstag',   count: bd.counts.saturday, rate: bd.rates.saturday, amount: bd.amounts.saturday },
     { label: 'Sonntag',   count: bd.counts.sunday,   rate: bd.rates.sunday,   amount: bd.amounts.sunday },
-    { label: 'Feiertage', count: bd.counts.holiday,  rate: bd.rates.holiday,  amount: bd.amounts.holiday },
   ].filter(r => r.count > 0);
 
   const rowsHtml = rowDefs.map(r => `
@@ -314,14 +329,28 @@ function openTaschengeldBreakdownModal(year, month) {
     </div>`).join('');
 
   const deductLines = [];
-  if (bd.homeTripDeducted > 0) deductLines.push(`<div class="tg-bd-deduct">Heimfahrt · ${bd.homeTripDeducted} Tag${bd.homeTripDeducted === 1 ? '' : 'e'} abgezogen</div>`);
-  if (bd.absenceDeducted  > 0) deductLines.push(`<div class="tg-bd-deduct">Abwesenheit · ${bd.absenceDeducted} Tag${bd.absenceDeducted === 1 ? '' : 'e'} abgezogen</div>`);
+  if (bd.calendarMode) {
+    deductLines.push(`<div class="tg-bd-deduct">📅 Aus deinem Kalender · ${bd.absenceDeducted} Tag${bd.absenceDeducted === 1 ? '' : 'e'} nicht da</div>`);
+  } else {
+    deductLines.push(`<div class="tg-bd-deduct">≈ Geschätzt — für diesen Monat sind noch keine Tage angeklickt</div>`);
+    if (bd.homeTripDeducted > 0) deductLines.push(`<div class="tg-bd-deduct">Heimfahrt · ${bd.homeTripDeducted} Tag${bd.homeTripDeducted === 1 ? '' : 'e'} abgezogen</div>`);
+    if (bd.absenceDeducted  > 0) deductLines.push(`<div class="tg-bd-deduct">Abwesenheit · ${bd.absenceDeducted} Tag${bd.absenceDeducted === 1 ? '' : 'e'} abgezogen</div>`);
+  }
 
   bodyEl.innerHTML = `
     ${rowsHtml || '<p class="modal-hint">Keine Taschengeld-Tage in diesem Monat.</p>'}
     ${deductLines.join('')}
     <div class="tg-bd-divider"></div>
-    <div class="tg-bd-total-row"><span>Berechnet</span><span class="tg-bd-total-amount">${fmtEuro(bd.total)}</span></div>`;
+    <div class="tg-bd-total-row"><span>${bd.calendarMode ? 'Berechnet' : 'Geschätzt'}</span><span class="tg-bd-total-amount">${fmtEuro(bd.total)}</span></div>`;
+
+  const editBtn = document.createElement('button');
+  editBtn.className = 'btn-ghost';
+  editBtn.textContent = bd.calendarMode ? '📅 Tage ändern' : '📅 Tage anklicken';
+  editBtn.addEventListener('click', () => {
+    taschengeldBreakdownModal.close();
+    openTaschengeldSettingsModal(year, month);
+  });
+  actionsEl.appendChild(editBtn);
 
   taschengeldBreakdownModal.open();
 }
@@ -334,6 +363,7 @@ function openTaschengeldBreakdownModal(year, month) {
 // =========================
 
 let tgDraft = null;
+let tgCalMonth = null; // { year, month } — im Einstellungsfenster angezeigter Monat
 
 function updateTgSettingsVisibility() {
   const enabled = document.getElementById('tg-enabled').checked;
@@ -369,25 +399,87 @@ function renderTgAbsenceList() {
   });
 }
 
-function openTaschengeldSettingsModal() {
+// Sätze/Heimfahrt aus den Feldern in den Entwurf übernehmen — damit die
+// Live-Summe unter dem Kalender schon vor dem Speichern stimmt.
+function readTgFieldsIntoDraft() {
+  tgDraft.rates.weekday  = parseFloat(document.getElementById('tg-rate-weekday').value)  || 0;
+  tgDraft.rates.saturday = parseFloat(document.getElementById('tg-rate-saturday').value) || 0;
+  tgDraft.rates.sunday   = parseFloat(document.getElementById('tg-rate-sunday').value)   || 0;
+  tgDraft.homeTrip.enabled      = document.getElementById('tg-hometrip-enabled').checked;
+  tgDraft.homeTrip.anchorMonday = document.getElementById('tg-hometrip-anchor').value || null;
+}
+
+// Klick-Kalender: angeklickte Tage = da und bezahlt. Ohne angeklickte Tage
+// zeigt er die Schätzung gestrichelt an (Knopf „Schätzung übernehmen“
+// macht daraus angeklickte Tage, die man dann nur noch korrigiert).
+function renderTgCalendar() {
+  readTgFieldsIntoDraft();
+  const { year, month } = tgCalMonth;
+  const grid = document.getElementById('tg-cal-grid');
+  grid.innerHTML = '';
+  document.getElementById('tg-cal-title').textContent =
+    new Date(year, month - 1, 1).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+
+  ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].forEach(n => {
+    const h = document.createElement('div'); h.className = 'tg-cal-dow'; h.textContent = n; grid.appendChild(h);
+  });
+  const days = computeTaschengeldDays(year, month, tgDraft);
+  const offset = (new Date(year, month - 1, 1).getDay() + 6) % 7;
+  for (let i = 0; i < offset; i++) grid.appendChild(document.createElement('div'));
+
+  const todayStr = isoDateYMD(new Date().getFullYear(), new Date().getMonth() + 1, new Date().getDate());
+  days.forEach(day => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    const estimatedPaid = !day.calendarMode && !day.isAbsence && !day.isHomeTripAffected;
+    b.className = 'tg-cal-day'
+      + (day.isMarked ? ' is-present' : '')
+      + (estimatedPaid ? ' is-estimated' : '')
+      + (day.dow === 0 || day.dow === 6 ? ' is-weekend' : '')
+      + (day.date === todayStr ? ' is-today' : '');
+    b.textContent = parseInt(day.date.slice(8), 10);
+    b.title = `${day.date.split('-').reverse().join('.')} · ${fmtEuro(day.rate)}`;
+    b.setAttribute('aria-pressed', day.isMarked ? 'true' : 'false');
+    b.addEventListener('click', () => {
+      if (tgDraft.presentDays[day.date]) delete tgDraft.presentDays[day.date];
+      else tgDraft.presentDays[day.date] = true;
+      renderTgCalendar();
+    });
+    grid.appendChild(b);
+  });
+
+  const bd = computeTaschengeldBreakdown(year, month, tgDraft);
+  const n = bd.counts.weekday + bd.counts.saturday + bd.counts.sunday;
+  document.getElementById('tg-cal-sum').innerHTML = bd.calendarMode
+    ? `<b>${n}</b> Tag${n === 1 ? '' : 'e'} da · <b>${fmtEuro(bd.total)}</b>`
+    : `Noch nichts angeklickt · geschätzt <b>${fmtEuro(bd.total)}</b>`;
+  document.getElementById('tg-cal-adopt').classList.toggle('hidden', bd.calendarMode);
+  document.getElementById('tg-cal-clear').classList.toggle('hidden', !bd.calendarMode);
+}
+
+function openTaschengeldSettingsModal(year, month) {
   tgDraft = JSON.parse(JSON.stringify(budgetTaschengeld));
+  if (!tgDraft.presentDays) tgDraft.presentDays = {};
+  const now = new Date();
+  tgCalMonth = (year && month) ? { year, month } : { year: now.getFullYear(), month: now.getMonth() + 1 };
 
   document.getElementById('tg-enabled').checked = tgDraft.enabled;
   document.getElementById('tg-rate-weekday').value  = tgDraft.rates.weekday;
   document.getElementById('tg-rate-saturday').value = tgDraft.rates.saturday;
   document.getElementById('tg-rate-sunday').value   = tgDraft.rates.sunday;
-  document.getElementById('tg-rate-holiday').value  = tgDraft.rates.holiday;
   document.getElementById('tg-hometrip-enabled').checked = tgDraft.homeTrip.enabled;
   document.getElementById('tg-hometrip-anchor').value    = tgDraft.homeTrip.anchorMonday || '';
 
-  const bl = (typeof calendarSettings !== 'undefined' && calendarSettings.bundesland) ? calendarSettings.bundesland : null;
-  document.getElementById('tg-bundesland-hint').textContent = bl
-    ? `Feiertage werden für das in den Kalender-Einstellungen gewählte Bundesland (${bl}) berechnet.`
-    : 'Kein Bundesland in den Kalender-Einstellungen gesetzt — es werden nur bundesweite Feiertage berücksichtigt.';
-
   renderTgAbsenceList();
   updateTgSettingsVisibility();
+  renderTgCalendar();
   taschengeldSettingsModal.open();
+}
+
+function shiftTgCalMonth(delta) {
+  const d = new Date(tgCalMonth.year, tgCalMonth.month - 1 + delta, 1);
+  tgCalMonth = { year: d.getFullYear(), month: d.getMonth() + 1 };
+  renderTgCalendar();
 }
 
 const taschengeldSettingsModal = wireModal('taschengeld-settings-modal-overlay', {
@@ -395,7 +487,24 @@ const taschengeldSettingsModal = wireModal('taschengeld-settings-modal-overlay',
 });
 
 document.getElementById('tg-enabled').addEventListener('change', updateTgSettingsVisibility);
-document.getElementById('tg-hometrip-enabled').addEventListener('change', updateTgSettingsVisibility);
+document.getElementById('tg-hometrip-enabled').addEventListener('change', () => { updateTgSettingsVisibility(); renderTgCalendar(); });
+['tg-rate-weekday', 'tg-rate-saturday', 'tg-rate-sunday', 'tg-hometrip-anchor'].forEach(id =>
+  document.getElementById(id).addEventListener('input', () => { if (tgDraft) renderTgCalendar(); }));
+document.getElementById('tg-cal-prev').addEventListener('click', () => shiftTgCalMonth(-1));
+document.getElementById('tg-cal-next').addEventListener('click', () => shiftTgCalMonth(1));
+// Schätzung des Monats als angeklickte Tage übernehmen (dann nur noch korrigieren)
+document.getElementById('tg-cal-adopt').addEventListener('click', () => {
+  computeTaschengeldDays(tgCalMonth.year, tgCalMonth.month, tgDraft).forEach(day => {
+    if (!day.isAbsence && !day.isHomeTripAffected) tgDraft.presentDays[day.date] = true;
+  });
+  renderTgCalendar();
+});
+// Alle Markierungen des Monats entfernen → Monat wird wieder geschätzt
+document.getElementById('tg-cal-clear').addEventListener('click', () => {
+  const prefix = `${tgCalMonth.year}-${String(tgCalMonth.month).padStart(2, '0')}-`;
+  Object.keys(tgDraft.presentDays).forEach(k => { if (k.startsWith(prefix)) delete tgDraft.presentDays[k]; });
+  renderTgCalendar();
+});
 document.getElementById('tg-absence-add').addEventListener('click', () => {
   tgDraft.absences.push({ id: 'abs_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: '', start: '', end: '' });
   renderTgAbsenceList();
@@ -403,12 +512,7 @@ document.getElementById('tg-absence-add').addEventListener('click', () => {
 
 document.getElementById('taschengeld-settings-save').addEventListener('click', () => {
   tgDraft.enabled = document.getElementById('tg-enabled').checked;
-  tgDraft.rates.weekday  = parseFloat(document.getElementById('tg-rate-weekday').value)  || 0;
-  tgDraft.rates.saturday = parseFloat(document.getElementById('tg-rate-saturday').value) || 0;
-  tgDraft.rates.sunday   = parseFloat(document.getElementById('tg-rate-sunday').value)   || 0;
-  tgDraft.rates.holiday  = parseFloat(document.getElementById('tg-rate-holiday').value)  || 0;
-  tgDraft.homeTrip.enabled      = document.getElementById('tg-hometrip-enabled').checked;
-  tgDraft.homeTrip.anchorMonday = document.getElementById('tg-hometrip-anchor').value || null;
+  readTgFieldsIntoDraft();
   // Unvollständige Abwesenheits-Zeilen (kein Start/Ende) beim Speichern verwerfen.
   tgDraft.absences = tgDraft.absences.filter(a => a.start && a.end);
 

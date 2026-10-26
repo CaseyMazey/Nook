@@ -20,6 +20,8 @@ window.NOOK_CHANGELOG = [
       'RPG: Finanzgarten wird zur Schatzkammer – Sparziele wachsen als Sonnenamulett, Smaragd-Geode, Schatztruhe, Tonkrug oder Krone, der Finanzbaum als Schatzhort',
       'RPG: Schatzkammer als Pergament-Zettel mit Seil-Trenner, Münz-Stufen, Wachssiegel-Etikett und Stempeln',
       'Taschengeld: Heimfahrt-Wochen ziehen nur noch Samstag und Sonntag ab – der Freitag wird immer bezahlt',
+      'Taschengeld: Tage zum Anklicken im Kalender – bezahlt wird jeder angeklickte Tag; Monate ohne Klicks werden geschätzt („Schätzung übernehmen“ macht daraus Klicks)',
+      'Taschengeld: kein eigener Feiertagssatz mehr – Feiertage zählen wie ihr Wochentag',
     ],
   },
   {

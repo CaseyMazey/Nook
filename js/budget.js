@@ -3253,7 +3253,7 @@ if (budgetHeaderMenuBtn) {
     });
     document.getElementById('budget-header-menu-taschengeld').addEventListener('click', () => {
       closeBudgetHeaderMenu();
-      if (typeof openTaschengeldSettingsModal === 'function') openTaschengeldSettingsModal();
+      if (typeof openTaschengeldSettingsModal === 'function') openTaschengeldSettingsModal(budgetMonth.getFullYear(), budgetMonth.getMonth() + 1);
     });
     document.getElementById('budget-header-menu-archiv').addEventListener('click', () => {
       closeBudgetHeaderMenu();
