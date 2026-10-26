@@ -19,6 +19,7 @@ window.NOOK_CHANGELOG = [
     items: [
       'RPG: Finanzgarten wird zur Schatzkammer – Sparziele wachsen als Sonnenamulett, Smaragd-Geode, Schatztruhe, Tonkrug oder Krone, der Finanzbaum als Schatzhort',
       'RPG: Schatzkammer als Pergament-Zettel mit Seil-Trenner, Münz-Stufen, Wachssiegel-Etikett und Stempeln',
+      'Taschengeld: Heimfahrt-Wochen ziehen nur noch Samstag und Sonntag ab – der Freitag wird immer bezahlt',
     ],
   },
   {

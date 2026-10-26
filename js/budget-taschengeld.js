@@ -97,9 +97,10 @@ function tgFindAbsence(dateStr) {
 // Garantiert/Optimistisch) bauen NUR auf diesem Array auf — es gibt
 // bewusst keine zweite, abweichende Tagesklassifikation.
 //
-// Heimfahrt-Regel: ab Freitag der betreffenden Woche gibt es kein
-// Taschengeld mehr — Freitag, Samstag UND Sonntag zählen als "zu Hause",
-// nicht nur der Sonntag (Korrektur ggü. einer früheren, engeren Lesart).
+// Heimfahrt-Regel: in einer Heimfahrt-Woche gibt es für Samstag und
+// Sonntag kein Taschengeld. Der Freitag wird immer bezahlt, auch wenn
+// danach nach Hause gefahren wird (Klarstellung der Nutzerin, Okt. 2026).
+// Nur eine Abwesenheit (Urlaub, Praktikum …) streicht auch Werktage.
 // =========================
 function computeTaschengeldDays(year, month) {
   const rates = budgetTaschengeld.rates;
@@ -120,8 +121,8 @@ function computeTaschengeldDays(year, month) {
       date: dateStr, dow, category, rate: rates[category] ?? 0,
       isAbsence: !!tgFindAbsence(dateStr),
       isHomeTripWeek: homeTripWeek,
-      // Fr/Sa/So einer Heimfahrt-Woche — die eigentlich "verlorenen" Tage.
-      isHomeTripAffected: homeTripWeek && (dow === 5 || dow === 6 || dow === 0),
+      // Sa/So einer Heimfahrt-Woche — die eigentlich "verlorenen" Tage.
+      isHomeTripAffected: homeTripWeek && (dow === 6 || dow === 0),
     });
   }
   return days;
@@ -134,7 +135,7 @@ function computeTaschengeldDays(year, month) {
 // tgScenarioAmount — beide sind bei Taschengeld deterministisch und
 // daher identisch, anders als bei variablen Budget-Posten mit echter
 // Min/Max-Bandbreite).
-// Priorität je Tag: Abwesenheit > Heimfahrt (Fr/Sa/So) > Feiertag > Sa/So > Mo-Fr.
+// Priorität je Tag: Abwesenheit > Heimfahrt (Sa/So) > Feiertag > Sa/So > Mo-Fr.
 function computeTaschengeldBreakdown(year, month) {
   const days = computeTaschengeldDays(year, month);
   const counts = { weekday: 0, saturday: 0, sunday: 0, holiday: 0 };
