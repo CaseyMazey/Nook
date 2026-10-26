@@ -356,6 +356,11 @@ function renderGardenCanvasPlants() {
     return `
       <div class="garden-plant" data-id="${sticker.id}" style="left:${sticker.x}%; top:${sticker.y}%; z-index:${sticker.order || 0};">
         ${visual}
+        <div class="garden-plant-tools">
+          <button type="button" class="garden-plant-tool" data-act="smaller" data-id="${sticker.id}" title="Kleiner" aria-label="Kleiner"${(sticker.scale || 1) <= GARDEN_SCALE_MIN + 0.001 ? ' disabled' : ''}>−</button>
+          <button type="button" class="garden-plant-tool" data-act="bigger" data-id="${sticker.id}" title="Größer" aria-label="Größer"${(sticker.scale || 1) >= GARDEN_SCALE_MAX - 0.001 ? ' disabled' : ''}>+</button>
+          <button type="button" class="garden-plant-tool" data-act="flip" data-id="${sticker.id}" title="Spiegeln" aria-label="Spiegeln">⇋</button>
+        </div>
         <button type="button" class="garden-plant-remove" data-id="${sticker.id}" aria-label="Entfernen">✕</button>
       </div>
     `;
@@ -367,7 +372,53 @@ function renderGardenCanvasPlants() {
       removeGardenSticker(btn.dataset.id);
     });
   });
+  layer.querySelectorAll('.garden-plant-tool').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      adjustGardenSticker(btn.dataset.id, btn.dataset.act);
+    });
+  });
+  // Ausgewählte Pflanze (Antippen auf Touch-Geräten) nach dem Neuzeichnen
+  // wieder markieren, damit die Knöpfe sichtbar bleiben
+  if (gardenSelectedStickerId) {
+    layer.querySelector(`.garden-plant[data-id="${gardenSelectedStickerId}"]`)?.classList.add('garden-plant-selected');
+  }
 }
+
+// =========================
+// GRÖSSE & SPIEGELN (garden.md: scale/flipX, bisher ohne Bedienung)
+// Kleine Knöpfe neben dem ✕, nur bei Hover/Fokus bzw. nach Antippen
+// sichtbar. Größe springt in 10-%-Stufen (keine Animation — „Show the
+// moments, not the movement“), Spanne bewusst begrenzt, damit die
+// Bilderbuch-Proportionen erhalten bleiben. Nur auf der Gartenfläche.
+// =========================
+const GARDEN_SCALE_MIN = 0.6, GARDEN_SCALE_MAX = 1.6, GARDEN_SCALE_STEP = 0.1;
+let gardenSelectedStickerId = null;
+
+function adjustGardenSticker(id, act) {
+  const sticker = gardenStickers.find(s => s.id === id);
+  if (!sticker) return;
+  const cur = sticker.scale || 1;
+  if (act === 'bigger')  sticker.scale = Math.round(Math.min(GARDEN_SCALE_MAX, cur + GARDEN_SCALE_STEP) * 10) / 10;
+  if (act === 'smaller') sticker.scale = Math.round(Math.max(GARDEN_SCALE_MIN, cur - GARDEN_SCALE_STEP) * 10) / 10;
+  if (act === 'flip')    sticker.flipX = !sticker.flipX;
+  sticker.order = Date.now();
+  gardenSelectedStickerId = id;
+  saveGardenStickers();
+  renderGardenCanvasPlants();
+  // Fokus auf denselben Knopf zurück (Tastaturbedienung)
+  document.querySelector(`#garden-canvas-plants .garden-plant-tool[data-id="${id}"][data-act="${act}"]:not(:disabled)`)?.focus();
+}
+
+function selectGardenSticker(id) {
+  gardenSelectedStickerId = id;
+  document.querySelectorAll('#garden-canvas-plants .garden-plant').forEach(el =>
+    el.classList.toggle('garden-plant-selected', el.dataset.id === id));
+}
+// Antippen neben eine Pflanze hebt die Auswahl wieder auf
+document.addEventListener('pointerdown', e => {
+  if (gardenSelectedStickerId && !e.target.closest('#garden-canvas-plants .garden-plant')) selectGardenSticker(null);
+});
 
 // Ein Klick in der Palette pflanzt einen Samen ins Anzuchtfeld (nicht mehr
 // direkt eine ausgewachsene Pflanze in den Garten, siehe garden.md
@@ -447,7 +498,7 @@ function bindGardenPlantDrag(el) {
   let startX = 0, startY = 0;
 
   el.addEventListener('pointerdown', e => {
-    if (e.target.closest('.garden-plant-remove')) return;
+    if (e.target.closest('.garden-plant-remove, .garden-plant-tools')) return;
     dragging = true;
     moved = false;
     startX = e.clientX;
@@ -485,6 +536,9 @@ function bindGardenPlantDrag(el) {
       }
       saveGardenStickers();
     }
+    // Kurzes Antippen ohne Verschieben wählt die Pflanze aus (zeigt die
+    // Knöpfe auch ohne Maus-Hover, z. B. auf dem Handy)
+    if (!moved) selectGardenSticker(id);
   });
 }
 

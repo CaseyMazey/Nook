@@ -10,9 +10,16 @@
 // hinten wegfallen, angezeigt werden ohnehin nur die neuesten.
 // =========================
 
-window.NOOK_VERSION = '2026.10.9';
+window.NOOK_VERSION = '2026.10.10';
 
 window.NOOK_CHANGELOG = [
+  {
+    version: '2026.10.10',
+    date: '2026-10-26',
+    items: [
+      'Garten: Pflanzen lassen sich vergrößern, verkleinern und spiegeln (kleine Knöpfe neben dem ✕, auf dem Handy nach Antippen)',
+    ],
+  },
   {
     version: '2026.10.9',
     date: '2026-10-26',

@@ -69,7 +69,7 @@
    (gardenComposeVisualHTML() in js/garden.js — die meisten img/decor/-
    Dateien sind nur Blüte/Frucht, kein vollständiger Pflanzenkörper, siehe
    garden.md). Gemeinsam für Garten-Fläche und Anzuchtfeld-Vorschau. ── */
-.garden-plant-visual { position: relative; display: block; }
+.garden-plant-visual { position: relative; display: block; transform-origin: 50% 100%; }
 .garden-plant-body {
   width: 100%;
   height: auto;
@@ -102,7 +102,43 @@
   transition: opacity var(--transition);
 }
 .garden-plant:hover .garden-plant-remove,
-.garden-plant:focus-within .garden-plant-remove { opacity: 1; }
+.garden-plant:focus-within .garden-plant-remove,
+.garden-plant-selected .garden-plant-remove { opacity: 1; }
+
+/* Größe/Spiegeln — gleiche Optik wie das ✕, links oben als kleine Leiste */
+.garden-plant-tools {
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  display: flex;
+  gap: 3px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition);
+}
+.garden-plant:hover .garden-plant-tools,
+.garden-plant:focus-within .garden-plant-tools,
+.garden-plant-selected .garden-plant-tools { opacity: 1; pointer-events: auto; }
+.garden-plant-tool {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: calc(11px * var(--core-font-scale));
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.garden-plant-tool:hover:not(:disabled) { color: var(--text); border-color: var(--sage-border); }
+.garden-plant-tool:disabled { opacity: .4; cursor: default; }
+@media (pointer: coarse) {
+  .garden-plant-tool, .garden-plant-remove { width: 26px; height: 26px; }
+}
 
 .garden-discovery-note {
   position: absolute;
