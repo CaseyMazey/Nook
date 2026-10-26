@@ -24,6 +24,8 @@ window.NOOK_CHANGELOG = [
       'Heute: optionale Zeile „Heute fällig“ mit den Budget-Posten des Tages',
       'Budget: Prognose zeigt Ziele in der echten Verteil-Reihenfolge; „Demnächst“ kennt jetzt auch wöchentliche Posten und Einmalbuchungen',
       'Budget: Farben im Dunkelmodus gut lesbar, Beträge überall im gleichen Format (150,00 €)',
+      'RPG-Heute: die Uhr ist jetzt eine astronomische Taschenuhr – mit echter Mondphase und einem Sternenhimmel, der sich langsam mitdreht',
+      'RPG-Budget: Farben auf Papier und Holz wieder gut lesbar, kleine Schrift in der Finanzierung größer',
       'Budget: Korrekturen – archivierte Ziele belegen kein Geld mehr, mehrfache Finanzierungen gehen beim Bearbeiten nicht verloren, Sparpläne am 31. springen nicht mehr über kurze Monate',
     ],
   },

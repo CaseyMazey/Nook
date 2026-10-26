@@ -380,6 +380,15 @@ function renderSidebarClock() {
   const panel = document.getElementById('clock-sidebar-panel');
   if (!panel) return;
   const now = new Date();
+  // Der Intervall läuft sekündlich (damit der Minutenwechsel pünktlich
+  // kommt), neu gezeichnet wird aber nur, wenn sich Minute oder Stil ändert.
+  const rpg = document.documentElement.dataset.todayStyle === 'rpg' && typeof renderRpgClock === 'function';
+  const key = `${rpg ? 'rpg' : 'std'}|${now.getHours()}:${now.getMinutes()}`;
+  if (panel._clockKey === key) return;
+  panel._clockKey = key;
+  panel.classList.toggle('rpg-clock-panel', rpg);
+  if (rpg) { renderRpgClock(panel, now); return; }
+
   const hh  = String(now.getHours()).padStart(2,'0');
   const mm  = String(now.getMinutes()).padStart(2,'0');
   const weekday = now.toLocaleDateString('de-DE', { weekday: 'long' });

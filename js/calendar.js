@@ -1421,7 +1421,8 @@ function getMoonPhase(date) {
   if (phase < 0) phase += 1;
   const illum = Math.round((1 - Math.cos(2*Math.PI*phase)) / 2 * 100);
   const p = MOON_PHASES.find(p => phase <= p.max) || MOON_PHASES[0];
-  return { label: p.label, icon: p.icon, illum };
+  // phase (0 = Neumond … 0.5 = Vollmond … 1) zeichnet u.a. die RPG-Taschenuhr
+  return { label: p.label, icon: p.icon, illum, phase };
 }
 
 // ── Header: Saison-Tag, Titel-Zeile, Satz, Banner ────────────
