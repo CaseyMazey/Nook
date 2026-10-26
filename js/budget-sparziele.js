@@ -118,7 +118,7 @@ function renderSparziele(){
 
 function buildSparzielCard(goal){
   const pct = goal.target > 0 ? Math.min(100, Math.round((goal.current / goal.target) * 100)) : 0;
-  const emoji = PLANT_EMOJIS[goal.plantType] || '🌱';
+  const emoji = gardenPlantEmoji(goal.plantType);
   const hasItems = Array.isArray(goal.items) && goal.items.length > 0;
   const optionalCount = hasItems ? goal.items.filter(it => it.optional).length : 0;
   const card = document.createElement('div'); card.className = 'sp-plan-card';

@@ -188,6 +188,8 @@ Zusätzlich zu den Sparziel-Pflanzen wächst ein eigener Finanzbaum mit dem Kont
 
 Der Finanzgarten dient ausschließlich der Motivation.
 
+Im RPG-Stil (Theme-Eigenschaft „Übrige Seiten“ = Pergament, `data-pages-style="rpg"`) wird der Finanzgarten zur **Schatzkammer** (js/budget-schatzkammer.js): Jede Pflanze hat ein Schatz-Gegenstück mit denselben 6 Stufen — Sonnenblume → Sonnenamulett, Kaktus → Smaragd-Geode, Bonsai → Schatztruhe, Zimmerpflanze → Tonkrug, Kirschblüte → Krone; der Finanzbaum wird zum Schatzhort. Namen und Symbole wechseln mit (auch in der Pflanzenauswahl), gespeichert bleibt immer der Pflanzen-Schlüssel (`plantType`). Eigene Stufen-Namen des Finanzbaums bleiben erhalten, nur die Standard-Namen werden übersetzt.
+
 ---
 
 # Sparziele

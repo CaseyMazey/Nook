@@ -388,7 +388,7 @@ function renderSparplanGoals(rates) {
 
   const rows = activeGoals.map((g, i) => {
     const pct = g.target > 0 ? Math.min(100, Math.round((g.current / g.target) * 100)) : 0;
-    const emoji = PLANT_EMOJIS[g.plantType] || '🌱';
+    const emoji = gardenPlantEmoji(g.plantType);
     const gEta = etaByScenario.garant[i], rEta = etaByScenario.real[i], oEta = etaByScenario.opt[i];
 
     let compareHtml = '<span class="sp-goal-compare none">– keine ETA</span>';
@@ -563,7 +563,7 @@ function renderSparplanTimeline(activeRate) {
         <div class="sp-tl-connector" style="height:${connectorH}px"></div>
         <div class="sp-tl-card" style="top:${connectorH + 6}px">
           <div class="sp-tl-month">${sparplanerFormatEtaDate(p.e.date)}</div>
-          <div class="sp-tl-icon">${PLANT_EMOJIS[g.plantType] || '🌱'}</div>
+          <div class="sp-tl-icon">${gardenPlantEmoji(g.plantType)}</div>
           <div class="sp-tl-goal">${g.name}</div>
           <div class="sp-tl-amt">${fmtEuro(g.target)} erreicht</div>
         </div>
@@ -592,7 +592,7 @@ function renderSparplanSimulator(rates) {
   const topGoal = sparplanerActiveGoals()[0];
   const simEtas = sparplanerETAs(current);
   const topEtaHtml = topGoal
-    ? `<div class="sp-sim-hint">${PLANT_EMOJIS[topGoal.plantType] || '🌱'} ${topGoal.name} bei diesem Betrag: <b>${simEtas[0].reached ? 'bereits erreicht' : sparplanerFormatEtaDate(simEtas[0].date)}</b></div>`
+    ? `<div class="sp-sim-hint">${gardenPlantEmoji(topGoal.plantType)} ${topGoal.name} bei diesem Betrag: <b>${simEtas[0].reached ? 'bereits erreicht' : sparplanerFormatEtaDate(simEtas[0].date)}</b></div>`
     : `<div class="sp-sim-hint">Noch keine Sparziele angelegt.</div>`;
 
   el.innerHTML = `
@@ -629,7 +629,7 @@ function renderSparplanSimulatorHintOnly() {
   const topGoal = sparplanerActiveGoals()[0];
   if (hintEl && topGoal) {
     const e = sparplanerETAs(sparplanerSimRate)[0];
-    hintEl.innerHTML = `${PLANT_EMOJIS[topGoal.plantType] || '🌱'} ${topGoal.name} bei diesem Betrag: <b>${e.reached ? 'bereits erreicht' : sparplanerFormatEtaDate(e.date)}</b>`;
+    hintEl.innerHTML = `${gardenPlantEmoji(topGoal.plantType)} ${topGoal.name} bei diesem Betrag: <b>${e.reached ? 'bereits erreicht' : sparplanerFormatEtaDate(e.date)}</b>`;
   }
 }
 

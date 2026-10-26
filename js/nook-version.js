@@ -10,9 +10,17 @@
 // hinten wegfallen, angezeigt werden ohnehin nur die neuesten.
 // =========================
 
-window.NOOK_VERSION = '2026.10.7';
+window.NOOK_VERSION = '2026.10.8';
 
 window.NOOK_CHANGELOG = [
+  {
+    version: '2026.10.8',
+    date: '2026-10-26',
+    items: [
+      'RPG: Finanzgarten wird zur Schatzkammer – Sparziele wachsen als Sonnenamulett, Smaragd-Geode, Schatztruhe, Tonkrug oder Krone, der Finanzbaum als Schatzhort',
+      'RPG: Schatzkammer als Pergament-Zettel mit Seil-Trenner, Münz-Stufen, Wachssiegel-Etikett und Stempeln',
+    ],
+  },
   {
     version: '2026.10.7',
     date: '2026-10-23',

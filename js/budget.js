@@ -1295,6 +1295,8 @@ const FINANZBAUM_SVGS = {
 };
 
 function buildFinanzbaumSvg(stage) {
+  // RPG-Stil: Schatzhort statt Münzbaum (js/budget-schatzkammer.js)
+  if (typeof isTreasureStyle === 'function' && isTreasureStyle()) return HOARD_SVGS[stage] || HOARD_SVGS.seed;
   return FINANZBAUM_SVGS[stage] || FINANZBAUM_SVGS.seed;
 }
 const GOAL_STAGE_THRESHOLDS = [
@@ -1324,6 +1326,16 @@ const PLANT_NAMES = {
   potplant:      'Zimmerpflanze',
   cherryblossom: 'Kirschblüte',
 };
+// Theme-abhängige Anzeige: im RPG-Stil Schatz-Symbole/-Namen
+// (TREASURE_EMOJIS/TREASURE_NAMES, js/budget-schatzkammer.js). Gespeichert
+// bleibt immer der Pflanzen-Schlüssel (goal.plantType).
+function gardenTreasureMode() { return typeof isTreasureStyle === 'function' && isTreasureStyle(); }
+function gardenPlantEmoji(type) {
+  return gardenTreasureMode() ? (TREASURE_EMOJIS[type] || '🪙') : (PLANT_EMOJIS[type] || '🌱');
+}
+function gardenPlantName(type) {
+  return gardenTreasureMode() ? (TREASURE_NAMES[type] || 'Schatz') : (PLANT_NAMES[type] || 'Pflanze');
+}
 
 // Plant-type specific tint colors for SVG (stem/leaf color)
 // =============================================================
@@ -1862,7 +1874,8 @@ const PLANT_SVGS = {
 
 function buildPlantSvg(stage, plantType) {
   const type = plantType || 'sunflower';
-  const plantSet = PLANT_SVGS[type] || PLANT_SVGS.sunflower;
+  const svgs = gardenTreasureMode() ? TREASURE_SVGS : PLANT_SVGS;
+  const plantSet = svgs[type] || svgs.sunflower;
   return plantSet[stage] || plantSet.seed;
 }
 
@@ -1914,15 +1927,17 @@ function renderFinanzgarten() {
     }
   }
   const plantType  = activeGoal?.plantType || 'sunflower';
-  const plantEmoji = PLANT_EMOJIS[plantType] || '🌱';
-  const plantName  = PLANT_NAMES[plantType] || 'Pflanze';
+  const plantEmoji = gardenPlantEmoji(plantType);
+  const plantName  = gardenPlantName(plantType);
+  const treasure   = gardenTreasureMode();
+  if (typeof applyTreasurePickerLabels === 'function') applyTreasurePickerLabels();
 
   // Render
   card.innerHTML = `
     <div class="b-garden-header">
       <div class="b-garden-title-block">
-        <span class="b-garden-emoji">🌿</span>
-        <span class="b-garden-title">Finanzgarten</span>
+        <span class="b-garden-emoji">${treasure ? '🗝️' : '🌿'}</span>
+        <span class="b-garden-title">${treasure ? 'Schatzkammer' : 'Finanzgarten'}</span>
       </div>
       ${gardenGoals.length > 0 ? `
         <button class="b-garden-select-btn" id="garden-select-goal-btn">
@@ -1934,9 +1949,9 @@ function renderFinanzgarten() {
     <div class="b-garden-scene">
       <!-- Finanzbaum links -->
       <div class="b-garden-plant">
-        <div class="b-garden-stage-label">${treeLevel.label}</div>
+        <div class="b-garden-stage-label">${treasure ? hoardStageLabel(treeLevel) : treeLevel.label}</div>
         <div class="b-garden-svg">${buildFinanzbaumSvg(treeLevel.stage)}</div>
-        <div class="b-garden-plant-name">Finanzbaum</div>
+        <div class="b-garden-plant-name">${treasure ? 'Schatzhort' : 'Finanzbaum'}</div>
         <div class="b-garden-plant-val">${treeKsStr}</div>
         <div class="b-garden-mini-bar">
           ${getGardenTreeLevels().map((lv) => `<div class="b-garden-pip${kontostand !== null && kontostand >= lv.min ? ' filled' : ''}"></div>`).join('')}
@@ -1991,7 +2006,7 @@ function renderFinanzgarten() {
       gardenGoals.forEach(g => {
         const item = document.createElement('button');
         item.className = 'b-garden-dropdown-item' + (g.id === activeGoal?.id ? ' active' : '');
-        const emoji = PLANT_EMOJIS[g.plantType] || '🌱';
+        const emoji = gardenPlantEmoji(g.plantType);
         const pct   = g.target > 0 ? Math.min(100, Math.round((g.current / g.target) * 100)) : 0;
         item.innerHTML = `<span>${emoji} ${g.name}</span><span class="b-garden-dd-pct">${pct}%</span>`;
         item.addEventListener('click', (ev) => {
@@ -2207,7 +2222,7 @@ function renderBudgetGoals(){
     const pct  = goal.target > 0 ? Math.min(100, Math.round((goal.current/goal.target)*100)) : 0;
     const card = document.createElement('div'); card.className = 'budget-goal-card';
     const head = document.createElement('div'); head.className = 'budget-goal-head';
-    const emoji = PLANT_EMOJIS[goal.plantType] || '🌱';
+    const emoji = gardenPlantEmoji(goal.plantType);
     const nm   = document.createElement('span'); nm.className = 'budget-row-name';
     // Verknüpften Sparplan (falls vorhanden) rein informativ anzeigen —
     // sparplanForGoal() lebt in budget-sparplaene.js (später geladen),
@@ -3144,7 +3159,7 @@ function renderBudgetArchiv(){
   } else {
     archivedGoals.forEach(goal => {
       const row = document.createElement('div'); row.className = 'budget-archiv-row';
-      const emoji = PLANT_EMOJIS[goal.plantType] || '🌱';
+      const emoji = gardenPlantEmoji(goal.plantType);
 
       const info = document.createElement('div'); info.className = 'budget-archiv-info';
       const name = document.createElement('div'); name.className = 'archive-project-name';

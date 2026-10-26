@@ -59,7 +59,7 @@
 
 /* ── Zettel: Tinte, Papier, Pin ──────────────────────────────── */
 [data-pages-style="rpg"] :is(.fc-stat-card, #view-flashcards .panel, .group-card, #fc-session-panel,
-  .b-main-card, .b-liquidity-card, .b-card, .sp-panel, .sp-scen-card,
+  .b-main-card, .b-liquidity-card, .b-card, #budget-garden-card, .sp-panel, .sp-scen-card,
   .game-library-card, .games-side-card, .tool-card, #view-settings .settings-panel) {
   --text:   var(--deco-ink);
   --text-2: color-mix(in srgb, var(--deco-ink) 82%, transparent);
@@ -88,13 +88,13 @@
   overflow: visible !important;
 }
 [data-pages-style="rpg"][data-theme-family="dark"] :is(.fc-stat-card, #view-flashcards .panel, .group-card, #fc-session-panel,
-  .b-main-card, .b-liquidity-card, .b-card, .sp-panel, .sp-scen-card,
+  .b-main-card, .b-liquidity-card, .b-card, #budget-garden-card, .sp-panel, .sp-scen-card,
   .game-library-card, .games-side-card, .tool-card, #view-settings .settings-panel) {
   --paper-dim: brightness(.82) saturate(.85);
 }
 
 [data-pages-style="rpg"] :is(.fc-stat-card, #view-flashcards .panel, .group-card, #fc-session-panel,
-  .b-main-card, .b-liquidity-card, .b-card, .sp-panel, .sp-scen-card,
+  .b-main-card, .b-liquidity-card, .b-card, #budget-garden-card, .sp-panel, .sp-scen-card,
   .game-library-card, .games-side-card, .tool-card, #view-settings .settings-panel)::before {
   content: '';
   position: absolute; inset: 0;
@@ -108,7 +108,7 @@
   pointer-events: none;
 }
 [data-pages-style="rpg"] :is(.fc-stat-card, #view-flashcards .panel, .group-card, #fc-session-panel,
-  .b-main-card, .b-liquidity-card, .b-card, .sp-panel,
+  .b-main-card, .b-liquidity-card, .b-card, #budget-garden-card, .sp-panel,
   .games-side-card, .tool-card, #view-settings .settings-panel)::after {
   content: '';
   position: absolute;
@@ -176,6 +176,108 @@
 }
 [data-pages-style="rpg"] .b-main-card-detail { background: transparent; }
 
+/* ── Finanzgarten → Schatzkammer (Bilder: js/budget-schatzkammer.js) ──
+   Pergament-Zettel wie die übrigen Karten; Zaun wird Seil, Stufen-Pips
+   werden Münzen, die Ziel-Auswahl ein Etikett mit Wachssiegel, die
+   Pflicht/Alle-Umschalter Stempel. */
+[data-pages-style="rpg"] #budget-garden-card {
+  --b-garden-title:     var(--deco-ink);
+  --b-garden-select:    var(--deco-ink);
+  --b-garden-line:      color-mix(in srgb, var(--deco-ink) 13%, transparent);
+  --b-garden-header-bg: transparent;
+  --b-garden-stage:     color-mix(in srgb, var(--deco-ink) 78%, transparent);
+  --b-garden-stage-bg:  color-mix(in srgb, var(--deco-ink) 8%, transparent);
+  --b-garden-plant:     var(--deco-ink);
+  --b-garden-plant-val: color-mix(in srgb, var(--deco-ink) 85%, transparent);
+  --b-garden-track:     color-mix(in srgb, var(--deco-ink) 13%, transparent);
+  padding: 6px 6px 14px;
+}
+[data-pages-style="rpg"] #budget-garden-card .b-garden-title {
+  font-family: var(--font-heading);
+  font-weight: 400;
+  font-size: calc(16px * var(--core-font-scale));
+  text-transform: none;
+  letter-spacing: .03em;
+}
+[data-pages-style="rpg"] #budget-garden-card .b-garden-ground { display: none; }
+[data-pages-style="rpg"] #budget-garden-card .b-garden-svg { width: 92px; height: 92px; }
+
+/* Ziel-Auswahl: Papier-Etikett mit Wachssiegel */
+[data-pages-style="rpg"] #budget-garden-card .b-garden-select-btn {
+  position: relative;
+  padding: 4px 12px 4px 30px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--sheen) 40%, transparent);
+  border: 1px solid color-mix(in srgb, var(--deco-ink) 28%, transparent);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--shadow-tint) 25%, transparent);
+}
+[data-pages-style="rpg"] #budget-garden-card .b-garden-select-btn::before {
+  content: '';
+  position: absolute;
+  left: -6px; top: 50%;
+  width: 28px; height: 28px;
+  margin-top: -14px;
+  background: url('../assets/questboard/seal.webp') center / contain no-repeat;
+  filter: drop-shadow(0 1px 1px color-mix(in srgb, var(--shadow-tint) 40%, transparent));
+}
+
+/* Trennung: gedrehtes Seil statt Bambuszaun */
+[data-pages-style="rpg"] #budget-garden-card .b-garden-fence-post { visibility: hidden; }
+[data-pages-style="rpg"] #budget-garden-card .b-garden-fence-rail {
+  width: 4px;
+  border-radius: 2px;
+  background: repeating-linear-gradient(160deg,
+    color-mix(in srgb, var(--amber) 65%, var(--deco-ink)) 0 3px,
+    color-mix(in srgb, var(--amber) 35%, var(--sheen)) 3px 6px);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--shadow-tint) 30%, transparent);
+}
+
+/* Hort-Stufen: Münzen statt Striche */
+[data-pages-style="rpg"] #budget-garden-card .b-garden-mini-bar { gap: 4px; margin-top: 4px; }
+[data-pages-style="rpg"] #budget-garden-card .b-garden-pip {
+  width: 11px; height: 11px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--deco-ink) 12%, transparent);
+  box-shadow: inset 0 1px 1px color-mix(in srgb, var(--deco-ink) 20%, transparent);
+}
+[data-pages-style="rpg"] #budget-garden-card .b-garden-pip.filled {
+  background: url('../assets/questboard/coin.webp') center / cover no-repeat;
+  box-shadow: 0 1px 1px color-mix(in srgb, var(--shadow-tint) 35%, transparent);
+}
+
+/* Sparziel-Balken in Goldtinte (überschreibt den Pflanzen-Farbverlauf) */
+[data-pages-style="rpg"] #budget-garden-card .b-garden-progress-bar { height: 6px; }
+[data-pages-style="rpg"] #budget-garden-card .b-garden-progress-fill {
+  background: linear-gradient(to right, color-mix(in srgb, var(--amber) 80%, var(--sheen)), color-mix(in srgb, var(--amber) 70%, var(--deco-ink))) !important;
+}
+
+/* Pflicht/Alle: Stempel */
+[data-pages-style="rpg"] #budget-garden-card .b-garden-track-btn {
+  border-radius: 3px;
+  background: transparent;
+  border: 1.5px dashed color-mix(in srgb, var(--deco-ink) 30%, transparent);
+  color: color-mix(in srgb, var(--deco-ink) 60%, transparent);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+[data-pages-style="rpg"] #budget-garden-card .b-garden-track-btn.active {
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--deco-orange) 55%, var(--deco-ink));
+  color: color-mix(in srgb, var(--deco-orange) 55%, var(--deco-ink));
+  background: transparent;
+  transform: rotate(-3deg);
+}
+
+/* Funkeln bei 100 % — nur ohne „Animationen reduzieren“ */
+[data-pages-style="rpg"] .tr-twinkle {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: trTwinkle 2.4s ease-in-out infinite;
+}
+[data-pages-style="rpg"] .tr-twinkle:nth-of-type(2n) { animation-delay: 1.2s; }
+@keyframes trTwinkle { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .35; transform: scale(.6); } }
+@media (prefers-reduced-motion: reduce) { [data-pages-style="rpg"] .tr-twinkle { animation: none; } }
+
 /* Spielekarten: farbiger Streifen oben wird zum Tintenstrich auf dem Papier */
 [data-pages-style="rpg"] .game-library-card::after {
   top: 18px; left: 26px; right: 26px;
@@ -186,7 +288,7 @@
 
 /* Eingaben auf Papier — sonst nachts dunkle Felder auf hellem Blatt */
 [data-pages-style="rpg"] :is(.fc-stat-card, #view-flashcards .panel, .group-card, #fc-session-panel,
-  .b-main-card, .b-liquidity-card, .b-card, .sp-panel, .sp-scen-card,
+  .b-main-card, .b-liquidity-card, .b-card, #budget-garden-card, .sp-panel, .sp-scen-card,
   .game-library-card, .games-side-card, .tool-card, #view-settings .settings-panel)
   :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]), select, textarea) {
   background-color: color-mix(in srgb, var(--sheen) 45%, transparent);
