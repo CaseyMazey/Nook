@@ -642,6 +642,22 @@ document.getElementById('project-task-modal-save').addEventListener('click', () 
   }
 });
 
+// Neue Aufgaben von außen (Schnellnotiz „Ablegen“, today-quicknote-send.js)
+// — eine Aufgabe pro Zeile, im selben Format wie das Aufgaben-Modal.
+function addProjectTasksFromLines(projectId, subprojectId, lines) {
+  const proj = projects.find(p => p.id === projectId);
+  if (!proj) return 0;
+  const sp = subprojectId ? (proj.subprojects || []).find(s => s.id === subprojectId) : null;
+  const target = sp ? sp.tasks : proj.tasks;
+  lines.forEach(text => target.push({
+    id: crypto.randomUUID(), text, description: '', done: false, isExtra: false,
+    categoryId: null, completedAt: null, checklist: [],
+  }));
+  proj.updatedAt = Date.now();
+  saveProjects();
+  return lines.length;
+}
+
 // =========================
 // UNTERPROJEKT MODAL
 // =========================

@@ -777,3 +777,46 @@
 .today-budget-due-item b.income  { color: color-mix(in srgb, var(--status-ok) 50%, var(--text)); }
 .today-budget-due-item b.expense { color: color-mix(in srgb, var(--status-danger) 70%, var(--text)); }
 @media (max-width: 480px) { .today-budget-due { max-width: none; border-radius: var(--radius); } }
+
+/* =============================================================
+   SCHNELLNOTIZ „ABLEGEN“ (js/today-quicknote-send.js)
+============================================================= */
+#panel-quicknote .panel-header { gap: 8px; }
+.qn-send-btn {
+  margin-left: auto;
+  padding: 3px 9px;
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  background: none;
+  color: var(--text-3);
+  font: inherit; font-size: calc(11.5px * var(--core-font-scale));
+  cursor: pointer;
+  transition: color var(--transition), border-color var(--transition);
+}
+.qn-send-btn:hover { color: var(--text); border-color: var(--sage-border); }
+.qn-sent-hint {
+  border: none; background: none; padding: 0;
+  color: var(--sage-dark); font: inherit; font-size: calc(11.5px * var(--core-font-scale));
+  cursor: pointer; text-decoration: underline; text-underline-offset: 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+}
+[data-theme-family="dark"] .qn-sent-hint { color: var(--sage-light); }
+.qn-sent-hint.hidden { display: none; }
+
+.qn-send-preview {
+  max-height: 120px; overflow: auto;
+  margin: 4px 0 10px; padding: 10px 12px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 13px; white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.qn-send-targets { display: flex; flex-wrap: wrap; gap: 6px; }
+.qn-send-target {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: none; color: var(--text-2);
+  font: inherit; font-size: 13px; cursor: pointer;
+}
+.qn-send-target.active { border-color: var(--sage-border); background: var(--sage-bg); color: var(--text); font-weight: 600; }

@@ -17,6 +17,7 @@ window.NOOK_CHANGELOG = [
     version: '2026.10.10',
     date: '2026-10-26',
     items: [
+      'Schnellnotiz: „↗ Ablegen“ schickt den markierten Text (oder die ganze Notiz) als Pinnwand-Karte, Projektaufgabe oder Wochenaufgabe weiter',
       'Neu: globale Suche – Strg + K (oder „Suchen“ in der Seitenleiste) findet Anleitungen, Karteikarten, Projekte, Pinnwand, Termine, Budget, Quests und Aufgaben und springt direkt hin',
       'Garten: Pflanzen lassen sich vergrößern, verkleinern und spiegeln (kleine Knöpfe neben dem ✕, auf dem Handy nach Antippen)',
     ],

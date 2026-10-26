@@ -398,6 +398,19 @@ function nextDeskOrder(col) {
   return inCol.length ? Math.max(...inCol.map(c => c.order || 0)) + 1 : 0;
 }
 
+// Neue Standard-Karte von außen (Schnellnotiz „Ablegen“, today-quicknote-send.js)
+// — die Pinnwand legt ihre Karte selbst an, im selben Format wie das Modal.
+function addDeskCardFromText(title, content) {
+  const card = {
+    id: crypto.randomUUID(), title: title || 'Notiz', style: 'standard', color: null,
+    column: 0, order: nextDeskOrder(0), height: null,
+    content: content || '', items: [], hideCompleted: false, betrieb: '', schule: '',
+  };
+  deskCards.push(card);
+  saveDeskCards();
+  return card;
+}
+
 document.getElementById('tile-modal-save').addEventListener('click', () => {
   const title = document.getElementById('tile-modal-title').value.trim();
   if (!title) return;

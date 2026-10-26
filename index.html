@@ -385,6 +385,8 @@
               <div class="panel-header">
                 <span class="panel-label">Schnellnotiz</span>
                 <span class="save-hint" id="note-saved">gespeichert</span>
+                <button type="button" class="qn-sent-hint hidden" id="qn-sent-hint"></button>
+                <button type="button" class="qn-send-btn" id="qn-send-btn" title="Notiz (oder markierten Text) als Pinnwand-Karte, Projekt- oder Wochenaufgabe ablegen">↗ Ablegen</button>
               </div>
               <textarea id="quicknote" placeholder="Gedanken, Fragen, Reminders..."></textarea>
             </div>
@@ -2877,6 +2879,31 @@
   </div>
 
   <!-- Budget-Archiv (erfüllte Sparziele / beglichene Schulden) -->
+  <!-- Schnellnotiz ablegen (js/today-quicknote-send.js) -->
+  <div id="qn-send-modal-overlay" class="modal-backdrop hidden">
+    <div class="modal-box" style="width:440px;">
+      <div class="modal-head"><span id="qn-send-title">Schnellnotiz ablegen</span><button class="modal-x" id="qn-send-close">&#10005;</button></div>
+      <div class="qn-send-preview" id="qn-send-preview"></div>
+      <div class="modal-row"><label>Ablegen als</label>
+        <div class="qn-send-targets" role="radiogroup">
+          <button type="button" class="qn-send-target" data-target="pinboard" role="radio">📌 Pinnwand-Karte</button>
+          <button type="button" class="qn-send-target" data-target="project" role="radio">📁 Projektaufgabe</button>
+          <button type="button" class="qn-send-target" data-target="task" role="radio">✅ Wochenaufgabe</button>
+        </div>
+      </div>
+      <div id="qn-send-project-fields" class="hidden">
+        <div class="modal-row"><label>Projekt</label><select class="modal-input" id="qn-send-project"></select></div>
+        <div class="modal-row"><label>Ast</label><select class="modal-input" id="qn-send-subproject"></select></div>
+      </div>
+      <p class="modal-hint" id="qn-send-hint"></p>
+      <div class="modal-row modal-row-inline">
+        <div><div class="settings-row-title">Aus der Schnellnotiz entfernen</div></div>
+        <label class="toggle"><input type="checkbox" id="qn-send-remove" checked/><span class="toggle-slider"></span></label>
+      </div>
+      <div class="modal-actions"><button id="qn-send-cancel" class="btn-ghost">Abbrechen</button><button id="qn-send-save" class="btn-primary">Ablegen</button></div>
+    </div>
+  </div>
+
   <!-- Monatsrückblick (js/budget.js: renderBudgetRueckblick) -->
   <div id="budget-rueckblick-modal-overlay" class="modal-backdrop hidden">
     <div class="modal-box" style="width:480px;">
@@ -3840,6 +3867,7 @@
   <script src="js/budget-sparprognose.js"></script>
   <script src="js/budget-sparplaene.js"></script>
   <script src="js/today-budget.js"></script>
+  <script src="js/today-quicknote-send.js"></script>
   <script src="js/projects.js"></script>
   <script src="js/project-tree.js"></script>
   <script src="js/forest.js"></script>

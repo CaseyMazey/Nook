@@ -160,6 +160,8 @@ Gedacht für:
 
 Nicht als Aufgabenverwaltung.
 
+**↗ Ablegen** (js/today-quicknote-send.js): markierter Text oder die ganze Notiz wird beim zuständigen Tab abgelegt — als Pinnwand-Karte (erste Zeile = Titel), als Projektaufgabe(n) oder Wochenaufgabe(n) (eine pro Zeile, Aufzählungszeichen werden entfernt). Angelegt wird über die Funktionen des Ziel-Tabs (`addDeskCardFromText` in pinboard.js, `addProjectTasksFromLines` in projects.js) in dessen Datenformat; die Heute-Seite übernimmt dabei keine Pinnwand- oder Projektfunktionen. Danach wird der Text standardmäßig aus der Schnellnotiz entfernt (abschaltbar), ein kurzer Link im Kopf führt zum Ziel.
+
 ---
 
 # Speiseplan
