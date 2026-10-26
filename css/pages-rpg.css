@@ -341,9 +341,14 @@
   transform: rotate(-1.2deg);
   transform-origin: 50% -14px;
   transition: transform 400ms ease, box-shadow var(--transition);
+  /* Eigene Grafikebene von Anfang an: sonst rastert der Browser die
+     Holztextur beim Schwenken neu und das Muster „springt“. */
+  will-change: transform;
+  backface-visibility: hidden;
 }
 [data-pages-style="rpg"] #budget-ks-header-btn:hover {
   transform: rotate(1deg);
+  border-color: color-mix(in srgb, var(--deco-ink) 75%, transparent);
   box-shadow:
     inset 0 0 0 3px color-mix(in srgb, var(--deco-ink) 30%, transparent),
     inset 0 2px 0 color-mix(in srgb, var(--sheen) 18%, transparent),
