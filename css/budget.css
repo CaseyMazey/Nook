@@ -1339,6 +1339,10 @@
   padding: 3px 0; border-bottom: 1px solid var(--b-card-line-1); font-size: calc(12px * var(--core-font-scale)); line-height: 1.2;
 }
 .b-main-row:last-child { border-bottom: none; }
+/* Taschengeld-Zeile: ⓘ-Knopf (budget-taschengeld.js) sitzt als eigene Spalte
+   zwischen Haken und Betrag — sonst bräche der Betrag in eine neue Zeile um. */
+.b-main-row:has(.tg-breakdown-btn) { grid-template-columns: 38px 1fr 14px 18px auto; }
+.b-main-row .tg-breakdown-btn { margin-right: 0; }
 
 .b-main-row-clickable { cursor: pointer; border-radius: 4px; margin: 0 -3px; padding: 3px 3px; transition: background 100ms; }
 .b-main-row-clickable:hover  { background: var(--b-card-line-2); }
