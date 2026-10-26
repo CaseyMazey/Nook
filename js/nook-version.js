@@ -22,6 +22,7 @@ window.NOOK_CHANGELOG = [
       'Taschengeld: Heimfahrt-Wochen ziehen nur noch Samstag und Sonntag ab – der Freitag wird immer bezahlt',
       'Taschengeld: Tage zum Anklicken im Kalender – bezahlt wird jeder angeklickte Tag; Monate ohne Klicks werden geschätzt („Schätzung übernehmen“ macht daraus Klicks)',
       'Taschengeld: kein eigener Feiertagssatz mehr – Feiertage zählen wie ihr Wochentag',
+      'RPG-Budget: Kontostand als Wirtshausschild, Reiter als Lederriemen, Monatsauswahl als Messingschild',
     ],
   },
   {
