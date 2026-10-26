@@ -146,7 +146,9 @@
 [data-pages-style="rpg"] .group-header { background: transparent; }
 
 /* Etwas Innenabstand, damit nichts an der Papierkante klebt */
-[data-pages-style="rpg"] :is(.b-main-card, .b-card, .sp-panel, #view-flashcards .panel, #view-settings .settings-panel) { padding: 6px 6px 10px; }
+[data-pages-style="rpg"] :is(.b-main-card, .b-card, #view-flashcards .panel, #view-settings .settings-panel) { padding: 6px 6px 10px; }
+/* Große Budget-Blätter: Inhalt deutlich weg von der ausgefransten Kante */
+[data-pages-style="rpg"] .sp-panel { padding: 10px 20px 20px; }
 [data-pages-style="rpg"] .fc-stat-card { padding: 18px 18px 16px; }
 [data-pages-style="rpg"] .tool-card { padding: 26px 24px 24px; }
 
@@ -458,3 +460,196 @@
   color: var(--deco-ink);
 }
 [data-pages-style="rpg"] #budget-header-menu-btn svg { filter: drop-shadow(0 1px 0 color-mix(in srgb, var(--sheen) 40%, transparent)); }
+
+/* =============================================================
+   BUDGET-UNTERTABS — nicht alles Papier:
+   - auf einem Blatt: Kassenbuch-Optik (Tinten-Doppelrahmen statt grauer
+     Kästen) — Finanzierungs-Einnahmen, Zuordnungen, Sparziel-Karten
+   - direkt auf dem Holz: Sparplan-/Schulden-Karten als angepinnte Zettel
+   - Prognose-Zusammenfassung: Kreidetafel im Holzrahmen
+   - Monatsrest: Messingschild wie die Monatsauswahl
+============================================================= */
+
+/* Erklärungszeilen, die AUF einem Blatt stehen: Tinte statt Holz-Schrift */
+[data-pages-style="rpg"] #view-budget :is(.sp-panel, .b-card) .sp-source-note {
+  color: var(--text-2);
+  text-shadow: none;
+}
+
+/* ── Finanzierung: Kassenbuch ────────────────────────────────── */
+[data-pages-style="rpg"] #view-budget .gf-week-grid {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  overflow: visible;
+}
+[data-pages-style="rpg"] #view-budget .gf-week-head {
+  padding-bottom: 6px;
+  margin-bottom: 6px;
+  border-bottom: 3px double color-mix(in srgb, var(--deco-ink) 35%, transparent);
+}
+[data-pages-style="rpg"] #view-budget .gf-week-title {
+  font-family: var(--font-heading);
+  font-weight: 400;
+  font-size: calc(15px * var(--core-font-scale));
+}
+[data-pages-style="rpg"] #view-budget .gf-week-col + .gf-week-col { border-left-color: color-mix(in srgb, var(--deco-ink) 22%, transparent); }
+/* Einnahme = Kassenbuch-Feld: farbiger Tinten-Doppelrahmen, keine Fläche */
+[data-pages-style="rpg"] #view-budget :is(.gf-income-card, .gf-income-bar) {
+  background: transparent !important;
+  border-style: double;
+  border-width: 3px;
+  border-radius: 3px;
+  box-shadow: none;
+}
+[data-pages-style="rpg"] #view-budget :is(.gf-income-card, .gf-income-bar):not([class*="gf-income-c"]) { border-color: color-mix(in srgb, var(--deco-ink) 40%, transparent); }
+/* Zugeordnete Posten: Einträge mit gestrichelter Linie */
+[data-pages-style="rpg"] #view-budget .gf-stack-item {
+  background: color-mix(in srgb, var(--deco-ink) 4%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--deco-ink) 28%, transparent);
+  border-radius: 2px;
+}
+[data-pages-style="rpg"] #view-budget .gf-stack-item:hover { background: color-mix(in srgb, var(--deco-ink) 8%, transparent); }
+[data-pages-style="rpg"] #view-budget .gf-stack-item--over { border-color: var(--b-red); color: var(--b-red); }
+/* Nicht zugeordnete Posten unten: Karteikarten-Etikett mit farbiger Kante */
+[data-pages-style="rpg"] #view-budget .gf-consumer-card {
+  background: color-mix(in srgb, var(--deco-ink) 4%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--deco-ink) 22%, transparent);
+  border-left-width: 4px;
+  border-radius: 2px;
+  box-shadow: none;
+}
+[data-pages-style="rpg"] #view-budget .gf-consumer-card.gf-consumer-red    { border-left-color: var(--b-red); }
+[data-pages-style="rpg"] #view-budget .gf-consumer-card.gf-consumer-blue   { border-left-color: var(--b-blue); }
+[data-pages-style="rpg"] #view-budget .gf-consumer-card.gf-consumer-purple { border-left-color: var(--b-purple); }
+[data-pages-style="rpg"] #view-budget .gf-add-btn { border-color: color-mix(in srgb, var(--deco-ink) 25%, transparent); }
+
+/* Monatsrest: Messingschild */
+[data-pages-style="rpg"] #view-budget .gf-monatsrest-pill {
+  border-radius: 6px;
+  border: 1px solid var(--brass-lo);
+  padding: 8px 22px;
+  background:
+    var(--rivet) left 5px center / 8px 8px no-repeat,
+    var(--rivet) right 5px center / 8px 8px no-repeat,
+    linear-gradient(170deg, var(--brass-hi), var(--brass) 45%, var(--brass-lo));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--sheen) 55%, transparent),
+    0 3px 6px color-mix(in srgb, var(--shadow-tint) 40%, transparent);
+}
+[data-pages-style="rpg"] #view-budget .gf-monatsrest-label { color: var(--brass-ink); opacity: .8; }
+[data-pages-style="rpg"] #view-budget .gf-monatsrest-value {
+  font-family: var(--font-heading);
+  font-weight: 400;
+  font-size: calc(18px * var(--core-font-scale));
+  color: var(--brass-ink);
+  text-shadow: 0 1px 0 color-mix(in srgb, var(--sheen) 45%, transparent);
+}
+
+/* ── Sparziel-Karten AUF dem Blatt: gerahmte Kassenbuch-Einträge ── */
+[data-pages-style="rpg"] #view-budget .sp-panel .sp-plan-card {
+  background: transparent;
+  border: 3px double color-mix(in srgb, var(--deco-ink) 32%, transparent);
+  border-radius: 3px;
+  box-shadow: none;
+}
+[data-pages-style="rpg"] #view-budget .sp-panel .sp-plan-card:hover { border-color: color-mix(in srgb, var(--deco-ink) 50%, transparent); }
+
+/* ── Sparplan-/Schulden-Karten auf dem Holz: angepinnte Zettel ── */
+[data-pages-style="rpg"] :is(#sparplaene-grid, #schulden-grid) > .sp-plan-card {
+  --text:   var(--deco-ink);
+  --text-2: color-mix(in srgb, var(--deco-ink) 82%, transparent);
+  --text-3: color-mix(in srgb, var(--deco-ink) 58%, transparent);
+  --border:        color-mix(in srgb, var(--deco-ink) 13%, transparent);
+  --border-strong: color-mix(in srgb, var(--deco-ink) 24%, transparent);
+  --surface:       transparent;
+  --surface-2:     color-mix(in srgb, var(--deco-ink) 6%, transparent);
+  --paper-dim: brightness(1);
+  color-scheme: light;
+  color: var(--text);
+  position: relative;
+  isolation: isolate;
+  background: none;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 22px 22px 20px;
+}
+[data-pages-style="rpg"][data-theme-family="dark"] :is(#sparplaene-grid, #schulden-grid) > .sp-plan-card { --paper-dim: brightness(.82) saturate(.85); }
+[data-pages-style="rpg"] :is(#sparplaene-grid, #schulden-grid) > .sp-plan-card::before {
+  content: '';
+  position: absolute; inset: 0;
+  z-index: -1;
+  border-style: solid;
+  border-color: transparent;
+  border-width: 22px;
+  border-image: url('../assets/questboard/note.webp') 44 fill / 22px / 0 stretch;
+  filter: var(--paper-dim) drop-shadow(0 4px 5px color-mix(in srgb, var(--shadow-tint) 30%, transparent));
+  transform: rotate(-0.5deg);
+  pointer-events: none;
+}
+[data-pages-style="rpg"] :is(#sparplaene-grid, #schulden-grid) > .sp-plan-card:nth-child(even)::before { transform: rotate(0.45deg) scaleX(-1); }
+[data-pages-style="rpg"] :is(#sparplaene-grid, #schulden-grid) > .sp-plan-card::after {
+  content: '';
+  position: absolute;
+  top: -9px; left: 50%;
+  width: 19px; height: 25px;
+  margin-left: -9px;
+  background: url('../assets/questboard/pin.webp') center / contain no-repeat;
+  pointer-events: none;
+}
+[data-pages-style="rpg"] :is(#sparplaene-grid, #schulden-grid) { gap: 22px; padding-top: 12px; }
+
+/* ── Prognose-Zusammenfassung: Kreidetafel im Holzrahmen ─────── */
+[data-pages-style="rpg"] #view-budget .b-tip-banner {
+  --chalk:   color-mix(in srgb, var(--sheen) 90%, transparent);
+  --chalk-2: color-mix(in srgb, var(--sheen) 68%, transparent);
+  background:
+    radial-gradient(ellipse at 20% 30%, color-mix(in srgb, var(--sheen) 7%, transparent), transparent 55%),
+    radial-gradient(ellipse at 80% 75%, color-mix(in srgb, var(--sheen) 5%, transparent), transparent 50%),
+    color-mix(in srgb, var(--deco-ink) 66%, var(--sage));
+  border: 9px solid color-mix(in srgb, var(--amber) 42%, var(--deco-ink));
+  border-radius: 6px;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--deco-ink) 60%, transparent),
+    inset 0 3px 12px color-mix(in srgb, var(--deco-ink) 55%, transparent),
+    0 6px 14px color-mix(in srgb, var(--shadow-tint) 50%, transparent);
+}
+[data-pages-style="rpg"] #view-budget .b-tip-banner .b-tip-eyebrow {
+  color: var(--chalk-2);
+  font-family: var(--font-heading);
+  font-weight: 400;
+  font-size: calc(16px * var(--core-font-scale));
+  text-transform: none;
+  letter-spacing: .03em;
+}
+[data-pages-style="rpg"] #view-budget .b-tip-banner :is(.b-tip-text, .b-tip-text *) {
+  color: var(--chalk);
+  text-shadow: 0 0 1px color-mix(in srgb, var(--sheen) 45%, transparent);
+}
+[data-pages-style="rpg"] #view-budget .b-tip-banner .b-tip-icon { opacity: .9; }
+
+/* Zeitstrahl-Meilensteine: Tinten-Rahmen statt grauer Kästchen */
+[data-pages-style="rpg"] #view-budget .sp-tl-card {
+  background: color-mix(in srgb, var(--sheen) 35%, transparent);
+  border: 3px double color-mix(in srgb, var(--deco-ink) 32%, transparent);
+  border-radius: 3px;
+}
+[data-pages-style="rpg"] #view-budget .sp-tl-dot { background: color-mix(in srgb, var(--sheen) 60%, transparent); border-color: color-mix(in srgb, var(--sage) 60%, var(--deco-ink)); }
+
+/* „⭐ Gespart bis …“ (sonst ungestylt): kleines Messingschild */
+[data-pages-style="rpg"] #sparplan-savedby-btn {
+  margin-top: 10px;
+  padding: 5px 14px;
+  border-radius: 5px;
+  border: 1px solid var(--brass-lo);
+  background: linear-gradient(170deg, var(--brass-hi), var(--brass) 45%, var(--brass-lo));
+  color: var(--brass-ink);
+  font-weight: 700;
+  font-size: calc(12px * var(--core-font-scale));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--sheen) 55%, transparent),
+    0 2px 5px color-mix(in srgb, var(--shadow-tint) 40%, transparent);
+  cursor: pointer;
+}
+[data-pages-style="rpg"] #sparplan-savedby-btn:hover { background: linear-gradient(170deg, var(--sheen), var(--brass-hi) 45%, var(--brass)); }
