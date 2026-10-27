@@ -138,6 +138,28 @@
     linear-gradient(to right, var(--forest-detail-side) 0%, color-mix(in srgb, var(--forest-detail-side) 55%, transparent) 26%, transparent 46%);
 }
 
+/* ── Wald-Stil „pastel“ (Theme-Eigenschaft forest.style, z.B. Blütenmarmor) ──
+   Übersicht UND Detailansicht in zarten Pastelltönen statt sattem Grün:
+   Bild entsättigt und aufgehellt, darüber ein milchiger Schleier in der
+   Kartenfarbe und ein Hauch Akzent-Tönung — der Wald passt sich so einem
+   hellen, verspielten Theme an, ohne neue Bilder. */
+[data-forest-style="pastel"] #project-forest,
+[data-forest-style="pastel"] .pdt-hero {
+  --forest-scene-dim:  saturate(.6) contrast(.9) brightness(1.06);
+  --forest-detail-dim: saturate(.6) contrast(.9) brightness(1.06);
+  --forest-tree-dim:   saturate(.55) contrast(.92) brightness(1.06);
+  --forest-decor-dim:  saturate(.75) brightness(1.04);
+  --forest-tint:       color-mix(in srgb, var(--sage) 45%, var(--surface-solid));
+}
+[data-forest-style="pastel"] .forest-bg::before,
+[data-forest-style="pastel"] .pdt-hero-overlay { opacity: .16; }
+/* Milchiger Schleier statt Bild-Transparenz — sonst schiene das
+   Seiten-Hintergrundbild durch den Wald. */
+[data-forest-style="pastel"] .forest-bg::after,
+[data-forest-style="pastel"] .pdt-hero-bg::after {
+  background: color-mix(in srgb, var(--surface-solid) 22%, transparent);
+}
+
 /* ── Wald-Stil „map“ (Theme-Eigenschaft forest.style, z.B. RPG) ──
    Übersicht UND Detailansicht werden zur Karte auf Pergament: Bild in
    Sepia, Papier-Textur (assets/questboard/note.webp) multipliziert

@@ -326,8 +326,9 @@ const PRESET_THEMES = [
     cardOpacity: 88, fontSize: 105, bg: { source: 'bluetenmarmor', size: 'cover', dim: 30 },
     night: { family: 'dark',
       coreColors: { bg: '#1c1619', surface: '#2a2026', nav: '#231a1f', modal: '#30252b', text: '#f2e6ea', border: '#c9a36a', accent: '#ad627c', quicknote: '#1e2925', highlight: '#25352f', font: DEFAULT_FONT_STACK, headingFont: "'Alegreya', Georgia, serif", navScale: 1.05 },
-      cardOpacity: 90, fontSize: 105, bg: { source: 'bluetenmarmor', size: 'cover', dim: 86 } },
+      cardOpacity: 90, fontSize: 105, bg: { source: 'bluetenmarmor', size: 'cover', dim: 86 }, forest: { style: 'default' } },
     calendar: { imageTheme: 'bluetenmarmor' }, startHeader: { banner: 'bluetenmarmor' }, branding: { theme: 'bluetenmarmor' },
+    forest: { style: 'pastel' },
     graphics: { mode: 'theme', theme: 'bluetenmarmor' } },
   // Zombie: aus Kuros Core (Download 2026-10-21) — Farben und Grafik-Set
   // unverändert. Core nutzt die Schrift „Capture it“, die laut Font-
@@ -532,7 +533,8 @@ function applyPagesStyle(id, override) {
 
 // Projektwald-Stil (css/projects.css, [data-forest-style]): 'default' =
 // Tagbild (in dunklen Themes gedimmt + getönt), 'map' = Übersicht als
-// Karte auf Pergament (RPG-Nacht). Kann je Tag-/Nachtversion abweichen.
+// Karte auf Pergament (RPG-Nacht), 'pastel' = entsättigt mit milchigem
+// Schleier (Blütenmarmor-Tag). Kann je Tag-/Nachtversion abweichen.
 function applyForestStyle(id) {
   const ct = getCustomTheme(id);
   document.documentElement.setAttribute('data-forest-style', (ct && ct.forest && ct.forest.style) || 'default');
