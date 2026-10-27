@@ -314,6 +314,21 @@ const PRESET_THEMES = [
     calendar: { imageTheme: 'rpg', style: 'rpg' }, startHeader: { banner: 'rpg' }, branding: { theme: 'rpg' }, questboard: { style: 'rpg' }, pinboard: { style: 'rpg' }, guides: { style: 'rpg' }, today: { style: 'rpg' }, pages: { style: 'rpg' },
     forest: { style: 'map' },
     graphics: { mode: 'theme', theme: 'rpg' } },
+  // Blütenmarmor: nach Mamas Handy-Hintergrund — Marmorweiß mit goldenen
+  // Adern, glasige Blüten in Rosé/Flieder, ein Mint-Schmetterling. Rosé als
+  // Akzent, Gold als Rahmen/Linien, Mint als Hervorhebung (Heute-Markierung
+  // u.ä.); Überschriften in Alegreya (elegante Serife wie die Uhr auf dem
+  // Sperrbildschirm), Fließtext gut lesbar in Nook-Standard und etwas
+  // größer. Nachts Pflaume/Anthrazit mit Gold und Rosé. Grafik-Set per
+  // scripts/gen-image.py generiert.
+  { id: 'preset_bluetenmarmor', name: 'Blütenmarmor', family: 'light',
+    coreColors: { bg: '#eff1ed', surface: '#fffdfc', nav: '#f8edf0', modal: '#fffdfc', text: '#4a3540', border: '#b08a52', accent: '#a8566f', quicknote: '#fbeff2', highlight: '#e1f0ea', font: DEFAULT_FONT_STACK, headingFont: "'Alegreya', Georgia, serif", navScale: 1.05 },
+    cardOpacity: 88, fontSize: 105, bg: { source: 'bluetenmarmor', size: 'cover', dim: 30 },
+    night: { family: 'dark',
+      coreColors: { bg: '#1c1619', surface: '#2a2026', nav: '#231a1f', modal: '#30252b', text: '#f2e6ea', border: '#c9a36a', accent: '#ad627c', quicknote: '#1e2925', highlight: '#25352f', font: DEFAULT_FONT_STACK, headingFont: "'Alegreya', Georgia, serif", navScale: 1.05 },
+      cardOpacity: 90, fontSize: 105, bg: { source: 'bluetenmarmor', size: 'cover', dim: 86 } },
+    calendar: { imageTheme: 'bluetenmarmor' }, startHeader: { banner: 'bluetenmarmor' }, branding: { theme: 'bluetenmarmor' },
+    graphics: { mode: 'theme', theme: 'bluetenmarmor' } },
   // Zombie: aus Kuros Core (Download 2026-10-21) — Farben und Grafik-Set
   // unverändert. Core nutzt die Schrift „Capture it“, die laut Font-
   // Metadaten „All Rights Reserved“ ist und daher nicht öffentlich
@@ -403,7 +418,8 @@ const GRAPHICS_THEMES = [
   { id: 'cyberpunk', label: 'Cyberpunk', icon: { src: 'assets/themes/cyberpunk/icon.png', type: 'image/png' } },
   { id: 'lab',       label: 'Lab',       icon: { src: 'assets/themes/lab/icon.png',       type: 'image/png' } },
   { id: 'zombie',    label: 'Zombie',    icon: { src: 'assets/themes/zombie/icon.png',    type: 'image/png' } },
-  { id: 'rpg',       label: 'RPG',       icon: { src: 'assets/themes/rpg/icon.png',       type: 'image/png' }, questboard: 'rpg', pinboard: 'rpg', guides: 'rpg', calendarStyle: 'rpg', todayStyle: 'rpg', pagesStyle: 'rpg' },
+  { id: 'bluetenmarmor', label: 'Blütenmarmor', icon: { src: 'assets/themes/bluetenmarmor/icon.png', type: 'image/png' } },
+  { id: 'rpg',       label: 'RPG',     icon: { src: 'assets/themes/rpg/icon.png',       type: 'image/png' }, questboard: 'rpg', pinboard: 'rpg', guides: 'rpg', calendarStyle: 'rpg', todayStyle: 'rpg', pagesStyle: 'rpg' },
 ];
 const DEFAULT_GRAPHICS_THEME = 'cozy';
 

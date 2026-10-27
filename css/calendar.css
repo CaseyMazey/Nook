@@ -404,6 +404,10 @@
 [data-cal-image-theme="zombie"] .cal-hero-summer { --cal-hero-img: url('../assets/themes/zombie/summer.webp'); }
 [data-cal-image-theme="zombie"] .cal-hero-autumn { --cal-hero-img: url('../assets/themes/zombie/fall.webp'); }
 [data-cal-image-theme="zombie"] .cal-hero-winter { --cal-hero-img: url('../assets/themes/zombie/winter.webp'); }
+[data-cal-image-theme="bluetenmarmor"] .cal-hero-spring { --cal-hero-img: url('../assets/themes/bluetenmarmor/spring.webp'); }
+[data-cal-image-theme="bluetenmarmor"] .cal-hero-summer { --cal-hero-img: url('../assets/themes/bluetenmarmor/summer.webp'); }
+[data-cal-image-theme="bluetenmarmor"] .cal-hero-autumn { --cal-hero-img: url('../assets/themes/bluetenmarmor/fall.webp'); }
+[data-cal-image-theme="bluetenmarmor"] .cal-hero-winter { --cal-hero-img: url('../assets/themes/bluetenmarmor/winter.webp'); }
 [data-cal-image-theme="none"] .cal-hero { --cal-hero-img: none; }
 [data-theme-family="dark"] .cal-hero { box-shadow: var(--shadow-md); }
 
