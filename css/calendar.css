@@ -408,6 +408,10 @@
 [data-cal-image-theme="bluetenmarmor"] .cal-hero-summer { --cal-hero-img: url('../assets/themes/bluetenmarmor/summer.webp'); }
 [data-cal-image-theme="bluetenmarmor"] .cal-hero-autumn { --cal-hero-img: url('../assets/themes/bluetenmarmor/fall.webp'); }
 [data-cal-image-theme="bluetenmarmor"] .cal-hero-winter { --cal-hero-img: url('../assets/themes/bluetenmarmor/winter.webp'); }
+[data-cal-image-theme="blockwelt"] .cal-hero-spring { --cal-hero-img: url('../assets/themes/blockwelt/spring.webp'); }
+[data-cal-image-theme="blockwelt"] .cal-hero-summer { --cal-hero-img: url('../assets/themes/blockwelt/summer.webp'); }
+[data-cal-image-theme="blockwelt"] .cal-hero-autumn { --cal-hero-img: url('../assets/themes/blockwelt/fall.webp'); }
+[data-cal-image-theme="blockwelt"] .cal-hero-winter { --cal-hero-img: url('../assets/themes/blockwelt/winter.webp'); }
 [data-cal-image-theme="none"] .cal-hero { --cal-hero-img: none; }
 [data-theme-family="dark"] .cal-hero { box-shadow: var(--shadow-md); }
 
@@ -421,7 +425,7 @@
 /* Monat/Jahr: groß, saisonal eingefärbt statt schwarz */
 #cal-hero-text .view-title {
   margin: 0 0 10px;
-  font-size: calc(40px * var(--core-font-scale));
+  font-size: calc(40px * var(--core-font-scale) * var(--heading-font-scale));
   font-weight: 600;
   line-height: 1.05;
   letter-spacing: -0.5px;
@@ -601,7 +605,7 @@
 ============================================================= */
 @media (max-width: 480px) {
   .cal-hero { padding: 14px 14px 12px; min-height: 0; margin-bottom: 12px; }
-  #cal-hero-text .view-title { font-size: calc(25px * var(--core-font-scale)); margin-bottom: 5px; }
+  #cal-hero-text .view-title { font-size: calc(25px * var(--core-font-scale) * var(--heading-font-scale)); margin-bottom: 5px; }
   .cal-season-tag { font-size: calc(11.5px * var(--core-font-scale)); margin-bottom: 5px; }
   #cal-season-sentence { font-size: calc(13.5px * var(--core-font-scale)); max-width: 100%; }
 

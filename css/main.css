@@ -13,6 +13,7 @@
      eine eigene Schrift setzen (theme-engine.js: headingFont). */
   --font-heading: var(--font);
   --nav-font-scale: 1;
+  --heading-font-scale: 1;
   --mono: 'DM Mono', 'Courier New', monospace;
   /* Eigene Themes (js/theme-engine.js) setzen --font UND --mono auf die
      gewählte Theme-Schrift. Echte Code-Darstellung (Guides-Codeblöcke)
@@ -757,7 +758,7 @@ body.bg-frosted .modal-box {
 
 .view-title {
   font-family: var(--font-heading);
-  font-size: calc(26px * var(--core-font-scale));
+  font-size: calc(26px * var(--core-font-scale) * var(--heading-font-scale));
   font-weight: 700;
   letter-spacing: -0.5px;
   color: var(--text);

@@ -46,7 +46,7 @@ const CUSTOM_THEME_VARS = [
   '--event-color', '--event-color-bg',
   '--quicknote-bg', '--quicknote-line', '--quicknote-text', '--highlight-bg', '--user-color-neutral',
   '--core-nav-bg', '--core-modal-bg', '--core-card-opacity',
-  '--font', '--font-heading', '--nav-font-scale', '--theme-font-scale', '--mono',
+  '--font', '--font-heading', '--nav-font-scale', '--heading-font-scale', '--theme-font-scale', '--mono',
 ];
 
 // =========================================================================
@@ -330,6 +330,20 @@ const PRESET_THEMES = [
     calendar: { imageTheme: 'bluetenmarmor' }, startHeader: { banner: 'bluetenmarmor' }, branding: { theme: 'bluetenmarmor' },
     forest: { style: 'pastel' },
     graphics: { mode: 'theme', theme: 'bluetenmarmor' } },
+  // Blockwelt: Klötzchen-Welt im Stil von Minecraft (bewusst ohne dessen
+  // Namen, Logo oder Original-Texturen) — Grasgrün als Akzent, Erdbraun für
+  // Rahmen, Sand/Stein als Flächen; nachts Höhlendunkel mit Fackelschein.
+  // Überschriften und Tab-Namen in der Pixelschrift Press Start 2P (läuft
+  // sehr breit, daher navScale < 1), Fließtext Nook-Standard. Grafik-Set per
+  // scripts/gen-image.py generiert.
+  { id: 'preset_blockwelt', name: 'Blockwelt', family: 'light',
+    coreColors: { bg: '#e6dfcf', surface: '#f8f4ea', nav: '#dfe8d2', modal: '#f8f4ea', text: '#2c2418', border: '#7a5230', accent: '#4f7d2c', quicknote: '#eef3dc', highlight: '#e3ecd2', font: DEFAULT_FONT_STACK, headingFont: "'Press Start 2P', monospace", navScale: 0.7, headingScale: 0.7 },
+    cardOpacity: 90, fontSize: 100, bg: { source: 'blockwelt', size: 'cover', dim: 45 },
+    night: { family: 'dark',
+      coreColors: { bg: '#141712', surface: '#22261f', nav: '#1b1e18', modal: '#282c24', text: '#e7ecdf', border: '#8a8476', accent: '#3f7d3a', font: DEFAULT_FONT_STACK, headingFont: "'Press Start 2P', monospace", navScale: 0.7, headingScale: 0.7 },
+      cardOpacity: 88, fontSize: 100, bg: { source: 'blockwelt', size: 'cover', dim: 82 } },
+    calendar: { imageTheme: 'blockwelt' }, startHeader: { banner: 'blockwelt' }, branding: { theme: 'blockwelt' },
+    graphics: { mode: 'theme', theme: 'blockwelt' } },
   // Zombie: aus Kuros Core (Download 2026-10-21) — Farben und Grafik-Set
   // unverändert. Core nutzt die Schrift „Capture it“, die laut Font-
   // Metadaten „All Rights Reserved“ ist und daher nicht öffentlich
@@ -420,6 +434,7 @@ const GRAPHICS_THEMES = [
   { id: 'lab',       label: 'Lab',       icon: { src: 'assets/themes/lab/icon.png',       type: 'image/png' } },
   { id: 'zombie',    label: 'Zombie',    icon: { src: 'assets/themes/zombie/icon.png',    type: 'image/png' } },
   { id: 'bluetenmarmor', label: 'Blütenmarmor', icon: { src: 'assets/themes/bluetenmarmor/icon.png', type: 'image/png' } },
+  { id: 'blockwelt', label: 'Blockwelt', icon: { src: 'assets/themes/blockwelt/icon.png', type: 'image/png' } },
   { id: 'rpg',       label: 'RPG',     icon: { src: 'assets/themes/rpg/icon.png',       type: 'image/png' }, questboard: 'rpg', pinboard: 'rpg', guides: 'rpg', calendarStyle: 'rpg', todayStyle: 'rpg', pagesStyle: 'rpg' },
 ];
 const DEFAULT_GRAPHICS_THEME = 'cozy';
@@ -623,6 +638,9 @@ function deriveThemeVars(core, cardOpacityPct, fontSizePct) {
     // Zierschriften laufen oft kleiner — Tab-Namen (in Überschriften-
     // Schrift) dann etwas größer setzen (Preset-Eigenschaft navScale).
     '--nav-font-scale': String(core.headingFont ? (core.navScale || 1) : 1),
+    // Dasselbe für Seitentitel (Kalender-Monat u.ä.), falls die Zierschrift
+    // sehr breit läuft (Preset-Eigenschaft headingScale).
+    '--heading-font-scale': String(core.headingFont ? (core.headingScale || 1) : 1),
     '--mono':          font,
     '--core-card-opacity': opacity,
     '--theme-font-scale': ((fontSizePct || 100) / 100).toFixed(2),
