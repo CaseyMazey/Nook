@@ -1106,6 +1106,42 @@ document.addEventListener('visibilitychange', () => {
 
 
 // =========================
+// RECHTE SPALTE IN ZWEI STAPEL
+// Die Widgets der rechten Spalte (Uhr, Schnellnotiz, Speiseplan,
+// Mini-Kalender, „Heute ist“) landen in zwei Container. Standard-CSS
+// macht die Container unsichtbar (display: contents + feste order) — das
+// Layout aller Themes bleibt wie bisher. Erst css/today-rpg.css stellt
+// sie auf breiten Bildschirmen nebeneinander, damit Heute ohne Scrollen
+// auf eine Seite passt (today.md: „ohne Scrollen sichtbar“).
+// Speiseplan und „Heute ist“ werden später von ihren eigenen Dateien
+// angehängt — ein MutationObserver sortiert jedes neue Widget ein.
+// =========================
+const TODAY_RIGHT_STACKS = {
+  'clock-sidebar-panel': 0, 'panel-quicknote': 0, 'today-mini-cal': 0,
+  'mealplan-widget': 1, 'national-day-widget': 1,
+};
+(function initTodayRightStacks() {
+  const right = document.getElementById('today-right');
+  if (!right) return;
+  const stacks = [0, 1].map(i => {
+    const el = document.createElement('div');
+    el.className = 'today-right-stack';
+    el.dataset.stack = i;
+    right.appendChild(el);
+    return el;
+  });
+  const sort = () => {
+    [...right.children].forEach(child => {
+      if (child.classList.contains('today-right-stack')) return;
+      const i = TODAY_RIGHT_STACKS[child.id] ?? 1;
+      stacks[i].appendChild(child);
+    });
+  };
+  sort();
+  new MutationObserver(sort).observe(right, { childList: true });
+})();
+
+// =========================
 // SUCHQUELLE (js/hub-search.js, AI documentation/search.md) — nur lesen;
 // open() springt zum Eintrag über die Funktionen dieses Tabs.
 // =========================

@@ -182,6 +182,8 @@ Im Heute-Stil `rpg` (Theme-Engine, `data-today-style="rpg"`, css/today-rpg.css) 
 
 Regel für neue Widgets im RPG-Stil: lieber ein eigener Gegenstand als noch ein Pergament-Zettel; keine Szene, in die Inhalte gequetscht werden.
 
+Ohne Scrollen: Ab 1500 px Breite stehen die Widgets der rechten Spalte im RPG-Stil in zwei Stapeln nebeneinander (Uhr · Schnellnotiz · Kalender | Speiseplan · Heute ist). Die Stapel-Container legt `initTodayRightStacks()` in js/today.js an; in allen anderen Stilen sind sie `display: contents` mit fester `order`, das Layout bleibt dort unverändert. Neue Widgets der rechten Spalte in `TODAY_RIGHT_STACKS` eintragen (sonst Stapel 2).
+
 ---
 
 # Verschoben nach Pinnwand

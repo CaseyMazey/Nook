@@ -16,7 +16,9 @@
 
 [data-today-style="rpg"] #view-today {
   --today-frame:      color-mix(in srgb, var(--amber) 30%, var(--shadow-tint));
-  --today-board-veil: color-mix(in srgb, color-mix(in srgb, var(--bg) 55%, var(--amber)) 14%, transparent);
+  /* Tag: warmer heller Schleier über dem Mahagoni — sonst wirkt der
+     Schreibtisch bei Tageslicht zu dunkel (nachts bleibt er dunkel) */
+  --today-board-veil: color-mix(in srgb, color-mix(in srgb, var(--bg) 70%, var(--amber)) 34%, transparent);
 }
 [data-today-style="rpg"][data-theme-family="dark"] #view-today {
   --today-board-veil: color-mix(in srgb, var(--bg) 55%, transparent);
@@ -41,6 +43,39 @@
 [data-today-style="rpg"] #today-main  { padding: 18px 20px 26px; gap: 22px; }
 [data-today-style="rpg"] #today-right { padding: 22px 16px 24px; gap: 24px; width: 330px; box-sizing: border-box; }
 [data-today-style="rpg"] #today-layout { grid-template-columns: 1fr 330px; }
+
+/* Banner-Text: auf dem Bild stärker als im Standard (Datum, Tracker, KW) */
+[data-today-style="rpg"] #today-main-header {
+  --text-2: color-mix(in srgb, var(--text) 88%, transparent);
+  --text-3: color-mix(in srgb, var(--text) 78%, transparent);
+}
+[data-today-style="rpg"] #today-main-header::before {
+  background-image:
+    linear-gradient(100deg,
+      color-mix(in srgb, var(--surface-solid) 94%, transparent) 0%,
+      color-mix(in srgb, var(--surface-solid) 80%, transparent) 28%,
+      color-mix(in srgb, var(--surface-solid) 40%, transparent) 52%,
+      color-mix(in srgb, var(--surface-solid) 10%, transparent) 78%,
+      transparent 100%),
+    var(--today-header-img) !important;
+}
+[data-today-style="rpg"][data-theme-family="dark"] #today-main-header::before {
+  background-image:
+    linear-gradient(100deg,
+      color-mix(in srgb, var(--bg) 94%, transparent) 0%,
+      color-mix(in srgb, var(--bg) 80%, transparent) 28%,
+      color-mix(in srgb, var(--bg) 40%, transparent) 52%,
+      color-mix(in srgb, var(--bg) 10%, transparent) 78%,
+      transparent 100%),
+    var(--today-header-img) !important;
+}
+[data-today-style="rpg"] #today-main-header .today-subtitle { font-weight: 600; }
+[data-today-style="rpg"] #week-nav :is(.week-btn, #week-label, .week-today-btn) {
+  background: color-mix(in srgb, var(--surface-solid) 82%, transparent);
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+}
+[data-today-style="rpg"] #week-nav #week-label { padding: 2px 10px; border-radius: 99px; font-weight: 600; }
 
 /* Banner: dunkler Holzrahmen, damit er auf dem Brett „eingelassen“ wirkt */
 [data-today-style="rpg"] #today-main-header {
@@ -446,3 +481,30 @@
   border-image: url('../assets/today/wallcal.webp') 215 50 30 50 fill / 50px 12px 7px 12px / 0 round stretch;
 }
 [data-today-style="rpg"] #today-mini-cal::after { display: none; }
+
+/* ── Breite Bildschirme: zwei Stapel rechts, damit alles ohne Scrollen
+   passt (Uhr · Schnellnotiz · Kalender | Speiseplan · Heute ist).
+   Die Stapel-Container legt js/today.js an (initTodayRightStacks). */
+@media (min-width: 1500px) {
+  [data-today-style="rpg"] #today-layout { grid-template-columns: 1fr 640px; }
+  [data-today-style="rpg"] #today-right {
+    width: 640px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+  [data-today-style="rpg"] .today-right-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    min-width: 0;
+  }
+  [data-today-style="rpg"] .rpg-clock-art { width: min(150px, 62%); }
+  /* etwas dichter, damit auch mit Terminliste im Kalender alles passt */
+  [data-today-style="rpg"] #today-main { gap: 16px; padding-bottom: 20px; }
+  [data-today-style="rpg"] #today-right { padding-top: 16px; padding-bottom: 8px; }
+  [data-today-style="rpg"] .today-right-stack { gap: 16px; }
+  [data-today-style="rpg"] #panel-quicknote #quicknote { min-height: 104px; max-height: 136px; }
+  [data-today-style="rpg"] .rpg-clock-label { padding: 8px 18px 7px; }
+}
