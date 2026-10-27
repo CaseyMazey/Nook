@@ -2,7 +2,8 @@
 // TODAY — Astronomische Taschenuhr (nur RPG-Heute-Stil)
 // Ersetzt im Stil data-today-style="rpg" das schlichte Zifferblatt des
 // Uhr-Widgets (#clock-sidebar-panel) durch eine gezeichnete Taschenuhr
-// (assets/today/rpg-clock.webp, generiert, Ziffern im Bild). Darüber als
+// (assets/today/rpg-clock-case.webp, generiert, Ziffern im Bild; der
+// Bügel ist abgeschnitten, damit das Zifferblatt größer wird). Darüber als
 // SVG: Stunden-/Minutenzeiger, die ECHTE Mondphase (getMoonPhase, calendar.js) des Tages und ein
 // Sternenfeld, das sich wie der Nachthimmel einmal pro Sterntag dreht.
 // renderSidebarClock() (today.js) ruft renderRpgClock() einmal pro Minute
@@ -12,9 +13,9 @@
 // Illustration (CLAUDE.md-Ausnahme) und stehen in css/today-rpg.css.
 // =========================
 
-// Geometrie des Bildes (Pixel in rpg-clock.webp, 580×785): Mittelpunkt
+// Geometrie des Bildes (Pixel in rpg-clock-case.webp, 580×581): Mittelpunkt
 // des Zifferblatts, Radius des Sternenfelds, Innenkante des Ziffernrings.
-const RPG_CLOCK = { w: 580, h: 785, cx: 290, cy: 482, sky: 158, ring: 166 };
+const RPG_CLOCK = { w: 580, h: 581, cx: 290, cy: 278, sky: 158, ring: 166 };
 
 // Mondphase: getMoonPhase() aus calendar.js (lädt vorher) — dieselbe
 // Näherungsformel wie die Mondzeile im Kalender.
@@ -44,7 +45,7 @@ function buildRpgClockMarkup() {
   const moonY = cy + 82, moonR = 27;
   return `
     <div class="rpg-clock-art">
-      <img class="rpg-clock-img" src="assets/today/rpg-clock.webp" alt="" draggable="false"/>
+      <img class="rpg-clock-img" src="assets/today/rpg-clock-case.webp" alt="" draggable="false"/>
       <div class="rpg-clock-sky" style="${skyStyle}"></div>
       <svg class="rpg-clock-svg" viewBox="0 0 ${w} ${h}" aria-hidden="true">
         <g class="rpg-clock-moon">
@@ -64,11 +65,7 @@ function buildRpgClockMarkup() {
         <circle class="rpg-hand-cap-dot" cx="${cx}" cy="${cy}" r="3.5"/>
       </svg>
     </div>
-    <div class="rpg-clock-label">
-      <div class="rpg-clock-weekday"></div>
-      <div class="rpg-clock-date"></div>
-      <div class="rpg-clock-moon-name"></div>
-    </div>`;
+`;
 }
 
 function renderRpgClock(panel, now) {
@@ -98,9 +95,6 @@ function renderRpgClock(panel, now) {
   root.setAttribute('role', 'img');
   root.setAttribute('aria-label', `${hh}:${mm} Uhr, ${moonName}`);
   root.title = `${hh}:${mm} · ${moonName}`;
-  root.querySelector('.rpg-clock-weekday').textContent = now.toLocaleDateString('de-DE', { weekday: 'long' });
-  root.querySelector('.rpg-clock-date').textContent = now.toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' });
-  root.querySelector('.rpg-clock-moon-name').textContent = '☾ ' + moonName;
 
   // Volle Stunde: kurzes goldenes Aufleuchten
   if (mi === 0 && !first) {

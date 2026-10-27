@@ -17,6 +17,7 @@ window.NOOK_CHANGELOG = [
     version: '2026.10.11',
     date: '2026-10-27',
     items: [
+      'RPG-Heute: Taschenuhr ohne Bügel und deutlich größer (Datum steht im Kopf), Uhrzeiten der Blöcke auf hellen Etiketten, Abreißkalender als ein durchgehendes Bild, graue Schattenränder an Tagebuch und Kalender entfernt',
       'Heute: passt auf breiten Bildschirmen (ab 1500 px) in jedem Theme ohne Scrollen auf eine Seite – die rechte Spalte steht in zwei Stapeln nebeneinander',
       'RPG-Heute: Datum und KW-Knöpfe im Kopf besser lesbar, Tischplatte bei Tag heller, Tagebuch ohne grauen Rand',
       'RPG-Heute: „Der Schreibtisch des Reisenden“ – Mahagoni-Tischplatte statt Bretterwand, Aufgaben im aufgeschlagenen Reisetagebuch (über beide Seiten), Unterrichtsblöcke als Messingschilder, Speiseplan auf der Kreidetafel, Gruppenpflichten als Brief mit Wachssiegel, Schnellnotiz als Notizblatt mit Büroklammer, Mini-Kalender als Abreißkalender',

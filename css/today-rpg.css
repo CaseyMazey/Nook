@@ -245,9 +245,9 @@
 }
 
 /* ── Astronomische Taschenuhr (js/today-clock-rpg.js) ─────────────
-   Die Uhr liegt als Artefakt direkt auf dem Brett (kein Pergament, keine
-   Reißzwecke); Wochentag, Datum und Mondphase stehen auf einem kleinen
-   Zettel darunter. Zeiger-/Mondfarben gehören zur Illustration (feste
+   Die Uhr liegt als Artefakt direkt auf dem Tisch (kein Pergament, keine
+   Reißzwecke, ohne Bügel); das Datum steht schon im Kopf der Seite, die
+   Mondphase im Tooltip. Zeiger-/Mondfarben gehören zur Illustration (feste
    Töne wie bei den übrigen generierten Bildern, CLAUDE.md-Ausnahme). */
 [data-today-style="rpg"] #clock-sidebar-panel.rpg-clock-panel {
   padding: 0;
@@ -261,8 +261,8 @@
 .rpg-clock { display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .rpg-clock-art {
   position: relative;
-  width: min(210px, 72%);
-  aspect-ratio: 580 / 785;
+  width: min(250px, 84%);
+  aspect-ratio: 580 / 581;
   filter: drop-shadow(0 8px 10px color-mix(in srgb, var(--shadow-tint) 55%, transparent))
           drop-shadow(0 2px 3px color-mix(in srgb, var(--shadow-tint) 45%, transparent));
 }
@@ -271,7 +271,7 @@
 .rpg-clock-sky {
   position: absolute;
   border-radius: 50%;
-  background-image: url('../assets/today/rpg-clock.webp');
+  background-image: url('../assets/today/rpg-clock-case.webp');
   background-repeat: no-repeat;
   transition: transform 60s linear;
   will-change: transform;
@@ -295,27 +295,6 @@
 }
 .rpg-clock-art:hover .rpg-hand-gold { filter: drop-shadow(0 0 4px rgba(255, 214, 120, .7)); }
 
-.rpg-clock-label {
-  position: relative;
-  isolation: isolate;
-  margin-top: -6px;
-  padding: 12px 22px 11px;
-  text-align: center;
-  color: var(--deco-ink);
-  transform: rotate(-1deg);
-  filter: drop-shadow(0 3px 4px color-mix(in srgb, var(--shadow-tint) 30%, transparent));
-}
-.rpg-clock-label::before {
-  content: '';
-  position: absolute; inset: 0;
-  z-index: -1;
-  border: 16px solid transparent;
-  border-image: url('../assets/questboard/note.webp') 44 fill / 16px / 0 stretch;
-  filter: var(--paper-dim, none);
-}
-.rpg-clock-weekday { font-family: var(--font-heading); font-size: calc(17px * var(--core-font-scale)); line-height: 1.15; }
-.rpg-clock-date    { font-size: calc(13px * var(--core-font-scale)); color: color-mix(in srgb, var(--deco-ink) 80%, transparent); }
-.rpg-clock-moon-name { margin-top: 2px; font-size: calc(12px * var(--core-font-scale)); font-style: italic; color: color-mix(in srgb, var(--deco-ink) 68%, transparent); }
 
 @media (prefers-reduced-motion: reduce) {
   .rpg-clock-sky { transition: none; }
@@ -473,12 +452,26 @@
 [data-today-style="rpg"] #panel-quicknote::after { display: none; }
 
 /* Mini-Kalender: Abreißkalender mit Lederleiste und Messingnieten */
-[data-today-style="rpg"] #today-mini-cal { --tilt: 0deg; --flip: 1; padding: 58px 20px 16px; }
-/* Ecken breit genug für die gerollten Leder-Enden; die Mitte der Leiste
-   wird gekachelt (round), damit die Nieten rund bleiben */
+/* Ein durchgehendes Bild (keine Kachel-Naht): die Randbreiten wachsen mit
+   der tatsächlichen Kalenderbreite (--cal-w, aus Container-Einheiten der
+   rechten Spalte), damit die Lederleiste bei jeder Breite ihr natürliches
+   Seitenverhältnis behält und die Nieten rund bleiben. Asset 589 px breit:
+   Leder 128 px hoch, Seiten/Unterkante je 30 px. */
+[data-today-style="rpg"] #today-right { container-type: inline-size; }
+[data-today-style="rpg"] #today-mini-cal {
+  --tilt: 0deg; --flip: 1;
+  --cal-w: 100cqw;
+  --cal-top: calc(var(--cal-w) * 128 / 589);
+  --cal-side: calc(var(--cal-w) * 30 / 589);
+  padding: calc(var(--cal-top) + 8px) calc(var(--cal-side) + 6px) calc(var(--cal-side) + 4px);
+}
 [data-today-style="rpg"] #today-mini-cal::before {
-  border-width: 50px 12px 7px 12px;
-  border-image: url('../assets/today/wallcal.webp') 215 50 30 50 fill / 50px 12px 7px 12px / 0 round stretch;
+  border-width: var(--cal-top) var(--cal-side) var(--cal-side);
+  border-image: url('../assets/today/wallcal.webp') 128 30 30 30 fill / var(--cal-top) var(--cal-side) var(--cal-side) / 0 stretch;
+}
+@media (min-width: 1500px) {
+  /* zwei Stapel nebeneinander: Kalender = halbe Spaltenbreite minus Abstand */
+  [data-today-style="rpg"] #today-mini-cal { --cal-w: calc((100cqw - 20px) / 2); }
 }
 [data-today-style="rpg"] #today-mini-cal::after { display: none; }
 
@@ -488,11 +481,30 @@
 @media (min-width: 1500px) {
   [data-today-style="rpg"] #today-layout { grid-template-columns: 1fr 640px; }
   [data-today-style="rpg"] #today-right { width: 640px; gap: 20px; }
-  [data-today-style="rpg"] .rpg-clock-art { width: min(150px, 62%); }
+  [data-today-style="rpg"] .rpg-clock-art { width: min(236px, 88%); }
   /* etwas dichter, damit auch mit Terminliste im Kalender alles passt */
   [data-today-style="rpg"] #today-main { gap: 16px; padding-bottom: 20px; }
   [data-today-style="rpg"] #today-right { padding-top: 16px; padding-bottom: 8px; }
   [data-today-style="rpg"] .today-right-stack { gap: 16px; }
   [data-today-style="rpg"] #panel-quicknote #quicknote { min-height: 104px; max-height: 136px; }
-  [data-today-style="rpg"] .rpg-clock-label { padding: 8px 18px 7px; }
+}
+
+/* Uhrzeit auf den Eichenschildern: kleines helles Etikett statt 10-px-
+   Mono-Schrift direkt auf der Maserung (war kaum lesbar) */
+[data-today-style="rpg"] #blocks-row .block-time {
+  display: inline-block;
+  align-self: flex-start;
+  width: fit-content;
+  font-family: inherit;
+  font-size: calc(12px * var(--core-font-scale));
+  font-weight: 700;
+  letter-spacing: .02em;
+  color: var(--deco-ink);
+  text-shadow: none;
+  padding: 1px 8px;
+  border-radius: 4px;
+  background: color-mix(in srgb, color-mix(in srgb, var(--sheen) 70%, var(--amber)) 78%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--deco-ink) 25%, transparent),
+              0 1px 1px color-mix(in srgb, var(--shadow-tint) 35%, transparent);
+  margin-bottom: 6px;
 }
