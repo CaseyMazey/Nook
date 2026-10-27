@@ -45,7 +45,7 @@ function buildRpgClockMarkup() {
   const moonY = cy + 82, moonR = 27;
   return `
     <div class="rpg-clock-art">
-      <img class="rpg-clock-img" src="assets/today/rpg-clock-case.webp" alt="" draggable="false"/>
+      <img class="rpg-clock-img" src="assets/today/rpg-clock-case.webp?v=2" alt="" draggable="false"/>
       <div class="rpg-clock-sky" style="${skyStyle}"></div>
       <svg class="rpg-clock-svg" viewBox="0 0 ${w} ${h}" aria-hidden="true">
         <g class="rpg-clock-moon">

@@ -10,6 +10,9 @@
      Kreidetafel, Brief …, siehe die Abschnitte unten); was noch keinen
      eigenen Gegenstand hat, bleibt ein angepinnter Pergament-Zettel
      (assets/questboard/note.webp + pin.webp).
+   Bilder tragen ?v=N: der Service Worker (sw.js) liefert Bilder cache-
+   first aus — wird ein Bild unter gleichem Namen ersetzt, N erhöhen,
+   sonst sehen Browser noch tagelang das alte.
    Grafiken sind generierte Illustrationen und behalten ihre Farben;
    alles übrige aus Theme-Tokens gemischt.
 ============================================================= */
@@ -31,7 +34,7 @@
   background:
     radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--amber) 12%, transparent), transparent 70%),
     linear-gradient(var(--today-board-veil), var(--today-board-veil)),
-    url('../assets/today/desk.webp') top left / 640px auto repeat,
+    url('../assets/today/desk.webp?v=2') top left / 640px auto repeat,
     color-mix(in srgb, var(--dash-bg) 50%, var(--shadow-tint));
   border: 10px solid var(--today-frame);
   border-radius: var(--radius-lg);
@@ -271,7 +274,7 @@
 .rpg-clock-sky {
   position: absolute;
   border-radius: 50%;
-  background-image: url('../assets/today/rpg-clock-case.webp');
+  background-image: url('../assets/today/rpg-clock-case.webp?v=2');
   background-repeat: no-repeat;
   transition: transform 60s linear;
   will-change: transform;
@@ -330,12 +333,12 @@
 [data-today-style="rpg"] #panel-tasks::before {
   left: 0; right: 50%;
   border-width: var(--jr-top) var(--jr-spine) var(--jr-bottom) var(--jr-outer);
-  border-image: url('../assets/today/journal-left.webp') 70 20 100 135 fill / var(--jr-top) var(--jr-spine) var(--jr-bottom) var(--jr-outer) / 0 stretch;
+  border-image: url('../assets/today/journal-left.webp?v=2') 70 20 100 135 fill / var(--jr-top) var(--jr-spine) var(--jr-bottom) var(--jr-outer) / 0 stretch;
 }
 [data-today-style="rpg"] #panel-tasks::after {
   left: 50%; right: 0;
   border-width: var(--jr-top) var(--jr-outer) var(--jr-bottom) var(--jr-spine);
-  border-image: url('../assets/today/journal-right.webp') 70 135 100 20 fill / var(--jr-top) var(--jr-outer) var(--jr-bottom) var(--jr-spine) / 0 stretch;
+  border-image: url('../assets/today/journal-right.webp?v=2') 70 135 100 20 fill / var(--jr-top) var(--jr-outer) var(--jr-bottom) var(--jr-spine) / 0 stretch;
 }
 /* Kopf: Titel links, Knopf rechts — nichts über der Bindung */
 [data-today-style="rpg"] #panel-tasks > .panel-header { position: static; border-bottom: none; padding-bottom: 6px; }
@@ -344,7 +347,7 @@
   position: absolute;
   top: 2px; left: calc(50% + 26px);
   width: 22px; height: 96px;
-  background: url('../assets/today/ribbon.webp') top center / contain no-repeat;
+  background: url('../assets/today/ribbon.webp?v=2') top center / contain no-repeat;
   filter: var(--paper-dim) drop-shadow(1px 2px 1px color-mix(in srgb, var(--shadow-tint) 40%, transparent));
   pointer-events: none;
   z-index: 1;
@@ -379,7 +382,7 @@
 }
 [data-today-style="rpg"] #blocks-row .block-slot::before {
   border-width: 22px;
-  border-image: url('../assets/today/plaque.webp') 95 fill / 22px / 0 stretch;
+  border-image: url('../assets/today/plaque.webp?v=2') 95 fill / 22px / 0 stretch;
   filter: var(--paper-dim) saturate(.78) brightness(1.04);
 }
 /* Nachts nur leicht abdunkeln — sonst verschwindet die Tinte im Holz */
@@ -422,7 +425,7 @@
 }
 [data-today-style="rpg"] #mealplan-widget::before {
   border-width: 16px 16px 26px;
-  border-image: url('../assets/today/chalkboard.webp') 48 48 78 fill / 16px 16px 26px / 0 stretch;
+  border-image: url('../assets/today/chalkboard.webp?v=2') 48 48 78 fill / 16px 16px 26px / 0 stretch;
 }
 [data-today-style="rpg"] #mealplan-widget::after { display: none; }
 [data-today-style="rpg"] #mealplan-widget .panel-header { border-bottom-style: dashed; }
@@ -435,7 +438,7 @@
 [data-today-style="rpg"] #gd-widget { --tilt: 0.3deg; --flip: 1; padding: 22px 26px 22px; }
 [data-today-style="rpg"] #gd-widget::before {
   border-width: 30px;
-  border-image: url('../assets/today/letter.webp') 110 fill / 30px / 0 stretch;
+  border-image: url('../assets/today/letter.webp?v=2') 110 fill / 30px / 0 stretch;
 }
 [data-today-style="rpg"] #gd-widget::after {
   top: -21px; width: 44px; height: 44px; margin-left: -22px;
@@ -447,31 +450,21 @@
 [data-today-style="rpg"] #panel-quicknote { --flip: 1; padding: 22px 14px 14px 16px; }
 [data-today-style="rpg"] #panel-quicknote::before {
   border-width: 30px 16px 18px 30px;
-  border-image: url('../assets/today/notepad.webp') 85 40 45 85 fill / 30px 16px 18px 30px / 0 stretch;
+  border-image: url('../assets/today/notepad.webp?v=2') 85 40 45 85 fill / 30px 16px 18px 30px / 0 stretch;
 }
 [data-today-style="rpg"] #panel-quicknote::after { display: none; }
 
 /* Mini-Kalender: Abreißkalender mit Lederleiste und Messingnieten */
-/* Ein durchgehendes Bild (keine Kachel-Naht): die Randbreiten wachsen mit
-   der tatsächlichen Kalenderbreite (--cal-w, aus Container-Einheiten der
-   rechten Spalte), damit die Lederleiste bei jeder Breite ihr natürliches
-   Seitenverhältnis behält und die Nieten rund bleiben. Asset 589 px breit:
-   Leder 128 px hoch, Seiten/Unterkante je 30 px. */
-[data-today-style="rpg"] #today-right { container-type: inline-size; }
-[data-today-style="rpg"] #today-mini-cal {
-  --tilt: 0deg; --flip: 1;
-  --cal-w: 100cqw;
-  --cal-top: calc(var(--cal-w) * 128 / 589);
-  --cal-side: calc(var(--cal-w) * 30 / 589);
-  padding: calc(var(--cal-top) + 8px) calc(var(--cal-side) + 6px) calc(var(--cal-side) + 4px);
-}
+/* Abreißkalender: dünner Lederriemen nur ganz oben (über Monatsname und
+   Knöpfen), darunter das Papier. Die Riemen-Mitte ist im Bild aus
+   gleichen, nahtlosen Stücken mit je einer Niete gebaut und wird gekachelt
+   (round) — bei normaler Breite elf Nieten, breiter entsprechend mehr,
+   immer im gleichen Abstand. Asset wallcal-strap.webp: 632 px breit,
+   Riemen 72 px, Enden 30/40 px, Unterkante (gerissen, Eselsohr) 70 px. */
+[data-today-style="rpg"] #today-mini-cal { --tilt: 0deg; --flip: 1; padding: 44px 24px 34px 20px; }
 [data-today-style="rpg"] #today-mini-cal::before {
-  border-width: var(--cal-top) var(--cal-side) var(--cal-side);
-  border-image: url('../assets/today/wallcal.webp') 128 30 30 30 fill / var(--cal-top) var(--cal-side) var(--cal-side) / 0 stretch;
-}
-@media (min-width: 1500px) {
-  /* zwei Stapel nebeneinander: Kalender = halbe Spaltenbreite minus Abstand */
-  [data-today-style="rpg"] #today-mini-cal { --cal-w: calc((100cqw - 20px) / 2); }
+  border-width: 34px 19px 33px 14px;
+  border-image: url('../assets/today/wallcal-strap.webp?v=2') 72 40 70 30 fill / 34px 19px 33px 14px / 0 round stretch;
 }
 [data-today-style="rpg"] #today-mini-cal::after { display: none; }
 
