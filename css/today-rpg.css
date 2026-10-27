@@ -456,15 +456,15 @@
 
 /* Mini-Kalender: Abreißkalender mit Lederleiste und Messingnieten */
 /* Abreißkalender: dünner Lederriemen nur ganz oben (über Monatsname und
-   Knöpfen), darunter das Papier. Die Riemen-Mitte ist im Bild aus
-   gleichen, nahtlosen Stücken mit je einer Niete gebaut und wird gekachelt
-   (round) — bei normaler Breite elf Nieten, breiter entsprechend mehr,
-   immer im gleichen Abstand. Asset wallcal-strap.webp: 632 px breit,
-   Riemen 72 px, Enden 30/40 px, Unterkante (gerissen, Eselsohr) 70 px. */
-[data-today-style="rpg"] #today-mini-cal { --tilt: 0deg; --flip: 1; padding: 44px 24px 34px 20px; }
+   Knöpfen), darunter das Papier — so wie generiert, keine eingesetzten
+   Nieten. Die beiden End-Nieten liegen in den Ecken (werden nie
+   verzerrt), gestreckt wird nur das glatte Leder dazwischen. Asset
+   wallcal-strap.webp: 630 px breit, Riemen 72 px, Enden je 70 px,
+   Unterkante (gerissen, Eselsohr) 70 px. */
+[data-today-style="rpg"] #today-mini-cal { --tilt: 0deg; --flip: 1; padding: 44px 22px 34px 20px; }
 [data-today-style="rpg"] #today-mini-cal::before {
-  border-width: 34px 19px 33px 14px;
-  border-image: url('../assets/today/wallcal-strap.webp?v=2') 72 40 70 30 fill / 34px 19px 33px 14px / 0 round stretch;
+  border-width: 34px 33px 33px 33px;
+  border-image: url('../assets/today/wallcal-strap.webp?v=3') 72 70 70 70 fill / 34px 33px 33px 33px / 0 stretch;
 }
 [data-today-style="rpg"] #today-mini-cal::after { display: none; }
 
