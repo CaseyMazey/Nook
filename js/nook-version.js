@@ -10,9 +10,16 @@
 // hinten wegfallen, angezeigt werden ohnehin nur die neuesten.
 // =========================
 
-window.NOOK_VERSION = '2026.10.10';
+window.NOOK_VERSION = '2026.10.11';
 
 window.NOOK_CHANGELOG = [
+  {
+    version: '2026.10.11',
+    date: '2026-10-27',
+    items: [
+      'RPG-Heute: „Der Schreibtisch des Reisenden“ – Mahagoni-Tischplatte statt Bretterwand, Aufgaben im aufgeschlagenen Reisetagebuch (über beide Seiten), Unterrichtsblöcke als Messingschilder, Speiseplan auf der Kreidetafel, Gruppenpflichten als Brief mit Wachssiegel, Schnellnotiz als Notizblatt mit Büroklammer, Mini-Kalender als Abreißkalender',
+    ],
+  },
   {
     version: '2026.10.10',
     date: '2026-10-26',

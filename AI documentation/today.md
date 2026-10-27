@@ -176,6 +176,14 @@ Keine Suppen, Beilagen oder Allergene — bewusst nur, was für die Essensauswah
 
 ---
 
+# RPG-Stil: „Der Schreibtisch des Reisenden“
+
+Im Heute-Stil `rpg` (Theme-Engine, `data-today-style="rpg"`, css/today-rpg.css) ist Heute ein eigener Ort statt Zettel auf Brettern: eine Mahagoni-Tischplatte (nur Heute hat sie), auf der jedes Widget ein **anderer Gegenstand** ist — Aufgaben als aufgeschlagenes Reisetagebuch (zwei Bildhälften, Liste läuft über beide Seiten), Unterrichtsblöcke als Messingschilder, Speiseplan als Kreidetafel, Gruppenpflichten als Brief mit Wachssiegel, Schnellnotiz als Notizblatt, Mini-Kalender als Abreißkalender, Uhr als astronomische Taschenuhr. Alle Gegenstände sind generierte Bilder (`assets/today/`) als mitwachsende 9-Slice-Rahmen — das Layout und alle Funktionen bleiben unverändert, nur die Optik wechselt.
+
+Regel für neue Widgets im RPG-Stil: lieber ein eigener Gegenstand als noch ein Pergament-Zettel; keine Szene, in die Inhalte gequetscht werden.
+
+---
+
 # Verschoben nach Pinnwand
 
 Folgende Bereiche gehörten ursprünglich zu Today, wurden aber in einen eigenständigen Pinnwand-Tab ausgelagert (siehe README: "früher Teil von 'Heute', jetzt ein eigener Tab mit mehr Platz"):

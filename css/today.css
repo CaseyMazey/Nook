@@ -792,6 +792,7 @@
   background: none;
   color: var(--text-3);
   font: inherit; font-size: calc(11.5px * var(--core-font-scale));
+  white-space: nowrap; flex-shrink: 0;
   cursor: pointer;
   transition: color var(--transition), border-color var(--transition);
 }

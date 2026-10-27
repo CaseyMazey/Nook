@@ -1,12 +1,15 @@
 /* =============================================================
-   HEUTE — Stil „rpg“ (Zettel auf dem Holzbrett)
+   HEUTE — Stil „rpg“ („Der Schreibtisch des Reisenden“)
    Lädt nach css/today.css / national_day.css und greift nur, wenn das
    aktive Theme den Heute-Stil „rpg“ hat — js/theme-engine.js setzt dann
    data-today-style="rpg" auf <html> (Preset „RPG“: today.style).
-   - Hauptspalte und rechte Spalte: Brett des RPG-Questboards
-     (assets/questboard/planks.webp), wie Kalender und Pinnwand.
-   - Unterrichtsblöcke, Aufgaben, Gruppenpflichten und die Kacheln rechts
-     als angepinnte Pergament-Zettel (assets/questboard/note.webp + pin.webp).
+   - Hauptspalte und rechte Spalte: eine Mahagoni-Schreibtischplatte
+     (assets/today/desk.webp) — nur Heute hat sie, damit sich die Seite
+     von den Brettern der übrigen RPG-Seiten abhebt.
+   - Jedes Widget ist ein anderer Gegenstand auf dem Tisch (Tagebuch,
+     Kreidetafel, Brief …, siehe die Abschnitte unten); was noch keinen
+     eigenen Gegenstand hat, bleibt ein angepinnter Pergament-Zettel
+     (assets/questboard/note.webp + pin.webp).
    Grafiken sind generierte Illustrationen und behalten ihre Farben;
    alles übrige aus Theme-Tokens gemischt.
 ============================================================= */
@@ -19,14 +22,15 @@
   --today-board-veil: color-mix(in srgb, var(--bg) 55%, transparent);
 }
 
-/* ── Holzbrett hinter Haupt- und rechter Spalte ──────────────── */
+/* ── Schreibtischplatte hinter Haupt- und rechter Spalte ─────── */
 [data-today-style="rpg"] #today-main,
 [data-today-style="rpg"] #today-right,
 [data-today-style="rpg"] body.has-bg-image #today-main {
   background:
+    radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--amber) 12%, transparent), transparent 70%),
     linear-gradient(var(--today-board-veil), var(--today-board-veil)),
-    url('../assets/questboard/planks.webp') top center / 100% auto repeat-y,
-    color-mix(in srgb, var(--dash-bg) 70%, var(--amber));
+    url('../assets/today/desk.webp') top left / 640px auto repeat,
+    color-mix(in srgb, var(--dash-bg) 50%, var(--shadow-tint));
   border: 10px solid var(--today-frame);
   border-radius: var(--radius-lg);
   box-shadow:
@@ -282,3 +286,163 @@
   .rpg-clock-sky { transition: none; }
   .rpg-clock-chime :is(.rpg-hand-gold, .rpg-hand-cap, .rpg-moon-rim) { animation: none; }
 }
+
+/* ── Aufgaben dieser Woche: aufgeschlagenes Reisetagebuch ──────────
+   Zwei Bildhälften (journal-left/-right.webp) als je eigener, mit-
+   wachsender Rahmen — so wird die Bindung in der Mitte nie verzerrt.
+   Die Liste läuft in zwei Spalten über linke und rechte Seite; der
+   Spaltenabstand liegt genau über der Bindung (gleiches Polster links/
+   rechts). Das Lesebändchen hängt am Kopf (Pseudo-Element der Kopfzeile). */
+[data-today-style="rpg"] #panel-tasks {
+  --tilt: 0deg;
+  --jr-top: 34px; --jr-bottom: 48px; --jr-outer: 66px; --jr-spine: 10px;
+  padding: calc(var(--jr-top) + 6px) calc(var(--jr-outer) - 4px) calc(var(--jr-bottom) - 2px);
+  filter: drop-shadow(0 10px 12px color-mix(in srgb, var(--shadow-tint) 50%, transparent))
+          drop-shadow(0 2px 3px color-mix(in srgb, var(--shadow-tint) 40%, transparent));
+}
+[data-today-style="rpg"] #panel-tasks::before,
+[data-today-style="rpg"] #panel-tasks::after {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0;
+  width: auto; height: auto; margin: 0;
+  z-index: -1;
+  background: none;
+  border-style: solid; border-color: transparent;
+  filter: var(--paper-dim);
+  transform: none;
+  pointer-events: none;
+}
+[data-today-style="rpg"] #panel-tasks::before {
+  left: 0; right: 50%;
+  border-width: var(--jr-top) var(--jr-spine) var(--jr-bottom) var(--jr-outer);
+  border-image: url('../assets/today/journal-left.webp') 70 20 100 135 fill / var(--jr-top) var(--jr-spine) var(--jr-bottom) var(--jr-outer) / 0 stretch;
+}
+[data-today-style="rpg"] #panel-tasks::after {
+  left: 50%; right: 0;
+  border-width: var(--jr-top) var(--jr-outer) var(--jr-bottom) var(--jr-spine);
+  border-image: url('../assets/today/journal-right.webp') 70 135 100 20 fill / var(--jr-top) var(--jr-outer) var(--jr-bottom) var(--jr-spine) / 0 stretch;
+}
+/* Kopf: Titel links, Knopf rechts — nichts über der Bindung */
+[data-today-style="rpg"] #panel-tasks > .panel-header { position: static; border-bottom: none; padding-bottom: 6px; }
+[data-today-style="rpg"] #panel-tasks > .panel-header::after {
+  content: '';
+  position: absolute;
+  top: 2px; left: calc(50% + 26px);
+  width: 22px; height: 96px;
+  background: url('../assets/today/ribbon.webp') top center / contain no-repeat;
+  filter: var(--paper-dim) drop-shadow(1px 2px 1px color-mix(in srgb, var(--shadow-tint) 40%, transparent));
+  pointer-events: none;
+  z-index: 1;
+}
+[data-today-style="rpg"] #panel-tasks #task-list {
+  column-count: 2;
+  column-gap: calc(2 * var(--jr-spine) + 52px);
+}
+[data-today-style="rpg"] #panel-tasks #task-list > * { break-inside: avoid; }
+[data-today-style="rpg"] #panel-tasks :is(#task-empty, #task-stats) { max-width: calc(50% - 40px); }
+[data-today-style="rpg"] #panel-tasks #task-empty { text-align: left; font-style: italic; }
+
+/* Schmal: nur noch eine Seite (linke Hälfte über die ganze Breite) */
+@media (max-width: 760px) {
+  [data-today-style="rpg"] #panel-tasks::before { right: 0; }
+  [data-today-style="rpg"] #panel-tasks::after { display: none; }
+  [data-today-style="rpg"] #panel-tasks > .panel-header::after { left: auto; right: 40px; }
+  [data-today-style="rpg"] #panel-tasks #task-list { column-count: 1; }
+  [data-today-style="rpg"] #panel-tasks :is(#task-empty, #task-stats) { max-width: none; }
+}
+
+/* ── Gegenstände auf dem Schreibtisch ──────────────────────────────
+   Jeder nutzt den gemeinsamen ::before-Rahmen der Zettel oben, tauscht
+   aber Bild und Randbreiten; die Reißzwecke (::after) entfällt bzw.
+   wird ersetzt. Bilder: assets/today/*.webp (generiert, freigestellt). */
+
+/* Unterrichtsblöcke: Messing-gefasste Eichenschilder (Stundentafel) */
+[data-today-style="rpg"] .block-slot {
+  --tilt: 0deg !important;
+  --flip: 1 !important;
+  padding: 20px 20px 18px;
+}
+[data-today-style="rpg"] #blocks-row .block-slot::before {
+  border-width: 22px;
+  border-image: url('../assets/today/plaque.webp') 95 fill / 22px / 0 stretch;
+  filter: var(--paper-dim) saturate(.78) brightness(1.04);
+}
+/* Nachts nur leicht abdunkeln — sonst verschwindet die Tinte im Holz */
+[data-today-style="rpg"][data-theme-family="dark"] #blocks-row .block-slot::before { filter: saturate(.75) brightness(.95); }
+/* Auf dem Eichenholz kräftigere Tinte als auf Papier */
+[data-today-style="rpg"] #blocks-row .block-slot {
+  --text-2: color-mix(in srgb, var(--deco-ink) 90%, transparent);
+  --text-3: color-mix(in srgb, var(--deco-ink) 82%, transparent);
+  /* „eingebrannt“: heller Schatten darunter hebt die Schrift von der Maserung ab */
+  text-shadow: 0 1px 0 color-mix(in srgb, var(--sheen) 35%, transparent);
+  font-weight: 600;
+}
+[data-today-style="rpg"] #blocks-row .block-slot::after { display: none; }
+[data-today-style="rpg"] #blocks-row .block-slot.active-block {
+  transform: translateY(-3px);
+  filter:
+    drop-shadow(0 0 7px color-mix(in srgb, var(--amber) 80%, transparent))
+    drop-shadow(0 8px 9px color-mix(in srgb, var(--shadow-tint) 40%, transparent));
+}
+/* Fortschritt des Tages: schmale Messingschiene */
+[data-today-style="rpg"] #blocks-progress-bar {
+  height: 5px;
+  background: color-mix(in srgb, var(--shadow-tint) 55%, transparent);
+  box-shadow: inset 0 1px 2px color-mix(in srgb, var(--shadow-tint) 70%, transparent),
+              0 1px 0 color-mix(in srgb, var(--amber) 35%, transparent);
+}
+
+/* Speiseplan: Kreidetafel der Taverne — Kreide statt Tinte */
+[data-today-style="rpg"] #mealplan-widget {
+  --tilt: 0deg;
+  --text:   color-mix(in srgb, var(--sheen) 93%, transparent);
+  --text-2: color-mix(in srgb, var(--sheen) 80%, transparent);
+  --text-3: color-mix(in srgb, var(--sheen) 62%, transparent);
+  --border:        color-mix(in srgb, var(--sheen) 16%, transparent);
+  --border-strong: color-mix(in srgb, var(--sheen) 30%, transparent);
+  --surface-2:     color-mix(in srgb, var(--sheen) 7%, transparent);
+  --accent-soft:   color-mix(in srgb, var(--sheen) 10%, transparent);
+  color-scheme: dark;
+  padding: 18px 20px 26px;
+}
+[data-today-style="rpg"] #mealplan-widget::before {
+  border-width: 16px 16px 26px;
+  border-image: url('../assets/today/chalkboard.webp') 48 48 78 fill / 16px 16px 26px / 0 stretch;
+}
+[data-today-style="rpg"] #mealplan-widget::after { display: none; }
+[data-today-style="rpg"] #mealplan-widget .panel-header { border-bottom-style: dashed; }
+[data-today-style="rpg"] #mealplan-widget :is(input, select, .modal-input, .modal-select) {
+  background: color-mix(in srgb, var(--sheen) 8%, transparent);
+  color: var(--text);
+}
+
+/* Gruppenpflichten: Brief mit Wachssiegel statt Reißzwecke */
+[data-today-style="rpg"] #gd-widget { --tilt: 0.3deg; --flip: 1; padding: 22px 26px 22px; }
+[data-today-style="rpg"] #gd-widget::before {
+  border-width: 30px;
+  border-image: url('../assets/today/letter.webp') 110 fill / 30px / 0 stretch;
+}
+[data-today-style="rpg"] #gd-widget::after {
+  top: -21px; width: 44px; height: 44px; margin-left: -22px;
+  background-image: url('../assets/questboard/seal.webp');
+  filter: var(--paper-dim) drop-shadow(0 2px 2px color-mix(in srgb, var(--shadow-tint) 45%, transparent));
+}
+
+/* Schnellnotiz: loses Notizblatt mit Büroklammer */
+[data-today-style="rpg"] #panel-quicknote { --flip: 1; padding: 22px 14px 14px 16px; }
+[data-today-style="rpg"] #panel-quicknote::before {
+  border-width: 30px 16px 18px 30px;
+  border-image: url('../assets/today/notepad.webp') 85 40 45 85 fill / 30px 16px 18px 30px / 0 stretch;
+}
+[data-today-style="rpg"] #panel-quicknote::after { display: none; }
+
+/* Mini-Kalender: Abreißkalender mit Lederleiste und Messingnieten */
+[data-today-style="rpg"] #today-mini-cal { --tilt: 0deg; --flip: 1; padding: 58px 20px 16px; }
+/* Ecken breit genug für die gerollten Leder-Enden; die Mitte der Leiste
+   wird gekachelt (round), damit die Nieten rund bleiben */
+[data-today-style="rpg"] #today-mini-cal::before {
+  border-width: 50px 12px 7px 12px;
+  border-image: url('../assets/today/wallcal.webp') 215 50 30 50 fill / 50px 12px 7px 12px / 0 round stretch;
+}
+[data-today-style="rpg"] #today-mini-cal::after { display: none; }
