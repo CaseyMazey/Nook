@@ -482,24 +482,12 @@
 }
 [data-today-style="rpg"] #today-mini-cal::after { display: none; }
 
-/* ── Breite Bildschirme: zwei Stapel rechts, damit alles ohne Scrollen
-   passt (Uhr · Schnellnotiz · Kalender | Speiseplan · Heute ist).
-   Die Stapel-Container legt js/today.js an (initTodayRightStacks). */
+/* ── Breite Bildschirme: zwei Stapel rechts (Grundlayout in today.css,
+   gilt für alle Themes) — hier nur die RPG-Maße: breiterer Rahmen,
+   größere Abstände, kleinere Taschenuhr. */
 @media (min-width: 1500px) {
   [data-today-style="rpg"] #today-layout { grid-template-columns: 1fr 640px; }
-  [data-today-style="rpg"] #today-right {
-    width: 640px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    align-items: start;
-  }
-  [data-today-style="rpg"] .today-right-stack {
-    display: flex;
-    flex-direction: column;
-    gap: 22px;
-    min-width: 0;
-  }
+  [data-today-style="rpg"] #today-right { width: 640px; gap: 20px; }
   [data-today-style="rpg"] .rpg-clock-art { width: min(150px, 62%); }
   /* etwas dichter, damit auch mit Terminliste im Kalender alles passt */
   [data-today-style="rpg"] #today-main { gap: 16px; padding-bottom: 20px; }

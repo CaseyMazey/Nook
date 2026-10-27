@@ -104,15 +104,31 @@
 #today-main { display: flex; flex-direction: column; gap: 14px; min-width: 0; background: var(--dash-bg); border: 1px solid var(--dash-border); border-radius: var(--radius-xl); box-shadow: var(--dash-shadow); padding: 20px 18px 20px; }
 /* Sidebar: feste Breite, kein flex-shrink */
 #today-right { display: flex; flex-direction: column; gap: 12px; position: sticky; top: 24px; width: 314px; }
-/* Stapel-Container (js/today.js: initTodayRightStacks) — standardmäßig
-   unsichtbar; die feste order hält die gewohnte Reihenfolge, egal in
-   welchem Stapel ein Widget steckt. Nur der RPG-Stil zeigt zwei Spalten. */
+/* Stapel-Container (js/today.js: initTodayRightStacks) — auf normalen
+   Breiten unsichtbar; die feste order hält die gewohnte Reihenfolge, egal
+   in welchem Stapel ein Widget steckt. Ab 1500 px stehen die zwei Stapel
+   nebeneinander (siehe unten), damit Heute ohne Scrollen passt. */
 .today-right-stack { display: contents; }
 #clock-sidebar-panel { order: 1; }
 #panel-quicknote     { order: 2; }
 #mealplan-widget     { order: 3; }
 #today-mini-cal      { order: 4; }
 #national-day-widget { order: 5; }
+
+/* Breite Bildschirme (alle Themes): rechte Spalte in zwei Stapeln
+   (Uhr · Schnellnotiz · Kalender | Speiseplan · Heute ist), damit die
+   ganze Seite ohne Scrollen sichtbar ist (today.md). */
+@media (min-width: 1500px) {
+  #today-layout { grid-template-columns: 1fr calc(2 * 314px + 14px); }
+  #today-right {
+    width: calc(2 * 314px + 14px);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    align-items: start;
+  }
+  .today-right-stack { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+}
 
 /* ═══════════════════════════════════════════════════════════
    BLOCKS SECTION
