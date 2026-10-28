@@ -223,7 +223,7 @@ Eine Lernsession wird für eine einzelne Themengruppe gestartet.
 
 Dabei werden alle Karten dieser Gruppe nacheinander gelernt.
 
-Die Lernsession nimmt den ganzen Bereich ein: Fächer, Kartenliste und Statistik sind währenddessen ausgeblendet. Man soll nicht vorab die nächsten Fragen samt Antworten sehen können, die Session ist nur zum Lernen.
+Die Lernsession nimmt den ganzen Bereich ein: Kopfleiste (Titel, Import, + Fach), Fächer, Kartenliste und Statistik sind währenddessen ausgeblendet. Man soll nicht vorab die nächsten Fragen samt Antworten sehen können, die Session ist nur zum Lernen.
 
 Unter 1024px Breite (Tablet/Handy) liegt sie als Vollbild-Blatt über der Seite.
 

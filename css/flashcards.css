@@ -28,10 +28,16 @@
    samt Antworten sieht — die Session ist nur zum Lernen */
 #flashcard-layout.session-open { grid-template-columns: minmax(0, 1fr); }
 #flashcard-layout.session-open > :not(#fc-session-panel) { display: none; }
-#view-flashcards:has(#flashcard-layout.session-open) #fc-global-stats { display: none; }
-/* Feste Höhe = Fensterhöhe, damit man während des Lernens nie scrollen muss;
-   die Lernkarte nimmt den Rest ein (siehe „Lernsession-Layout“ unten) */
-#flashcard-layout.session-open #fc-session-panel { position: relative; top: auto; width: 100%; max-width: 1000px; justify-self: center; height: calc(100dvh - 56px); min-height: 420px; max-height: none; padding: 18px 22px; overflow: hidden; }
+#view-flashcards:has(#flashcard-layout.session-open) :is(#fc-global-stats, .view-header) { display: none; }
+/* Ansicht = genau Fensterhöhe, das Blatt füllt den Rest (egal welche
+   Abstände/Rahmen das Theme hat) — man muss während des Lernens nie
+   scrollen; die Lernkarte nimmt den freien Platz ein (siehe
+   „Lernsession-Layout“ unten). Nur für den aktiven Tab, sonst würde die
+   Regel die ausgeblendete Ansicht wieder einblenden. */
+#view-flashcards.active:has(#flashcard-layout.session-open) { height: 100dvh; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden; }
+#view-flashcards.active:has(#flashcard-layout.session-open) > .dash-content { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+#flashcard-layout.session-open { flex: 1; min-height: 0; grid-template-rows: minmax(0, 1fr); }
+#flashcard-layout.session-open #fc-session-panel { position: relative; top: auto; width: 100%; max-width: 1000px; justify-self: center; align-self: stretch; min-height: 0; max-height: none; padding: 18px 22px; overflow: hidden; }
 
 /* Spalte 1: Fächerliste */
 #subject-list-panel { min-height: 200px; }
