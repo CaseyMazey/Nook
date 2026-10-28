@@ -218,22 +218,70 @@ function renderSubnet() {
   }
 }
 
+// Lernmodus IPv4 — so, wie man es in der Berufsschule rechnet:
+// 1. Maske, 2. Oktett für Oktett (255 = übernehmen, 0 = wird 0),
+// 3. das „spannende“ Oktett per Blockgröße im Kopf, 4. Kontrolle Bit für
+// Bit als Tabelle (Spalten stehen untereinander, egal welche Schrift).
+function snOctets(n) { return [24, 16, 8, 0].map(s => (n >>> s) & 255); }
+
+function snBitTable(ipOct, maskOct, resOct) {
+  const bits = v => v.toString(2).padStart(8, '0').split('');
+  const ip = bits(ipOct), mask = bits(maskOct), res = bits(resOct);
+  const cells = (arr, cls) => arr.map((b, i) => `<span class="sn-bt-cell ${cls(i)}">${b}</span>`).join('');
+  const isNet = i => mask[i] === '1';
+  return `<div class="sn-bt" role="table" aria-label="Bitweiser Vergleich">
+    <span class="sn-bt-head">Stellenwert</span>${[128, 64, 32, 16, 8, 4, 2, 1].map(v => `<span class="sn-bt-cell sn-bt-place">${v}</span>`).join('')}<span class="sn-bt-dec"></span>
+    <span class="sn-bt-head">IP</span>${cells(ip, i => isNet(i) ? 'sn-bt-net' : 'sn-bt-host')}<span class="sn-bt-dec">= ${ipOct}</span>
+    <span class="sn-bt-head">Maske</span>${cells(mask, i => isNet(i) ? 'sn-bt-net' : 'sn-bt-host')}<span class="sn-bt-dec">= ${maskOct}</span>
+    <span class="sn-bt-head sn-bt-sum">Netz</span>${cells(res, i => (isNet(i) ? 'sn-bt-net' : 'sn-bt-host') + ' sn-bt-sum')}<span class="sn-bt-dec sn-bt-sum">= <strong>${resOct}</strong></span>
+  </div>`;
+}
+
 function snLearnV4(r) {
   const hostBits = 32 - r.prefix;
+  const ipO = snOctets(r.ip), maskO = snOctets(r.mask), netO = snOctets(r.net), bcO = snOctets(r.bc);
+  const k = maskO.findIndex(m => m !== 255 && m !== 0);   // das „spannende“ Oktett (oder -1)
+  const okt = ['1.', '2.', '3.', '4.'];
+
+  const octetRows = ipO.map((v, i) => {
+    const m = maskO[i];
+    const how = m === 255 ? 'Maske 255 → <strong>übernehmen</strong>' : m === 0 ? 'Maske 0 → wird <strong>0</strong>' : `Maske ${m} → <strong>ausrechnen</strong> (siehe unten)`;
+    return `<div class="sn-oct-row${i === k ? ' sn-oct-row--key' : ''}"><span>${okt[i]} Oktett</span><span class="sn-oct-num">${v}</span><span>${how}</span><span class="sn-oct-num">→ ${m === 255 || m === 0 ? netO[i] : '?'}</span></div>`;
+  }).join('');
+
+  let keyStep = '';
+  if (k >= 0) {
+    const block = 256 - maskO[k];
+    const starts = [];
+    for (let s = 0; s < 256 && starts.length < 9; s += block) starts.push(s);
+    const more = 256 / block > starts.length;
+    keyStep = drSection('3️⃣', `${okt[k]} Oktett im Kopf: Blockgröße`, `
+      <div class="dr-learn-math-line">Blockgröße = 256 − ${maskO[k]} = <strong>${block}</strong></div>
+      <div class="dr-learn-math-line">Die Netze fangen also bei diesen Zahlen an (immer + ${block}):</div>
+      <div class="sn-blocks">${starts.map(s => `<span class="sn-block${s === netO[k] ? ' sn-block--hit' : ''}">${s}–${s + block - 1}</span>`).join('')}${more ? '<span class="sn-block sn-block--more">…</span>' : ''}</div>
+      <div class="dr-learn-math-line">Die IP hat hier eine <strong>${ipO[k]}</strong> → die liegt im Block <strong>${netO[k]}–${bcO[k]}</strong>.</div>
+      <div class="dr-learn-why"><span class="dr-learn-why-icon">💡</span><span><strong>Merke:</strong> Der <strong>Anfang</strong> des Blocks gehört zur Netzadresse (${netO[k]}), das <strong>Ende</strong> zum Broadcast (${bcO[k]})${k < 3 ? ` — die Oktette dahinter sind bei der Netzadresse 0 und beim Broadcast 255` : ''}.<br>Netzadresse <strong>${snV4ToStr(r.net)}</strong> · Broadcast <strong>${snV4ToStr(r.bc)}</strong></span></div>`);
+  }
+
+  const checkStep = k >= 0 ? drSection('🔍', 'Kontrolle in Binär (bitweises UND)', `
+      <div class="dr-learn-math-line">Man schreibt das ${okt[k]} Oktett von IP und Maske untereinander und schaut <strong>jede Spalte einzeln</strong> an:</div>
+      <div class="sn-and-rule"><span><b>1</b> und <b>1</b> → 1</span><span>sonst → 0</span></div>
+      ${snBitTable(ipO[k], maskO[k], netO[k])}
+      <div class="dr-learn-why"><span class="dr-learn-why-icon">💡</span><span>Die Maske ist wie eine <strong>Schablone</strong>: Wo sie eine 1 hat (Netzteil), wird die Ziffer der IP durchgelassen. Wo sie eine 0 hat (Hostteil), kommt immer 0 heraus. Übrig bleibt nur der Netzanteil — und das ist die Netzadresse.</span></div>`) : '';
+
   return `
     ${drSection('📌', 'Gegeben', `${drGivenLine('IP', snV4ToStr(r.ip), '')}${drGivenLine('Präfix', '/' + r.prefix, '')}`, 'dr-learn-section--given')}
-    ${drSection('1️⃣', 'Maske aus dem Präfix', `<div class="dr-learn-math-line">/${r.prefix} heißt: die ersten <strong>${r.prefix}</strong> Bit sind 1, die restlichen <strong>${hostBits}</strong> Bit sind 0.</div>
-      <div class="dr-learn-math-line sn-mono">${snV4Bin(r.mask, r.prefix)}</div>
-      <div class="dr-learn-math-line">= <strong class="sn-mono">${snV4ToStr(r.mask)}</strong></div>`)}
-    ${drSection('2️⃣', 'Netzadresse: IP UND Maske', `<div class="dr-learn-math-line sn-mono">${snV4Bin(r.ip, r.prefix)}  (IP)</div>
-      <div class="dr-learn-math-line sn-mono">${snV4Bin(r.mask, r.prefix)}  (Maske)</div>
-      <div class="dr-learn-arrow">↓ bitweises UND</div>
-      <div class="dr-learn-math-line sn-mono">${snV4Bin(r.net, r.prefix)} = <strong>${snV4ToStr(r.net)}</strong></div>
-      <div class="dr-learn-why"><span class="dr-learn-why-icon">💡</span><span><strong>Warum UND?</strong> Wo die Maske 1 ist, bleibt das IP-Bit stehen; wo sie 0 ist, wird es 0. So bleibt nur der Netzanteil übrig.</span></div>`)}
-    ${drSection('3️⃣', 'Broadcast: alle Hostbits auf 1', `<div class="dr-learn-math-line sn-mono">${snV4Bin(r.bc, r.prefix)} = <strong>${snV4ToStr(r.bc)}</strong></div>`)}
-    ${drSection('4️⃣', 'Anzahl Hosts', `<div class="dr-learn-math-line">2<sup>${hostBits}</sup> = ${r.total.toLocaleString('de-DE')} Adressen${r.prefix < 31 ? ` − 2 (Netz + Broadcast) = <strong>${r.hosts.toLocaleString('de-DE')}</strong> Hosts` : ''}</div>
+    ${drSection('🎯', 'Worum geht es?', `<div class="dr-learn-math-line">Eine IP-Adresse besteht aus zwei Teilen: dem <strong>Netz</strong> (wie die Straße) und dem <strong>Host</strong> (wie die Hausnummer). Die Maske sagt, wo die Straße aufhört. Gesucht ist die Adresse, mit der die Straße beginnt — die <strong>Netzadresse</strong>.</div>`)}
+    ${drSection('1️⃣', 'Maske aus dem Präfix', `<div class="dr-learn-math-line">/${r.prefix} heißt: die ersten <strong>${r.prefix}</strong> Bit sind 1 (Netz), die übrigen <strong>${hostBits}</strong> sind 0 (Host).</div>
+      <div class="dr-learn-math-line">Pro Oktett (8 Bit) geschrieben: <strong>${maskO.join('.')}</strong></div>
+      <div class="dr-learn-why"><span class="dr-learn-why-icon">💡</span><span>8 Einsen = 255, 0 Einsen = 0. Nur ein Oktett kann „gemischt“ sein — Werte dort: 128, 192, 224, 240, 248, 252, 254.</span></div>`)}
+    ${drSection('2️⃣', 'Oktett für Oktett', `<div class="sn-oct">${octetRows}</div>
+      ${k < 0 ? `<div class="dr-learn-why"><span class="dr-learn-why-icon">💡</span><span>Die Maske endet genau an einer Oktettgrenze — nichts zu rechnen. Für den <strong>Broadcast</strong> werden die Host-Oktette (die mit Maske 0) auf 255 gesetzt: <strong>${snV4ToStr(r.bc)}</strong>.</span></div>` : ''}`)}
+    ${keyStep}
+    ${checkStep}
+    ${drSection(k >= 0 ? '4️⃣' : '3️⃣', 'Anzahl Hosts', `<div class="dr-learn-math-line">${hostBits} Hostbits → 2<sup>${hostBits}</sup> = ${r.total.toLocaleString('de-DE')} Adressen${r.prefix < 31 ? ` − 2 (Netzadresse und Broadcast sind nicht nutzbar) = <strong>${r.hosts.toLocaleString('de-DE')}</strong> Hosts` : ''}</div>
       ${r.prefix >= 31 ? '<div class="dr-learn-why"><span class="dr-learn-why-icon">💡</span><span>Bei /31 (Punkt-zu-Punkt, RFC 3021) und /32 (einzelner Host) wird nichts abgezogen.</span></div>' : ''}`)}
-    ${drResultSection(`${snV4ToStr(r.first)} – ${snV4ToStr(r.last)}`, `Netz ${snV4ToStr(r.net)}/${r.prefix} · Broadcast ${snV4ToStr(r.bc)}`)}`;
+    ${drResultSection(`${snV4ToStr(r.net)}/${r.prefix}`, `Hosts ${snV4ToStr(r.first)} – ${snV4ToStr(r.last)} · Broadcast ${snV4ToStr(r.bc)}`)}`;
 }
 
 function snLearnV6(p, net, hostBits) {
