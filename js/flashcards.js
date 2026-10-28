@@ -5,26 +5,11 @@
 
 function saveSubjects(){ DB.set('subjects', subjects); }
 
-// =========================
-// STREAK SYSTEM
-// =========================
+// Kein Streak mehr (bewusst entfernt: ein zurückgesetzter Zähler nach einem
+// verpassten Tag setzt unter Druck statt zu motivieren). Der alte Key
+// 'fc_streak' bleibt unangetastet im Speicher, wird aber nicht mehr gelesen.
 
 function getTodayStr(){ return new Date().toISOString().slice(0,10); }
-
-function getStreak(){
-  return DB.get('fc_streak', { streak: 0, lastDate: null });
-}
-
-function recordSessionDone(){
-  const today = getTodayStr();
-  let data = DB.get('fc_streak', { streak: 0, lastDate: null });
-  if(data.lastDate === today) return;
-  const yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
-  const yStr = yesterday.toISOString().slice(0,10);
-  data.streak = data.lastDate === yStr ? (data.streak||0)+1 : 1;
-  data.lastDate = today;
-  DB.set('fc_streak', data);
-}
 
 // =========================
 // SESSION STATS (daily)
@@ -83,8 +68,7 @@ function calcGlobalStats(){
   const today2 = getTodayStr();
   const todayLearned = stats.date === today2 ? stats.learned : 0;
   const todayReps = stats.date === today2 ? (stats.reps||0) : 0;
-  const streak = getStreak();
-  return { total: cards.length, dueToday, todayLearned, todayReps, hardCards, streak: streak.streak };
+  return { total: cards.length, dueToday, todayLearned, todayReps, hardCards };
 }
 
 function calcGlobalAccuracy(){
@@ -111,11 +95,6 @@ function renderGlobalStats(){
       <span class="fc-stat-icon">📈</span>
       <span class="fc-stat-value">${pct}%</span>
       <span class="fc-stat-label">Erfolgsquote</span>
-    </div>
-    <div class="fc-stat-card fc-stat-streak">
-      <span class="fc-stat-icon">🔥</span>
-      <span class="fc-stat-value">${s.streak}</span>
-      <span class="fc-stat-label">Tage Streak</span>
     </div>
   `;
 }
@@ -251,7 +230,9 @@ function positionMenu(menu, anchor){
   menu.style.cssText = `position:fixed;z-index:9999;top:${r.bottom+4}px;left:${r.left}px;`;
   // Flip left if overflow right
   const mr = menu.getBoundingClientRect();
-  if(mr.right > window.innerWidth - 8) menu.style.left = (r.right - mr.width) + 'px';
+  if(mr.right > window.innerWidth - 8) menu.style.left = Math.max(8, r.right - mr.width) + 'px';
+  // Flip up if overflow bottom (z.B. über der Bottom-Nav am Handy)
+  if(mr.bottom > window.innerHeight - 8) menu.style.top = Math.max(8, r.top - mr.height - 4) + 'px';
 }
 
 function closeAllMenus(){
@@ -720,7 +701,6 @@ function answerLearn(knew, mode){
   if(group) renderHardCardsPanel(subj, group);
   learnSession.index++;
   if(learnSession.index >= q.length){
-    recordSessionDone();
     endLearnSession();
     if(group) renderGroupList(subj);
     renderSubjectList();
@@ -735,7 +715,6 @@ function endLearnSession(){
   const correct = learnSession.stats.correct;
   const wrong = learnSession.stats.wrong;
   const pct = total > 0 ? Math.round((correct/total)*100) : 0;
-  const streak = getStreak();
   let rating = pct===100?'🏆 Perfekt!':pct>=80?'⭐ Super!':pct>=60?'👍 Gut!':'💪 Weiter so!';
 
   // Leitner-Veränderungen
@@ -766,7 +745,6 @@ function endLearnSession(){
         <div class="session-done-stat"><span class="session-done-val learn-stat-wrong">✗ ${wrong}</span><span class="session-done-lbl">Falsch</span></div>
         <div class="session-done-stat"><span class="session-done-val">${pct}%</span><span class="session-done-lbl">Quote</span></div>
       </div>
-      ${streak.streak>1?`<div class="session-done-streak">🔥 ${streak.streak} Tage Lernserie!</div>`:''}
       ${leitnerHTML}
       <div class="modal-actions" style="justify-content:center;gap:10px;margin-top:14px;">
         <button id="learn-restart" class="btn-primary">Nochmal</button>

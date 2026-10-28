@@ -66,7 +66,8 @@ Sie zeigt:
 - Karten insgesamt
 - heute fällige Karten
 - Erfolgsquote
-- Lernserie (Streak)
+
+Bewusst ohne Lernserie (Streak): Ein Zähler, der nach einem verpassten Tag auf null fällt, setzt unter Druck statt zu motivieren. Bitte nicht wieder einführen.
 
 Diese Werte werden automatisch berechnet.
 
@@ -220,7 +221,9 @@ Eine Lernsession wird für eine einzelne Themengruppe gestartet.
 
 Dabei werden alle Karten dieser Gruppe nacheinander gelernt.
 
-Während der Session wird ein eigenes Seitenpanel geöffnet.
+Während der Session wird ein eigenes Seitenpanel geöffnet. Unter 1024px Breite (Tablet/Handy) liegt es als Vollbild-Blatt über der Seite, damit man es nicht erst unten suchen muss.
+
+Während der Session sind die Antworten in der Kartenliste ausgeblendet.
 
 ---
 
@@ -313,20 +316,9 @@ Sie zeigt:
 - richtige Antworten
 - falsche Antworten
 - Erfolgsquote
-- aktuelle Lernserie
 - Veränderungen der Leitner-Boxen
 
 Von dort aus kann die Session erneut gestartet oder geschlossen werden.
-
----
-
-# Lernserie
-
-Für jeden Tag mit mindestens einer abgeschlossenen Lernsession wird die Lernserie erhöht.
-
-Die Serie wird in Tagen gespeichert.
-
-Sie dient ausschließlich der Motivation.
 
 ---
 
@@ -449,7 +441,6 @@ Flashcards speichert unter anderem:
 - richtige Antworten
 - Gesamtantworten
 - schwierige Karten
-- Lernserie
 - Tagesstatistiken
 - eingeklappte Themengruppen
 
@@ -467,7 +458,6 @@ flashcards.js ist verantwortlich für:
 - Leitner-System
 - Lernsession
 - Statistiken
-- Lernserie
 - Export
 - Markdown-Import
 - Suchfunktion
@@ -492,7 +482,6 @@ Flashcards verwaltet:
 - Karteikarten
 - Leitner-Stufen
 - Tagesstatistiken
-- Lernserie
 - schwierige Karten
 
 Andere Module dürfen diese Daten lesen.

@@ -150,6 +150,9 @@
 /* Lernkarte im Session-Blatt: eigene helle Fläche, damit Vorder-/Rückseite
    beim Umdrehen sichtbar bleiben */
 [data-pages-style="rpg"] :is(#learn-card-front, #learn-card-back) { background: var(--surface-solid); }
+/* Rückseite: Tinte statt --sage-fg (wäre hell auf hellem Papier), leicht
+   grün getönt, damit man Vorder- und Rückseite unterscheidet */
+[data-pages-style="rpg"] #learn-card-back { background: color-mix(in srgb, var(--sage) 16%, var(--surface-solid)); color: var(--text); }
 [data-pages-style="rpg"] .group-header { background: transparent; }
 
 /* Etwas Innenabstand, damit nichts an der Papierkante klebt */
