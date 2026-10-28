@@ -3,23 +3,33 @@
 ============================================================= */
 
 :root {
-  --fc-danger:    #e07a5f;
-  --fc-warn:      #f2a650;
-  --fc-warn-text: #c47f10;
-  --fc-success:   #81b29a;
+  --fc-danger:  var(--leitner-1);
+  --fc-warn:    var(--status-warning);
+  --fc-success: var(--leitner-3);
 }
+/* Akzentfarbe als TEXT: zur jeweiligen Textfarbe hin gemischt — dunkler auf
+   hellem Grund, heller im Dark Mode, Tinte auf RPG-Papier. Muss pro Element
+   gerechnet werden (nicht in :root), damit es dem lokalen --text folgt. */
+.fc-tone { --fc-tone-src: var(--fc-danger); color: color-mix(in srgb, var(--fc-tone-src) 62%, var(--text)); }
 
 /* Global stats bar */
 #fc-global-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 18px; }
-.fc-stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; box-shadow: var(--shadow-xs); }
-.fc-stat-icon { font-size: calc(20px * var(--core-font-scale)); line-height: 1; }
-.fc-stat-value { font-size: calc(24px * var(--core-font-scale)); font-weight: 700; color: var(--text); font-family: var(--mono); line-height: 1.1; }
-.fc-stat-label { font-size: calc(11px * var(--core-font-scale)); color: var(--text-3); }
-.fc-stat-due .fc-stat-value { color: var(--fc-danger); }
+/* Eine Zeile: Icon · Zahl · Beschriftung */
+.fc-stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 10px 14px; display: flex; align-items: center; gap: 10px; min-width: 0; box-shadow: var(--shadow-xs); }
+.fc-stat-icon { width: 18px; height: 18px; flex-shrink: 0; color: var(--sage-dark); }
+.fc-stat-value { font-size: calc(20px * var(--core-font-scale)); font-weight: 700; color: var(--text); font-family: var(--mono); line-height: 1.1; }
+.fc-stat-label { font-size: calc(12px * var(--core-font-scale)); color: var(--text-3); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fc-stat-due :is(.fc-stat-value, .fc-stat-icon) { color: color-mix(in srgb, var(--fc-danger) 62%, var(--text)); }
 
 /* Layout: 3 Spalten */
 #flashcard-layout { display: grid; grid-template-columns: 248px 1fr; gap: 18px; transition: grid-template-columns 300ms ease; align-items: start; }
-#flashcard-layout.session-open { grid-template-columns: 248px 1fr 300px; }
+/* Lernsession nimmt den ganzen Bereich ein: Fächer, Kartenliste und
+   Statistik sind ausgeblendet, damit man nicht vorab die nächsten Fragen
+   samt Antworten sieht — die Session ist nur zum Lernen */
+#flashcard-layout.session-open { grid-template-columns: minmax(0, 1fr); }
+#flashcard-layout.session-open > :not(#fc-session-panel) { display: none; }
+#view-flashcards:has(#flashcard-layout.session-open) #fc-global-stats { display: none; }
+#flashcard-layout.session-open #fc-session-panel { position: relative; top: auto; max-height: none; width: 100%; max-width: 640px; justify-self: center; padding: 22px 24px; }
 
 /* Spalte 1: Fächerliste */
 #subject-list-panel { min-height: 200px; }
@@ -38,7 +48,7 @@
 .subject-name { font-size: calc(14px * var(--core-font-scale)); font-weight: 500; color: var(--text); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .subject-teacher { font-size: calc(12px * var(--core-font-scale)); color: var(--text-3); }
 .subject-item-stats { display: flex; gap: 10px; font-size: calc(11px * var(--core-font-scale)); font-family: var(--mono); color: var(--text-3); margin-top: 2px; }
-.subject-due { color: var(--fc-danger); }
+.subject-due { color: color-mix(in srgb, var(--fc-danger) 62%, var(--text)); }
 .subject-mini-bar { height: 3px; background: var(--surface-3); border-radius: 99px; margin-top: 5px; overflow: hidden; }
 .subject-mini-fill { height: 100%; background: var(--sage); border-radius: 99px; transition: width 400ms ease; }
 
@@ -59,6 +69,8 @@
 .group-progress-row { padding: 10px 16px 8px; border-bottom: 1px solid var(--border); background: var(--surface); }
 .leitner-bar { display: flex; height: 6px; border-radius: 99px; overflow: hidden; background: var(--surface-3); margin-bottom: 8px; gap: 2px; }
 .leitner-legend { display: flex; flex-wrap: wrap; gap: 5px; }
+/* --lc setzt flashcards.js pro Badge (Leitner-Stufe) */
+.leitner-badge, .fc-box { --lc: var(--fc-danger); background: color-mix(in srgb, var(--lc) 14%, transparent); color: color-mix(in srgb, var(--lc) 34%, var(--text)); border: 1px solid color-mix(in srgb, var(--lc) 45%, transparent); }
 .leitner-badge { font-size: calc(11px * var(--core-font-scale)); font-family: var(--mono); padding: 2px 8px; border-radius: 99px; white-space: nowrap; }
 
 /* Cards list */
@@ -70,9 +82,6 @@
 .fc-back { font-size: calc(13px * var(--core-font-scale)); color: var(--text-2); }
 .fc-hard-star { font-size: calc(11px * var(--core-font-scale)); }
 .fc-box { font-size: calc(11px * var(--core-font-scale)); font-family: var(--mono); border-radius: 6px; padding: 2px 7px; white-space: nowrap; }
-/* Während einer Lernsession keine Antworten in der Liste — sonst liest man
-   sie neben der Lernkarte mit */
-#flashcard-layout.session-open .fc-back { visibility: hidden; }
 .fc-card-meatball { opacity: 0; transition: opacity var(--transition); }
 .fc-row:hover .fc-card-meatball { opacity: 1; }
 
@@ -82,7 +91,7 @@
 .fc-context-menu { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); padding: 4px 0; min-width: 170px; z-index: 9999; }
 .fc-menu-item { display: block; width: 100%; text-align: left; padding: 8px 14px; font-size: calc(13px * var(--core-font-scale)); font-family: var(--font); color: var(--text); background: none; border: none; cursor: pointer; transition: background var(--transition); }
 .fc-menu-item:hover { background: var(--surface-2); }
-.fc-menu-danger { color: var(--fc-danger); }
+.fc-menu-danger { color: color-mix(in srgb, var(--fc-danger) 62%, var(--text)); }
 .fc-menu-danger:hover { background: color-mix(in srgb, var(--fc-danger) 7%, transparent); }
 
 /* Session Panel (Spalte 3) */
@@ -90,12 +99,12 @@
 #fc-session-panel.hidden { display: none; }
 .fc-session-panel-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .fc-session-section-label { font-size: calc(12px * var(--core-font-scale)); font-weight: 600; color: var(--text-2); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
-#fc-hard-count { background: color-mix(in srgb, var(--fc-danger) 13%, transparent); color: var(--fc-danger); border: 1px solid color-mix(in srgb, var(--fc-danger) 27%, transparent); }
+
 
 /* Heutiger Fortschritt */
 #fc-today-progress-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
 .fc-progress-mini { display: flex; flex-direction: column; align-items: center; gap: 2px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 6px; }
-.fc-progress-mini-icon { font-size: calc(14px * var(--core-font-scale)); }
+.fc-progress-mini-icon { width: 16px; height: 16px; color: var(--sage-dark); }
 .fc-progress-mini-val { font-size: calc(15px * var(--core-font-scale)); font-weight: 700; font-family: var(--mono); color: var(--text); }
 .fc-progress-mini-lbl { font-size: calc(10px * var(--core-font-scale)); color: var(--text-3); text-align: center; }
 
@@ -114,8 +123,8 @@
 .learn-stat { display: flex; flex-direction: column; align-items: center; gap: 2px; flex: 1; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 7px 8px; }
 .learn-stat-val { font-size: calc(16px * var(--core-font-scale)); font-weight: 700; font-family: var(--mono); color: var(--text); }
 .learn-stat-lbl { font-size: calc(10px * var(--core-font-scale)); color: var(--text-3); }
-.learn-stat-correct { color: var(--fc-success) !important; }
-.learn-stat-wrong { color: var(--fc-danger) !important; }
+.learn-stat-correct { color: color-mix(in srgb, var(--fc-success) 55%, var(--text)) !important; }
+.learn-stat-wrong { color: color-mix(in srgb, var(--fc-danger) 62%, var(--text)) !important; }
 
 /* Motivation */
 #learn-motivation { text-align: center; font-size: calc(12px * var(--core-font-scale)); color: var(--sage-dark); background: var(--sage-bg); border-radius: var(--radius); padding: 5px 10px; margin-bottom: 8px; }
@@ -175,10 +184,9 @@
    dritte Spalte, unten an der Seite würde man das Panel nicht bemerken.
    Liegt über der Bottom-Nav (z-index 90), Schließen über ✕ / „Session beenden“. */
 @media (max-width: 1024px) {
-  #flashcard-layout,
-  #flashcard-layout.session-open { grid-template-columns: 200px minmax(0, 1fr); }
+  #flashcard-layout { grid-template-columns: 200px minmax(0, 1fr); }
   #flashcard-layout.session-open::before { content: ''; position: fixed; inset: 0; z-index: 94; background: color-mix(in srgb, var(--bg) 75%, transparent); backdrop-filter: blur(4px); }
-  #fc-session-panel { position: fixed; inset: 0; height: 100dvh; z-index: 95; width: auto; max-width: 560px; max-height: none; margin: 0 auto; border-radius: 0; padding: 16px 16px calc(16px + env(safe-area-inset-bottom, 0px)); overscroll-behavior: contain; }
+  #flashcard-layout.session-open #fc-session-panel { position: fixed; inset: 0; height: 100dvh; z-index: 95; width: auto; max-width: 560px; max-height: none; margin: 0 auto; border-radius: 0; padding: 16px 16px calc(16px + env(safe-area-inset-bottom, 0px)); overscroll-behavior: contain; }
   /* RPG: das gerissene Papier (::before) passt nicht zu einem scrollenden
      Vollbild-Blatt — dort schlichtes Pergament statt Zettel mit Pin */
   [data-pages-style="rpg"] #flashcard-layout #fc-session-panel { position: fixed; background: var(--surface-solid) !important; overflow-y: auto !important; }
@@ -190,9 +198,9 @@ body:has(#flashcard-layout.session-open) { overflow: hidden; }
 
 @media (max-width: 480px) {
   #fc-global-stats { gap: 8px; }
-  .fc-stat-card { padding: 10px 10px; }
-  #flashcard-layout,
-  #flashcard-layout.session-open { grid-template-columns: minmax(0, 1fr); }
+  .fc-stat-card { flex-direction: column; align-items: flex-start; gap: 2px; padding: 8px 10px; }
+  .fc-stat-label { white-space: normal; }
+  #flashcard-layout { grid-template-columns: minmax(0, 1fr); }
   #subject-detail-header { flex-wrap: wrap; }
   /* Gruppen-Kopf: Titel oben, Knöpfe darunter statt die Spalte zu sprengen */
   .group-header { flex-wrap: wrap; }

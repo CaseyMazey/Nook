@@ -65,7 +65,7 @@
 }
 
 /* ── Zettel: Tinte, Papier, Pin ──────────────────────────────── */
-[data-pages-style="rpg"] :is(.fc-stat-card, #view-flashcards .panel, .group-card, #fc-session-panel,
+[data-pages-style="rpg"] :is(#view-flashcards .panel, .group-card, #fc-session-panel,
   .b-main-card, .b-liquidity-card, .b-card, #budget-garden-card, .sp-panel, .sp-scen-card,
   .game-library-card, .games-side-card, .tool-card, #view-settings .settings-panel) {
   --text:   var(--deco-ink);
@@ -94,13 +94,13 @@
           backdrop-filter: none !important;
   overflow: visible !important;
 }
-[data-pages-style="rpg"][data-theme-family="dark"] :is(.fc-stat-card, #view-flashcards .panel, .group-card, #fc-session-panel,
+[data-pages-style="rpg"][data-theme-family="dark"] :is(#view-flashcards .panel, .group-card, #fc-session-panel,
   .b-main-card, .b-liquidity-card, .b-card, #budget-garden-card, .sp-panel, .sp-scen-card,
   .game-library-card, .games-side-card, .tool-card, #view-settings .settings-panel) {
   --paper-dim: brightness(.82) saturate(.85);
 }
 
-[data-pages-style="rpg"] :is(.fc-stat-card, #view-flashcards .panel, .group-card, #fc-session-panel,
+[data-pages-style="rpg"] :is(#view-flashcards .panel, .group-card, #fc-session-panel,
   .b-main-card, .b-liquidity-card, .b-card, #budget-garden-card, .sp-panel, .sp-scen-card,
   .game-library-card, .games-side-card, .tool-card, #view-settings .settings-panel)::before {
   content: '';
@@ -114,7 +114,7 @@
   transform: rotate(var(--tilt, 0deg)) scaleX(var(--flip, 1));
   pointer-events: none;
 }
-[data-pages-style="rpg"] :is(.fc-stat-card, #view-flashcards .panel, .group-card, #fc-session-panel,
+[data-pages-style="rpg"] :is(#view-flashcards .panel, .group-card, #fc-session-panel,
   .b-main-card, .b-liquidity-card, .b-card, #budget-garden-card, .sp-panel,
   .games-side-card, .tool-card, #view-settings .settings-panel)::after {
   content: '';
@@ -128,9 +128,9 @@
 }
 
 /* Abwechselnde, leichte Schräglage des Papiers */
-[data-pages-style="rpg"] :is(.fc-stat-card, .b-main-card, .sp-scen-card, .game-library-card,
+[data-pages-style="rpg"] :is(.b-main-card, .sp-scen-card, .game-library-card,
   .tool-card, #view-settings .settings-panel, .b-card):nth-child(odd)  { --tilt: -0.5deg; }
-[data-pages-style="rpg"] :is(.fc-stat-card, .b-main-card, .sp-scen-card, .game-library-card,
+[data-pages-style="rpg"] :is(.b-main-card, .sp-scen-card, .game-library-card,
   .tool-card, #view-settings .settings-panel, .b-card):nth-child(even) { --tilt: 0.45deg; --flip: -1; }
 /* Große Datenblätter (Budget-Panels) gerade — sonst „schwimmen“ Tabellen */
 [data-pages-style="rpg"] :is(.sp-panel, .b-liquidity-card) { --tilt: 0deg; }
@@ -154,12 +154,17 @@
    grün getönt, damit man Vorder- und Rückseite unterscheidet */
 [data-pages-style="rpg"] #learn-card-back { background: color-mix(in srgb, var(--sage) 16%, var(--surface-solid)); color: var(--text); }
 [data-pages-style="rpg"] .group-header { background: transparent; }
+/* Nachts ist das Papier gedimmt — Nebentext auf den Karteikarten-Zetteln
+   kräftiger, sonst verschwimmen Labels wie „Richtig“/„Falsch“ */
+[data-pages-style="rpg"][data-theme-family="dark"] :is(#view-flashcards .panel, #view-flashcards .group-card, #fc-session-panel) {
+  --text-2: color-mix(in srgb, var(--deco-ink) 90%, transparent);
+  --text-3: color-mix(in srgb, var(--deco-ink) 74%, transparent);
+}
 
 /* Etwas Innenabstand, damit nichts an der Papierkante klebt */
 [data-pages-style="rpg"] :is(.b-main-card, .b-card, #view-flashcards .panel, #view-settings .settings-panel) { padding: 6px 6px 10px; }
 /* Große Budget-Blätter: Inhalt deutlich weg von der ausgefransten Kante */
 [data-pages-style="rpg"] .sp-panel { padding: 10px 20px 20px; }
-[data-pages-style="rpg"] .fc-stat-card { padding: 18px 18px 16px; }
 [data-pages-style="rpg"] .tool-card { padding: 26px 24px 24px; }
 
 /* Budget-Karten: eigene Flächen-/Tinten-Tokens (budget.css) aufs Papier
@@ -299,7 +304,7 @@
 }
 
 /* Eingaben auf Papier — sonst nachts dunkle Felder auf hellem Blatt */
-[data-pages-style="rpg"] :is(.fc-stat-card, #view-flashcards .panel, .group-card, #fc-session-panel,
+[data-pages-style="rpg"] :is(#view-flashcards .panel, .group-card, #fc-session-panel,
   .b-main-card, .b-liquidity-card, .b-card, #budget-garden-card, .sp-panel, .sp-scen-card,
   .game-library-card, .games-side-card, .tool-card, #view-settings .settings-panel)
   :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]), select, textarea) {
@@ -325,7 +330,7 @@
    - Monatsauswahl: graviertes Messingschild, Pfeile als Messingknöpfe
    - Menü-Zahnrad: gewölbter Messingknauf
 ============================================================= */
-[data-pages-style="rpg"] #view-budget {
+[data-pages-style="rpg"] :is(#view-budget, #view-flashcards) {
   --brass-hi:   color-mix(in srgb, var(--amber) 45%, var(--sheen));
   --brass:      color-mix(in srgb, var(--amber) 88%, var(--sheen));
   --brass-lo:   color-mix(in srgb, var(--amber) 70%, var(--deco-ink));
@@ -921,3 +926,78 @@
   border-color: var(--brass-ink);
   color: var(--deco-ink);
 }
+
+/* =============================================================
+   KARTEIKARTEN-STATISTIK — drei Werkstoffe statt Zettel, damit sich
+   die Kennzahlen vom Inhalt (Papier) abheben (wie die Budget-Kopfzeile)
+   - Karten insgesamt: Holzschild an zwei Ketten
+   - Heute fällig:     Lederriemen mit Ziernaht und Nieten
+   - Erfolgsquote:     Messingschild mit vier Nieten
+============================================================= */
+[data-pages-style="rpg"] #fc-global-stats { gap: 16px; padding-top: 12px; }
+[data-pages-style="rpg"] .fc-stat-card {
+  position: relative;
+  border-radius: 6px;
+  padding: 10px 18px;
+}
+[data-pages-style="rpg"] .fc-stat-total {
+  border: 2px solid color-mix(in srgb, var(--deco-ink) 75%, transparent);
+  background:
+    linear-gradient(color-mix(in srgb, var(--deco-ink) 45%, transparent), color-mix(in srgb, var(--deco-ink) 30%, transparent)),
+    url('../assets/questboard/planks.webp') center / 260% auto,
+    var(--leather);
+  box-shadow:
+    inset 0 0 0 3px color-mix(in srgb, var(--deco-ink) 30%, transparent),
+    inset 0 2px 0 color-mix(in srgb, var(--sheen) 18%, transparent),
+    0 6px 12px color-mix(in srgb, var(--shadow-tint) 50%, transparent);
+}
+/* zwei Ketten nach oben */
+[data-pages-style="rpg"] .fc-stat-total::before,
+[data-pages-style="rpg"] .fc-stat-total::after {
+  content: '';
+  position: absolute;
+  top: -14px;
+  width: 4px; height: 14px;
+  background: repeating-linear-gradient(to bottom,
+    var(--brass-lo) 0 2px, var(--brass-hi) 2px 4px, var(--brass) 4px 6px);
+  border-radius: 2px;
+}
+[data-pages-style="rpg"] .fc-stat-total::before { left: 18px; }
+[data-pages-style="rpg"] .fc-stat-total::after  { right: 18px; }
+[data-pages-style="rpg"] .fc-stat-total :is(.fc-stat-value, .fc-stat-icon) { color: var(--brass-hi); }
+[data-pages-style="rpg"] .fc-stat-total .fc-stat-label { color: color-mix(in srgb, var(--brass-hi) 88%, transparent); }
+[data-pages-style="rpg"] .fc-stat-total :is(.fc-stat-value, .fc-stat-label) { text-shadow: 0 -1px 0 color-mix(in srgb, var(--deco-ink) 70%, transparent); }
+
+[data-pages-style="rpg"] .fc-stat-due {
+  border: 1px solid color-mix(in srgb, var(--deco-ink) 80%, transparent);
+  background:
+    var(--rivet) left 7px center / 8px 8px no-repeat,
+    var(--rivet) right 7px center / 8px 8px no-repeat,
+    linear-gradient(to bottom, var(--leather-hi), var(--leather) 55%, color-mix(in srgb, var(--leather) 80%, var(--deco-ink)));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--sheen) 15%, transparent),
+    0 4px 8px color-mix(in srgb, var(--shadow-tint) 45%, transparent);
+  outline: 1px dashed color-mix(in srgb, var(--brass-hi) 45%, transparent);
+  outline-offset: -5px;
+  padding-inline: 24px;
+}
+[data-pages-style="rpg"] .fc-stat-due :is(.fc-stat-value, .fc-stat-icon) { color: color-mix(in srgb, var(--deco-orange) 60%, var(--sheen)); }
+[data-pages-style="rpg"] .fc-stat-due .fc-stat-label { color: color-mix(in srgb, var(--sheen) 62%, var(--amber)); }
+[data-pages-style="rpg"] .fc-stat-due :is(.fc-stat-value, .fc-stat-label) { text-shadow: 0 -1px 0 color-mix(in srgb, var(--deco-ink) 70%, transparent); }
+
+[data-pages-style="rpg"] .fc-stat-rate {
+  border: 1px solid var(--brass-lo);
+  background:
+    var(--rivet) left 5px top 5px / 8px 8px no-repeat,
+    var(--rivet) right 5px top 5px / 8px 8px no-repeat,
+    var(--rivet) left 5px bottom 5px / 8px 8px no-repeat,
+    var(--rivet) right 5px bottom 5px / 8px 8px no-repeat,
+    linear-gradient(170deg, var(--brass-hi), var(--brass) 45%, var(--brass-lo));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--sheen) 55%, transparent),
+    inset 0 0 0 2px color-mix(in srgb, var(--brass-lo) 45%, transparent),
+    0 4px 8px color-mix(in srgb, var(--shadow-tint) 45%, transparent);
+}
+[data-pages-style="rpg"] .fc-stat-rate :is(.fc-stat-value, .fc-stat-label, .fc-stat-icon) { color: var(--brass-ink); }
+[data-pages-style="rpg"] .fc-stat-rate :is(.fc-stat-value, .fc-stat-label) { text-shadow: 0 1px 0 color-mix(in srgb, var(--sheen) 45%, transparent); }
+[data-pages-style="rpg"] .fc-stat-value { font-family: var(--font-heading); font-weight: 400; }

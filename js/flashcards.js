@@ -75,24 +75,29 @@ function calcGlobalAccuracy(){
   return calcAccuracy(allCards());
 }
 
+// Schlichte Linien-Icons (currentColor) statt Emojis — folgen jedem Theme
+function fcIcon(cls, paths){
+  return `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
+}
+
 function renderGlobalStats(){
   const s = calcGlobalStats();
   const pct = calcGlobalAccuracy();
   const wrap = document.getElementById('fc-global-stats');
   if(!wrap) return;
   wrap.innerHTML = `
-    <div class="fc-stat-card">
-      <span class="fc-stat-icon">🗂️</span>
+    <div class="fc-stat-card fc-stat-total">
+      ${fcIcon('fc-stat-icon', '<rect x="3" y="7" width="14" height="12" rx="2"/><path d="M7 4h12a2 2 0 0 1 2 2v10"/>')}
       <span class="fc-stat-value">${s.total}</span>
       <span class="fc-stat-label">Karten insgesamt</span>
     </div>
     <div class="fc-stat-card fc-stat-due">
-      <span class="fc-stat-icon">📅</span>
+      ${fcIcon('fc-stat-icon', '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="m9 15 2 2 4-4"/>')}
       <span class="fc-stat-value">${s.dueToday}</span>
       <span class="fc-stat-label">Heute fällig</span>
     </div>
-    <div class="fc-stat-card">
-      <span class="fc-stat-icon">📈</span>
+    <div class="fc-stat-card fc-stat-rate">
+      ${fcIcon('fc-stat-icon', '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/>')}
       <span class="fc-stat-value">${pct}%</span>
       <span class="fc-stat-label">Erfolgsquote</span>
     </div>
@@ -321,7 +326,7 @@ function renderGroupList(subj){
     boxes.forEach((cnt,i) => {
       if(!cnt) return;
       const badge = document.createElement('span'); badge.className='leitner-badge';
-      badge.style.cssText = `background:${colors[i]}22;color:${colors[i]};border:1px solid ${colors[i]}44;`;
+      badge.style.setProperty('--lc', colors[i]);
       badge.textContent = `${labels[i]} (${cnt})`;
       leitnerLegend.appendChild(badge);
     });
@@ -338,7 +343,7 @@ function renderGroupList(subj){
         const back = document.createElement('span'); back.className='fc-back'; back.textContent=fc.back;
         const boxLabel = labels[(fc.box||1)-1];
         const boxBadge = document.createElement('span'); boxBadge.className='fc-box';
-        boxBadge.style.cssText = `background:${colors[(fc.box||1)-1]}22;color:${colors[(fc.box||1)-1]};border:1px solid ${colors[(fc.box||1)-1]}44;`;
+        boxBadge.style.setProperty('--lc', colors[(fc.box||1)-1]);
         boxBadge.textContent = boxLabel;
         const meatball = document.createElement('button'); meatball.className='fc-meatball fc-card-meatball'; meatball.textContent='⋮';
         meatball.addEventListener('click', e => { e.stopPropagation(); openCardMenu(subj, group, fc, meatball); });
@@ -551,6 +556,8 @@ function startLearnSession(subjId, groupId){
   renderHardCardsPanel(subj, group);
   renderGlobalStats();
   showLearnCard();
+  // Liste/Fächer sind jetzt ausgeblendet — Blatt an den Anfang holen
+  panel.scrollIntoView({ block: 'start' });
 }
 
 function renderTodayProgress(){
@@ -565,9 +572,9 @@ function renderTodayProgress(){
   const totalAnswered = correct + wrong;
   const pct = totalAnswered > 0 ? Math.round((correct/totalAnswered)*100) : 0;
   grid.innerHTML = `
-    <div class="fc-progress-mini"><span class="fc-progress-mini-icon">📚</span><span class="fc-progress-mini-val">${learned}</span><span class="fc-progress-mini-lbl">Gelernt</span></div>
-    <div class="fc-progress-mini"><span class="fc-progress-mini-icon">🔁</span><span class="fc-progress-mini-val">${reps}</span><span class="fc-progress-mini-lbl">Wiederholt</span></div>
-    <div class="fc-progress-mini"><span class="fc-progress-mini-icon">🎯</span><span class="fc-progress-mini-val">${pct}%</span><span class="fc-progress-mini-lbl">Richtig</span></div>
+    <div class="fc-progress-mini">${fcIcon('fc-progress-mini-icon', '<path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5z"/><path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5z"/>')}<span class="fc-progress-mini-val">${learned}</span><span class="fc-progress-mini-lbl">Gelernt</span></div>
+    <div class="fc-progress-mini">${fcIcon('fc-progress-mini-icon', '<path d="M4 12a8 8 0 0 1 13.7-5.7L20 8.5"/><path d="M20 4v4.5h-4.5"/><path d="M20 12a8 8 0 0 1-13.7 5.7L4 15.5"/><path d="M4 20v-4.5h4.5"/>')}<span class="fc-progress-mini-val">${reps}</span><span class="fc-progress-mini-lbl">Wiederholt</span></div>
+    <div class="fc-progress-mini">${fcIcon('fc-progress-mini-icon', '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/>')}<span class="fc-progress-mini-val">${pct}%</span><span class="fc-progress-mini-lbl">Richtig</span></div>
   `;
 }
 
@@ -722,9 +729,9 @@ function endLearnSession(){
   const down = learnSession.leitnerChanges.filter(c => c.to < c.from).length;
   const leitnerHTML = (up||down) ? `
     <div style="font-size:12px;color:var(--text-3);margin-top:6px;">
-      ${up ? `<span style="color:var(--leitner-3);">▲ ${up} Karte${up!==1?'n':''} aufgestiegen</span>` : ''}
+      ${up ? `<span class="fc-tone" style="--fc-tone-src:var(--leitner-3);">▲ ${up} Karte${up!==1?'n':''} aufgestiegen</span>` : ''}
       ${up&&down?' · ':''}
-      ${down ? `<span style="color:var(--leitner-1);">▼ ${down} Karte${down!==1?'n':''} zurückgefallen</span>` : ''}
+      ${down ? `<span class="fc-tone">▼ ${down} Karte${down!==1?'n':''} zurückgefallen</span>` : ''}
     </div>` : '';
 
   document.getElementById('learn-card-wrap').style.display = 'none';

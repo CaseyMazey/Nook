@@ -71,6 +71,8 @@ Bewusst ohne Lernserie (Streak): Ein Zähler, der nach einem verpassten Tag auf 
 
 Diese Werte werden automatisch berechnet.
 
+Kompakt in einer Zeile (Icon, Zahl, Beschriftung), mit schlichten Linien-Icons statt Emojis. Im RPG-Theme sind die drei Kennzahlen kein Papier, sondern Werkstoffe (Holzschild, Lederriemen, Messingschild), damit sie sich vom Inhalt abheben.
+
 ---
 
 # Fächer
@@ -221,9 +223,9 @@ Eine Lernsession wird für eine einzelne Themengruppe gestartet.
 
 Dabei werden alle Karten dieser Gruppe nacheinander gelernt.
 
-Während der Session wird ein eigenes Seitenpanel geöffnet. Unter 1024px Breite (Tablet/Handy) liegt es als Vollbild-Blatt über der Seite, damit man es nicht erst unten suchen muss.
+Die Lernsession nimmt den ganzen Bereich ein: Fächer, Kartenliste und Statistik sind währenddessen ausgeblendet. Man soll nicht vorab die nächsten Fragen samt Antworten sehen können, die Session ist nur zum Lernen.
 
-Während der Session sind die Antworten in der Kartenliste ausgeblendet.
+Unter 1024px Breite (Tablet/Handy) liegt sie als Vollbild-Blatt über der Seite.
 
 ---
 
