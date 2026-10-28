@@ -3897,6 +3897,15 @@
        die beim Hinzufügen/Entfernen eines Spiels angepasst werden muss -->
   <script src="js/games.js"></script>
   <script src="games/games-list.js"></script>
+  <!-- Tools: muss vor settings.js laden — settings.js ruft beim Start
+       showView() auf, ein Neuladen auf #tools braucht initTools schon dann -->
+  <script src="js/tools.js"></script>
+  <script src="js/tools-calculator.js"></script>
+  <script src="js/tools-timer.js"></script>
+  <script src="js/tools-converter.js"></script>
+  <script src="js/tools-datarate.js"></script>
+  <script src="js/tools-notenmanager.js"></script>
+  <script src="js/tools-decision.js"></script>
   <!-- Version + Änderungsprotokoll für Einstellungen > Über Nook -->
   <script src="js/nook-version.js"></script>
   <script src="js/settings.js"></script>
@@ -3905,13 +3914,6 @@
   <script src="js/theme-engine.js"></script>
   <script src="js/positivity.js"></script>
   <script src="js/national_day.js"></script>
-  <script src="js/tools.js"></script>
-  <script src="js/tools-calculator.js"></script>
-  <script src="js/tools-timer.js"></script>
-  <script src="js/tools-converter.js"></script>
-  <script src="js/tools-datarate.js"></script>
-  <script src="js/tools-notenmanager.js"></script>
-  <script src="js/tools-decision.js"></script>
   <script src="js/pwa.js"></script>
 </body>
 </html>
