@@ -117,6 +117,27 @@ Informatik
 
 ---
 
+# Prüfungen
+
+Eine Prüfung fasst mehrere Themengruppen eines Fachs zusammen, die in derselben Klassenarbeit oder Prüfung abgefragt werden.
+
+Eine Prüfung besitzt:
+
+- Name
+- zugeordnete Themengruppen
+
+Sie wird als eine Lernsession über alle Karten ihrer Themen gelernt, bewusst durchgemischt (eine normale Themengruppen-Session bleibt nach Leitner-Box sortiert).
+
+Prüfungen stehen im Fach über den Themengruppen. Anlegen und Bearbeiten über „+ Prüfung“, Löschen entfernt nur die Zusammenfassung, nie Themen oder Karten.
+
+Beim Markdown-Import legt die Zeile `Prüfung: Name` unter `# Fach` die Prüfung an bzw. ergänzt sie.
+
+Gespeichert als `subject.exams = [{ id, name, groupIds }]` im Key `subjects`. Ältere Fächer ohne das Feld gelten als „keine Prüfungen“. Wird eine Themengruppe gelöscht, wird sie aus allen Prüfungen ausgetragen.
+
+Umgesetzt in `js/flashcards-exams.js` (lädt nach `flashcards-import.js`).
+
+---
+
 # Karteikarten
 
 Eine Karte besitzt mindestens:
@@ -466,6 +487,7 @@ flashcards.js ist verantwortlich für:
 - Statistiken
 - Export
 - Markdown-Import
+- Prüfungen
 - Suchfunktion
 - Kontextmenüs
 

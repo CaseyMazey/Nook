@@ -5,10 +5,13 @@
 //
 // Lade-Reihenfolge: main.js (subjects, state, DB) -> hub-utils.js
 // (wireModal, hubAlert) -> flashcards.js (saveSubjects, renderSubjectList,
-// renderSubjectDetail) -> flashcards-import.js
+// renderSubjectDetail) -> flashcards-import.js -> flashcards-exams.js
+// (renderExamList wird erst beim Import aufgerufen, nicht beim Laden)
 //
 // Format (Vertrag: AI documentation/flashcards-import-format.md):
-//   # Fach              -> subjects[] (optional darunter "Lehrer: …")
+//   # Fach              -> subjects[] (optional darunter "Lehrer: …" und
+//                          "Prüfung: …" = alle ## dieses Fachs in der Datei
+//                          bilden zusammen eine Prüfung, js/flashcards-exams.js)
 //   ## Themengruppe     -> subject.groups[]
 //   ### Vorderseite     -> group.cards[].front
 //   Text bis zur nächsten #/##/###-Überschrift -> card.back (Markdown roh
@@ -21,6 +24,7 @@ const FC_IMPORT_TEMPLATE = `Erstelle mir zu diesem Lernzettel eine Markdown-Date
 
 # Fachname
 Lehrer: Name (optional, diese Zeile kann fehlen)
+Prüfung: Name der Prüfung (optional, siehe Regeln)
 
 ## Themengruppe
 
@@ -34,6 +38,7 @@ und geht bis zur nächsten Überschrift.
 
 Regeln:
 - "#" = Fach, "##" = Themengruppe, "###" = eine Karte. Jede Karte steht unter einem "##".
+- "Prüfung:" direkt unter "#": Alle "##"-Themengruppen dieses Fachs in der Datei gehören zusammen zu dieser Prüfung und werden gemischt gelernt. Teile den Lernzettel deshalb in sinnvolle Unterthemen ("##") auf. Immer denselben Prüfungsnamen verwenden, wenn mehrere Dateien zur selben Prüfung gehören (z. B. „Klassenarbeit 1“).
 - Die Vorderseite ist die "###"-Zeile, die Rückseite ist alles darunter bis zur nächsten "#", "##" oder "###"-Überschrift.
 - In Antworten keine Überschriften mit 1–3 "#" verwenden (für Zwischentitel "####" oder **fett**).
 - Code in Antworten als Code-Block mit \`\`\` – darin dürfen auch #-Zeilen stehen.
@@ -45,6 +50,7 @@ Beispiel:
 
 # LF 3 Netzwerke
 Lehrer: Herr Müller
+Prüfung: Klassenarbeit Netzwerke
 
 ## Subnetting
 
@@ -92,7 +98,7 @@ function fcImportParse(text){
   const ensureSubject = (name, ln) => {
     const found = result.subjects.find(s => fcImportNorm(s.name) === fcImportNorm(name));
     if(found) return found;
-    const s = { name, teacher: '', groups: [], line: ln };
+    const s = { name, teacher: '', exam: '', groups: [], line: ln };
     result.subjects.push(s);
     return s;
   };
@@ -131,6 +137,8 @@ function fcImportParse(text){
     if(!raw.trim() || /^\s*<!--.*-->\s*$/.test(raw)) return;
     const teacher = subj && !group ? raw.match(/^\s*Lehrer(?:in)?\s*:\s*(.+)$/i) : null;
     if(teacher){ subj.teacher = teacher[1].trim(); return; }
+    const exam = subj && !group ? raw.match(/^\s*Pr(?:ü|ue)fung\s*:\s*(.+)$/i) : null;
+    if(exam){ subj.exam = exam[1].trim(); return; }
     if(!strayLine) strayLine = ln;
   });
   flushStray();
@@ -195,6 +203,7 @@ function renderFcImportPreview(){
         <span class="fc-import-subj-name">📚 ${escHtml(p.parsed.name)}</span>
         <select class="modal-select fc-import-target" data-idx="${i}">${subjOptions(p.targetId)}</select>
       </div>
+      ${p.parsed.exam ? `<div class="fc-import-exam">🎯 Prüfung „${escHtml(p.parsed.exam)}“ – ${p.groups.length} ${p.groups.length!==1?'Themen':'Thema'} gemischt lernen${(p.target?.exams || []).some(x => fcImportNorm(x.name) === fcImportNorm(p.parsed.exam)) ? ' (bestehende Prüfung, Themen werden ergänzt)' : ''}</div>` : ''}
       ${p.groups.length ? p.groups.map(g => `
         <div class="fc-import-group">
           <span class="fc-import-group-name">${escHtml(g.name)}</span>
@@ -218,18 +227,21 @@ function renderFcImportPreview(){
     fcImportTargets[fcImportNorm(plan[+sel.dataset.idx].parsed.name)] = sel.value;
     renderFcImportPreview();
   }));
-  saveBtn.disabled = totalFresh === 0;
-  saveBtn.textContent = totalFresh ? `${totalFresh} Karte${totalFresh!==1?'n':''} importieren` : 'Importieren';
+  const examOnly = !totalFresh && plan.some(p => p.parsed.exam && p.target);
+  saveBtn.disabled = totalFresh === 0 && !examOnly;
+  saveBtn.textContent = totalFresh ? `${totalFresh} Karte${totalFresh!==1?'n':''} importieren` : (examOnly ? 'Prüfung zuordnen' : 'Importieren');
 }
 
 function applyFcImport(){
   if(!fcImportParsed) return;
   const plan = fcImportPlan(fcImportParsed);
   let added = 0, skipped = 0, firstSubjId = null;
+  let examsTouched = 0;
   plan.forEach(p => {
     const freshCount = p.groups.reduce((n, g) => n + g.fresh.length, 0);
     skipped += p.groups.reduce((n, g) => n + g.dup.length, 0);
-    if(!freshCount) return;
+    // Nur Duplikate, aber Prüfung angegeben: bestehende Gruppen trotzdem zuordnen
+    if(!freshCount && !(p.parsed.exam && p.target)) return;
     let subj = p.target;
     if(!subj){
       subj = { id: crypto.randomUUID(), name: p.parsed.name, teacher: p.parsed.teacher || '', groups: [] };
@@ -245,14 +257,22 @@ function applyFcImport(){
         added++;
       });
     });
+    if(p.parsed.exam){
+      const groupIds = p.groups.map(g => subj.groups.find(x => fcImportNorm(x.name) === fcImportNorm(g.name))?.id).filter(Boolean);
+      if(!subj.exams) subj.exams = [];
+      let exam = subj.exams.find(x => fcImportNorm(x.name) === fcImportNorm(p.parsed.exam));
+      if(!exam){ exam = { id: crypto.randomUUID(), name: p.parsed.exam, groupIds: [] }; subj.exams.push(exam); }
+      groupIds.forEach(id => { if(!exam.groupIds.includes(id)) exam.groupIds.push(id); });
+      if(groupIds.length) examsTouched++;
+    }
   });
-  if(!added) return;
+  if(!added && !examsTouched) return;
   saveSubjects();
   fcImportModal.close();
   state.activeSubjectId = firstSubjId;
   renderSubjectList();
   renderSubjectDetail();
-  hubAlert('Import abgeschlossen', `${added} Karte${added!==1?'n':''} importiert.` + (skipped ? ` ${skipped} doppelte Karte${skipped!==1?'n':''} übersprungen.` : ''));
+  hubAlert('Import abgeschlossen', `${added} Karte${added!==1?'n':''} importiert.` + (skipped ? ` ${skipped} doppelte Karte${skipped!==1?'n':''} übersprungen.` : '') + (examsTouched ? ' Prüfung angelegt bzw. ergänzt.' : ''));
 }
 
 function copyFcImportTemplate(){

@@ -193,7 +193,8 @@ function openGroupMenu(subj, group, anchor){
     closeAllMenus();
     if(!confirm(`Gruppe "${group.name}" wirklich löschen?`)) return;
     subj.groups = subj.groups.filter(g => g.id !== group.id);
-    saveSubjects(); renderGroupList(subj);
+    (subj.exams || []).forEach(ex => { ex.groupIds = ex.groupIds.filter(id => id !== group.id); });
+    saveSubjects(); renderGroupList(subj); renderExamList(subj);
   });
   positionMenu(menu, anchor);
 }
@@ -219,7 +220,7 @@ function openCardMenu(subj, group, fc, anchor){
   menu.querySelector('[data-action="hard"]').addEventListener('click', () => {
     closeAllMenus();
     fc.hard = !fc.hard; saveSubjects(); renderGroupList(subj); renderGlobalStats();
-    if(learnSession.active && learnSession.subjId===subj.id && learnSession.groupId===group.id) renderHardCardsPanel(subj, group);
+    if(learnSession.active && learnSession.subjId===subj.id && learnSession.groupIds.includes(group.id)) renderHardCardsPanel(subj);
   });
   menu.querySelector('[data-action="export"]').addEventListener('click', () => { closeAllMenus(); exportCard(fc); });
   menu.querySelector('[data-action="delete"]').addEventListener('click', () => {
@@ -264,6 +265,7 @@ function renderSubjectDetail(){
   document.getElementById('flashcard-subject-view').classList.remove('hidden');
   document.getElementById('subject-detail-title').textContent = subj.name;
   document.getElementById('subject-detail-meta').textContent = subj.teacher ? `Lehrer: ${subj.teacher}` : '';
+  renderExamList(subj);
   renderGroupList(subj);
 }
 
@@ -524,23 +526,42 @@ const learnSession = {
   index: 0,
   flipped: false,
   subjId: null,
-  groupId: null,
+  groupIds: [],   // eine Themengruppe oder alle Themen einer Prüfung
+  exam: null,     // { id, name } bei Prüfungs-Session, sonst null
   stats: { correct: 0, wrong: 0 },
   leitnerChanges: [] // { card, from, to }
 };
 
 function startLearnSession(subjId, groupId){
-  const subj = subjects.find(s => s.id === subjId);
-  const group = subj?.groups.find(g => g.id === groupId);
-  if(!group || group.cards.length === 0) return;
+  startGroupsLearnSession(subjId, [groupId], null);
+}
 
-  const sorted = [...group.cards].sort((a,b) => (a.box||1)-(b.box||1));
+// Themengruppen der laufenden Session (nur noch existierende)
+function learnSessionGroups(subj){
+  return (subj?.groups || []).filter(g => learnSession.groupIds.includes(g.id));
+}
+
+function shuffleCards(cards){
+  const a = [...cards];
+  for(let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+
+// Gemeinsamer Einstieg: eine Themengruppe (nach Leitner-Box sortiert) oder
+// eine Prüfung = mehrere Themengruppen, bewusst durchgemischt
+function startGroupsLearnSession(subjId, groupIds, exam){
+  const subj = subjects.find(s => s.id === subjId);
+  learnSession.groupIds = groupIds;
+  const groups = learnSessionGroups(subj);
+  const cards = groups.flatMap(g => g.cards);
+  if(!subj || cards.length === 0) return;
+
   learnSession.active = true;
-  learnSession.queue = sorted;
+  learnSession.queue = exam ? shuffleCards(cards) : [...cards].sort((a,b) => (a.box||1)-(b.box||1));
   learnSession.index = 0;
   learnSession.flipped = false;
   learnSession.subjId = subjId;
-  learnSession.groupId = groupId;
+  learnSession.exam = exam;
   learnSession.stats = { correct: 0, wrong: 0 };
   learnSession.leitnerChanges = [];
 
@@ -548,16 +569,20 @@ function startLearnSession(subjId, groupId){
   document.getElementById('flashcard-layout')?.classList.add('session-open');
   const panel = document.getElementById('fc-session-panel');
   panel.classList.remove('hidden');
-  document.getElementById('fc-session-panel-title').textContent = 'Lernsession';
+  document.getElementById('fc-session-panel-title').textContent = exam ? 'Prüfung lernen' : 'Lernsession';
   // Kontext bleibt während der ganzen Session sichtbar: wofür lerne ich gerade?
+  const topicRow = exam
+    ? `<div class="fc-session-ctx-row"><span class="fc-session-ctx-lbl">Prüfung</span><span class="fc-session-ctx-group">${escHtml(exam.name)}</span></div>
+       <div class="fc-session-ctx-row"><span class="fc-session-ctx-lbl">Themen · gemischt</span><span class="fc-session-ctx-topics">${groups.map(g => escHtml(g.name)).join(' · ')}</span></div>`
+    : `<div class="fc-session-ctx-row"><span class="fc-session-ctx-lbl">Thema</span><span class="fc-session-ctx-group">${escHtml(groups[0].name)}</span></div>`;
   document.getElementById('fc-session-context').innerHTML = `
     <div class="fc-session-ctx-row"><span class="fc-session-ctx-lbl">Fach</span><span class="fc-session-ctx-subject">${escHtml(subj.name)}</span></div>
     ${subj.teacher ? `<div class="fc-session-ctx-row"><span class="fc-session-ctx-lbl">Lehrer</span><span>${escHtml(subj.teacher)}</span></div>` : ''}
-    <div class="fc-session-ctx-row"><span class="fc-session-ctx-lbl">Thema</span><span class="fc-session-ctx-group">${escHtml(group.name)}</span></div>`;
+    ${topicRow}`;
 
   // Heutiger Fortschritt + Schwierige Karten im Panel
   renderTodayProgress();
-  renderHardCardsPanel(subj, group);
+  renderHardCardsPanel(subj);
   renderGlobalStats();
   showLearnCard();
   // Liste/Fächer sind jetzt ausgeblendet — Blatt an den Anfang holen
@@ -582,10 +607,10 @@ function renderTodayProgress(){
   `;
 }
 
-function renderHardCardsPanel(subj, group){
+function renderHardCardsPanel(subj){
   const hardList = document.getElementById('fc-hard-list');
   const hardCount = document.getElementById('fc-hard-count');
-  const hard = group ? group.cards.filter(c => c.hard) : [];
+  const hard = learnSessionGroups(subj).flatMap(g => g.cards).filter(c => c.hard);
   hardCount.textContent = hard.length;
   hardList.innerHTML = '';
   if(hard.length === 0){
@@ -600,7 +625,7 @@ function renderHardCardsPanel(subj, group){
     row.className = 'fc-hard-item';
     row.innerHTML = `<span>${escHtml(fc.front)}</span>`;
     row.title = 'Klicken um zur Karte zu springen';
-    row.addEventListener('click', () => jumpToHardCard(subj, group, fc));
+    row.addEventListener('click', () => jumpToHardCard(subj, subj.groups.find(g => g.cards.includes(fc)), fc));
     hardList.appendChild(row);
   });
 }
@@ -691,9 +716,9 @@ document.getElementById('learn-didnt').addEventListener('click', () => answerLea
 function answerLearn(knew, mode){
   const q = learnSession.queue, card = q[learnSession.index];
   const subj = subjects.find(s => s.id === learnSession.subjId);
-  const group = subj?.groups.find(g => g.id === learnSession.groupId);
-  if(group){
-    const realCard = group.cards.find(c => c.id === card.id);
+  const groups = learnSessionGroups(subj);
+  {
+    const realCard = groups.flatMap(g => g.cards).find(c => c.id === card.id);
     if(realCard){
       const oldBox = realCard.box || 1;
       if(mode === 'easy') realCard.box = Math.min(oldBox+1, 5);
@@ -709,11 +734,11 @@ function answerLearn(knew, mode){
   if(knew) learnSession.stats.correct++; else learnSession.stats.wrong++;
   recordAnswer(knew);
   renderTodayProgress();
-  if(group) renderHardCardsPanel(subj, group);
+  if(subj) renderHardCardsPanel(subj);
   learnSession.index++;
   if(learnSession.index >= q.length){
     endLearnSession();
-    if(group) renderGroupList(subj);
+    if(subj){ renderGroupList(subj); renderExamList(subj); }
     renderSubjectList();
   } else {
     showLearnCard();
@@ -763,7 +788,7 @@ function endLearnSession(){
       </div>
     </div>
   `;
-  document.getElementById('learn-restart').addEventListener('click', () => startLearnSession(learnSession.subjId, learnSession.groupId));
+  document.getElementById('learn-restart').addEventListener('click', () => startGroupsLearnSession(learnSession.subjId, learnSession.groupIds, learnSession.exam));
   document.getElementById('learn-close-panel').addEventListener('click', closeSessionPanel);
   renderGlobalStats();
 }

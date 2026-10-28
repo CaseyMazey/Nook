@@ -154,6 +154,12 @@
    grün getönt, damit man Vorder- und Rückseite unterscheidet */
 [data-pages-style="rpg"] #learn-card-back { background: color-mix(in srgb, var(--sage) 16%, var(--surface-solid)); color: var(--text); }
 [data-pages-style="rpg"] .group-header { background: transparent; }
+/* Prüfungen: Kopfzeile + Hinweis direkt auf dem Holz */
+[data-pages-style="rpg"] :is(.fc-exam-head-label, .fc-exam-empty) {
+  color: var(--sage-fg);
+  text-shadow: 0 1px 2px color-mix(in srgb, var(--shadow-tint) 80%, transparent);
+}
+[data-pages-style="rpg"] .fc-exam-empty { border-color: color-mix(in srgb, var(--sage-fg) 35%, transparent); }
 /* Nachts ist das Papier gedimmt — Nebentext auf den Karteikarten-Zetteln
    kräftiger, sonst verschwimmen Labels wie „Richtig“/„Falsch“ */
 [data-pages-style="rpg"][data-theme-family="dark"] :is(#view-flashcards .panel, #view-flashcards .group-card, #fc-session-panel) {

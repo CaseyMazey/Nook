@@ -813,6 +813,8 @@
                     <button class="btn-primary" id="add-group-btn">+ Themengruppe</button>
                   </div>
                 </div>
+                <!-- Prüfungen: js/flashcards-exams.js -->
+                <div id="fc-exam-list"></div>
                 <div id="group-list"></div>
               </div>
             </div>
@@ -2316,6 +2318,26 @@
       <div class="modal-actions">
         <button id="fc-import-modal-cancel" class="btn-ghost">Abbrechen</button>
         <button id="fc-import-save" class="btn-primary" disabled>Importieren</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Prüfung anlegen/bearbeiten Modal — js/flashcards-exams.js -->
+  <div id="fc-exam-modal-overlay" class="modal-backdrop hidden">
+    <div class="modal-box" style="width:460px;">
+      <div class="modal-head"><span id="fc-exam-modal-title">Neue Prüfung</span><button class="modal-x" id="fc-exam-modal-close">✕</button></div>
+      <div class="modal-row">
+        <label>Name der Prüfung</label>
+        <input type="text" class="modal-input" id="fc-exam-name-input" placeholder="z.B. Klassenarbeit 1, LF 8 Test…" autocomplete="off">
+      </div>
+      <div class="modal-row">
+        <label>Themengruppen</label>
+        <div class="modal-hint">Alles, was in der Prüfung drankommt. Gelernt wird gemischt über alle Themen.</div>
+        <div id="fc-exam-group-list"></div>
+      </div>
+      <div class="modal-actions">
+        <button id="fc-exam-modal-cancel" class="btn-ghost">Abbrechen</button>
+        <button id="fc-exam-modal-save" class="btn-primary">Erstellen</button>
       </div>
     </div>
   </div>
@@ -3911,6 +3933,7 @@
   <script src="js/pinboard.js"></script>
   <script src="js/flashcards.js"></script>
   <script src="js/flashcards-import.js"></script>
+  <script src="js/flashcards-exams.js"></script>
   <script src="js/guides.js"></script>
   <script src="js/budget.js"></script>
   <script src="js/budget-schatzkammer.js"></script>

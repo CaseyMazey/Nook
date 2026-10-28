@@ -10,9 +10,19 @@
 // hinten wegfallen, angezeigt werden ohnehin nur die neuesten.
 // =========================
 
-window.NOOK_VERSION = '2026.10.11';
+window.NOOK_VERSION = '2026.10.12';
 
 window.NOOK_CHANGELOG = [
+  {
+    version: '2026.10.12',
+    date: '2026-10-28',
+    items: [
+      'Karteikarten: Prüfungen – mehrere Themengruppen eines Fachs zu einer Prüfung zusammenfassen und alle Karten gemischt in einer Session lernen',
+      'Karteikarten: Import aus Markdown – ganze Kartensätze aus einer .md-Datei (z. B. von Claude zum Lernzettel erstellt) mit Vorschau, Duplikat-Erkennung und optionaler Prüfung; Vorlage zum Kopieren im Import-Fenster',
+      'Karteikarten: Lernsession nur zum Lernen – nimmt den ganzen Bereich ein, passt ohne Scrollen in jedes Fenster (auch am Handy), Fach, Lehrer und Thema bleiben sichtbar, mehrzeilige Antworten mit Zeilenumbrüchen',
+      'Karteikarten: am Handy nutzbar (nichts ragt mehr aus dem Bild), Statistik kompakt mit schlichten Icons, im RPG-Theme als Holzschild, Lederriemen und Messingschild; bessere Kontraste im Dark Mode; Streak entfernt',
+    ],
+  },
   {
     version: '2026.10.11',
     date: '2026-10-27',
