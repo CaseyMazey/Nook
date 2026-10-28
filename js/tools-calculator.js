@@ -50,6 +50,139 @@ function initCalculator() {
   });
 
   document.addEventListener('keydown', calcHandleKey);
+
+  const exprInput = document.getElementById('calc-expr-input');
+  exprInput.addEventListener('input', renderCalcExprResult);
+  exprInput.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    const r = calcEvalExpression(exprInput.value);
+    if (r.error || r.value === undefined) return;
+    // Ergebnis in Anzeige + Verlauf übernehmen, mit Tasten weiterrechnen
+    calcState = { display: calcNumberToDisplay(r.value), prevValue: null, operator: null, waitingForOperand: true, expression: `${exprInput.value.trim()} =`, justEquals: true };
+    renderCalcDisplay();
+    renderCalcExpression();
+    calcPushHistory(`${exprInput.value.trim()} =`, calcState.display);
+  });
+}
+
+// =========================================================
+// AUSDRUCKSZEILE — kleiner Rechenparser (kein eval)
+// Klammern, + − × ÷ ^ mod, % (Prozent), ! (Fakultät), √/sqrt, log2,
+// log/lg (Basis 10), ln, sin/cos/tan (Grad), pi/π, e; Zahlen dezimal
+// (Komma oder Punkt), 0x… (hex), 0b… (binär). Integer-Ergebnisse
+// zusätzlich in Hex/Binär — für Subnetze, Datenraten & Co.
+// =========================================================
+
+const CALC_FUNCS = {
+  sqrt: Math.sqrt, log2: Math.log2, log: Math.log10, lg: Math.log10, ln: Math.log,
+  sin: x => Math.sin(x * Math.PI / 180), cos: x => Math.cos(x * Math.PI / 180), tan: x => Math.tan(x * Math.PI / 180),
+  abs: Math.abs, round: Math.round, floor: Math.floor, ceil: Math.ceil,
+};
+
+function calcTokenize(src) {
+  const s = src.replace(/[−–]/g, '-').replace(/[×·]/g, '*').replace(/[÷:]/g, '/').toLowerCase();
+  const tokens = [];
+  let i = 0;
+  while (i < s.length) {
+    const rest = s.slice(i);
+    let m;
+    if (/^\s/.test(rest)) { i++; continue; }
+    if ((m = rest.match(/^0x[0-9a-f]+/)))      tokens.push({ t: 'num', v: parseInt(m[0].slice(2), 16) });
+    else if ((m = rest.match(/^0b[01]+/)))     tokens.push({ t: 'num', v: parseInt(m[0].slice(2), 2) });
+    else if ((m = rest.match(/^\d+(?:[.,]\d+)?(?:e[+-]?\d+)?/))) tokens.push({ t: 'num', v: parseFloat(m[0].replace(',', '.')) });
+    else if (rest[0] === '√' || rest[0] === 'π') { tokens.push({ t: 'id', v: rest[0] === '√' ? 'sqrt' : 'pi' }); i++; continue; }
+    else if ((m = rest.match(/^[a-z][a-z0-9]*/))) {
+      tokens.push(m[0] === 'mod' ? { t: 'op', v: 'mod' } : { t: 'id', v: m[0] });
+    }
+    else if ('+-*/^()%!'.includes(rest[0])) { tokens.push({ t: 'op', v: rest[0] }); i++; continue; }
+    else throw new Error(`Unbekanntes Zeichen „${rest[0]}“`);
+    i += m[0].length;
+  }
+  return tokens;
+}
+
+function calcEvalExpression(src) {
+  if (!String(src).trim()) return {};
+  let tokens, pos = 0;
+  try { tokens = calcTokenize(src); } catch (e) { return { error: e.message }; }
+  const peek = () => tokens[pos];
+  const isOp = v => peek() && peek().t === 'op' && peek().v === v;
+  const expect = v => { if (!isOp(v)) throw new Error(`„${v}“ fehlt`); pos++; };
+
+  function expr() {
+    let v = term();
+    while (isOp('+') || isOp('-')) { const op = tokens[pos++].v; const r = term(); v = op === '+' ? v + r : v - r; }
+    return v;
+  }
+  function term() {
+    let v = unary();
+    while (isOp('*') || isOp('/') || isOp('mod')) {
+      const op = tokens[pos++].v; const r = unary();
+      if (op === '*') v *= r;
+      else if (op === '/') { if (r === 0) throw new Error('Division durch 0'); v /= r; }
+      else v = ((v % r) + r) % r;
+    }
+    return v;
+  }
+  function unary() {
+    if (isOp('-')) { pos++; return -unary(); }
+    if (isOp('+')) { pos++; return unary(); }
+    return power();
+  }
+  function power() {
+    const base = postfix();
+    if (isOp('^')) { pos++; return Math.pow(base, unary()); }
+    return base;
+  }
+  function postfix() {
+    let v = primary();
+    while (isOp('%') || isOp('!')) {
+      const op = tokens[pos++].v;
+      if (op === '%') v /= 100;
+      else {
+        if (!Number.isInteger(v) || v < 0 || v > 170) throw new Error('Fakultät nur für ganze Zahlen 0–170');
+        let f = 1; for (let k = 2; k <= v; k++) f *= k; v = f;
+      }
+    }
+    return v;
+  }
+  function primary() {
+    const tok = peek();
+    if (!tok) throw new Error('Ausdruck unvollständig');
+    if (tok.t === 'num') { pos++; return tok.v; }
+    if (isOp('(')) { pos++; const v = expr(); expect(')'); return v; }
+    if (tok.t === 'id') {
+      pos++;
+      if (tok.v === 'pi') return Math.PI;
+      if (tok.v === 'e') return Math.E;
+      const fn = CALC_FUNCS[tok.v];
+      if (!fn) throw new Error(`Unbekannte Funktion „${tok.v}“`);
+      return fn(isOp('(') ? (pos++, (() => { const v = expr(); expect(')'); return v; })()) : postfix());
+    }
+    throw new Error(`Unerwartetes „${tok.v}“`);
+  }
+
+  try {
+    const value = expr();
+    if (pos < tokens.length) throw new Error(`Unerwartetes „${tokens[pos].v}“`);
+    if (!isFinite(value)) throw new Error('Ergebnis ist nicht definiert');
+    return { value };
+  } catch (e) { return { error: e.message }; }
+}
+
+function renderCalcExprResult() {
+  const out = document.getElementById('calc-expr-result');
+  const r = calcEvalExpression(document.getElementById('calc-expr-input').value);
+  if (r.error) { out.innerHTML = `<span class="calc-expr-error">${escHtml(r.error)}</span>`; return; }
+  if (r.value === undefined) { out.innerHTML = ''; return; }
+  const v = Math.round(r.value * 1e10) / 1e10;
+  let html = `<span class="calc-expr-main">= ${v.toLocaleString('de-DE', { maximumFractionDigits: 10 })}</span>`;
+  if (Number.isInteger(v) && Math.abs(v) <= Number.MAX_SAFE_INTEGER) {
+    const abs = Math.abs(v), sign = v < 0 ? '−' : '';
+    html += `<span class="calc-expr-alt">hex ${sign}0x${abs.toString(16).toUpperCase()}</span><span class="calc-expr-alt">bin ${sign}${abs.toString(2)}</span>`;
+  }
+  out.innerHTML = html + '<span class="calc-expr-hint">Enter übernimmt</span>';
 }
 
 function calcResetExpressionIfNeeded() {

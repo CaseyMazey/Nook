@@ -640,6 +640,7 @@ function initDataRateCalculator() {
     }
   });
 
+  initDataRatePractice();
   drApplyMode();
   drApplyLearnMode();
   drCompute();
@@ -778,3 +779,187 @@ function drCopyResult() {
     setTimeout(() => { btn.textContent = original; }, 1200);
   }).catch(() => {});
 }
+
+// =========================================================
+// ÜBUNGSMODUS
+// Zufällige Aufgabe aus typischen Berufsschul-Werten, selbst rechnen,
+// prüfen (1 % Toleranz), danach die Musterlösung — dieselben
+// drBuildSolution*-Bausteine wie der Lernmodus, keine zweite Rechnung.
+// Trefferquote wird gemerkt (toolsDataRatePractice).
+// =========================================================
+
+const DR_PRACTICE_AMOUNTS = [[700, 'mib'], [4.7, 'gb'], [250, 'mb'], [12, 'gib'], [1.5, 'gb'], [800, 'kb'], [2, 'tb'], [64, 'mib'], [3.2, 'gib'], [500, 'mb']];
+const DR_PRACTICE_SPEEDS  = [[16, 'mbit'], [50, 'mbit'], [100, 'mbit'], [250, 'mbit'], [1, 'gbit'], [10, 'mbit'], [384, 'kbit'], [54, 'mbit'], [2.5, 'gbit']];
+const DR_PRACTICE_TIMES   = [[30, 'sec'], [2, 'min'], [90, 'sec'], [5, 'min'], [1, 'hour'], [45, 'sec'], [10, 'min']];
+const DR_PRACTICE_RESULT_SPEED  = ['mbit', 'kbit', 'gbit'];
+const DR_PRACTICE_RESULT_AMOUNT = ['mb', 'mib', 'gb', 'gib'];
+
+let drPractice = null;   // aktuelle Aufgabe
+let drPracticeScore = Object.assign({ right: 0, total: 0 }, DB.get('toolsDataRatePractice', {}));
+function saveDrPracticeScore() { DB.set('toolsDataRatePractice', drPracticeScore); }
+
+function drPick(list) { return list[Math.floor(Math.random() * list.length)]; }
+
+function drPracticeNew() {
+  const mode = drPick(['time', 'speed', 'amount']);
+  const [amountValue, amountUnit] = drPick(DR_PRACTICE_AMOUNTS);
+  const [speedValue, speedUnit] = drPick(DR_PRACTICE_SPEEDS);
+  const [timeValue, timeUnit] = drPick(DR_PRACTICE_TIMES);
+  const amountBits = drToBits(amountValue, amountUnit);
+  const speedBps = drToBits(speedValue, speedUnit);
+  const timeSec = drTimeToSeconds(timeValue, timeUnit);
+  const amountTxt = `${drFormatDecimal(amountValue, 4)} ${drUnitLabel(amountUnit)}`;
+  const speedTxt = `${drFormatDecimal(speedValue, 4)} ${drUnitLabel(speedUnit)}/s`;
+  const timeTxt = `${drFormatDecimal(timeValue, 4)} ${drTimeLabel(timeUnit)}`;
+  let p;
+  if (mode === 'time') {
+    const result = amountBits / speedBps;
+    p = { mode, expected: result, unitLabel: 'Sekunden',
+      text: `Eine Datei mit <strong>${amountTxt}</strong> wird über eine Leitung mit <strong>${speedTxt}</strong> übertragen. Wie lange dauert die Übertragung?`,
+      ctx: { amountValue, amountUnit, amountBits, speedValue, speedUnit, speedBps, result } };
+  } else if (mode === 'speed') {
+    const resultUnit = drPick(DR_PRACTICE_RESULT_SPEED);
+    const speedResultBps = amountBits / timeSec;
+    const displayValue = drBitsToUnit(speedResultBps, resultUnit);
+    p = { mode, expected: displayValue, unitLabel: `${drUnitLabel(resultUnit)}/s`,
+      text: `<strong>${amountTxt}</strong> wurden in <strong>${timeTxt}</strong> übertragen. Wie hoch war die Übertragungsrate?`,
+      ctx: { amountValue, amountUnit, amountBits, timeValue, timeUnit, timeSec, speedResultBps, displayValue, resultUnit } };
+  } else {
+    const resultUnit = drPick(DR_PRACTICE_RESULT_AMOUNT);
+    const amountResultBits = speedBps * timeSec;
+    const displayValue = drBitsToUnit(amountResultBits, resultUnit);
+    p = { mode, expected: displayValue, unitLabel: drUnitLabel(resultUnit),
+      text: `Eine Leitung überträgt <strong>${speedTxt}</strong>. Welche Datenmenge kommt in <strong>${timeTxt}</strong> an?`,
+      ctx: { speedValue, speedUnit, speedBps, timeValue, timeUnit, timeSec, amountResultBits, displayValue, resultUnit } };
+  }
+  drPractice = Object.assign(p, { answered: false });
+  document.getElementById('dr-practice-task').innerHTML = p.text;
+  document.getElementById('dr-practice-unit').textContent = p.unitLabel;
+  document.getElementById('dr-practice-input').value = '';
+  const fb = document.getElementById('dr-practice-feedback');
+  fb.innerHTML = '';
+  fb.className = 'dr-practice-feedback';
+  const sol = document.getElementById('dr-practice-solution');
+  sol.classList.add('hidden');
+  sol.innerHTML = '';
+  drRenderPracticeScore();
+}
+
+function drRenderPracticeScore() {
+  const s = drPracticeScore;
+  document.getElementById('dr-practice-score').textContent = s.total ? `${s.right} / ${s.total} richtig` : '';
+}
+
+function drPracticeShowSolution() {
+  if (!drPractice) return;
+  const sol = document.getElementById('dr-practice-solution');
+  const build = { time: drBuildSolutionTime, speed: drBuildSolutionSpeed, amount: drBuildSolutionAmount }[drPractice.mode];
+  sol.innerHTML = build(drPractice.ctx);
+  sol.classList.remove('hidden');
+}
+
+function drPracticeCheck() {
+  if (!drPractice) return;
+  const raw = document.getElementById('dr-practice-input').value;
+  const val = parseGermanNumber(raw.replace(/\.(?=\d{3}(\D|$))/g, ''));   // 1.234,5 → 1234,5
+  const fb = document.getElementById('dr-practice-feedback');
+  if (isNaN(val)) { fb.textContent = 'Bitte eine Zahl eingeben.'; return; }
+  const exp = drPractice.expected;
+  const ok = Math.abs(val - exp) <= Math.max(Math.abs(exp) * 0.01, 0.01);
+  if (!drPractice.answered) {
+    drPractice.answered = true;
+    drPracticeScore.total++;
+    if (ok) drPracticeScore.right++;
+    saveDrPracticeScore();
+    drRenderPracticeScore();
+  }
+  fb.className = `dr-practice-feedback ${ok ? 'dr-practice-feedback--ok' : 'dr-practice-feedback--bad'}`;
+  fb.textContent = ok
+    ? `✔ Richtig! Genau: ${drFormatDecimal(exp, 4)} ${drPractice.unitLabel}`
+    : `✘ Nicht ganz — richtig wären ${drFormatDecimal(exp, 4)} ${drPractice.unitLabel}.`;
+  if (!ok) drPracticeShowSolution();
+}
+
+function initDataRatePractice() {
+  document.getElementById('dr-practice-btn').addEventListener('click', () => {
+    const panel = document.getElementById('dr-practice');
+    const show = panel.classList.contains('hidden');
+    panel.classList.toggle('hidden', !show);
+    document.getElementById('dr-practice-btn').classList.toggle('active', show);
+    if (show) { if (!drPractice) drPracticeNew(); document.getElementById('dr-practice-input').focus(); }
+  });
+  document.getElementById('dr-practice-check').addEventListener('click', drPracticeCheck);
+  document.getElementById('dr-practice-input').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); drPracticeCheck(); } });
+  document.getElementById('dr-practice-next').addEventListener('click', () => { drPracticeNew(); document.getElementById('dr-practice-input').focus(); });
+  document.getElementById('dr-practice-solution-btn').addEventListener('click', drPracticeShowSolution);
+}
+
+// =========================================================
+// FORMELSAMMLUNG — weitere Module (Signallaufzeiten, Netzwerke, Binär, Hex)
+// =========================================================
+
+function drFormulaContentSignal() {
+  return `
+    ${drFormulaSection('⚡', 'Grundformel', `
+      <div class="dr-formula-formula-row"><span class="dr-formula-formula">t = s / v</span><span class="dr-formula-formula-desc">Laufzeit = Strecke ÷ Ausbreitungsgeschwindigkeit</span></div>
+      <div class="dr-formula-formula-row"><span class="dr-formula-formula">v = c × NVP</span><span class="dr-formula-formula-desc">Geschwindigkeit im Kabel</span></div>
+      <div class="dr-formula-formula-row"><span class="dr-formula-formula">v = c / n</span><span class="dr-formula-formula-desc">Geschwindigkeit im Medium mit Brechungsindex n</span></div>`)}
+    ${drFormulaSection('💡', 'Lichtgeschwindigkeit im Vakuum', `<div class="dr-formula-note"><strong>c ≈ 300.000 km/s = 3 × 10⁸ m/s</strong> (genau 299.792.458 m/s). In Leitungen ist das Signal langsamer.</div>`)}
+    ${drFormulaSection('🔌', 'NVP (Nominal Velocity of Propagation)', `
+      <div class="dr-formula-note">Anteil der Lichtgeschwindigkeit, mit dem sich das Signal im Kabel ausbreitet. Steht oft im Datenblatt.</div>
+      <table class="dr-formula-table"><thead><tr><th>Medium</th><th>NVP (typisch)</th><th>v</th></tr></thead><tbody>
+        <tr><td>Twisted Pair (Cat 5e/6)</td><td>0,64–0,70</td><td>≈ 200.000 km/s</td></tr>
+        <tr><td>Koaxialkabel</td><td>0,66–0,85</td><td>≈ 200.000–255.000 km/s</td></tr>
+        <tr><td>Glasfaser</td><td>≈ 0,67</td><td>≈ 200.000 km/s</td></tr>
+      </tbody></table>`)}
+    ${drFormulaSection('🔍', 'Brechungsindex', `<div class="dr-formula-note"><strong>n = c / v</strong> — bei Glasfaser ist n ≈ 1,5, also v ≈ 300.000 / 1,5 = 200.000 km/s. Zusammenhang: <strong>NVP = 1 / n</strong>.</div>`)}
+    ${drFormulaSection('🧮', 'Beispiel', `<div class="dr-formula-note">100 m Cat-6-Kabel, NVP 0,66:<br>v = 300.000.000 m/s × 0,66 = 198.000.000 m/s<br>t = 100 m ÷ 198.000.000 m/s ≈ <strong>0,505 µs</strong></div>`)}`;
+}
+
+function drFormulaContentNetwork() {
+  const rows = [];
+  for (let p = 8; p <= 32; p++) {
+    const hosts = p === 32 ? 1 : p === 31 ? 2 : 2 ** (32 - p) - 2;
+    rows.push(`<tr><td>/${p}</td><td class="sn-mono">${snV4ToStr(snV4Mask(p))}</td><td>${(2 ** (32 - p)).toLocaleString('de-DE')}</td><td>${hosts.toLocaleString('de-DE')}</td></tr>`);
+  }
+  return `
+    ${drFormulaSection('🏗️', 'IPv4-Aufbau', `<div class="dr-formula-note">32 Bit, geschrieben als 4 Oktette (je 8 Bit, 0–255), z.B. <span class="sn-mono">192.168.10.37</span>. Die <strong>Netzmaske</strong> teilt in Netzanteil (1-Bits) und Hostanteil (0-Bits); <strong>/n</strong> (CIDR) = Anzahl der 1-Bits.</div>`)}
+    ${drFormulaSection('📐', 'Formeln', `
+      <div class="dr-formula-formula-row"><span class="dr-formula-formula">Hosts = 2ʰ − 2</span><span class="dr-formula-formula-desc">h = Hostbits (32 − Präfix); −2 für Netz- und Broadcast-Adresse</span></div>
+      <div class="dr-formula-formula-row"><span class="dr-formula-formula">Subnetze = 2ˢ</span><span class="dr-formula-formula-desc">s = geliehene Bits</span></div>
+      <div class="dr-formula-formula-row"><span class="dr-formula-formula">Netz = IP UND Maske</span><span class="dr-formula-formula-desc">bitweises UND</span></div>
+      <div class="dr-formula-formula-row"><span class="dr-formula-formula">Broadcast</span><span class="dr-formula-formula-desc">alle Hostbits auf 1 — letzte Adresse im Netz</span></div>`)}
+    ${drFormulaSection('🔒', 'Private Bereiche (RFC 1918)', `<table class="dr-formula-table"><tbody>
+      <tr><td class="sn-mono">10.0.0.0/8</td><td>10.0.0.0 – 10.255.255.255</td></tr>
+      <tr><td class="sn-mono">172.16.0.0/12</td><td>172.16.0.0 – 172.31.255.255</td></tr>
+      <tr><td class="sn-mono">192.168.0.0/16</td><td>192.168.0.0 – 192.168.255.255</td></tr>
+      <tr><td class="sn-mono">127.0.0.0/8</td><td>Loopback</td></tr>
+      <tr><td class="sn-mono">169.254.0.0/16</td><td>Link-Local (APIPA)</td></tr></tbody></table>`)}
+    ${drFormulaSection('📋', 'CIDR-Tabelle', `<table class="dr-formula-table"><thead><tr><th>Präfix</th><th>Maske</th><th>Adressen</th><th>Hosts</th></tr></thead><tbody>${rows.join('')}</tbody></table>`)}
+    ${drFormulaSection('6️⃣', 'IPv6 kurz', `<div class="dr-formula-note">128 Bit, 8 Gruppen à 4 Hex-Ziffern. Führende Nullen dürfen weg, <strong>eine</strong> Folge von Nullgruppen darf zu „::“ werden. Übliches Subnetz: <strong>/64</strong>. fe80::/10 = Link-Local, fc00::/7 = privat (ULA), 2000::/3 = global.</div>`)}`;
+}
+
+function drFormulaContentBinary() {
+  const pows = [];
+  for (let i = 0; i <= 16; i++) pows.push(`<tr><td>2${drSuperscript(i)}</td><td>${(2 ** i).toLocaleString('de-DE')}</td></tr>`);
+  [20, 24, 30, 32].forEach(i => pows.push(`<tr><td>2${drSuperscript(i)}</td><td>${(2 ** i).toLocaleString('de-DE')}</td></tr>`));
+  return `
+    ${drFormulaSection('🔁', 'Binär → Dezimal', `<div class="dr-formula-note">Jede Stelle hat den Wert 2<sup>Position</sup> (rechts beginnt bei 0). Alle Stellen mit 1 addieren:<br><span class="sn-mono">1011₂ = 8 + 0 + 2 + 1 = 11</span></div>`)}
+    ${drFormulaSection('➗', 'Dezimal → Binär (Restwertverfahren)', `<div class="dr-formula-note">Fortlaufend durch 2 teilen, Rest notieren, bis 0 übrig bleibt. Reste <strong>von unten nach oben</strong> lesen:<br><span class="sn-mono">13 ÷ 2 = 6 R1 · 6 ÷ 2 = 3 R0 · 3 ÷ 2 = 1 R1 · 1 ÷ 2 = 0 R1 → 1101₂</span></div>`)}
+    ${drFormulaSection('📏', 'Zweierpotenzen', `<table class="dr-formula-table"><thead><tr><th>Potenz</th><th>Wert</th></tr></thead><tbody>${pows.join('')}</tbody></table>`)}
+    ${drFormulaSection('🧠', 'Merkhilfen', `<div class="dr-formula-note">8 Bit = 1 Byte: 0–255 · 2¹⁰ = 1024 (Kibi) · größte Zahl mit n Bit: 2ⁿ − 1 · Oktett-Werte: 128 64 32 16 8 4 2 1</div>`)}`;
+}
+
+function drFormulaContentHex() {
+  const rows = [];
+  for (let i = 0; i < 16; i++) rows.push(`<tr><td>${i.toString(16).toUpperCase()}</td><td>${i}</td><td class="sn-mono">${i.toString(2).padStart(4, '0')}</td></tr>`);
+  return `
+    ${drFormulaSection('🔢', 'Hex-Ziffern', `<table class="dr-formula-table"><thead><tr><th>Hex</th><th>Dezimal</th><th>Binär</th></tr></thead><tbody>${rows.join('')}</tbody></table>`)}
+    ${drFormulaSection('🔁', 'Umrechnen', `<div class="dr-formula-note"><strong>Hex → Dezimal:</strong> Stellenwerte 16<sup>n</sup> — <span class="sn-mono">2F₁₆ = 2 × 16 + 15 = 47</span><br><strong>Hex ↔ Binär:</strong> jede Hex-Ziffer = genau 4 Bit — <span class="sn-mono">2F = 0010 1111</span><br><strong>Dezimal → Hex:</strong> fortlaufend durch 16 teilen, Reste von unten lesen.</div>`)}
+    ${drFormulaSection('🧩', 'Typische Anwendungen', `<div class="dr-formula-note"><strong>MAC-Adressen</strong> (6 Byte: <span class="sn-mono">00:1A:2B:3C:4D:5E</span>) · <strong>Farbcodes</strong> (#RRGGBB, je 1 Byte) · <strong>IPv6</strong> (8 × 4 Hex-Ziffern) · Speicheradressen · Zeichencodes (Unicode U+00E4 = ä)</div>`)}`;
+}
+
+Object.assign(NOOK_FORMULA_LIBRARY.signal,  { available: true, render: drFormulaContentSignal });
+Object.assign(NOOK_FORMULA_LIBRARY.network, { available: true, render: drFormulaContentNetwork });
+Object.assign(NOOK_FORMULA_LIBRARY.binary,  { available: true, render: drFormulaContentBinary });
+Object.assign(NOOK_FORMULA_LIBRARY.hex,     { available: true, render: drFormulaContentHex });

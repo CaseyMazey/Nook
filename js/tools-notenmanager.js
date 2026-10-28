@@ -101,11 +101,30 @@ function notenClampGrade(n) {
   return Math.min(6, Math.max(1, n));
 }
 
+// IHK-Notenschlüssel (Prüfungen werden in Punkten 0–100 bewertet)
+const NOTEN_IHK_KEY = [
+  { min: 92, grade: 1, label: 'sehr gut' },
+  { min: 81, grade: 2, label: 'gut' },
+  { min: 67, grade: 3, label: 'befriedigend' },
+  { min: 50, grade: 4, label: 'ausreichend' },
+  { min: 30, grade: 5, label: 'mangelhaft' },
+  { min: 0,  grade: 6, label: 'ungenügend' },
+];
+function notenIhkGrade(points) {
+  return NOTEN_IHK_KEY.find(k => points >= k.min) || NOTEN_IHK_KEY[NOTEN_IHK_KEY.length - 1];
+}
+
 // Note aus Texteingabe: "2,3" / "2.3", Tendenzen "2-" (2,25) und "2+" (1,75),
-// Zwischennoten "1-2" (1,5). Leer → null, Unlesbares → NaN.
+// Zwischennoten "1-2" (1,5), IHK-Punkte "87P" / "87 Punkte" (→ Note nach
+// IHK-Schlüssel). Leer → null, Unlesbares → NaN.
 function notenParseGrade(raw) {
-  const t = String(raw).trim().replace(/\s+/g, '');
+  const t = String(raw).trim().replace(/\s+/g, '').toLowerCase();
   if (t === '') return null;
+  const pts = t.match(/^(\d{1,3}(?:[.,]\d+)?)(?:p|pkt|punkte)$/);
+  if (pts) {
+    const v = parseGermanNumber(pts[1]);
+    return v >= 0 && v <= 100 ? notenIhkGrade(v).grade : NaN;
+  }
   let m = t.match(/^([1-6])([+-])$/);
   if (m) return notenClampGrade(Number(m[1]) + (m[2] === '-' ? 0.25 : -0.25));
   m = t.match(/^([1-6])[-/]([1-6])$/);
@@ -177,6 +196,17 @@ function wireNotenEvents() {
 
   // ── Notenmanager-Einstellungen (Zahnrad) ──
   document.getElementById('noten-settings-btn').addEventListener('click', openNotenSettingsModal);
+
+  // ── IHK-Punkte ──
+  document.getElementById('noten-ihk-btn').addEventListener('click', () => {
+    const box = document.getElementById('noten-ihk');
+    box.classList.toggle('hidden');
+    document.getElementById('noten-ihk-btn').classList.toggle('active', !box.classList.contains('hidden'));
+    if (!box.classList.contains('hidden')) document.getElementById('noten-ihk-input').focus();
+  });
+  document.getElementById('noten-ihk-input').addEventListener('input', renderNotenIhk);
+  document.getElementById('noten-ihk-table').innerHTML = NOTEN_IHK_KEY.map((k, i) =>
+    `<tr data-grade="${k.grade}"><td>${k.min}–${i === 0 ? 100 : NOTEN_IHK_KEY[i - 1].min - 1}</td><td>${k.grade}</td><td>${k.label}</td></tr>`).join('');
   document.getElementById('noten-settings-add-cat-btn').addEventListener('click', () => {
     notenCategories.push({ id: notenUid(), name: 'Neue Kategorie', weight: 1 });
     saveNotenCategories();
@@ -230,6 +260,9 @@ function wireNotenEvents() {
       if (report) openNotenReportModal(report.yearId, report.id);
       return;
     }
+
+    const printBtn = e.target.closest('[data-noten-print-report]');
+    if (printBtn) { printNotenReport(printBtn.dataset.notenPrintReport); return; }
 
     const delReportBtn = e.target.closest('[data-noten-delete-report]');
     if (delReportBtn) { confirmDeleteNotenReport(delReportBtn.dataset.notenDeleteReport); return; }
@@ -605,7 +638,30 @@ function renderNotenSubjectDetail() {
       </div>
     `;
   }).join('') : `<div class="noten-empty-hint">Noch keine Leistungen erfasst.</div>`;
+  renderNotenTrend(entries);
   renderNotenTarget();
+}
+
+// Notenverlauf als kleine Linie: 1 oben, 6 unten; Punkte nach Datum.
+// Farben über currentColor/Theme-Tokens (css/tools.css .noten-trend).
+function renderNotenTrend(entries) {
+  const box = document.getElementById('noten-trend');
+  const graded = entries.filter(e => e.grade !== null && e.grade !== undefined);
+  if (graded.length < 2) { box.innerHTML = ''; return; }
+  const W = 300, H = 90, PX = 12, PY = 10;
+  const x = i => PX + i * (W - 2 * PX) / (graded.length - 1);
+  const y = g => PY + (g - 1) / 5 * (H - 2 * PY);
+  let sumW = 0, sumG = 0;
+  const avgPts = graded.map((e, i) => { const w = e.weight > 0 ? e.weight : 1; sumW += w; sumG += e.grade * w; return `${x(i)},${y(sumG / sumW)}`; });
+  const pts = graded.map((e, i) => `${x(i)},${y(e.grade)}`);
+  box.innerHTML = `
+    <div class="noten-trend-head"><span>📈 Verlauf</span><span class="noten-trend-legend"><i class="noten-trend-key noten-trend-key--grade"></i>Note <i class="noten-trend-key noten-trend-key--avg"></i>Schnitt</span></div>
+    <svg viewBox="0 0 ${W} ${H}" class="noten-trend-svg" role="img" aria-label="Notenverlauf: ${graded.map(e => notenFormatGradeShort(e.grade)).join(', ')}">
+      ${[1, 2, 3, 4, 5, 6].map(g => `<line x1="${PX}" x2="${W - PX}" y1="${y(g)}" y2="${y(g)}" class="noten-trend-grid"/><text x="2" y="${y(g) + 3}" class="noten-trend-label">${g}</text>`).join('')}
+      <polyline points="${avgPts.join(' ')}" class="noten-trend-avg"/>
+      <polyline points="${pts.join(' ')}" class="noten-trend-line"/>
+      ${graded.map((e, i) => `<circle cx="${x(i)}" cy="${y(e.grade)}" r="3.5" class="noten-trend-dot"><title>${e.date ? new Date(e.date + 'T00:00:00').toLocaleDateString('de-DE') : ''}: ${notenFormatGrade(e.grade)}</title></circle>`).join('')}
+    </svg>`;
 }
 
 // =========================
@@ -647,6 +703,7 @@ function notenRenderReportsSection(yearId) {
           <span class="noten-report-card-name">${escHtml(r.name)}</span>
           <span class="noten-report-card-avg">${avg !== null ? 'Ø ' + notenFormatGrade(avg) : '–'}</span>
           <div class="noten-report-card-actions">
+            <button class="icon-btn" data-noten-print-report="${r.id}" title="Drucken">🖨</button>
             <button class="icon-btn" data-noten-edit-report="${r.id}" title="Bearbeiten">✎</button>
             <button class="icon-btn" data-noten-delete-report="${r.id}" title="Löschen">🗑</button>
           </div>
@@ -716,6 +773,37 @@ function saveNotenReport() {
   closeNotenReportModal();
   renderNotenYears();
 }
+// Zeugnis als schlichte Übersicht drucken / als PDF speichern (toolsPrint in tools.js)
+function printNotenReport(reportId) {
+  const r = notenReportCards.find(x => x.id === reportId);
+  if (!r) return;
+  const year = notenYears.find(y => y.id === r.yearId);
+  const subjects = notenYearSubjects(r.yearId).filter(s => r.grades && r.grades[s.id] !== undefined);
+  const avg = notenReportAverage(r);
+  toolsPrint(`
+    <div class="tools-print-doc">
+      <h1>${escHtml(r.name)}</h1>
+      <p class="tools-print-sub">${escHtml(year ? year.name : '')} · gedruckt am ${new Date().toLocaleDateString('de-DE')}</p>
+      <table>
+        <thead><tr><th>Fach</th><th>Note</th></tr></thead>
+        <tbody>${subjects.map(s => `<tr><td>${escHtml(s.name)}</td><td>${notenFormatGradeShort(r.grades[s.id])}</td></tr>`).join('')}</tbody>
+        ${avg !== null ? `<tfoot><tr><td>Durchschnitt</td><td>${notenFormatGrade(avg)}</td></tr></tfoot>` : ''}
+      </table>
+      ${r.comment ? `<p class="tools-print-comment">${escHtml(r.comment)}</p>` : ''}
+    </div>`);
+}
+
+// IHK-Punkte-Umrechner in der Notenmanager-Karte
+function renderNotenIhk() {
+  const out = document.getElementById('noten-ihk-result');
+  const v = parseGermanNumber(document.getElementById('noten-ihk-input').value);
+  document.querySelectorAll('#noten-ihk-table tr[data-grade]').forEach(tr => tr.classList.remove('active'));
+  if (isNaN(v) || v < 0 || v > 100) { out.textContent = ''; return; }
+  const k = notenIhkGrade(v);
+  out.textContent = `${v.toLocaleString('de-DE')} Punkte = Note ${k.grade} (${k.label})`;
+  document.querySelector(`#noten-ihk-table tr[data-grade="${k.grade}"]`)?.classList.add('active');
+}
+
 async function confirmDeleteNotenReport(reportId) {
   const report = notenReportCards.find(r => r.id === reportId);
   if (!report) return;

@@ -27,12 +27,21 @@ Jedes Werkzeug ist für sich allein verständlich und braucht keine Einrichtung.
 
 | Werkzeug | Datei | DB-Keys |
 |---|---|---|
-| Taschenrechner (inkl. Tastatur, Verlauf) | `tools-calculator.js` | `toolsCalcHistory` |
-| Focus Timer (Pomodoro, Ton/Benachrichtigung) | `tools-timer.js` | `toolsFocusTimer`, `toolsPomodoroLog` |
-| Converter | `tools-converter.js` | `toolsConverterState` |
-| Datenübertragungsraten-Rechner (Lernmodus, Formelsammlung) | `tools-datarate.js` | `toolsDataRateState` |
-| Notenmanager (Ausbildungsjahre, Fächer, Leistungen, Zeugnisse) | `tools-notenmanager.js` | `noten*` |
-| Entscheidungshilfe | `tools-decision.js` | `toolsDecisions` |
+| Taschenrechner (Tastatur, Verlauf, Ausdruckszeile mit Klammern/^/√/log2/Hex) | `tools-calculator.js` | `toolsCalcHistory` |
+| Focus Timer (Pomodoro, Ton/Benachrichtigung, Notiz, 7-Tage-Verlauf) | `tools-timer.js` | `toolsFocusTimer`, `toolsPomodoroLog`, `toolsPomodoroHistory` |
+| Stoppuhr & Countdown | `tools-stopwatch.js` | `toolsStopwatch` |
+| Converter (inkl. Fläche, Volumen, Geschwindigkeit) | `tools-converter.js` | `toolsConverterState` |
+| Zahlensysteme (Binär/Oktal/Dezimal/Hex mit Rechenweg) | `tools-numbase.js` | `toolsNumbaseState` |
+| Datumsrechner (Zeitraum, Arbeitstage, Datum ± Tage) | `tools-date.js` | `toolsDateState` |
+| Datenübertragungsraten-Rechner (Lernmodus, Übungsmodus, Formelsammlung) | `tools-datarate.js` | `toolsDataRateState`, `toolsDataRatePractice` |
+| Subnetz-Rechner (IPv4/IPv6, Lernmodus, Aufteilen) | `tools-subnet.js` | `toolsSubnetState` |
+| Notenmanager (Ausbildungsjahre, Fächer, Leistungen, Zeugnisse, IHK-Punkte) | `tools-notenmanager.js` | `noten*` |
+| Entscheidungshilfe (Blatt, Optionen-Matrix, Zufallsrad, Rückblick, Archiv) | `tools-decision.js` | `toolsDecisions` |
+| Textwerkzeuge (Zähler, Zeichen-Limit, Umformungen) | `tools-text.js` | `toolsTextState` |
+
+Leiste: `toolsActiveTool` (gewähltes Werkzeug), `toolsNavConfig` (Reihenfolge, ausgeblendete Werkzeuge).
+
+Neuere Werkzeuge bringen ihre Karte selbst mit (`tools<Name>CardHtml()` in ihrer Datei, von `initTools` ins Raster gesetzt) — so bleibt tools.js schlank. Gemeinsame Helfer in tools.js: `toolsUnlockAudio()`/`toolsPlayChime()` (Ton), `toolsPrint(html)` (Drucken), `toolsShowTool(id)`. Lernmodus-Bausteine (`drSection`, `drResultSection` …) aus tools-datarate.js nutzen auch Subnetz und Zahlensysteme.
 
 `tools.js` enthält das HTML-Grundgerüst (`initTools`) und die geteilte Dateneinheiten-Registry `DR_UNIT_FACTORS` (Converter + Datenrate). Alle Keys beginnen mit `tools` oder `noten` und landen damit automatisch in der Backup-Gruppe „Tools“ (`NOOK_DATA_GROUPS` in settings.js) — neue Werkzeuge halten sich an diese Präfixe.
 
@@ -46,7 +55,11 @@ Lade-Reihenfolge: Die Tools-Skripte stehen in `index.html` **vor** `settings.js`
 
 **Notenmanager:** deutsche Notenskala 1–6, Eingabe auch als Tendenz (`2-` = 2,25, `2+` = 1,75, `1-2` = 1,5). Fachschnitt gewichtet, Jahresschnitt = Mittel der Fachschnitte, Zeugnisschnitt ungewichtet. „Was brauche ich?“ rechnet die nötige Note für einen Ziel-Schnitt aus. Kategorien sind global.
 
-**Entscheidungshilfe:** ein Blatt pro Dilemma, speichert bei jeder Eingabe. Leere Blätter werden beim Schließen verworfen. „Nächste Schritte“ lassen sich über `addWeekTasksFromLines()` (today.js) als Wochenaufgaben anlegen.
+**Entscheidungshilfe:** ein Blatt pro Dilemma, speichert bei jeder Eingabe. Leere Blätter werden beim Schließen verworfen. „Nächste Schritte“ lassen sich über `addWeekTasksFromLines()` (today.js) als Wochenaufgaben anlegen. Optionen-Matrix: Kriterien mit Gewicht 1–5, Bewertung 1–5, gewichtete Summe. Rückblick: Termin wählen, danach „War die Entscheidung gut?“; fällige Rückblicke stehen oben in der Liste. Archivierte Blätter liegen hinter „Archiv (n)“.
+
+**Datumsrechner:** Arbeitstage = Mo–Fr ohne gesetzliche Feiertage des im Kalender gewählten Bundeslands; gelesen über `getHolidaysForYear()` (calendar.js), nur lesend. Legt keine Termine an.
+
+**Subnetz / Zahlensysteme:** reine Rechner mit Lernmodus. IPv6 und große Zahlen über BigInt.
 
 ---
 

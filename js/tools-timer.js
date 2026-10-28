@@ -28,7 +28,6 @@ let timerState = null;
 let timerInterval = null;
 let pomodoroLog = null;
 let timerBaseTitle = null;
-let timerAudioCtx = null;
 
 function timerTodayKey() { return dateKey(new Date()); }
 
@@ -70,6 +69,15 @@ function loadPomodoroLog() {
 
 function savePomodoroLog() {
   DB.set('toolsPomodoroLog', pomodoroLog);
+}
+
+// Tagesübergreifend nur Summen je Tag (Fokusminuten, Anzahl) — für den
+// Wochenverlauf; die Einzelliste bleibt beim Tages-Log. 60 Tage reichen.
+let pomodoroHistory = DB.get('toolsPomodoroHistory', {});
+function savePomodoroHistory() {
+  const keys = Object.keys(pomodoroHistory).sort();
+  keys.slice(0, Math.max(0, keys.length - 60)).forEach(k => delete pomodoroHistory[k]);
+  DB.set('toolsPomodoroHistory', pomodoroHistory);
 }
 
 function timerModeDuration(mode) {
@@ -152,6 +160,15 @@ function initFocusTimer() {
   ['timer-set-work', 'timer-set-short', 'timer-set-long', 'timer-set-long-every'].forEach(id => {
     document.getElementById(id).addEventListener('change', timerApplySettings);
   });
+  document.getElementById('timer-note').addEventListener('input', e => {
+    const last = pomodoroLog.entries[pomodoroLog.entries.length - 1];
+    if (!last || last.type !== 'focus') return;
+    last.note = e.target.value.trim();
+    savePomodoroLog();
+  });
+  document.getElementById('timer-note').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); timerConfirmNext(); }
+  });
   document.getElementById('timer-set-sound').addEventListener('change', e => {
     timerState.sound = e.target.checked;
     saveTimerState();
@@ -198,7 +215,7 @@ function timerStartInterval() {
 }
 
 function timerStart() {
-  timerUnlockAudio();
+  toolsUnlockAudio();
   timerState.running = true;
   timerState.endsAt = Date.now() + timerState.remainingSec * 1000;
   if (!timerState.phaseStartTime) timerState.phaseStartTime = timerNowHHMM();
@@ -269,7 +286,14 @@ function timerLogCompletion() {
   if (pomodoroLog.entries.length > 50) pomodoroLog.entries = pomodoroLog.entries.slice(-50);
   savePomodoroLog();
 
-  if (timerState.mode === 'focus') timerState.sessionCount++;
+  if (timerState.mode === 'focus') {
+    timerState.sessionCount++;
+    const day = pomodoroHistory[timerTodayKey()] || { min: 0, count: 0 };
+    day.min += Math.round(timerState.phaseTotalSec / 60);
+    day.count++;
+    pomodoroHistory[timerTodayKey()] = day;
+    savePomodoroHistory();
+  }
 }
 
 function timerDetermineNext() {
@@ -303,32 +327,7 @@ function timerConfirmNext() {
   renderTimer();
 }
 
-// ── Ton & Benachrichtigung ──
-function timerUnlockAudio() {
-  // Browser erlauben Audio erst nach einer Nutzeraktion — der Start-Klick ist eine.
-  try {
-    if (!timerAudioCtx) timerAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if (timerAudioCtx.state === 'suspended') timerAudioCtx.resume();
-  } catch (e) { timerAudioCtx = null; }
-}
-
-function timerPlayChime() {
-  if (!timerAudioCtx) return;
-  const t0 = timerAudioCtx.currentTime;
-  [0, 0.28, 0.56].forEach((offset, i) => {
-    const osc = timerAudioCtx.createOscillator();
-    const gain = timerAudioCtx.createGain();
-    osc.type = 'sine';
-    osc.frequency.value = i === 2 ? 1046.5 : 784;
-    gain.gain.setValueAtTime(0.0001, t0 + offset);
-    gain.gain.exponentialRampToValueAtTime(0.25, t0 + offset + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + offset + 0.25);
-    osc.connect(gain).connect(timerAudioCtx.destination);
-    osc.start(t0 + offset);
-    osc.stop(t0 + offset + 0.26);
-  });
-}
-
+// ── Benachrichtigung (Ton: toolsPlayChime in tools.js) ──
 function timerNotifyAllowed() {
   return 'Notification' in window && Notification.permission === 'granted';
 }
@@ -341,7 +340,7 @@ async function timerRequestNotify() {
 }
 
 function timerAlert() {
-  if (timerState.sound) timerPlayChime();
+  if (timerState.sound) toolsPlayChime();
   if (timerState.notify && timerNotifyAllowed() && document.hidden) {
     const content = timerCompletionContent();
     try { new Notification(`${content.icon} ${content.title}`, { body: content.sub || content.btn.replace('▶ ', ''), tag: 'nook-focus-timer' }); } catch (e) { /* z. B. file:// ohne Freigabe */ }
@@ -406,6 +405,12 @@ function renderTimer() {
     document.getElementById('timer-complete-sub').textContent = content.sub;
     document.getElementById('timer-complete-sub').classList.toggle('hidden', !content.sub);
     document.getElementById('timer-complete-btn').textContent = content.btn;
+    // Nach einer Fokusphase: kurz notieren, woran gearbeitet wurde
+    const note = document.getElementById('timer-note');
+    const last = pomodoroLog.entries[pomodoroLog.entries.length - 1];
+    const showNote = timerState.mode === 'focus' && last && last.type === 'focus';
+    note.classList.toggle('hidden', !showNote);
+    if (showNote && document.activeElement !== note) note.value = last.note || '';
     renderTimerHistory();
     return;
   }
@@ -443,6 +448,7 @@ function renderTimerHistory() {
   const listEl = document.getElementById('timer-history-list');
   if (!summaryEl || !listEl) return;
 
+  renderTimerWeek();
   const entries = (pomodoroLog && pomodoroLog.date === timerTodayKey()) ? pomodoroLog.entries : [];
   const focusCount = entries.filter(e => e.type === 'focus').length;
   const shortCount = entries.filter(e => e.type === 'short').length;
@@ -462,6 +468,29 @@ function renderTimerHistory() {
     return;
   }
   listEl.innerHTML = entries.map(e =>
-    `<div class="timer-history-item">${e.time} ${timerModeLabel(e.type)}</div>`
+    `<div class="timer-history-item">${e.time} ${timerModeLabel(e.type)}${e.note ? ` <span class="timer-history-note">— ${escHtml(e.note)}</span>` : ''}</div>`
   ).join('');
+}
+
+// Letzte 7 Tage als kleine Säulen (Fokusminuten)
+function renderTimerWeek() {
+  const el = document.getElementById('timer-week');
+  if (!el) return;
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const k = dateKey(d);
+    days.push({ k, label: i === 0 ? 'Heute' : d.toLocaleDateString('de-DE', { weekday: 'short' }), min: (pomodoroHistory[k] || {}).min || 0, count: (pomodoroHistory[k] || {}).count || 0 });
+  }
+  const max = Math.max(...days.map(d => d.min), 1);
+  const total = days.reduce((s, d) => s + d.min, 0);
+  el.innerHTML = `
+    <div class="timer-history-title">Letzte 7 Tage · ${Math.floor(total / 60)} Std. ${total % 60} Min.</div>
+    <div class="timer-week-bars">${days.map(d => `
+      <div class="timer-week-col" title="${d.label}: ${d.min} Min. (${d.count} Fokusphase${d.count === 1 ? '' : 'n'})">
+        <span class="timer-week-val">${d.min || ''}</span>
+        <span class="timer-week-bar" style="height:${Math.round(d.min / max * 100)}%"></span>
+        <span class="timer-week-day">${d.label}</span>
+      </div>`).join('')}
+    </div>`;
 }
