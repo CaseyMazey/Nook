@@ -865,3 +865,40 @@
   font-weight: 600;
   color: var(--text-2);
 }
+
+/* =============================================================
+   TOOLS — Schalter als Messing-Kippschalter (Lernmodus u. a.)
+   Knopf: gewölbter Messingknauf. Schiene aus: dunkle, eingelassene
+   Holzrille; an: warm glühende Messingschiene. Messingtöne wie in der
+   Budget-Kopfzeile aus --amber/--sheen/--deco-ink gemischt.
+============================================================= */
+[data-pages-style="rpg"] #view-tools {
+  --brass-hi:  color-mix(in srgb, var(--amber) 45%, var(--sheen));
+  --brass:     color-mix(in srgb, var(--amber) 88%, var(--sheen));
+  --brass-lo:  color-mix(in srgb, var(--amber) 70%, var(--deco-ink));
+  --brass-ink: color-mix(in srgb, var(--amber) 35%, var(--deco-ink));
+}
+[data-pages-style="rpg"] #view-tools .toggle-slider {
+  background: linear-gradient(to bottom,
+    color-mix(in srgb, var(--deco-ink) 78%, var(--amber)),
+    color-mix(in srgb, var(--deco-ink) 60%, var(--amber)));
+  border: 1px solid var(--brass-lo);
+  box-shadow:
+    inset 0 2px 3px color-mix(in srgb, var(--deco-ink) 70%, transparent),
+    0 1px 0 color-mix(in srgb, var(--sheen) 35%, transparent);
+}
+[data-pages-style="rpg"] #view-tools .toggle-slider::before {
+  top: 2px; left: 2px;
+  background: radial-gradient(circle at 35% 30%, var(--sheen) 0 10%, var(--brass-hi) 32%, var(--brass) 65%, var(--brass-lo) 100%);
+  border: 1px solid var(--brass-ink);
+  box-shadow:
+    inset 0 -1px 1px color-mix(in srgb, var(--deco-ink) 35%, transparent),
+    0 1px 3px color-mix(in srgb, var(--shadow-tint) 60%, transparent);
+}
+[data-pages-style="rpg"] #view-tools .toggle input:checked + .toggle-slider {
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--amber) 72%, var(--deco-ink)), color-mix(in srgb, var(--amber) 92%, var(--deco-ink)));
+  border-color: var(--brass-ink);
+  box-shadow:
+    inset 0 1px 2px color-mix(in srgb, var(--deco-ink) 45%, transparent),
+    0 0 7px color-mix(in srgb, var(--amber) 55%, transparent);
+}
