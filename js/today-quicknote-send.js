@@ -115,14 +115,7 @@ document.getElementById('qn-send-save')?.addEventListener('click', () => {
     const name = projects.find(p => p.id === pid)?.name || 'Projekt';
     done = [`${n === 1 ? 'Aufgabe' : n + ' Aufgaben'} in „${name}“ abgelegt`, 'projects'];
   } else if (qnSendTarget === 'task') {
-    lines.forEach(title => {
-      const t = { id: crypto.randomUUID(), title, notes: '', priority: 2, blocks: [], createdAt: Date.now() };
-      setTaskStatus(t, 'open');
-      tasks.push(t);
-    });
-    saveTasks();
-    renderTasks();
-    renderBlocks();
+    addWeekTasksFromLines(lines);
     done = [`${lines.length === 1 ? 'Wochenaufgabe' : lines.length + ' Wochenaufgaben'} angelegt`, 'today'];
   }
   if (!done) return;

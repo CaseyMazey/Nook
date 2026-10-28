@@ -61,11 +61,27 @@ function decisionRenderPros() {
     <div class="decision-pro" data-id="${p.id}">
       <button type="button" class="decision-pro-sign decision-pro-sign--${p.sign === '+' ? 'plus' : 'minus'}" title="Plus/Minus wechseln">${p.sign === '+' ? '+' : '−'}</button>
       <input type="text" class="decision-pro-text" value="${escHtml(p.text)}" placeholder="${p.sign === '+' ? 'Was spricht dafür?' : 'Was spricht dagegen?'}" autocomplete="off">
-      <button type="button" class="decision-pro-del" title="Entfernen">✕</button>
+      <button type="button" class="decision-pro-del" title="Entfernen" aria-label="Eintrag entfernen">✕</button>
     </div>`).join('');
+  decisionRenderTally();
+}
+
+function decisionRenderTally() {
+  const d = decisionCurrent();
+  if (!d) return;
   const plus = d.pros.filter(p => p.sign === '+' && p.text.trim()).length;
   const minus = d.pros.filter(p => p.sign === '-' && p.text.trim()).length;
   document.getElementById('decision-pros-tally').textContent = (plus || minus) ? `${plus} Plus · ${minus} Minus` : '';
+}
+
+// Ein Blatt gilt als leer, wenn in KEINEM Feld etwas steht — dann wird es
+// beim Schließen verworfen statt als Leiche in der Liste zu bleiben.
+function decisionIsEmpty(d) {
+  const texts = ['dilemma', 'best', 'worst', 'gut', 'gutConclusion', 'rationalConclusion', 'decision', 'nextSteps', 'dueDate'];
+  return texts.every(k => !String(d[k] || '').trim())
+    && d.importance == null && d.indecision == null
+    && !d.bestPipe && !d.worstApoc && !d.forNow
+    && !d.pros.some(p => p.text.trim());
 }
 
 function openDecision(id) {
@@ -85,6 +101,7 @@ function openDecision(id) {
   decisionRenderScale('decision-indecision', DECISION_INDECISION, d.indecision);
   decisionRenderPros();
   document.getElementById('decision-coin-result').textContent = '';
+  document.getElementById('decision-steps-hint').textContent = '';
   decisionModal.open();
 }
 
@@ -108,8 +125,7 @@ function decisionUpdate(patch) {
   const d = decisionCurrent();
   if (!d) return;
   Object.assign(d, patch);
-  saveToolsDecisions();
-  renderDecisionList();
+  saveToolsDecisions();   // Liste wird erst beim Schließen neu gezeichnet
 }
 
 function decisionFlipCoin() {
@@ -124,9 +140,8 @@ function initDecisionTool() {
   decisionModal = wireModal('decision-modal-overlay', {
     closeIds: ['decision-modal-close', 'decision-done-btn'],
     onClose: () => {
-      // Komplett leere Blätter nicht als Leiche in der Liste lassen
       const d = decisionCurrent();
-      if (d && !d.dilemma.trim() && !d.best.trim() && !d.worst.trim() && !d.gut.trim() && !d.decision.trim() && !d.pros.some(p => p.text.trim())) {
+      if (d && decisionIsEmpty(d)) {
         toolsDecisions = toolsDecisions.filter(x => x.id !== d.id);
         saveToolsDecisions();
       }
@@ -168,10 +183,7 @@ function initDecisionTool() {
     if (!p) return;
     p.text = e.target.value;
     saveToolsDecisions();
-    const d = decisionCurrent();
-    const plus = d.pros.filter(x => x.sign === '+' && x.text.trim()).length;
-    const minus = d.pros.filter(x => x.sign === '-' && x.text.trim()).length;
-    document.getElementById('decision-pros-tally').textContent = (plus || minus) ? `${plus} Plus · ${minus} Minus` : '';
+    decisionRenderTally();
   });
   pros.addEventListener('click', e => {
     const row = e.target.closest('.decision-pro');
@@ -208,6 +220,15 @@ function initDecisionTool() {
   }));
 
   document.getElementById('decision-coin-btn').addEventListener('click', decisionFlipCoin);
+
+  // Nächste Schritte → Wochenaufgaben (über die Funktion von Heute, today.js)
+  document.getElementById('decision-steps-to-tasks').addEventListener('click', () => {
+    const d = decisionCurrent();
+    const hint = document.getElementById('decision-steps-hint');
+    if (!d || typeof addWeekTasksFromLines !== 'function') return;
+    const n = addWeekTasksFromLines(d.nextSteps.split('\n'));
+    hint.textContent = n ? `${n === 1 ? 'Eine Wochenaufgabe' : n + ' Wochenaufgaben'} angelegt ✓` : 'Erst nächste Schritte eintragen — eine Aufgabe pro Zeile.';
+  });
 
   document.getElementById('decision-delete-btn').addEventListener('click', async () => {
     const d = decisionCurrent();

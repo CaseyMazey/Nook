@@ -12,8 +12,9 @@
 // =========================
 // TOOLS
 // Kleiner Werkzeugkasten direkt in Nook — bewusst klein gehalten.
-// Drei unabhängige Komponenten (Taschenrechner, Focus Timer, Converter),
-// jede in ihrem eigenen Abschnitt. Gerendert einmalig in #view-tools,
+// Sechs unabhängige Werkzeuge (Taschenrechner, Focus Timer, Converter,
+// Datenrate, Notenmanager, Entscheidungshilfe), jedes in eigener Datei
+// (Design-Vertrag: AI documentation/tools.md). Gerendert einmalig in #view-tools,
 // analog zum Games-Hub (initTools wird von main.js/renderView aufgerufen).
 // =========================
 
@@ -124,6 +125,8 @@ function initTools() {
               <label>Kurze Pause (Min)<input type="number" min="1" max="60" id="timer-set-short"></label>
               <label>Lange Pause (Min)<input type="number" min="1" max="90" id="timer-set-long"></label>
               <label>Lange Pause nach<input type="number" min="1" max="12" id="timer-set-long-every"></label>
+              <label class="timer-set-check"><input type="checkbox" id="timer-set-sound"> Ton bei Phasenende</label>
+              <label class="timer-set-check"><input type="checkbox" id="timer-set-notify"> Benachrichtigung, wenn Nook im Hintergrund ist</label>
             </div>
 
             <div class="timer-history hidden" id="timer-history">
@@ -322,7 +325,11 @@ function initTools() {
           <div class="decision-box decision-box--final">
             <label class="decision-sub decision-sub--big">Entscheidung<input type="text" class="modal-input" data-decision-field="decision" placeholder="Wofür entscheidest du dich?" autocomplete="off"></label>
             <label class="decision-check"><input type="checkbox" id="decision-for-now"> Vorerst</label>
-            <label class="decision-sub">Nächste Schritte<textarea class="modal-textarea decision-ta" data-decision-field="nextSteps"></textarea></label>
+            <label class="decision-sub">Nächste Schritte<textarea class="modal-textarea decision-ta" data-decision-field="nextSteps" placeholder="Ein Schritt pro Zeile"></textarea></label>
+            <div class="decision-steps-row">
+              <span class="decision-steps-hint" id="decision-steps-hint" aria-live="polite"></span>
+              <button type="button" class="btn-ghost" id="decision-steps-to-tasks" title="Jede Zeile als Wochenaufgabe in „Heute“ anlegen">✅ Als Wochenaufgaben</button>
+            </div>
           </div>
 
           <div class="decision-coin">
@@ -398,7 +405,7 @@ function initTools() {
           <div class="modal-head"><span id="noten-entry-modal-title">Neue Leistung</span><button class="modal-x" id="noten-entry-modal-close">&#10005;</button></div>
           <div class="modal-row"><label>Datum</label><input type="date" class="modal-date" id="noten-entry-date"/></div>
           <div class="modal-row"><label>Kategorie</label><select class="modal-select" id="noten-entry-category"></select></div>
-          <div class="modal-row"><label>Note (leer = ausstehend)</label><input type="text" inputmode="decimal" class="modal-input" id="noten-entry-grade" placeholder="z.B. 2,3"/></div>
+          <div class="modal-row"><label>Note (leer = ausstehend)</label><input type="text" inputmode="decimal" class="modal-input" id="noten-entry-grade" placeholder="z.B. 2,3 · 2- · 1-2"/></div>
           <div class="modal-row"><label>Gewichtung</label><input type="number" class="modal-input" id="noten-entry-weight" step="0.5" min="0.5"/></div>
           <div class="modal-actions"><button id="noten-entry-cancel" class="btn-ghost">Abbrechen</button><button id="noten-entry-save" class="btn-primary">Speichern</button></div>
         </div>
@@ -419,18 +426,15 @@ function initTools() {
             </div>
           </div>
           <div class="noten-entry-list" id="noten-detail-entries"></div>
+          <div class="noten-target">
+            <span class="noten-target-title">🎯 Was brauche ich?</span>
+            <label>Ziel-Ø<input type="text" inputmode="decimal" class="modal-input" id="noten-target-avg" placeholder="z.B. 2,0" autocomplete="off"/></label>
+            <label>Gewichtung der nächsten Leistung<input type="text" inputmode="decimal" class="modal-input" id="noten-target-weight" autocomplete="off"/></label>
+            <div class="noten-target-result" id="noten-target-result" aria-live="polite"></div>
+          </div>
           <div class="modal-actions" style="justify-content:flex-start;">
             <button class="btn-primary" id="noten-detail-add-entry-btn">+ Leistung hinzufügen</button>
           </div>
-        </div>
-      </div>
-
-      <!-- Notenmanager: Löschbestätigung -->
-      <div id="noten-confirm-overlay" class="modal-backdrop hidden" style="z-index:300;">
-        <div class="modal-box" style="width:380px;">
-          <div class="modal-head"><span id="noten-confirm-title">Löschen</span><button class="modal-x" id="noten-confirm-close">&#10005;</button></div>
-          <p class="modal-hint" id="noten-confirm-message"></p>
-          <div class="modal-actions"><button id="noten-confirm-cancel" class="btn-ghost">Abbrechen</button><button id="noten-confirm-ok" class="btn-primary">Löschen</button></div>
         </div>
       </div>
     </div>
@@ -442,6 +446,21 @@ function initTools() {
   initDataRateCalculator();
   initNotenmanager();
   initDecisionTool();
+  document.addEventListener('keydown', toolsHandleEscape, true);   // Capture: vor dem Taschenrechner, solange hubConfirm noch sichtbar ist
+}
+
+// Escape schließt das oberste offene Tools-Fenster — über dessen ✕, damit
+// dieselbe Schließ-Logik (onClose, Rückkehr ins vorige Fenster) greift.
+// Ein offener hubConfirm-Dialog behandelt Escape selbst.
+function toolsHandleEscape(e) {
+  if (e.key !== 'Escape') return;
+  const open = [...document.querySelectorAll('#view-tools .modal-backdrop:not(.hidden)')];
+  if (!open.length || document.querySelector('.modal-backdrop:not(.hidden):not(#view-tools *)')) return;
+  const top = open.reduce((a, b) => (Number(getComputedStyle(b).zIndex) || 0) >= (Number(getComputedStyle(a).zIndex) || 0) ? b : a);
+  const x = top.querySelector('.modal-x');
+  if (!x) return;
+  e.preventDefault();
+  x.click();
 }
 window.initTools = initTools;
 

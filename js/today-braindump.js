@@ -5,7 +5,7 @@
 // über den Knopf im Schnellnotiz-Kopf, damit die Sidebar nicht wächst
 // (today.md: Sidebar nicht überladen). Einträge lassen sich abhaken oder
 // als Wochenaufgabe übernehmen — wie „Ablegen“ in today-quicknote-send.js.
-// Braucht tasks/saveTasks/renderTasks aus main.js/today.js (erst beim Klick).
+// Braucht addWeekTasksFromLines aus today.js (erst beim Klick).
 // =========================
 
 const BRAINDUMP_SECTIONS = [
@@ -123,12 +123,7 @@ brainDumpGrid?.addEventListener('click', e => {
   if (e.target.closest('.bd-del')) {
     brainDump.items[hit.sec] = brainDump.items[hit.sec].filter(i => i !== hit.item);
   } else if (e.target.closest('.bd-to-task')) {
-    const t = { id: crypto.randomUUID(), title: hit.item.text, notes: '', priority: hit.sec === 'prio' ? 1 : 2, blocks: [], createdAt: Date.now() };
-    setTaskStatus(t, 'open');
-    tasks.push(t);
-    saveTasks();
-    renderTasks();
-    renderBlocks();
+    addWeekTasksFromLines([hit.item.text], hit.sec === 'prio' ? 1 : 2);
     hit.item.sent = true;
   } else return;
   saveBrainDump();

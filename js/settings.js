@@ -884,7 +884,7 @@ const BACKUP_CACHE_KEYS = ['weatherData', 'currentDate'];
 
 const NOOK_DATA_GROUPS = [
   { id: 'today',      label: 'Heute',        resettable: true,
-    keys: ['tasks', 'blocks', 'notes', 'quicknote', 'berichtsheft', 'mealPlanWeeks', 'todayTracker', 'todayBudgetDue', 'qnSendLastTarget', 'qnSendLastProject',
+    keys: ['tasks', 'blocks', 'notes', 'quicknote', 'berichtsheft', 'mealPlanWeeks', 'todayTracker', 'todayBudgetDue', 'qnSendLastTarget', 'qnSendLastProject', 'brainDump',
            'gdDuties', 'gdGroups', 'gdPeople', 'gdSchedule', 'gdScheduleAlgoV2'] },
   { id: 'positivity', label: 'Positivity',   resettable: true, prefixes: ['positivity'] },
   { id: 'pinboard',   label: 'Pinnwand',     resettable: true,

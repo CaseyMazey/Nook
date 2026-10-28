@@ -48,6 +48,8 @@ function initCalculator() {
     if (action === 'decimal') calcInputDecimal();
     if (action === 'equals')  calcEquals();
   });
+
+  document.addEventListener('keydown', calcHandleKey);
 }
 
 function calcResetExpressionIfNeeded() {
@@ -92,17 +94,49 @@ function calcClear() {
 }
 
 function calcToggleSign() {
-  if (calcState.display === 'Fehler') return;
-  const val = calcDisplayToNumber();
-  calcState.display = calcNumberToDisplay(val * -1);
+  if (calcState.display === 'Fehler' || calcState.display === '0') return;
+  // Als Text umdrehen, damit ein gerade getipptes Komma ("5,") erhalten bleibt
+  calcState.display = calcState.display.startsWith('-') ? calcState.display.slice(1) : '-' + calcState.display;
   renderCalcDisplay();
 }
 
 function calcPercent() {
   if (calcState.display === 'Fehler') return;
   const val = calcDisplayToNumber();
-  calcState.display = calcNumberToDisplay(val / 100);
+  // Wie beim Handrechner: 200 + 10 % = 220 (Prozent vom ersten Wert),
+  // bei × und ÷ bzw. ohne Operator einfach ÷ 100.
+  const ofPrev = calcState.prevValue !== null && (calcState.operator === '+' || calcState.operator === '−');
+  calcState.display = calcNumberToDisplay(ofPrev ? calcState.prevValue * val / 100 : val / 100);
+  calcState.waitingForOperand = false;
   renderCalcDisplay();
+}
+
+function calcBackspace() {
+  if (calcState.display === 'Fehler') { calcClear(); return; }
+  if (calcState.waitingForOperand) return;   // Ergebnisse nicht zerstückeln
+  const next = calcState.display.slice(0, -1);
+  calcState.display = (next === '' || next === '-') ? '0' : next;
+  renderCalcDisplay();
+}
+
+// Tastatur: nur wenn Tools offen ist, kein Dialog offen ist und der Fokus
+// nicht in einem Eingabefeld steht (sonst würde jede Zahl doppelt landen).
+const CALC_KEY_OPS = { '+': '+', '-': '−', '*': '×', 'x': '×', '/': '÷', ':': '÷' };
+function calcHandleKey(e) {
+  if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (!document.getElementById('view-tools')?.classList.contains('active')) return;
+  if (e.target.closest?.('input, textarea, select, [contenteditable="true"]')) return;
+  if (document.querySelector('.modal-backdrop:not(.hidden)')) return;
+  const k = e.key;
+  if (/^[0-9]$/.test(k))             calcInputDigit(k);
+  else if (k === ',' || k === '.')   calcInputDecimal();
+  else if (CALC_KEY_OPS[k])          calcSetOperator(CALC_KEY_OPS[k]);
+  else if (k === 'Enter' || k === '=') calcEquals();
+  else if (k === 'Backspace')        calcBackspace();
+  else if (k === 'Escape' || k === 'Delete') calcClear();
+  else if (k === '%')                calcPercent();
+  else return;
+  e.preventDefault();
 }
 
 function calcSetOperator(nextOperator) {
@@ -208,7 +242,8 @@ function calcLoadHistoryResult(result) {
   calcState.prevValue = null;
   calcState.operator = null;
   calcState.expression = '';
-  calcState.waitingForOperand = false;
+  // Wie nach "=": eine neue Ziffer beginnt eine neue Zahl, ein Operator rechnet weiter
+  calcState.waitingForOperand = true;
   calcState.justEquals = false;
   renderCalcDisplay();
   renderCalcExpression();

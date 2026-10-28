@@ -85,7 +85,20 @@ function drBuildTimeOptions() {
 
 function drFormatDecimal(num, maxDecimals = 2) {
   if (!isFinite(num)) return '0';
+  // Sehr kleine Werte würden mit fester Nachkommazahl zu "0" — dann
+  // stattdessen 3 signifikante Stellen (0,000008 statt 0).
+  if (num !== 0 && Math.abs(num) < 0.5 * 10 ** -maxDecimals) {
+    return num.toLocaleString('de-DE', { maximumSignificantDigits: 3 });
+  }
   return num.toLocaleString('de-DE', { maximumFractionDigits: maxDecimals });
+}
+
+// Kurze Zeiten zusätzlich lesbar: 0,000008 s → "≈ 8 µs"
+function drFormatShortDuration(sec) {
+  if (sec >= 1 || sec <= 0) return '';
+  if (sec >= 0.001) return `≈ ${drFormatDecimal(sec * 1000, 2)} ms`;
+  if (sec >= 0.000001) return `≈ ${drFormatDecimal(sec * 1e6, 2)} µs`;
+  return `≈ ${drFormatDecimal(sec * 1e9, 2)} ns`;
 }
 
 function drFormatInt(num) {
@@ -308,7 +321,7 @@ function drBuildSolutionTime(ctx) {
     <div class="dr-learn-math-line dr-learn-math-line--result">t ≈ ${drFormatDecimal(ctx.result, 2)} Sekunden</div>
     <div class="dr-learn-why"><span class="dr-learn-why-icon">💡</span><span><strong>Warum wird dividiert?</strong> Die Formel lautet t = D / c. Die Datenmenge wird durch die Geschwindigkeit geteilt. Die Einheit Bit kürzt sich dabei weg, übrig bleibt die Einheit Sekunden.</span></div>
   `);
-  html += drResultSection(`${drFormatDecimal(ctx.result, 2)} Sekunden`, ctx.result >= 60 ? `≈ ${drFormatDuration(ctx.result)}` : '');
+  html += drResultSection(`${drFormatDecimal(ctx.result, 2)} Sekunden`, ctx.result >= 60 ? `≈ ${drFormatDuration(ctx.result)}` : drFormatShortDuration(ctx.result));
   return html;
 }
 
@@ -506,6 +519,7 @@ const NOOK_FORMULA_LIBRARY = {
 };
 
 let drFormulaActiveKey = 'datarate';
+let drFormulaModal = null;   // wireModal-Handle, gesetzt in initDataRateCalculator()
 
 function drRenderFormulaNav() {
   const nav = document.getElementById('dr-formula-nav');
@@ -538,10 +552,7 @@ function drRenderFormulaContent() {
 function openDrFormulaModal() {
   drRenderFormulaNav();
   drRenderFormulaContent();
-  document.getElementById('dr-formula-modal-overlay').classList.remove('hidden');
-}
-function closeDrFormulaModal() {
-  document.getElementById('dr-formula-modal-overlay').classList.add('hidden');
+  drFormulaModal.open();
 }
 
 function drApplyLearnMode() {
@@ -611,11 +622,8 @@ function initDataRateCalculator() {
     drCompute();
   });
 
+  drFormulaModal = wireModal('dr-formula-modal-overlay', { closeIds: ['dr-formula-modal-close'] });
   document.getElementById('dr-formula-global-btn').addEventListener('click', openDrFormulaModal);
-  document.getElementById('dr-formula-modal-close').addEventListener('click', closeDrFormulaModal);
-  document.getElementById('dr-formula-modal-overlay').addEventListener('click', e => {
-    if (e.target === document.getElementById('dr-formula-modal-overlay')) closeDrFormulaModal();
-  });
 
   document.getElementById('dr-formula-inline-btn').addEventListener('click', () => {
     const panel = document.getElementById('dr-formula-inline-panel');
@@ -692,7 +700,7 @@ function drCompute() {
     }
     const totalSec = amountBits / speedBps;
     valueEl.textContent = `${drFormatDecimal(totalSec, 2)} Sekunden`;
-    subEl.textContent = totalSec >= 60 ? drFormatDuration(totalSec) : '';
+    subEl.textContent = totalSec >= 60 ? drFormatDuration(totalSec) : drFormatShortDuration(totalSec);
     stepsEl.innerHTML = drBuildSteps(
       `${drFormatDecimal(drState.amountValue, 4)} ${drUnitLabel(drState.amountUnit)} = ${drFormatInt(amountBits)} Bit`,
       `${drFormatDecimal(drState.speedValue, 4)} ${drUnitLabel(drState.speedUnit)}/s = ${drFormatInt(speedBps)} Bit/s`,

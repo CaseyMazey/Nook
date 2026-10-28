@@ -717,6 +717,23 @@ function renderBlocks() {
 
 function saveTasks() { DB.set('tasks', tasks); }
 
+// Wochenaufgaben von außen anlegen (Schnellnotiz „Ablegen“, Brain Dump,
+// Entscheidungshilfe in Tools) — eine Aufgabe pro Zeile, Aufzählungs-
+// zeichen und leere Zeilen fallen weg. Gibt die Anzahl zurück.
+function addWeekTasksFromLines(lines, priority = 2) {
+  const titles = lines.map(l => String(l).replace(/^\s*(?:[-*•]|\d+[.)])\s+/, '').trim()).filter(Boolean);
+  titles.forEach(title => {
+    const t = { id: crypto.randomUUID(), title, notes: '', priority, blocks: [], createdAt: Date.now() };
+    setTaskStatus(t, 'open');
+    tasks.push(t);
+  });
+  if (!titles.length) return 0;
+  saveTasks();
+  renderTasks();
+  renderBlocks();
+  return titles.length;
+}
+
 // =========================
 // STATUS-DROPDOWN — schwebendes Menü, an <body> angehängt statt am Task-Item.
 // #panel-tasks (.panel) hat overflow:hidden für die abgerundeten Ecken; ein

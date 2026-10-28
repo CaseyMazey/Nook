@@ -60,6 +60,46 @@ const TOOLS_CONVERTER_CATEGORIES = {
       Object.entries(DR_UNIT_FACTORS).map(([key, u]) => [key, { label: u.label, factor: u.factor }])
     )
   },
+  area: {
+    label: 'Fläche',
+    defaultFrom: 'm2', defaultTo: 'ft2',
+    units: {
+      mm2:  { label: 'mm²',  factor: 1e-6 },
+      cm2:  { label: 'cm²',  factor: 1e-4 },
+      m2:   { label: 'm²',   factor: 1 },
+      a:    { label: 'a (Ar)', factor: 100 },
+      ha:   { label: 'ha',   factor: 1e4 },
+      km2:  { label: 'km²',  factor: 1e6 },
+      in2:  { label: 'in²',  factor: 0.00064516 },
+      ft2:  { label: 'ft²',  factor: 0.09290304 },
+      acre: { label: 'acre', factor: 4046.8564224 }
+    }
+  },
+  volume: {
+    label: 'Volumen',
+    defaultFrom: 'l', defaultTo: 'galus',
+    units: {
+      ml:    { label: 'ml',          factor: 0.001 },
+      cl:    { label: 'cl',          factor: 0.01 },
+      l:     { label: 'l',           factor: 1 },
+      m3:    { label: 'm³',          factor: 1000 },
+      tsp:   { label: 'TL',          factor: 0.005 },
+      tbsp:  { label: 'EL',          factor: 0.015 },
+      cup:   { label: 'cup (US)',    factor: 0.2365882365 },
+      floz:  { label: 'fl oz (US)',  factor: 0.0295735295625 },
+      galus: { label: 'gal (US)',    factor: 3.785411784 }
+    }
+  },
+  speed: {
+    label: 'Geschwindigkeit',
+    defaultFrom: 'kmh', defaultTo: 'mph',
+    units: {
+      ms:  { label: 'm/s',  factor: 1 },
+      kmh: { label: 'km/h', factor: 1 / 3.6 },
+      mph: { label: 'mph',  factor: 0.44704 },
+      kn:  { label: 'kn',   factor: 0.514444 }
+    }
+  },
   time: {
     label: 'Zeit',
     defaultFrom: 'min', defaultTo: 'sec',
@@ -99,17 +139,26 @@ function toolsConvertValue(categoryKey, fromKey, toKey, value) {
   return base / toUnit.factor;
 }
 
+// Große Werte auf 4 Nachkommastellen, kleine auf 6 signifikante Stellen —
+// so wird z. B. "1 mg in t" nicht zu 0. Ergebnis als Zahl (für das
+// type=number-Feld), toolsFormatConvLabel() formatiert sie deutsch.
+function toolsRoundConv(num) {
+  if (!isFinite(num) || num === 0) return 0;
+  return Math.abs(num) >= 1 ? Math.round(num * 10000) / 10000 : Number(num.toPrecision(6));
+}
 function toolsFormatConvResult(num) {
-  if (!isFinite(num)) return '0';
-  const rounded = Math.round(num * 10000) / 10000;
-  return String(rounded);
+  return String(toolsRoundConv(num));
+}
+function toolsFormatConvLabel(num) {
+  return toolsRoundConv(num).toLocaleString('de-DE', { maximumFractionDigits: 20 });
 }
 
 let convState = { category: 'length', from: 'cm', to: 'inch' };
 
 function initConverter() {
   const saved = DB.get('toolsConverterState', null);
-  if (saved && TOOLS_CONVERTER_CATEGORIES[saved.category]) {
+  const savedCat = saved && TOOLS_CONVERTER_CATEGORIES[saved.category];
+  if (savedCat && savedCat.units[saved.from] && savedCat.units[saved.to]) {
     convState = saved;
   }
 
@@ -183,5 +232,5 @@ function renderConverter() {
   const fromLabel = cat.units[convState.from].label;
   const toLabel = cat.units[convState.to].label;
   document.getElementById('conv-example').textContent =
-    `1 ${fromLabel} = ${toolsFormatConvResult(exampleResult)} ${toLabel}`;
+    `1 ${fromLabel} = ${toolsFormatConvLabel(exampleResult)} ${toLabel}`;
 }
