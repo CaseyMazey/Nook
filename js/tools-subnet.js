@@ -228,9 +228,9 @@ function snLearnV4(r) {
       <div class="dr-learn-math-line">= <strong class="sn-mono">${snV4ToStr(r.mask)}</strong></div>`)}
     ${drSection('2️⃣', 'Netzadresse: IP UND Maske', `<div class="dr-learn-math-line sn-mono">${snV4Bin(r.ip, r.prefix)}  (IP)</div>
       <div class="dr-learn-math-line sn-mono">${snV4Bin(r.mask, r.prefix)}  (Maske)</div>
-      <div class="dr-learn-arrow">↓ bitweises UND</div>
+      <div class="dr-learn-arrow">↓ Stelle für Stelle vergleichen (bitweises UND)</div>
       <div class="dr-learn-math-line sn-mono">${snV4Bin(r.net, r.prefix)} = <strong>${snV4ToStr(r.net)}</strong></div>
-      <div class="dr-learn-why"><span class="dr-learn-why-icon">💡</span><span><strong>Warum UND?</strong> Wo die Maske 1 ist, bleibt das IP-Bit stehen; wo sie 0 ist, wird es 0. So bleibt nur der Netzanteil übrig.</span></div>`)}
+      <div class="dr-learn-why"><span class="dr-learn-why-icon">💡</span><span><strong>Was passiert hier?</strong> Man legt die Maske wie eine Schablone über die IP und geht Ziffer für Ziffer durch: Steht in der Maske eine <strong>1</strong>, schreibt man die Ziffer der IP einfach ab. Steht in der Maske eine <strong>0</strong>, schreibt man <strong>0</strong> hin. Die kräftigen Ziffern vorne (die Straße) bleiben also gleich, die blassen hinten (die Hausnummer) werden alle zu 0. Heraus kommt die Netzadresse — die Straße ohne Hausnummer.</span></div>`)}
     ${drSection('3️⃣', 'Broadcast: alle Hostbits auf 1', `<div class="dr-learn-math-line sn-mono">${snV4Bin(r.bc, r.prefix)} = <strong>${snV4ToStr(r.bc)}</strong></div>`)}
     ${drSection('4️⃣', 'Anzahl Hosts', `<div class="dr-learn-math-line">2<sup>${hostBits}</sup> = ${r.total.toLocaleString('de-DE')} Adressen${r.prefix < 31 ? ` − 2 (Netz + Broadcast) = <strong>${r.hosts.toLocaleString('de-DE')}</strong> Hosts` : ''}</div>
       ${r.prefix >= 31 ? '<div class="dr-learn-why"><span class="dr-learn-why-icon">💡</span><span>Bei /31 (Punkt-zu-Punkt, RFC 3021) und /32 (einzelner Host) wird nichts abgezogen.</span></div>' : ''}`)}
