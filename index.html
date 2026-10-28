@@ -773,7 +773,10 @@
       <section id="view-flashcards" class="view">
         <div class="view-header">
           <h1 class="view-title">Karteikarten</h1>
-          <button class="btn-primary" id="add-subject-btn">+ Fach</button>
+          <div class="fc-header-actions">
+            <button class="btn-ghost" id="fc-import-btn" title="Ganze Kartensätze aus einer Markdown-Datei anlegen">⬆ Import</button>
+            <button class="btn-primary" id="add-subject-btn">+ Fach</button>
+          </div>
         </div>
         <div class="dash-content">
           <!-- Statistikleiste -->
@@ -2284,6 +2287,32 @@
     </div>
   </div>
  
+  <!-- Karteikarten-Import (Markdown) Modal — js/flashcards-import.js -->
+  <div id="fc-import-modal-overlay" class="modal-backdrop hidden">
+    <div class="modal-box fc-import-box">
+      <div class="modal-head"><span>Karten aus Markdown importieren</span><button class="modal-x" id="fc-import-modal-close">✕</button></div>
+      <div class="modal-hint"># Fach · ## Themengruppe · ### Vorderseite, darunter die Rückseite bis zur nächsten Überschrift. Die Vorlage kannst du Claude geben, damit die Datei genau passt.</div>
+      <div class="fc-import-tools">
+        <button class="btn-ghost" id="fc-import-pick-file">📄 Datei wählen</button>
+        <button class="btn-ghost" id="fc-import-copy-template">📋 Format/Vorlage kopieren</button>
+        <span id="fc-import-file-name" class="fc-import-file-name"></span>
+        <input type="file" id="fc-import-file" accept=".md,.txt,text/markdown,text/plain" hidden>
+      </div>
+      <div class="modal-row">
+        <label>Inhalt</label>
+        <textarea class="modal-textarea fc-import-text" id="fc-import-text" placeholder="Markdown hier einfügen oder oben eine Datei wählen…" spellcheck="false"></textarea>
+      </div>
+      <div class="modal-row">
+        <label>Vorschau</label>
+        <div id="fc-import-preview"></div>
+      </div>
+      <div class="modal-actions">
+        <button id="fc-import-modal-cancel" class="btn-ghost">Abbrechen</button>
+        <button id="fc-import-save" class="btn-primary" disabled>Importieren</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Fach bearbeiten Modal -->
   <div id="fc-subject-edit-modal-overlay" class="modal-backdrop hidden">
     <div class="modal-box" style="width:420px;">
@@ -3874,6 +3903,7 @@
   <script src="js/gruppendienste.js"></script>
   <script src="js/pinboard.js"></script>
   <script src="js/flashcards.js"></script>
+  <script src="js/flashcards-import.js"></script>
   <script src="js/guides.js"></script>
   <script src="js/budget.js"></script>
   <script src="js/budget-schatzkammer.js"></script>

@@ -412,11 +412,28 @@ Persönliche Statistiken werden bewusst nicht übernommen.
 
 # Import
 
-Import ist für zukünftige Versionen vorgesehen.
+Über „⬆ Import“ in der Kopfzeile lassen sich ganze Kartensätze aus Markdown anlegen (Datei `.md`/`.txt` wählen oder Text einfügen).
 
-Importierte Karten sollen automatisch fehlende Standardwerte erhalten.
+Gedacht für Lernzettel: Claude erstellt zu einem Lernzettel eine passende `.md`-Datei, Nook importiert sie.
 
-Dadurch bleiben ältere Exportdateien kompatibel.
+Format: `# Fach`, `## Themengruppe`, `### Vorderseite`, darunter die Rückseite bis zur nächsten Überschrift.
+
+Genaue Regeln und die Vorlage für Claude: `flashcards-import-format.md` (auch im Import-Fenster über „Format/Vorlage kopieren“).
+
+Ablauf:
+
+- Vorschau zeigt neue und doppelte Karten pro Fach und Themengruppe sowie Hinweise zu übersprungenen Teilen
+- pro Fach wählbar: neues Fach oder in bestehendes Fach einfügen
+- erst „Importieren“ speichert
+- doppelte Karten (gleiche Vorderseite in derselben Themengruppe) werden nicht doppelt angelegt
+
+Importierte Karten erhalten automatisch die Standardwerte (Box 1, keine Statistik, nicht schwierig).
+
+Die Datei wird per FileReader gelesen, nicht per fetch (Nook läuft unter file://).
+
+Umgesetzt in `js/flashcards-import.js` (lädt nach `flashcards.js`).
+
+Ein Import der JSON-Exportdateien ist weiterhin für zukünftige Versionen vorgesehen.
 
 ---
 
@@ -452,6 +469,7 @@ flashcards.js ist verantwortlich für:
 - Statistiken
 - Lernserie
 - Export
+- Markdown-Import
 - Suchfunktion
 - Kontextmenüs
 
@@ -513,7 +531,7 @@ Neue Funktionen sollen nicht:
 
 Geplante Erweiterungen:
 
-- Import von Karteikarten
+- Import der JSON-Exportdateien
 - Bilder auf Karteikarten
 - Markdown-Unterstützung
 - Lernziele
