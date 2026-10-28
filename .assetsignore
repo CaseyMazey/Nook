@@ -27,3 +27,8 @@ node_modules/
 README.md
 CLAUDE.md
 Müll-Wasser.xlsx
+
+# Gimp-Quellen im Projektordner (Projekte-Bäume, Wald) — über 25 MB, nur Bearbeitungsdateien
+*.xcf
+# Persönliche Nook-Datensicherungen — dürfen nie öffentlich werden
+Backups/
