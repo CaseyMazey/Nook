@@ -19,6 +19,7 @@ Jedes Werkzeug ist für sich allein verständlich und braucht keine Einrichtung.
 - Ruhig und sofort benutzbar: Sinnvolle Startwerte statt leerer Formulare, letzte Einstellungen werden gemerkt.
 - Größere Eingaben (Notenmanager, Entscheidungshilfe) laufen in Modals über `wireModal()`, Löschen immer mit `hubConfirm()`.
 - Escape schließt das oberste Tools-Fenster (`toolsHandleEscape` in tools.js).
+- Werkzeug-Leiste oben (`TOOLS_LIST`, `toolsShowTool()` in tools.js), Optik wie die Sprungleiste der Einstellungen: „Alle“ zeigt das Raster, ein Werkzeug steht allein (Wahl gemerkt unter `toolsActiveTool`). Neue Werkzeuge bekommen einen Eintrag in `TOOLS_LIST`; Sprünge aus der Suche wählen ihr Werkzeug über `toolsShowTool()`.
 
 ---
 

@@ -1421,3 +1421,34 @@
 .noten-target-result { grid-column: 1 / -1; font-size: calc(12.5px * var(--core-font-scale)); color: var(--text-2); }
 .noten-target-result:empty { display: none; }
 @media (max-width: 560px) { .noten-target { grid-template-columns: 1fr 1fr; } .noten-target-title { grid-column: 1 / -1; } }
+
+/* =============================================================
+   WERKZEUG-LEISTE (js/tools.js: TOOLS_LIST, toolsShowTool)
+   Optik wie die Sprungleiste der Einstellungen (.settings-jump).
+   Ein gewähltes Werkzeug steht allein: kleine Karten mit begrenzter
+   Breite, breite Karten (Datenrate, Noten) über die volle Fläche.
+============================================================= */
+.tools-nav { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 16px; }
+.tools-nav-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 12px;
+  border-radius: 99px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font: inherit; font-size: calc(12.5px * var(--core-font-scale)); font-weight: 500;
+  white-space: nowrap; cursor: pointer;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+}
+.tools-nav-btn:hover { color: var(--text); background: var(--accent-soft); }
+.tools-nav-btn.active { background: var(--sage); border-color: var(--sage); color: var(--sage-fg); }
+.tools-nav-btn:focus-visible { outline: 2px solid var(--sage); outline-offset: 2px; }
+
+.tools-grid--single { grid-template-columns: minmax(0, 1fr); }
+.tools-grid--single > .tool-card:not(.tool-card--wide) { width: 100%; max-width: 520px; justify-self: center; }
+
+@media (max-width: 480px) {
+  /* Leiste horizontal wischbar statt mehrzeilig */
+  .tools-nav { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: -4px; padding: 0 4px 2px; }
+  .tools-nav::-webkit-scrollbar { display: none; }
+}

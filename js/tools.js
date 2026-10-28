@@ -20,6 +20,44 @@
 
 let toolsInitialized = false;
 
+// Werkzeug-Leiste oben (wie die Sprungleiste der Einstellungen): „Alle“
+// zeigt das Raster, ein Werkzeug blendet die übrigen Karten aus. Die Wahl
+// wird gemerkt. id = Karten-ID ohne "tool-"-Präfix.
+const TOOLS_LIST = [
+  { id: 'calculator',   icon: '🧮', label: 'Rechner' },
+  { id: 'timer',        icon: '🍅', label: 'Focus Timer' },
+  { id: 'converter',    icon: '🔄', label: 'Converter' },
+  { id: 'datarate',     icon: '📡', label: 'Datenrate' },
+  { id: 'notenmanager', icon: '🎓', label: 'Noten' },
+  { id: 'decision',     icon: '⚖️', label: 'Entscheidungen' },
+];
+let toolsActiveTool = DB.get('toolsActiveTool', 'all');
+function saveToolsActiveTool() { DB.set('toolsActiveTool', toolsActiveTool); }
+
+function toolsShowTool(id) {
+  if (id !== 'all' && !TOOLS_LIST.some(t => t.id === id)) id = 'all';
+  toolsActiveTool = id;
+  saveToolsActiveTool();
+  document.querySelectorAll('#tools-nav .tools-nav-btn').forEach(b => {
+    const on = b.dataset.tool === id;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+  // Am Handy ist die Leiste wischbar — gewählten Knopf in Sicht holen
+  const nav = document.getElementById('tools-nav');
+  const activeBtn = nav?.querySelector('.tools-nav-btn.active');
+  if (nav && activeBtn && nav.scrollWidth > nav.clientWidth) {
+    const delta = activeBtn.getBoundingClientRect().left - nav.getBoundingClientRect().left;
+    nav.scrollLeft += delta - (nav.clientWidth - activeBtn.offsetWidth) / 2;
+  }
+  const grid = document.getElementById('tools-grid');
+  if (!grid) return;
+  grid.classList.toggle('tools-grid--single', id !== 'all');
+  grid.querySelectorAll(':scope > .tool-card').forEach(card => {
+    card.classList.toggle('hidden', id !== 'all' && card.id !== `tool-${id}`);
+  });
+}
+
 function initTools() {
   if (toolsInitialized) return;
   toolsInitialized = true;
@@ -35,7 +73,11 @@ function initTools() {
       </div>
     </div>
     <div class="dash-content">
-      <div class="tools-grid">
+      <nav class="tools-nav" id="tools-nav" aria-label="Werkzeuge">
+        <button type="button" class="tools-nav-btn" data-tool="all" aria-pressed="false">Alle</button>
+        ${TOOLS_LIST.map(t => `<button type="button" class="tools-nav-btn" data-tool="${t.id}" aria-pressed="false"><span aria-hidden="true">${t.icon}</span> ${t.label}</button>`).join('')}
+      </nav>
+      <div class="tools-grid" id="tools-grid">
 
         <div class="tool-card" id="tool-calculator">
           <div class="tool-card-header">
@@ -446,7 +488,13 @@ function initTools() {
   initDataRateCalculator();
   initNotenmanager();
   initDecisionTool();
-  document.addEventListener('keydown', toolsHandleEscape, true);   // Capture: vor dem Taschenrechner, solange hubConfirm noch sichtbar ist
+  document.addEventListener('keydown', toolsHandleEscape, true);
+
+  document.getElementById('tools-nav').addEventListener('click', e => {
+    const btn = e.target.closest('.tools-nav-btn');
+    if (btn) toolsShowTool(btn.dataset.tool);
+  });
+  toolsShowTool(toolsActiveTool);   // Capture: vor dem Taschenrechner, solange hubConfirm noch sichtbar ist
 }
 
 // Escape schließt das oberste offene Tools-Fenster — über dessen ✕, damit

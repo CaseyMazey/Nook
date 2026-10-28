@@ -50,6 +50,13 @@
   text-transform: none;
 }
 [data-pages-style="rpg"] .sp-source-note { background: none; border: none; }
+/* Untertitel unter dem Seitentitel steht auf dem Szenenbild, nicht auf dem
+   Brett: kräftige Tinte mit hellem Hof statt blassem --text-3 */
+[data-pages-style="rpg"] .tools-subtitle {
+  color: var(--text);
+  font-weight: 600;
+  text-shadow: 0 0 3px var(--halo), 0 0 8px var(--halo), 0 0 14px var(--halo);
+}
 /* Einstellungs-Gruppen: Titel + Pfeil stecken im Klapp-Knopf */
 [data-pages-style="rpg"] .settings-group-head :is(.settings-group-title, .settings-group-chevron) {
   color: var(--sage-fg);

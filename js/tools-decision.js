@@ -251,6 +251,6 @@ registerSearchProvider({
     id: d.id, icon: d.decision.trim() ? '✔' : '⚖️', title: d.dilemma.trim() || 'Ohne Titel',
     sub: d.decision.trim() ? `Entschieden: ${d.decision.trim().split('\n')[0]}` : 'Entscheidungshilfe',
     text: [d.best, d.worst, d.gut, d.nextSteps, ...d.pros.map(p => p.text)].join(' '),
-    open: () => { showView('tools'); openDecision(d.id); },
+    open: () => { showView('tools'); toolsShowTool('decision'); openDecision(d.id); },
   })),
 });

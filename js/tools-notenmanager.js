@@ -787,6 +787,7 @@ function renderNotenCompareTable() {
 // =========================
 function notenOpenFromSearch(yearId, open) {
   showView('tools');
+  toolsShowTool('notenmanager');
   if (!notenOpenYears[yearId]) { notenOpenYears[yearId] = true; saveNotenOpenYears(); renderNotenYears(); }
   document.getElementById('tool-notenmanager')?.scrollIntoView({ block: 'start' });
   open();
