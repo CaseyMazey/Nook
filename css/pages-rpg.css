@@ -902,3 +902,14 @@
     inset 0 1px 2px color-mix(in srgb, var(--deco-ink) 45%, transparent),
     0 0 7px color-mix(in srgb, var(--amber) 55%, transparent);
 }
+
+/* Tools-Favoriten: Messingstern statt Goldgelb */
+[data-pages-style="rpg"] #view-tools .tool-fav-btn.active {
+  color: var(--brass);
+  text-shadow: 0 1px 0 color-mix(in srgb, var(--deco-ink) 55%, transparent), 0 0 6px color-mix(in srgb, var(--amber) 45%, transparent);
+}
+[data-pages-style="rpg"] #view-tools .tools-nav-btn--fav.on {
+  background: linear-gradient(to bottom, var(--brass-hi), var(--brass));
+  border-color: var(--brass-ink);
+  color: var(--deco-ink);
+}

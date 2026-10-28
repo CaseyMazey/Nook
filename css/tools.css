@@ -1672,3 +1672,34 @@
 #view-tools .toggle input:checked + .toggle-slider { background: var(--sage); }
 #view-tools .toggle input:focus-visible + .toggle-slider { outline: 2px solid var(--sage); outline-offset: 2px; }
 .dr-learn-switch-label { color: var(--text); }
+
+/* =============================================================
+   FAVORITEN (js/tools.js: toolsToggleFavorite, toolsSetFavOnly)
+   ☆ im Kartenkopf direkt hinter dem Titel; ★ = Favorit (goldgelb über
+   --status-caution). In der Leiste schaltet „Favoriten“ den Filter.
+============================================================= */
+.tool-fav-btn {
+  flex-shrink: 0;
+  width: 26px; height: 26px; margin-left: -4px;
+  display: inline-grid; place-items: center;
+  border: none; border-radius: 50%; background: none;
+  color: var(--text-3); font-size: 17px; line-height: 1; cursor: pointer;
+  transition: color var(--transition), transform var(--transition), background var(--transition);
+}
+.tool-fav-btn:hover { color: var(--text); background: var(--accent-soft); }
+.tool-fav-btn.active { color: var(--status-caution); }
+.tool-fav-btn.active:hover { color: color-mix(in srgb, var(--status-caution) 80%, var(--text)); }
+.tool-fav-btn:active { transform: scale(.88); }
+.tool-fav-btn:focus-visible { outline: 2px solid var(--sage); outline-offset: 1px; }
+
+.tools-nav-btn--fav.on {
+  background: color-mix(in srgb, var(--status-caution) 22%, var(--surface-2));
+  border-color: color-mix(in srgb, var(--status-caution) 60%, var(--border-strong));
+  color: var(--text);
+}
+.tools-nav-sep { width: 1px; align-self: stretch; margin: 4px 2px; background: var(--border-strong); }
+@media (max-width: 480px) { .tools-nav-sep { flex-shrink: 0; } }
+
+.tools-cfg-favonly { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; font-size: 13px; color: var(--text); cursor: pointer; }
+.tools-cfg-favonly input { accent-color: var(--sage); }
+.tools-cfg-row .tool-fav-btn { margin-left: 0; }

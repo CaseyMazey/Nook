@@ -39,7 +39,9 @@ Jedes Werkzeug ist für sich allein verständlich und braucht keine Einrichtung.
 | Entscheidungshilfe (Blatt, Optionen-Matrix, Zufallsrad, Rückblick, Archiv) | `tools-decision.js` | `toolsDecisions` |
 | Textwerkzeuge (Zähler, Zeichen-Limit, Umformungen) | `tools-text.js` | `toolsTextState` |
 
-Leiste: `toolsActiveTool` (gewähltes Werkzeug), `toolsNavConfig` (Reihenfolge, ausgeblendete Werkzeuge).
+Leiste: `toolsActiveTool` (gewähltes Werkzeug), `toolsNavConfig` (Reihenfolge, ausgeblendete Werkzeuge, `favorites`, `favOnly`).
+
+**Favoriten:** ☆ im Kopf jeder Karte (von `renderToolsFavButtons()` eingefügt, neue Werkzeuge bekommen ihn automatisch) oder im ⚙-Dialog. Der Leistenknopf „Favoriten“ (`toolsSetFavOnly`) filtert Leiste und „Alle“ auf die Favoriten; ohne Favoriten kommt ein Hinweis, beim Entfernen des letzten Favoriten schaltet sich der Filter ab. „Standard“ im ⚙-Dialog lässt die Favoriten stehen.
 
 Neuere Werkzeuge bringen ihre Karte selbst mit (`tools<Name>CardHtml()` in ihrer Datei, von `initTools` ins Raster gesetzt) — so bleibt tools.js schlank. Gemeinsame Helfer in tools.js: `toolsUnlockAudio()`/`toolsPlayChime()` (Ton), `toolsPrint(html)` (Drucken), `toolsShowTool(id)`. Lernmodus-Bausteine (`drSection`, `drResultSection` …) aus tools-datarate.js nutzen auch Subnetz und Zahlensysteme.
 

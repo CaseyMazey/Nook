@@ -39,8 +39,42 @@ const TOOLS_LIST = [
 ];
 let toolsActiveTool = DB.get('toolsActiveTool', 'all');
 function saveToolsActiveTool() { DB.set('toolsActiveTool', toolsActiveTool); }
-let toolsNavConfig = Object.assign({ order: [], hidden: [] }, DB.get('toolsNavConfig', {}));
+// favorites: per ☆ an der Karte markiert; favOnly: Leiste + Raster zeigen nur Favoriten
+let toolsNavConfig = Object.assign({ order: [], hidden: [], favorites: [], favOnly: false }, DB.get('toolsNavConfig', {}));
 function saveToolsNavConfig() { DB.set('toolsNavConfig', toolsNavConfig); }
+function toolsIsFavorite(id) { return toolsNavConfig.favorites.includes(id); }
+// Sichtbar in Leiste und „Alle“: nicht ausgeblendet und (bei Favoriten-Filter) Favorit
+function toolsIsListed(id) { return !toolsIsHidden(id) && (!toolsNavConfig.favOnly || toolsIsFavorite(id)); }
+
+function toolsToggleFavorite(id) {
+  toolsNavConfig.favorites = toolsIsFavorite(id) ? toolsNavConfig.favorites.filter(x => x !== id) : [...toolsNavConfig.favorites, id];
+  if (!toolsNavConfig.favorites.length) toolsNavConfig.favOnly = false;   // leerer Filter zeigt sonst nichts
+  saveToolsNavConfig();
+  renderToolsFavButtons();
+  renderToolsNav();
+  // Im Favoriten-Filter bleibt ein gerade entfernter Favorit offen, bis man wechselt
+  if (toolsActiveTool === 'all') toolsShowTool('all'); else toolsMarkNav(toolsActiveTool);
+  if (document.getElementById('tools-nav-config-list')?.offsetParent) renderToolsNavConfig();
+}
+
+// Stern-Knopf im Kopf jeder Werkzeug-Karte (einmal eingefügt, danach nur umgeschaltet)
+function renderToolsFavButtons() {
+  TOOLS_LIST.forEach(t => {
+    const head = document.querySelector(`#tool-${t.id} .tool-card-header`);
+    if (!head) return;
+    let btn = head.querySelector('.tool-fav-btn');
+    if (!btn) {
+      head.querySelector('.tool-card-title')?.insertAdjacentHTML('afterend', `<button type="button" class="tool-fav-btn" data-fav="${t.id}"></button>`);
+      btn = head.querySelector('.tool-fav-btn');
+    }
+    const fav = toolsIsFavorite(t.id);
+    btn.textContent = fav ? '★' : '☆';
+    btn.classList.toggle('active', fav);
+    btn.setAttribute('aria-pressed', fav ? 'true' : 'false');
+    btn.title = fav ? `${t.label} aus den Favoriten entfernen` : `${t.label} zu den Favoriten`;
+    btn.setAttribute('aria-label', btn.title);
+  });
+}
 
 // TOOLS_LIST in der Nutzer-Reihenfolge; neue Werkzeuge hängen hinten an
 function toolsOrderedList() {
@@ -53,8 +87,11 @@ function toolsIsHidden(id) { return toolsNavConfig.hidden.includes(id); }
 function renderToolsNav() {
   const nav = document.getElementById('tools-nav');
   if (!nav) return;
+  const favOnly = toolsNavConfig.favOnly;
   nav.innerHTML = `<button type="button" class="tools-nav-btn" data-tool="all" aria-pressed="false">Alle</button>`
-    + toolsOrderedList().filter(t => !toolsIsHidden(t.id)).map(t =>
+    + `<button type="button" class="tools-nav-btn tools-nav-btn--fav${favOnly ? ' on' : ''}" id="tools-nav-fav" aria-pressed="${favOnly}" title="${favOnly ? 'Wieder alle Werkzeuge zeigen' : 'Nur Favoriten zeigen'}">${favOnly ? '★' : '☆'} Favoriten</button>`
+    + `<span class="tools-nav-sep" aria-hidden="true"></span>`
+    + toolsOrderedList().filter(t => toolsIsListed(t.id)).map(t =>
       `<button type="button" class="tools-nav-btn" data-tool="${t.id}" aria-pressed="false"><span aria-hidden="true">${t.icon}</span> ${t.label}</button>`).join('')
     + `<button type="button" class="tools-nav-btn tools-nav-btn--config" id="tools-nav-config" title="Leiste anpassen: Reihenfolge und sichtbare Werkzeuge" aria-label="Leiste anpassen">⚙</button>`;
   // Karten im Raster in derselben Reihenfolge
@@ -65,14 +102,10 @@ function renderToolsNav() {
 }
 
 function toolsShowTool(id) {
-  if (id !== 'all' && (!TOOLS_LIST.some(t => t.id === id) || toolsIsHidden(id))) id = 'all';
+  if (id !== 'all' && (!TOOLS_LIST.some(t => t.id === id) || !toolsIsListed(id))) id = 'all';
   toolsActiveTool = id;
   saveToolsActiveTool();
-  document.querySelectorAll('#tools-nav .tools-nav-btn').forEach(b => {
-    const on = b.dataset.tool === id;
-    b.classList.toggle('active', on);
-    b.setAttribute('aria-pressed', on ? 'true' : 'false');
-  });
+  toolsMarkNav(id);
   // Am Handy ist die Leiste wischbar — gewählten Knopf in Sicht holen
   const nav = document.getElementById('tools-nav');
   const activeBtn = nav?.querySelector('.tools-nav-btn.active');
@@ -85,7 +118,15 @@ function toolsShowTool(id) {
   grid.classList.toggle('tools-grid--single', id !== 'all');
   grid.querySelectorAll(':scope > .tool-card').forEach(card => {
     const cid = card.id.replace(/^tool-/, '');
-    card.classList.toggle('hidden', id === 'all' ? toolsIsHidden(cid) : cid !== id);
+    card.classList.toggle('hidden', id === 'all' ? !toolsIsListed(cid) : cid !== id);
+  });
+}
+
+function toolsMarkNav(id) {
+  document.querySelectorAll('#tools-nav .tools-nav-btn[data-tool]').forEach(b => {
+    const on = b.dataset.tool === id;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
   });
 }
 
@@ -94,9 +135,11 @@ let toolsNavModal = null;
 function renderToolsNavConfig() {
   const list = document.getElementById('tools-nav-config-list');
   const items = toolsOrderedList();
+  document.getElementById('tools-nav-config-favonly').checked = toolsNavConfig.favOnly;
   list.innerHTML = items.map((t, i) => `
     <li class="tools-cfg-row" data-id="${t.id}">
       <label class="tools-cfg-check"><input type="checkbox" ${toolsIsHidden(t.id) ? '' : 'checked'}> <span aria-hidden="true">${t.icon}</span> ${t.label}</label>
+      <button type="button" class="tool-fav-btn${toolsIsFavorite(t.id) ? ' active' : ''}" data-cfg-fav="${t.id}" aria-pressed="${toolsIsFavorite(t.id)}" title="${toolsIsFavorite(t.id) ? 'Aus den Favoriten entfernen' : 'Zu den Favoriten'}" aria-label="${t.label}: Favorit">${toolsIsFavorite(t.id) ? '★' : '☆'}</button>
       <button type="button" class="icon-btn" data-move="-1" ${i === 0 ? 'disabled' : ''} title="Nach oben" aria-label="${t.label} nach oben">▲</button>
       <button type="button" class="icon-btn" data-move="1" ${i === items.length - 1 ? 'disabled' : ''} title="Nach unten" aria-label="${t.label} nach unten">▼</button>
     </li>`).join('');
@@ -445,7 +488,8 @@ function initTools() {
       <div id="tools-nav-config-overlay" class="modal-backdrop hidden">
         <div class="modal-box" style="width:380px;max-height:82vh;">
           <div class="modal-head"><span>Werkzeug-Leiste anpassen</span><button class="modal-x" id="tools-nav-config-close">&#10005;</button></div>
-          <p class="modal-hint">Haken = in Leiste und Raster sichtbar. Mit ▲▼ die Reihenfolge ändern.</p>
+          <p class="modal-hint">Haken = in Leiste und Raster sichtbar. ★ = Favorit. Mit ▲▼ die Reihenfolge ändern.</p>
+          <label class="tools-cfg-favonly"><input type="checkbox" id="tools-nav-config-favonly"> Nur Favoriten zeigen</label>
           <ol class="tools-cfg-list" id="tools-nav-config-list"></ol>
           <div class="modal-actions"><button id="tools-nav-config-reset" class="btn-ghost">Standard</button><button id="tools-nav-config-done" class="btn-primary">Fertig</button></div>
         </div>
@@ -664,14 +708,21 @@ function initTools() {
   initDateCalculator();
   initSubnetCalculator();
   initTextTool();
-  document.addEventListener('keydown', toolsHandleEscape, true);
+  document.addEventListener('keydown', toolsHandleEscape, true);   // Capture: vor dem Taschenrechner, solange hubConfirm noch sichtbar ist
 
   toolsNavModal = wireModal('tools-nav-config-overlay', { closeIds: ['tools-nav-config-close', 'tools-nav-config-done'] });
   document.getElementById('tools-nav').addEventListener('click', e => {
     if (e.target.closest('#tools-nav-config')) { renderToolsNavConfig(); toolsNavModal.open(); return; }
+    if (e.target.closest('#tools-nav-fav')) { toolsSetFavOnly(!toolsNavConfig.favOnly); return; }
     const btn = e.target.closest('.tools-nav-btn');
     if (btn) toolsShowTool(btn.dataset.tool);
   });
+  // Stern im Kartenkopf
+  document.getElementById('tools-grid').addEventListener('click', e => {
+    const fav = e.target.closest('.tool-fav-btn[data-fav]');
+    if (fav) toolsToggleFavorite(fav.dataset.fav);
+  });
+  document.getElementById('tools-nav-config-favonly').addEventListener('change', e => toolsSetFavOnly(e.target.checked));
   const cfgList = document.getElementById('tools-nav-config-list');
   cfgList.addEventListener('change', e => {
     const id = e.target.closest('.tools-cfg-row')?.dataset.id;
@@ -680,6 +731,8 @@ function initTools() {
     toolsNavConfigChanged();
   });
   cfgList.addEventListener('click', e => {
+    const favBtn = e.target.closest('[data-cfg-fav]');
+    if (favBtn) { toolsToggleFavorite(favBtn.dataset.cfgFav); cfgList.querySelector(`[data-cfg-fav="${favBtn.dataset.cfgFav}"]`)?.focus(); return; }
     const btn = e.target.closest('[data-move]');
     if (!btn) return;
     const ids = toolsOrderedList().map(t => t.id);
@@ -691,11 +744,25 @@ function initTools() {
     cfgList.querySelector(`[data-id="${ids[j]}"] [data-move="${btn.dataset.move}"]`)?.focus();
   });
   document.getElementById('tools-nav-config-reset').addEventListener('click', () => {
-    toolsNavConfig = { order: [], hidden: [] };
+    // „Standard“ setzt Reihenfolge und Sichtbarkeit zurück — Favoriten bleiben
+    toolsNavConfig = { order: [], hidden: [], favorites: toolsNavConfig.favorites, favOnly: false };
     toolsNavConfigChanged();
   });
+  renderToolsFavButtons();
   renderToolsNav();
-  toolsShowTool(toolsActiveTool);   // Capture: vor dem Taschenrechner, solange hubConfirm noch sichtbar ist
+  toolsShowTool(toolsActiveTool);
+}
+
+// Favoriten-Filter an/aus. Ohne Favoriten gibt es nichts zu filtern → Hinweis.
+function toolsSetFavOnly(on) {
+  if (on && !toolsNavConfig.favorites.length) {
+    hubAlert('Noch keine Favoriten', 'Markiere zuerst Werkzeuge mit dem ☆ oben rechts in ihrer Karte (oder im ⚙-Dialog) — dann zeigt der Filter nur noch diese.');
+    const cb = document.getElementById('tools-nav-config-favonly');
+    if (cb) cb.checked = false;
+    return;
+  }
+  toolsNavConfig.favOnly = on;
+  toolsNavConfigChanged();
 }
 
 // Escape schließt das oberste offene Tools-Fenster — über dessen ✕, damit
