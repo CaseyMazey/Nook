@@ -236,7 +236,15 @@ function snLearnV4(r) {
     ${drSection('4️⃣', 'Anzahl Hosts', `<div class="dr-learn-math-line">2<sup>${hostBits}</sup> = ${r.total.toLocaleString('de-DE')} Adressen${r.prefix < 31 ? ` − 2 (Netz + Broadcast) = <strong>${r.hosts.toLocaleString('de-DE')}</strong> Hosts` : ''}</div>
       ${hostBits > 0 ? `<div class="dr-learn-why"><span class="dr-learn-why-icon">💡</span><span><strong>Woher kommt die ${hostBits}?</strong> Das sind die blassen Ziffern hinten — die Hausnummer. Bei /${r.prefix} gehören ${r.prefix} Ziffern zur Straße, von insgesamt 32 bleiben also 32 − ${r.prefix} = <strong>${hostBits}</strong> für die Hausnummer.<br><strong>Warum 2 hoch ${hostBits}?</strong> Jede dieser Ziffern kann nur <strong>0 oder 1</strong> sein, hat also 2 Möglichkeiten. ${hostBits <= 8 ? `Bei ${hostBits} Ziffern: ${Array(hostBits).fill('2').join(' × ')} = <strong>${r.total.toLocaleString('de-DE')}</strong> verschiedene Hausnummern.` : `Bei ${hostBits} Ziffern wird ${hostBits}-mal mit 2 malgenommen — das ergibt <strong>${r.total.toLocaleString('de-DE')}</strong> verschiedene Hausnummern.`}${r.prefix < 31 ? `<br><strong>Warum − 2?</strong> Zwei davon sind schon vergeben: lauter 0en ist die Netzadresse (Schritt 2), lauter 1en ist der Broadcast (Schritt 3). Für Geräte bleiben ${r.hosts.toLocaleString('de-DE')} übrig.` : ''}</span></div>` : ''}
       ${r.prefix >= 31 ? '<div class="dr-learn-why"><span class="dr-learn-why-icon">💡</span><span>Bei /31 (Punkt-zu-Punkt, RFC 3021) und /32 (einzelner Host) wird nichts abgezogen.</span></div>' : ''}`)}
-    ${drResultSection(`${snV4ToStr(r.first)} – ${snV4ToStr(r.last)}`, `Netz ${snV4ToStr(r.net)}/${r.prefix} · Broadcast ${snV4ToStr(r.bc)}`)}`;
+    ${drSection('✅', 'Ergebnis', `
+      <div class="dr-learn-result-value">${snV4ToStr(r.first)} – ${snV4ToStr(r.last)}</div>
+      <div class="dr-learn-result-sub">Netz ${snV4ToStr(r.net)}/${r.prefix} · Broadcast ${snV4ToStr(r.bc)}</div>
+      <div class="dr-learn-why"><span class="dr-learn-why-icon">🏠</span><span><strong>Was heißt das?</strong> Deine IP ${snV4ToStr(r.ip)} wohnt in der Straße <strong>${snV4ToStr(r.net)}/${r.prefix}</strong>. ${r.prefix < 31
+        ? `Die Hausnummern von <strong>${snV4ToStr(r.first)}</strong> bis <strong>${snV4ToStr(r.last)}</strong> darfst du an Geräte vergeben — PC, Drucker, Handy, Router. Die ${snV4ToStr(r.net)} davor ist das Straßenschild (Netzadresse), die ${snV4ToStr(r.bc)} dahinter der Brief an alle (Broadcast). Insgesamt passen <strong>${r.hosts.toLocaleString('de-DE')} Geräte</strong> in dieses Netz.`
+        : r.prefix === 31
+          ? `Hier gibt es genau zwei Hausnummern, ${snV4ToStr(r.first)} und ${snV4ToStr(r.last)} — gedacht für eine direkte Verbindung zwischen zwei Geräten, z.B. zwei Routern.`
+          : `Hier gibt es genau eine Hausnummer — die Adresse steht für ein einzelnes Gerät.`}</span></div>
+    `, 'dr-learn-section--result')}`;
 }
 
 function snLearnV6(p, net, hostBits) {
