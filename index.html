@@ -386,6 +386,7 @@
                 <span class="panel-label">Schnellnotiz</span>
                 <span class="save-hint" id="note-saved">gespeichert</span>
                 <button type="button" class="qn-sent-hint hidden" id="qn-sent-hint"></button>
+                <button type="button" class="qn-send-btn braindump-btn" id="braindump-btn" title="Brain Dump: alles aus dem Kopf, sortiert nach Anrufen, Schreiben, Mailen …" aria-label="Brain Dump öffnen">🧠<span class="braindump-count hidden" id="braindump-count"></span></button>
                 <button type="button" class="qn-send-btn" id="qn-send-btn" title="Notiz (oder markierten Text) als Pinnwand-Karte, Projekt- oder Wochenaufgabe ablegen">↗ Ablegen</button>
               </div>
               <textarea id="quicknote" placeholder="Gedanken, Fragen, Reminders..."></textarea>
@@ -2879,6 +2880,23 @@
   </div>
 
   <!-- Budget-Archiv (erfüllte Sparziele / beglichene Schulden) -->
+  <!-- Brain Dump (js/today-braindump.js) -->
+  <div id="braindump-modal-overlay" class="modal-backdrop hidden">
+    <div class="modal-box braindump-sheet" style="width:860px;max-height:90vh;">
+      <div class="modal-head"><span>🧠 Brain Dump</span><button class="modal-x" id="braindump-close">&#10005;</button></div>
+      <div class="bd-top">
+        <label class="bd-goal"><span>Mein großes Ziel</span><input type="text" class="modal-input" id="braindump-goal" placeholder="Worauf läuft gerade alles hinaus?" autocomplete="off"/></label>
+        <div class="bd-start"><span>Angefangen</span><b id="braindump-start">—</b></div>
+      </div>
+      <div class="bd-grid" id="braindump-grid"></div>
+      <div class="modal-actions">
+        <button id="braindump-reset" class="btn-ghost bd-reset">Neues Blatt</button>
+        <button id="braindump-clear-done" class="btn-ghost">Erledigte entfernen</button>
+        <button id="braindump-done" class="btn-primary">Fertig</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Schnellnotiz ablegen (js/today-quicknote-send.js) -->
   <div id="qn-send-modal-overlay" class="modal-backdrop hidden">
     <div class="modal-box" style="width:440px;">
@@ -3868,6 +3886,7 @@
   <script src="js/budget-sparplaene.js"></script>
   <script src="js/today-budget.js"></script>
   <script src="js/today-quicknote-send.js"></script>
+  <script src="js/today-braindump.js"></script>
   <script src="js/projects.js"></script>
   <script src="js/project-tree.js"></script>
   <script src="js/forest.js"></script>
@@ -3892,6 +3911,7 @@
   <script src="js/tools-converter.js"></script>
   <script src="js/tools-datarate.js"></script>
   <script src="js/tools-notenmanager.js"></script>
+  <script src="js/tools-decision.js"></script>
   <script src="js/pwa.js"></script>
 </body>
 </html>

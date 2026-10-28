@@ -162,6 +162,9 @@ Nicht als Aufgabenverwaltung.
 
 **↗ Ablegen** (js/today-quicknote-send.js): markierter Text oder die ganze Notiz wird beim zuständigen Tab abgelegt — als Pinnwand-Karte (erste Zeile = Titel), als Projektaufgabe(n) oder Wochenaufgabe(n) (eine pro Zeile, Aufzählungszeichen werden entfernt). Angelegt wird über die Funktionen des Ziel-Tabs (`addDeskCardFromText` in pinboard.js, `addProjectTasksFromLines` in projects.js) in dessen Datenformat; die Heute-Seite übernimmt dabei keine Pinnwand- oder Projektfunktionen. Danach wird der Text standardmäßig aus der Schnellnotiz entfernt (abschaltbar), ein kurzer Link im Kopf führt zum Ziel.
 
+
+**🧠 Brain Dump** (js/today-braindump.js): Knopf im Schnellnotiz-Kopf öffnet ein Modal mit einem Brain-Dump-Blatt — großes Ziel, Startdatum und Rubriken (Anrufen, Schreiben, Mailen, Termin machen, Nachhaken, Ansprechen, Recherchieren/Lernen, Machen/Erschaffen, Was ich machen WILL, Top-Prioritäten). Einträge lassen sich abhaken, entfernen oder per ↗ als Wochenaufgabe anlegen (Top-Prioritäten mit hoher Priorität). Bewusst als Modal, damit die Sidebar nicht wächst. Der Zähler am Knopf zeigt offene Einträge. DB-Key `brainDump`.
+
 ---
 
 # Speiseplan

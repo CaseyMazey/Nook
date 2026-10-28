@@ -4,7 +4,7 @@
 // Dateneinheiten-Registry (für Converter + Datenübertragungsraten-
 // Rechner). Die eigentliche Modul-Logik liegt in:
 // tools-calculator.js, tools-timer.js, tools-converter.js,
-// tools-datarate.js, tools-notenmanager.js
+// tools-datarate.js, tools-notenmanager.js, tools-decision.js
 // Lade-Reihenfolge: tools.js zuerst, Module danach (beliebige Reihenfolge
 // untereinander, außer converter/datarate nach tools.js wegen Registry).
 // =========================
@@ -253,6 +253,18 @@ function initTools() {
           </div>
         </div>
 
+        <div class="tool-card" id="tool-decision">
+          <div class="tool-card-header">
+            <span class="tool-card-icon">⚖️</span>
+            <span class="tool-card-title">Entscheidungshilfe</span>
+            <button class="btn-ghost" id="decision-add-btn">+ Entscheidung</button>
+          </div>
+          <div class="tool-card-body">
+            <div class="decision-list" id="decision-list"></div>
+            <div class="noten-empty hidden" id="decision-empty">Hängst du an einer Entscheidung? Leg mit „+ Entscheidung“ ein Blatt an und geh sie Schritt für Schritt durch.</div>
+          </div>
+        </div>
+
       </div>
 
       <!-- Formelsammlung (global, modul-übergreifend) -->
@@ -263,6 +275,63 @@ function initTools() {
             <div class="dr-formula-nav" id="dr-formula-nav"></div>
             <div class="dr-formula-content" id="dr-formula-content"></div>
           </div>
+        </div>
+      </div>
+
+      <!-- Entscheidungshilfe: Entscheidungsblatt (js/tools-decision.js) -->
+      <div id="decision-modal-overlay" class="modal-backdrop hidden">
+        <div class="modal-box decision-sheet" style="width:720px;max-height:88vh;">
+          <div class="modal-head"><span>⚖️ Eine Entscheidung treffen</span><button class="modal-x" id="decision-modal-close">&#10005;</button></div>
+
+          <div class="decision-top">
+            <label class="decision-line decision-line--wide"><span>Dilemma</span><input type="text" class="modal-input" id="decision-dilemma" placeholder="Worum geht es?" autocomplete="off"></label>
+            <div class="decision-line"><span>Angelegt</span><span class="decision-created" id="decision-created"></span></div>
+            <label class="decision-line"><span>Entscheiden bis</span><input type="date" class="modal-date" id="decision-due"></label>
+          </div>
+          <div class="decision-scale-row"><span class="decision-scale-label">Wie wichtig?</span><div class="decision-scale" id="decision-importance" role="radiogroup" aria-label="Wichtigkeit"></div></div>
+          <div class="decision-scale-row"><span class="decision-scale-label">Wie unentschlossen?</span><div class="decision-scale" id="decision-indecision" role="radiogroup" aria-label="Unentschlossenheit"></div></div>
+
+          <div class="decision-box">
+            <div class="decision-box-head">Bester Fall</div>
+            <textarea class="modal-textarea decision-ta" data-decision-field="best" placeholder="Was passiert im besten Fall?"></textarea>
+            <label class="decision-check"><input type="checkbox" id="decision-best-pipe"> Luftschloss</label>
+          </div>
+          <div class="decision-box">
+            <div class="decision-box-head">Schlimmster Fall</div>
+            <textarea class="modal-textarea decision-ta" data-decision-field="worst" placeholder="Was passiert im schlimmsten Fall?"></textarea>
+            <label class="decision-check"><input type="checkbox" id="decision-worst-apoc"> Weltuntergang</label>
+          </div>
+
+          <div class="decision-split">
+            <div class="decision-box">
+              <div class="decision-box-head">Bauchgefühl</div>
+              <textarea class="modal-textarea decision-ta decision-ta--tall" data-decision-field="gut" placeholder="Was sagt dein Bauch?"></textarea>
+              <label class="decision-sub">Intuitives Fazit<input type="text" class="modal-input" data-decision-field="gutConclusion" autocomplete="off"></label>
+            </div>
+            <div class="decision-box">
+              <div class="decision-box-head">Plus (+) und Minus (−) <span class="decision-pros-tally" id="decision-pros-tally"></span></div>
+              <div class="decision-pros" id="decision-pros"></div>
+              <div class="decision-pros-add">
+                <button type="button" class="btn-ghost" data-decision-add-pro="+">+ Plus</button>
+                <button type="button" class="btn-ghost" data-decision-add-pro="-">− Minus</button>
+              </div>
+              <label class="decision-sub">Rationales Fazit<input type="text" class="modal-input" data-decision-field="rationalConclusion" autocomplete="off"></label>
+            </div>
+          </div>
+
+          <div class="decision-box decision-box--final">
+            <label class="decision-sub decision-sub--big">Entscheidung<input type="text" class="modal-input" data-decision-field="decision" placeholder="Wofür entscheidest du dich?" autocomplete="off"></label>
+            <label class="decision-check"><input type="checkbox" id="decision-for-now"> Vorerst</label>
+            <label class="decision-sub">Nächste Schritte<textarea class="modal-textarea decision-ta" data-decision-field="nextSteps"></textarea></label>
+          </div>
+
+          <div class="decision-coin">
+            <span class="decision-coin-quote">„Oder du wirfst einfach eine Münze.“</span>
+            <button type="button" class="btn-ghost" id="decision-coin-btn">🪙 Münze werfen</button>
+            <span class="decision-coin-result" id="decision-coin-result" aria-live="polite"></span>
+          </div>
+
+          <div class="modal-actions"><button id="decision-delete-btn" class="btn-ghost decision-delete-btn">🗑 Löschen</button><button id="decision-done-btn" class="btn-primary">Fertig</button></div>
         </div>
       </div>
 
@@ -372,6 +441,7 @@ function initTools() {
   initConverter();
   initDataRateCalculator();
   initNotenmanager();
+  initDecisionTool();
 }
 window.initTools = initTools;
 

@@ -850,3 +850,100 @@
   font: inherit; font-size: 13px; cursor: pointer;
 }
 .qn-send-target.active { border-color: var(--sage-border); background: var(--sage-bg); color: var(--text); font-weight: 600; }
+
+/* =============================================================
+   BRAIN DUMP (js/today-braindump.js)
+   Jede Rubrik bekommt eine Deko-Tönung (--bd-tint), gemischt mit der
+   Kartenfläche — so bleibt das Blatt in jedem Theme lesbar.
+============================================================= */
+.braindump-btn { display: inline-flex; align-items: center; gap: 4px; padding: 3px 7px; }
+/* Platz im Kopf: der „gespeichert“-Hinweis darf schrumpfen statt die Knöpfe rauszudrücken */
+#panel-quicknote .panel-header { gap: 6px; }
+#panel-quicknote .save-hint { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+#panel-quicknote .braindump-btn { margin-left: auto; }
+#panel-quicknote .braindump-btn + .qn-send-btn { margin-left: 0; }
+.braindump-count {
+  min-width: 17px; padding: 0 5px; border-radius: 99px;
+  background: var(--sage-bg); color: var(--sage-dark);
+  font-size: 10.5px; font-weight: 700; line-height: 17px; text-align: center;
+}
+[data-theme-family="dark"] .braindump-count { color: var(--sage-light); }
+.braindump-count.hidden { display: none; }
+
+.braindump-sheet { overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+.braindump-sheet > * { flex-shrink: 0; }
+.bd-top { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+.bd-goal { flex: 1 1 320px; display: flex; flex-direction: column; gap: 4px; }
+.bd-goal span, .bd-start span { font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--text-3); }
+.bd-start { display: flex; flex-direction: column; gap: 4px; padding-bottom: 8px; }
+.bd-start b { font-size: 13.5px; font-weight: 600; color: var(--text-2); }
+
+.bd-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.bd-sec {
+  --bd-tint: var(--deco-5);
+  display: flex; flex-direction: column;
+  background: color-mix(in srgb, var(--bd-tint) 30%, var(--surface-solid));
+  border: 1px solid color-mix(in srgb, var(--bd-tint) 70%, var(--border));
+  border-radius: var(--radius);
+  overflow: hidden; min-height: 120px;
+}
+[data-theme-family="dark"] .bd-sec {
+  background: color-mix(in srgb, var(--bd-tint) 9%, var(--surface-solid));
+  border-color: color-mix(in srgb, var(--bd-tint) 25%, var(--border));
+}
+.bd-sec--wide { grid-column: 1 / -1; min-height: 0; }
+.bd-sec[data-sec="want"] { grid-column: span 1; }
+.bd-sec[data-sec="prio"] { grid-column: span 2; }
+.bd-sec[data-sec="call"]     { --bd-tint: var(--deco-pink); }
+.bd-sec[data-sec="text"]     { --bd-tint: var(--deco-6); }
+.bd-sec[data-sec="email"]    { --bd-tint: var(--deco-orange); }
+.bd-sec[data-sec="schedule"] { --bd-tint: var(--deco-1); }
+.bd-sec[data-sec="follow"]   { --bd-tint: var(--leitner-3); }
+.bd-sec[data-sec="speak"]    { --bd-tint: var(--deco-blue); }
+.bd-sec[data-sec="research"] { --bd-tint: var(--deco-pink); }
+.bd-sec[data-sec="create"]   { --bd-tint: var(--deco-orange); }
+.bd-sec[data-sec="want"]     { --bd-tint: var(--deco-1); }
+.bd-sec[data-sec="prio"]     { --bd-tint: var(--deco-blue); }
+.bd-sec-head {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 12px;
+  background: color-mix(in srgb, var(--bd-tint) 60%, var(--surface-solid));
+  font-size: 13px; font-weight: 600; color: var(--text);
+}
+[data-theme-family="dark"] .bd-sec-head { background: color-mix(in srgb, var(--bd-tint) 22%, var(--surface-solid)); }
+
+.bd-list { list-style: none; margin: 0; padding: 6px 8px 0; display: flex; flex-direction: column; gap: 1px; }
+.bd-sec--wide .bd-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); column-gap: 14px; }
+.bd-item {
+  display: flex; align-items: center; gap: 7px;
+  padding: 4px 4px;
+  border-bottom: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+  font-size: 13px; color: var(--text);
+}
+.bd-check { flex-shrink: 0; margin: 0; cursor: pointer; accent-color: var(--sage); }
+.bd-text { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.bd-item--done .bd-text { text-decoration: line-through; color: var(--text-3); }
+.bd-act { flex-shrink: 0; border: none; background: none; padding: 0 2px; color: var(--text-3); font: inherit; font-size: 12px; cursor: pointer; opacity: 0; }
+.bd-item:hover .bd-act, .bd-act:focus { opacity: 1; }
+.bd-act:hover { color: var(--text); }
+.bd-sent { flex-shrink: 0; font-size: 11px; }
+.bd-item--flash { animation: bd-flash 1.6s ease-out; }
+@keyframes bd-flash { 0%, 40% { background: var(--sage-bg); } 100% { background: transparent; } }
+.bd-add {
+  margin: 4px 8px 8px; padding: 5px 4px;
+  border: none; border-bottom: 1px dashed color-mix(in srgb, var(--text) 18%, transparent);
+  background: transparent; color: var(--text);
+  font: inherit; font-size: 13px; outline: none;
+}
+.bd-add::placeholder { color: var(--text-3); }
+.bd-add:focus { border-bottom-style: solid; border-bottom-color: var(--sage); }
+.bd-reset { margin-right: auto; }
+
+@media (max-width: 760px) {
+  .bd-grid { grid-template-columns: 1fr 1fr; }
+  .bd-sec[data-sec="want"], .bd-sec[data-sec="prio"] { grid-column: 1 / -1; }
+}
+@media (max-width: 480px) {
+  .bd-grid { grid-template-columns: 1fr; }
+  .bd-act { opacity: 1; }
+}
