@@ -1657,20 +1657,21 @@
    Der Knopf nutzt global var(--surface) — auf Karten mit transparenter
    Fläche (z.B. Pergament im RPG-Stil) war er unsichtbar, die Schiene im
    Aus-Zustand zu blass. Hier: deckender Knopf mit Kontur, kräftigere
-   Schiene. Gilt nur im Tools-Tab.
+   Schiene. Gilt nur im Tools-Tab; im RPG-Stil übernimmt der
+   Messing-Schalter aus pages-rpg.css.
 ============================================================= */
-#view-tools .toggle-slider {
+:root:not([data-pages-style="rpg"]) #view-tools .toggle-slider {
   background: color-mix(in srgb, var(--text) 22%, transparent);
   box-shadow: inset 0 1px 2px color-mix(in srgb, var(--shadow-tint) 25%, transparent);
 }
-#view-tools .toggle-slider::before {
+:root:not([data-pages-style="rpg"]) #view-tools .toggle-slider::before {
   background: var(--sage-fg);
   border: 1px solid color-mix(in srgb, var(--text) 18%, transparent);
   box-sizing: border-box;
   box-shadow: 0 1px 3px color-mix(in srgb, var(--shadow-tint) 35%, transparent);
 }
-#view-tools .toggle input:checked + .toggle-slider { background: var(--sage); }
-#view-tools .toggle input:focus-visible + .toggle-slider { outline: 2px solid var(--sage); outline-offset: 2px; }
+:root:not([data-pages-style="rpg"]) #view-tools .toggle input:checked + .toggle-slider { background: var(--sage); }
+:root:not([data-pages-style="rpg"]) #view-tools .toggle input:focus-visible + .toggle-slider { outline: 2px solid var(--sage); outline-offset: 2px; }
 .dr-learn-switch-label { color: var(--text); }
 
 /* =============================================================
