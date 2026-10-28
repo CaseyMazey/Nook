@@ -549,7 +549,11 @@ function startLearnSession(subjId, groupId){
   const panel = document.getElementById('fc-session-panel');
   panel.classList.remove('hidden');
   document.getElementById('fc-session-panel-title').textContent = 'Lernsession';
-  document.getElementById('fc-session-panel-group-tag').innerHTML = `<span style="font-size:11px;font-family:var(--mono);color:var(--text-3);margin-bottom:8px;display:block;">${escHtml(group.name)}</span>`;
+  // Kontext bleibt während der ganzen Session sichtbar: wofür lerne ich gerade?
+  document.getElementById('fc-session-context').innerHTML = `
+    <div class="fc-session-ctx-row"><span class="fc-session-ctx-lbl">Fach</span><span class="fc-session-ctx-subject">${escHtml(subj.name)}</span></div>
+    ${subj.teacher ? `<div class="fc-session-ctx-row"><span class="fc-session-ctx-lbl">Lehrer</span><span>${escHtml(subj.teacher)}</span></div>` : ''}
+    <div class="fc-session-ctx-row"><span class="fc-session-ctx-lbl">Thema</span><span class="fc-session-ctx-group">${escHtml(group.name)}</span></div>`;
 
   // Heutiger Fortschritt + Schwierige Karten im Panel
   renderTodayProgress();

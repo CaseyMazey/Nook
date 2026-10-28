@@ -227,6 +227,10 @@ Die Lernsession nimmt den ganzen Bereich ein: Fächer, Kartenliste und Statistik
 
 Unter 1024px Breite (Tablet/Handy) liegt sie als Vollbild-Blatt über der Seite.
 
+Die Session passt immer in die Fensterhöhe, man muss nicht scrollen; die Lernkarte nimmt den freien Platz ein, sehr lange Antworten scrollen innerhalb der Karte.
+
+Links steht dauerhaft, wofür gelernt wird (Fach, Lehrer, Thema), darunter Heutiger Fortschritt und Schwierige Karten. Auf dem Handy steht der Kontext als eine Zeile oben, Heutiger Fortschritt und Schwierige Karten entfallen dort.
+
 ---
 
 # Lernansicht

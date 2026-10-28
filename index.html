@@ -816,46 +816,53 @@
                 <div id="group-list"></div>
               </div>
             </div>
-            <!-- Spalte 3: Session-Panel (wird per JS ein-/ausgeblendet) -->
+            <!-- Lernsession (wird per JS ein-/ausgeblendet). Links Kontext +
+                 Tagesfortschritt, rechts die Lernkarte; passt ohne Scrollen
+                 in die Fensterhöhe (css/flashcards.css). -->
             <div id="fc-session-panel" class="hidden">
               <div class="fc-session-panel-head">
                 <span id="fc-session-panel-title">Lernsession</span>
                 <button class="modal-x" id="fc-session-panel-close">✕</button>
               </div>
-              <div id="fc-session-panel-group-tag"></div>
-              <div id="learn-progress-bar-wrap" style="margin:8px 0 12px;">
-                <div id="learn-progress-bar"></div>
-                <span id="learn-progress-label"></span>
-              </div>
-              <div id="learn-live-stats"></div>
-              <div id="learn-motivation"></div>
-              <div id="learn-card-wrap">
-                <div id="learn-card" onclick="flipLearnCard()">
-                  <div id="learn-card-inner">
-                    <div id="learn-card-front"></div>
-                    <div id="learn-card-back"></div>
+              <div class="fc-session-body">
+                <!-- Fach · Lehrer · Themengruppe -->
+                <div id="fc-session-context"></div>
+                <div class="fc-session-side">
+                  <!-- Heutiger Fortschritt -->
+                  <div id="fc-today-progress-section" class="fc-session-section">
+                    <div class="fc-session-section-label">Heutiger Fortschritt</div>
+                    <div id="fc-today-progress-grid"></div>
                   </div>
-                  <div id="learn-card-hint">Klicken zum Umdrehen</div>
+                  <!-- Schwierige Karten -->
+                  <div id="fc-hard-cards-section" class="fc-session-section">
+                    <div class="fc-session-section-label">Schwierige Karten <span id="fc-hard-count" class="leitner-badge"></span></div>
+                    <div id="fc-hard-list"></div>
+                  </div>
+                  <button id="fc-session-end" class="btn-ghost">Session beenden</button>
                 </div>
-              </div>
-              <div id="learn-actions" class="hidden" style="display:flex;gap:8px;margin-top:8px;">
-                <button id="learn-didnt" class="btn-ghost" style="flex:1;font-size:13px;">↩ Wiederholen</button>
-                <button id="learn-hard" class="btn-ghost fc-tone" style="flex:1;font-size:13px;">∼ Schwer</button>
-                <button id="learn-knew" class="btn-primary" style="flex:1;font-size:13px;">✓ Leicht</button>
-              </div>
-              <div id="learn-done" class="hidden"></div>
-              <!-- Heutiger Fortschritt -->
-              <div id="fc-today-progress-section" style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);">
-                <div class="fc-session-section-label">Heutiger Fortschritt</div>
-                <div id="fc-today-progress-grid"></div>
-              </div>
-              <!-- Schwierige Karten -->
-              <div id="fc-hard-cards-section" style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
-                <div class="fc-session-section-label">Schwierige Karten <span id="fc-hard-count" class="leitner-badge"></span></div>
-                <div id="fc-hard-list"></div>
-              </div>
-              <div style="padding-top:12px;border-top:1px solid var(--border);margin-top:12px;">
-                <button id="fc-session-end" class="btn-ghost" style="width:100%;font-size:13px;">Session beenden</button>
+                <div class="fc-session-main">
+                  <div id="learn-progress-bar-wrap">
+                    <div id="learn-progress-bar"></div>
+                    <span id="learn-progress-label"></span>
+                  </div>
+                  <div id="learn-live-stats"></div>
+                  <div id="learn-motivation"></div>
+                  <div id="learn-card-wrap">
+                    <div id="learn-card" onclick="flipLearnCard()">
+                      <div id="learn-card-inner">
+                        <div id="learn-card-front"></div>
+                        <div id="learn-card-back"></div>
+                      </div>
+                      <div id="learn-card-hint">Klicken zum Umdrehen</div>
+                    </div>
+                  </div>
+                  <div id="learn-actions" class="hidden" style="display:flex;">
+                    <button id="learn-didnt" class="btn-ghost">↩ Wiederholen</button>
+                    <button id="learn-hard" class="btn-ghost fc-tone">∼ Schwer</button>
+                    <button id="learn-knew" class="btn-primary">✓ Leicht</button>
+                  </div>
+                  <div id="learn-done" class="hidden"></div>
+                </div>
               </div>
             </div>
           </div>
