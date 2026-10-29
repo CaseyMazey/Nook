@@ -17,6 +17,10 @@ window.NOOK_CHANGELOG = [
     version: '2026.10.13',
     date: '2026-10-29',
     items: [
+      'Karteikarten: Lernen nimmt jetzt nur die fälligen Karten (Leitner), „↻ Alle wiederholen“ wenn nichts fällig ist; Prüfungen wahlweise fällige oder alle gemischt; Karten innerhalb einer Box gemischt',
+      'Karteikarten: nach der Session die nicht gewussten Karten als Liste mit „Nur diese nochmal“; Tastatur in der Session (Leertaste umdrehen, 1/2/3 antworten, Esc pausieren)',
+      'Karteikarten: Rückseiten mit Markdown (Listen, fett, Tabellen, Code-Blöcke für Schaubilder); Filter für Karten (Text, fällig, schwierig, neu); Karte in ein anderes Thema verschieben; Export als Markdown, der sich wieder importieren lässt',
+      'Karteikarten: Löschen fragt immer nach; „Gelernt“ zählt verschiedene Karten, „Wiederholt“ alle Antworten; der Tag wechselt um Mitternacht (Ortszeit) statt um 1–2 Uhr',
       'RPG-Theme: Schalter klar erkennbar – aus blass mit stumpfem Zinnknopf, an mit glühender Messingschiene und leuchtendem Knopf',
       'Karteikarten: oben steht jetzt „Heute schon gelernt“ statt „Heute fällig“',
       'Karteikarten: Lernsessions pausieren und später fortsetzen; Neuladen verliert den Fortschritt nicht mehr. Doppelte Fragen (gleiche Vorderseite in mehreren Themen einer Prüfung) kommen pro Session nur noch einmal; Lernkarte im RPG-Nachtmodus nicht mehr grell',

@@ -6,6 +6,8 @@ Dieses Format liest der Import im Karteikarten-Tab (`js/flashcards-import.js`, K
 Es ist bewusst einfach und stabil gehalten, damit es auch später (z. B. für „Flashcard Battle“) weiterverwendet werden kann.
 Änderungen am Format nur abwärtskompatibel: alte Dateien müssen immer importierbar bleiben.
 
+Der Export (⋮ → „Als Markdown exportieren“ an Fach, Thema oder Karte, `fcExportMarkdown` in `js/flashcards.js`) schreibt genau dieses Format, Exporte lassen sich also wieder importieren.
+
 ---
 
 # Aufbau

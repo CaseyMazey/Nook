@@ -9,7 +9,9 @@ function saveSubjects(){ DB.set('subjects', subjects); }
 // verpassten Tag setzt unter Druck statt zu motivieren). Der alte Key
 // 'fc_streak' bleibt unangetastet im Speicher, wird aber nicht mehr gelesen.
 
-function getTodayStr(){ return new Date().toISOString().slice(0,10); }
+// Lokaler Kalendertag (dateKey aus main.js), nicht UTC — sonst springt
+// „heute“ in Deutschland erst um 1 bzw. 2 Uhr nachts um
+function getTodayStr(){ return dateKey(new Date()); }
 
 // =========================
 // SESSION STATS (daily)
@@ -19,11 +21,14 @@ function getSessionStats(){
   return DB.get('fc_session_stats', { date: null, learned: 0, correct: 0, wrong: 0, reps: 0 });
 }
 
-function recordAnswer(knew){
+// learned = verschiedene Karten heute (IDs in s.cards), reps = alle Antworten.
+// Ältere Tagesobjekte ohne s.cards zählen ab jetzt weiter.
+function recordAnswer(knew, cardId){
   let s = getSessionStats();
   const today = getTodayStr();
-  if(s.date !== today) s = { date: today, learned: 0, correct: 0, wrong: 0, reps: 0 };
-  s.learned++;
+  if(s.date !== today) s = { date: today, learned: 0, correct: 0, wrong: 0, reps: 0, cards: [] };
+  if(!Array.isArray(s.cards)) s.cards = [];
+  if(!cardId || !s.cards.includes(cardId)){ s.learned++; if(cardId) s.cards.push(cardId); }
   s.reps = (s.reps||0) + 1;
   if(knew) s.correct++; else s.wrong++;
   DB.set('fc_session_stats', s);
@@ -43,13 +48,18 @@ function allCards(){
   return subjects.filter(subj => !isSubjectArchived(subj)).flatMap(subj => subj.groups.flatMap(g => g.cards));
 }
 
+// Fällig, wenn seit dem letzten Lerntag (lokaler Kalendertag) mindestens das
+// Intervall der Box vergangen ist. Math.round gleicht 23/25-h-Tage (Sommerzeit) aus.
+function isCardDue(c, today = parseLocalDate(getTodayStr())){
+  if(!c.lastSeen) return true;
+  const last = parseLocalDate(dateKey(new Date(c.lastSeen)));
+  const daysAgo = Math.round((today - last) / MS_PER_DAY);
+  return daysAgo >= LEITNER_INTERVALS[(c.box||1)-1];
+}
+
 function calcDueCount(cards){
-  return cards.filter(c => {
-    const box = c.box||1;
-    const last = c.lastSeen ? c.lastSeen.slice(0,10) : null;
-    const daysAgo = last ? Math.floor((Date.now() - new Date(last))/MS_PER_DAY) : 999;
-    return daysAgo >= LEITNER_INTERVALS[box-1];
-  }).length;
+  const today = parseLocalDate(getTodayStr());
+  return cards.filter(c => isCardDue(c, today)).length;
 }
 
 function calcAccuracy(cards){
@@ -132,8 +142,8 @@ function isSubjectArchived(subj){
 
 function buildSubjectItem(subj){
   const cardCount = subj.groups.reduce((s,g)=>s+g.cards.length, 0);
-  const dueCount = calcSubjectDue(subj);
-  const pct = calcSubjectAccuracy(subj);
+  const dueCount = calcDueCount(subjectCards(subj));
+  const pct = calcAccuracy(subjectCards(subj));
   const isActive = state.activeSubjectId === subj.id;
 
   const btn = document.createElement('div');
@@ -142,7 +152,7 @@ function buildSubjectItem(subj){
     <div class="subject-item-top">
       <span class="subject-name" title="${escHtml(subj.name)}">${escHtml(subj.name)}</span>
       ${dueCount ? `<span class="subject-due-badge" title="${dueCount} heute fällig">${dueCount}</span>` : ''}
-      <button class="fc-meatball" data-subj-id="${subj.id}" title="Optionen">⋮</button>
+      <button class="fc-meatball" data-subj-id="${subj.id}" title="Optionen" aria-label="Optionen für ${escHtml(subj.name)}">⋮</button>
     </div>
     <div class="subject-item-meta">
       <span class="subject-teacher">${escHtml(subj.teacher||'')}</span>
@@ -152,8 +162,9 @@ function buildSubjectItem(subj){
   `;
   btn.addEventListener('click', e => {
     if(e.target.closest('.fc-meatball')) return;
+    if(state.activeSubjectId !== subj.id) resetFcCardFilter();
     state.activeSubjectId = subj.id;
-    renderSubjectList();
+    renderSubjectList({ detail: false });
     renderSubjectDetail();
   });
   btn.querySelector('.fc-meatball').addEventListener('click', e => {
@@ -163,7 +174,9 @@ function buildSubjectItem(subj){
   return btn;
 }
 
-function renderSubjectList(){
+// opts.detail === false: nur die Liste (Suche, Fachwechsel rendert selbst) —
+// sonst wird die ganze Fachansicht mit allen Karten bei jedem Tastendruck neu gebaut
+function renderSubjectList(opts = {}){
   const list = document.getElementById('subject-list'); list.innerHTML = '';
   const empty = document.getElementById('subject-empty');
   const search = (document.getElementById('fc-subject-search')?.value||'').toLowerCase();
@@ -201,7 +214,7 @@ function renderSubjectList(){
       const gHead = document.createElement('div');
       gHead.className = 'fc-archive-group-head';
       gHead.tabIndex = 0; gHead.setAttribute('role', 'button');
-      gHead.innerHTML = `<span class="fc-archive-chevron" aria-hidden="true"></span><span class="fc-archive-group-name">${escHtml(group.name)}</span><span class="fc-archive-count">${subs.length}</span><button class="fc-meatball" title="Optionen">⋮</button>`;
+      gHead.innerHTML = `<span class="fc-archive-chevron" aria-hidden="true"></span><span class="fc-archive-group-name">${escHtml(group.name)}</span><span class="fc-archive-count">${subs.length}</span><button class="fc-meatball" title="Optionen" aria-label="Optionen für ${escHtml(group.name)}">⋮</button>`;
       const toggle = () => { if(!search) toggleFcArchiveOpen(group.id); };
       gHead.addEventListener('click', e => { if(!e.target.closest('.fc-meatball')) toggle(); });
       gHead.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toggle(); } });
@@ -217,7 +230,7 @@ function renderSubjectList(){
     });
     list.appendChild(sec);
   }
-  if(state.activeSubjectId) renderSubjectDetail();
+  if(state.activeSubjectId && opts.detail !== false) renderSubjectDetail();
 }
 
 function openFcArchiveGroupMenu(group, anchor){
@@ -313,17 +326,23 @@ function openSubjectMenu(subj, anchor){
     ${archived ? `<button class="fc-menu-item" data-action="archive">🗄️ Archiv-Gruppe wechseln</button>
     <button class="fc-menu-item" data-action="unarchive">↩️ Aus dem Archiv holen</button>`
       : `<button class="fc-menu-item" data-action="archive">🗄️ Ins Archiv…</button>`}
-    <button class="fc-menu-item" data-action="export">📤 Exportieren</button>
+    <button class="fc-menu-item" data-action="export">📤 Als Markdown exportieren</button>
     <button class="fc-menu-item fc-menu-danger" data-action="delete">🗑️ Löschen</button>
   `;
   menu.querySelector('[data-action="edit"]').addEventListener('click', () => { closeAllMenus(); openSubjectEditModal(subj); });
   menu.querySelector('[data-action="archive"]').addEventListener('click', () => { closeAllMenus(); openFcArchiveModal(subj); });
   menu.querySelector('[data-action="unarchive"]')?.addEventListener('click', () => { closeAllMenus(); delete subj.archiveGroupId; saveSubjects(); renderSubjectList(); });
   menu.querySelector('[data-action="export"]').addEventListener('click', () => { closeAllMenus(); exportSubject(subj); });
-  menu.querySelector('[data-action="delete"]').addEventListener('click', () => {
+  menu.querySelector('[data-action="delete"]').addEventListener('click', async () => {
     closeAllMenus();
-    if(!confirm(`Fach "${subj.name}" wirklich löschen? Alle Karten gehen verloren.`)) return;
+    const n = subjectCards(subj).length;
+    const ok = await hubConfirm({ title: `„${subj.name}“ löschen?`, message: `Das Fach mit allen Themen, Prüfungen und ${n} Karte${n!==1?'n':''} wird endgültig gelöscht. Tipp: Über „Ins Archiv…“ bleibt es erhalten.`, confirmText: 'Löschen', danger: true });
+    if(!ok) return;
     subjects = subjects.filter(s => s.id !== subj.id);
+    // Reste aufräumen: Klappzustand der Gruppen, offene Session dieses Fachs
+    subj.groups.forEach(g => collapsedGroups.delete(g.id));
+    DB.set('collapsedGroups', [...collapsedGroups]);
+    if(getSavedLearnSession()?.subjId === subj.id) clearSavedLearnSession();
     if(state.activeSubjectId === subj.id){ state.activeSubjectId = null; document.getElementById('flashcard-subject-view').classList.add('hidden'); document.getElementById('flashcard-placeholder').classList.remove('hidden'); renderSubjectToc(null); }
     saveSubjects(); renderSubjectList();
   });
@@ -335,17 +354,22 @@ function openGroupMenu(subj, group, anchor){
   const menu = document.createElement('div');
   menu.className = 'fc-context-menu';
   menu.innerHTML = `
+    <button class="fc-menu-item" data-action="all" ${group.cards.length ? '' : 'disabled'}>↻ Alle Karten wiederholen</button>
     <button class="fc-menu-item" data-action="rename">✏️ Umbenennen</button>
-    <button class="fc-menu-item" data-action="export">📤 Exportieren</button>
+    <button class="fc-menu-item" data-action="export">📤 Als Markdown exportieren</button>
     <button class="fc-menu-item fc-menu-danger" data-action="delete">🗑️ Löschen</button>
   `;
+  menu.querySelector('[data-action="all"]').addEventListener('click', () => { closeAllMenus(); startLearnSession(subj.id, group.id, 'all'); });
   menu.querySelector('[data-action="rename"]').addEventListener('click', () => { closeAllMenus(); openGroupModal(subj.id, group); });
   menu.querySelector('[data-action="export"]').addEventListener('click', () => { closeAllMenus(); exportGroup(subj, group); });
-  menu.querySelector('[data-action="delete"]').addEventListener('click', () => {
+  menu.querySelector('[data-action="delete"]').addEventListener('click', async () => {
     closeAllMenus();
-    if(!confirm(`Gruppe "${group.name}" wirklich löschen?`)) return;
+    const n = group.cards.length;
+    const ok = await hubConfirm({ title: `„${group.name}“ löschen?`, message: `Die Themengruppe mit ${n} Karte${n!==1?'n':''} wird endgültig gelöscht und aus allen Prüfungen entfernt.`, confirmText: 'Löschen', danger: true });
+    if(!ok) return;
     subj.groups = subj.groups.filter(g => g.id !== group.id);
     (subj.exams || []).forEach(ex => { ex.groupIds = ex.groupIds.filter(id => id !== group.id); });
+    collapsedGroups.delete(group.id); DB.set('collapsedGroups', [...collapsedGroups]);
     saveSubjects(); renderGroupList(subj); renderExamList(subj);
   });
   positionMenu(menu, anchor);
@@ -358,12 +382,14 @@ function openCardMenu(subj, group, fc, anchor){
   const isHard = !!fc.hard;
   menu.innerHTML = `
     <button class="fc-menu-item" data-action="edit">✏️ Bearbeiten</button>
+    <button class="fc-menu-item" data-action="move">↪️ Verschieben nach…</button>
     <button class="fc-menu-item" data-action="duplicate">📋 Duplizieren</button>
     <button class="fc-menu-item" data-action="hard">${isHard ? '⭐ Schwierig entfernen' : '⭐ Als schwierig markieren'}</button>
-    <button class="fc-menu-item" data-action="export">📤 Exportieren</button>
+    <button class="fc-menu-item" data-action="export">📤 Als Markdown exportieren</button>
     <button class="fc-menu-item fc-menu-danger" data-action="delete">🗑️ Löschen</button>
   `;
   menu.querySelector('[data-action="edit"]').addEventListener('click', () => { closeAllMenus(); openFcModal(subj.id, group.id, fc); });
+  menu.querySelector('[data-action="move"]').addEventListener('click', () => { closeAllMenus(); openFcMoveModal(subj, group, fc); });
   menu.querySelector('[data-action="duplicate"]').addEventListener('click', () => {
     closeAllMenus();
     const copy = {...fc, id: crypto.randomUUID(), box:1, lastSeen:null, totalAnswers:0, correctAnswers:0, front: fc.front+' (Kopie)'};
@@ -374,10 +400,12 @@ function openCardMenu(subj, group, fc, anchor){
     fc.hard = !fc.hard; saveSubjects(); renderGroupList(subj); renderGlobalStats();
     if(learnSession.active && learnSession.subjId===subj.id && learnSession.groupIds.includes(group.id)) renderHardCardsPanel(subj);
   });
-  menu.querySelector('[data-action="export"]').addEventListener('click', () => { closeAllMenus(); exportCard(fc); });
-  menu.querySelector('[data-action="delete"]').addEventListener('click', () => {
+  menu.querySelector('[data-action="export"]').addEventListener('click', () => { closeAllMenus(); exportCard(subj, group, fc); });
+  menu.querySelector('[data-action="delete"]').addEventListener('click', async () => {
     closeAllMenus();
-    group.cards = group.cards.filter(c => c.id !== fc.id); saveSubjects(); renderGroupList(subj);
+    const ok = await hubConfirm({ title: 'Karte löschen?', message: `„${fc.front}“ wird endgültig gelöscht.`, confirmText: 'Löschen', danger: true });
+    if(!ok) return;
+    group.cards = group.cards.filter(c => c.id !== fc.id); saveSubjects(); renderGroupList(subj); renderExamList(subj);
   });
   positionMenu(menu, anchor);
 }
@@ -403,13 +431,7 @@ document.addEventListener('keydown', e => { if(e.key==='Escape') closeAllMenus()
 // SUBJECT DETAIL
 // =========================
 
-function calcSubjectDue(subj){
-  return calcDueCount(subj.groups.flatMap(g => g.cards));
-}
-
-function calcSubjectAccuracy(subj){
-  return calcAccuracy(subj.groups.flatMap(g => g.cards));
-}
+function subjectCards(subj){ return subj.groups.flatMap(g => g.cards); }
 
 function renderSubjectDetail(){
   const subj = subjects.find(s => s.id === state.activeSubjectId); if(!subj) return;
@@ -425,40 +447,120 @@ function renderSubjectDetail(){
 // GROUP LIST
 // =========================
 
+// =========================
+// KARTENFILTER (Knopf „Filter“ im Fachkopf) — reiner Anzeigefilter für die
+// Kartenlisten des gewählten Fachs, ändert keine Daten. Wird beim Fachwechsel
+// zurückgesetzt, nicht gespeichert.
+// =========================
+
+let fcCardFilter = { mode: 'all', text: '' };   // mode: all | due | hard | new
+
+function fcCardFilterActive(){ return fcCardFilter.mode !== 'all' || !!fcCardFilter.text.trim(); }
+
+function fcCardMatchesFilter(fc, today){
+  const f = fcCardFilter;
+  if(f.mode === 'due' && !isCardDue(fc, today)) return false;
+  if(f.mode === 'hard' && !fc.hard) return false;
+  if(f.mode === 'new' && (fc.box||1) !== 1) return false;
+  const q = f.text.trim().toLowerCase();
+  return !q || String(fc.front).toLowerCase().includes(q) || String(fc.back).toLowerCase().includes(q);
+}
+
+function syncFcFilterUi(){
+  const btn = document.getElementById('fc-filter-btn');
+  const bar = document.getElementById('fc-filter-bar');
+  if(!btn || !bar) return;
+  btn.classList.toggle('active', fcCardFilterActive());
+  btn.setAttribute('aria-expanded', String(!bar.classList.contains('hidden')));
+  bar.querySelectorAll('.fc-filter-chip').forEach(c => c.classList.toggle('active', c.dataset.filter === fcCardFilter.mode));
+  const input = document.getElementById('fc-card-search');
+  if(input && input.value !== fcCardFilter.text) input.value = fcCardFilter.text;
+}
+
+function resetFcCardFilter(){
+  fcCardFilter = { mode: 'all', text: '' };
+  document.getElementById('fc-filter-bar')?.classList.add('hidden');
+  syncFcFilterUi();
+}
+
+function rerenderActiveGroupList(){
+  const subj = subjects.find(s => s.id === state.activeSubjectId);
+  if(subj) renderGroupList(subj);
+}
+
+document.getElementById('fc-filter-btn')?.addEventListener('click', () => {
+  const bar = document.getElementById('fc-filter-bar');
+  bar.classList.toggle('hidden');
+  syncFcFilterUi();
+  if(!bar.classList.contains('hidden')) document.getElementById('fc-card-search')?.focus();
+});
+document.getElementById('fc-filter-bar')?.addEventListener('click', e => {
+  const chip = e.target.closest('.fc-filter-chip');
+  if(chip){ fcCardFilter.mode = chip.dataset.filter; syncFcFilterUi(); rerenderActiveGroupList(); }
+  if(e.target.closest('.fc-filter-reset')){ fcCardFilter = { mode: 'all', text: '' }; syncFcFilterUi(); rerenderActiveGroupList(); }
+});
+document.getElementById('fc-card-search')?.addEventListener('input', e => {
+  fcCardFilter.text = e.target.value; syncFcFilterUi(); rerenderActiveGroupList();
+});
+
+// =========================
+// GROUP LIST
+// =========================
+
+const FC_LEITNER_COLORS = ['var(--leitner-1)','var(--leitner-2)','var(--leitner-3)','var(--leitner-4)','var(--leitner-5)'];
+const FC_LEITNER_LABELS = ['Neu','Lernen','Gut','Sehr gut','Sicher'];
+
 function renderGroupList(subj){
   const list = document.getElementById('group-list'); list.innerHTML = '';
+  syncFcFilterUi();
   if(subj.groups.length === 0){
     const p = document.createElement('p'); p.className='empty-state'; p.textContent='Noch keine Themengruppen.'; list.appendChild(p); renderSubjectToc(subj); return;
   }
+  const filtering = fcCardFilterActive();
+  const today = parseLocalDate(getTodayStr());
+  let shownGroups = 0, shownCards = 0;
+
   subj.groups.forEach(group => {
-    const collapsed = collapsedGroups.has(group.id);
+    // Filter aktiv: nur Themen mit Treffern, diese aufgeklappt
+    const visibleCards = filtering ? group.cards.filter(fc => fcCardMatchesFilter(fc, today)) : group.cards;
+    if(filtering && !visibleCards.length) return;
+    shownGroups++; shownCards += visibleCards.length;
+    const collapsed = !filtering && collapsedGroups.has(group.id);
     const boxes = [0,0,0,0,0];
-    group.cards.forEach(c => { const b=(c.box||1)-1; boxes[b]=(boxes[b]||0)+1; });
-    const dueCount = calcGroupDue(group);
-    const pct = calcGroupAccuracy(group);
+    group.cards.forEach(c => { boxes[(c.box||1)-1]++; });
+    const dueCount = calcDueCount(group.cards);
     const totalCards = group.cards.length;
 
     const card = document.createElement('div'); card.className='group-card' + (collapsed ? ' collapsed' : ''); card.dataset.groupId = group.id;
 
     // Header
     const head = document.createElement('div'); head.className='group-header';
-    const headLeft = document.createElement('div'); headLeft.style.cssText='display:flex;align-items:center;gap:10px;flex:1;cursor:pointer;min-width:0;';
+    const headLeft = document.createElement('div'); headLeft.className = 'group-head-left';
+    headLeft.tabIndex = 0; headLeft.setAttribute('role', 'button'); headLeft.setAttribute('aria-expanded', String(!collapsed));
     const toggleIcon = document.createElement('span'); toggleIcon.className='group-toggle-icon'; toggleIcon.textContent=collapsed?'▶':'▼';
     const title = document.createElement('span'); title.className='group-title'; title.textContent=group.name;
-    const meta = document.createElement('span'); meta.className='group-count'; meta.textContent=`${totalCards} Karten${dueCount>0?' · '+dueCount+' fällig':''}`;
+    const meta = document.createElement('span'); meta.className='group-count';
+    meta.textContent = filtering ? `${visibleCards.length} von ${totalCards} Karten` : `${totalCards} Karten${dueCount>0?' · '+dueCount+' fällig':''}`;
     headLeft.append(toggleIcon, title, meta);
-    headLeft.addEventListener('click', () => {
+    const toggle = () => {
+      if(filtering) return;
       if(collapsedGroups.has(group.id)){ collapsedGroups.delete(group.id); } else { collapsedGroups.add(group.id); }
       DB.set('collapsedGroups', [...collapsedGroups]); renderGroupList(subj);
-    });
+    };
+    headLeft.addEventListener('click', toggle);
+    headLeft.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toggle(); } });
 
     const actions = document.createElement('div'); actions.className='group-actions';
-    const addCardBtn = document.createElement('button'); addCardBtn.className='btn-ghost'; addCardBtn.style.cssText='font-size:12px;padding:5px 10px;'; addCardBtn.textContent='+ Karte';
+    const addCardBtn = document.createElement('button'); addCardBtn.className='btn-ghost group-btn'; addCardBtn.textContent='+ Karte';
     addCardBtn.addEventListener('click', () => openFcModal(subj.id, group.id));
-    const learnBtn = document.createElement('button'); learnBtn.className='btn-primary'; learnBtn.style.cssText='font-size:12px;padding:5px 10px;';
-    learnBtn.textContent = dueCount>0 ? `▶ Lernen (${dueCount})` : '▶ Lernsession';
-    learnBtn.addEventListener('click', () => startLearnSession(subj.id, group.id));
+    // Leitner: Standard sind nur die fälligen Karten; ist nichts fällig, alle wiederholen
+    const learnBtn = document.createElement('button'); learnBtn.className = 'btn-primary group-btn';
+    learnBtn.textContent = dueCount > 0 ? `▶ Lernen (${dueCount})` : '↻ Alle wiederholen';
+    learnBtn.title = dueCount > 0 ? `${dueCount} fällige Karte${dueCount!==1?'n':''} lernen` : 'Heute ist nichts fällig – alle Karten wiederholen';
+    learnBtn.disabled = totalCards === 0;
+    learnBtn.addEventListener('click', () => startLearnSession(subj.id, group.id, dueCount > 0 ? 'due' : 'all'));
     const meatball = document.createElement('button'); meatball.className='fc-meatball'; meatball.textContent='⋮';
+    meatball.title = 'Optionen'; meatball.setAttribute('aria-label', `Optionen für ${group.name}`);
     meatball.addEventListener('click', e => { e.stopPropagation(); openGroupMenu(subj, group, meatball); });
     actions.append(addCardBtn, learnBtn, meatball);
     head.append(headLeft, actions);
@@ -466,41 +568,40 @@ function renderGroupList(subj){
 
     // Leitner progress bar
     const progRow = document.createElement('div'); progRow.className='group-progress-row';
-    const colors = ['var(--leitner-1)','var(--leitner-2)','var(--leitner-3)','var(--leitner-4)','var(--leitner-5)'];
-    const labels = ['Neu','Lernen','Gut','Sehr gut','Sicher'];
     const leitnerBar = document.createElement('div'); leitnerBar.className='leitner-bar';
     boxes.forEach((cnt,i) => {
       if(!cnt) return;
       const seg = document.createElement('div'); seg.className='leitner-seg';
-      seg.style.cssText = `width:${totalCards>0?(cnt/totalCards)*100:0}%;background:${colors[i]};`;
+      seg.style.width = `${totalCards>0?(cnt/totalCards)*100:0}%`;
+      seg.style.background = FC_LEITNER_COLORS[i];
       seg.title = `Fach ${i+1}: ${cnt} Karte${cnt!==1?'n':''}`;
       leitnerBar.appendChild(seg);
     });
     const leitnerLegend = document.createElement('div'); leitnerLegend.className='leitner-legend';
-    progRow.title = labels.map((l,i) => boxes[i] ? `${l}: ${boxes[i]}` : '').filter(Boolean).join(' · ');
+    progRow.title = FC_LEITNER_LABELS.map((l,i) => boxes[i] ? `${l}: ${boxes[i]}` : '').filter(Boolean).join(' · ');
     boxes.forEach((cnt,i) => {
       if(!cnt) return;
       const badge = document.createElement('span'); badge.className='leitner-badge';
-      badge.style.setProperty('--lc', colors[i]);
-      badge.textContent = `${labels[i]} (${cnt})`;
+      badge.style.setProperty('--lc', FC_LEITNER_COLORS[i]);
+      badge.textContent = `${FC_LEITNER_LABELS[i]} (${cnt})`;
       leitnerLegend.appendChild(badge);
     });
     progRow.append(leitnerBar, leitnerLegend);
     card.appendChild(progRow);
 
     // Cards list
-    if(!collapsed && group.cards.length > 0){
+    if(!collapsed && visibleCards.length > 0){
       const cardsList = document.createElement('div'); cardsList.className='cards-list';
-      [...group.cards].sort((a,b)=>(b.box||1)-(a.box||1)).forEach(fc => {
-        const row = document.createElement('div'); row.className='fc-row';
+      [...visibleCards].sort((a,b)=>(b.box||1)-(a.box||1)).forEach(fc => {
+        const row = document.createElement('div'); row.className='fc-row'; row.dataset.cardId = fc.id;
         const front = document.createElement('span'); front.className='fc-front';
         front.innerHTML = (fc.hard ? '<span class="fc-hard-star" title="Schwierig">⭐</span> ' : '') + escHtml(fc.front);
-        const back = document.createElement('span'); back.className='fc-back'; back.textContent=fc.back;
-        const boxLabel = labels[(fc.box||1)-1];
+        const back = document.createElement('span'); back.className='fc-back'; back.textContent = fcPlainPreview(fc.back); back.title = fc.back;
         const boxBadge = document.createElement('span'); boxBadge.className='fc-box';
-        boxBadge.style.setProperty('--lc', colors[(fc.box||1)-1]);
-        boxBadge.textContent = boxLabel;
+        boxBadge.style.setProperty('--lc', FC_LEITNER_COLORS[(fc.box||1)-1]);
+        boxBadge.textContent = FC_LEITNER_LABELS[(fc.box||1)-1];
         const meatball = document.createElement('button'); meatball.className='fc-meatball fc-card-meatball'; meatball.textContent='⋮';
+        meatball.title = 'Optionen'; meatball.setAttribute('aria-label', `Optionen für Karte ${fc.front}`);
         meatball.addEventListener('click', e => { e.stopPropagation(); openCardMenu(subj, group, fc, meatball); });
         row.append(front, back, boxBadge, meatball);
         cardsList.appendChild(row);
@@ -511,18 +612,62 @@ function renderGroupList(subj){
     list.appendChild(card);
   });
 
-  // Themengruppe hinzufügen Button am Ende
-  const addGroupWrap = document.createElement('div');
-  addGroupWrap.style.cssText = 'padding:10px 0;';
-  const addGroupBtn2 = document.createElement('button');
-  addGroupBtn2.className = 'btn-ghost';
-  addGroupBtn2.style.cssText = 'width:100%;font-size:13px;';
-  addGroupBtn2.textContent = '+ Themengruppe hinzufügen';
-  addGroupBtn2.addEventListener('click', () => openGroupModal(subj.id));
-  addGroupWrap.appendChild(addGroupBtn2);
-  list.appendChild(addGroupWrap);
+  if(filtering){
+    const info = document.createElement('p');
+    info.className = 'fc-filter-result';
+    info.textContent = shownCards ? `${shownCards} Karte${shownCards!==1?'n':''} in ${shownGroups} ${shownGroups!==1?'Themen':'Thema'} passen zum Filter.` : 'Keine Karte passt zum Filter.';
+    list.prepend(info);
+  } else {
+    // Themengruppe hinzufügen Button am Ende
+    const addGroupWrap = document.createElement('div'); addGroupWrap.className = 'fc-add-group-wrap';
+    const addGroupBtn2 = document.createElement('button'); addGroupBtn2.className = 'btn-ghost fc-add-group-btn';
+    addGroupBtn2.textContent = '+ Themengruppe hinzufügen';
+    addGroupBtn2.addEventListener('click', () => openGroupModal(subj.id));
+    addGroupWrap.appendChild(addGroupBtn2);
+    list.appendChild(addGroupWrap);
+  }
   renderSubjectToc(subj);
 }
+
+// =========================
+// KARTE VERSCHIEBEN (⋮ → „Verschieben nach…“) — in ein anderes Thema,
+// auch eines anderen Fachs. Lernstand (Box, Statistik) bleibt erhalten.
+// =========================
+
+let fcMoveContext = null;
+const fcMoveModal = wireModal('fc-move-modal-overlay', {
+  closeIds: ['fc-move-modal-close', 'fc-move-modal-cancel'],
+  onClose: () => { fcMoveContext = null; },
+});
+
+function openFcMoveModal(subj, group, fc){
+  fcMoveContext = { subjId: subj.id, groupId: group.id, cardId: fc.id };
+  document.getElementById('fc-move-card-front').textContent = fc.front;
+  const sel = document.getElementById('fc-move-target');
+  // Aktuelles Fach zuerst, dann die übrigen (archivierte zuletzt)
+  const ordered = [subj, ...subjects.filter(s => s.id !== subj.id && !isSubjectArchived(s)), ...subjects.filter(s => s.id !== subj.id && isSubjectArchived(s))];
+  sel.innerHTML = ordered.filter(s => s.groups.length).map(s => `<optgroup label="${escHtml(s.name)}">${s.groups.map(g =>
+    `<option value="${s.id}|${g.id}"${g.id === group.id ? ' disabled' : ''}>${escHtml(g.name)}${g.id === group.id ? ' (aktuell)' : ''}</option>`).join('')}</optgroup>`).join('');
+  const firstFree = [...sel.options].find(o => !o.disabled);
+  if(firstFree) sel.value = firstFree.value;
+  document.getElementById('fc-move-modal-save').disabled = !firstFree;
+  fcMoveModal.open();
+  setTimeout(() => sel.focus(), 50);
+}
+
+document.getElementById('fc-move-modal-save').addEventListener('click', () => {
+  const ctx = fcMoveContext; if(!ctx) return;
+  const [toSubjId, toGroupId] = document.getElementById('fc-move-target').value.split('|');
+  const fromSubj = subjects.find(s => s.id === ctx.subjId);
+  const fromGroup = fromSubj?.groups.find(g => g.id === ctx.groupId);
+  const toGroup = subjects.find(s => s.id === toSubjId)?.groups.find(g => g.id === toGroupId);
+  const fc = fromGroup?.cards.find(c => c.id === ctx.cardId);
+  if(!fc || !toGroup || toGroup === fromGroup) return;
+  fromGroup.cards = fromGroup.cards.filter(c => c.id !== fc.id);
+  toGroup.cards.push(fc);
+  saveSubjects(); fcMoveModal.close();
+  renderSubjectList();
+});
 
 // =========================
 // INHALTSVERZEICHNIS (linke Spalte unter „Fächer“)
@@ -563,14 +708,6 @@ function renderSubjectToc(subj){
 
 // Auf dem Handy steht das Verzeichnis über dem Inhalt — dort zugeklappt starten
 if(window.matchMedia('(max-width: 480px)').matches) document.getElementById('fc-toc')?.removeAttribute('open');
-
-function calcGroupDue(group){
-  return calcDueCount(group.cards);
-}
-
-function calcGroupAccuracy(group){
-  return calcAccuracy(group.cards);
-}
 
 // =========================
 // MODALS: FACH ERSTELLEN
@@ -708,7 +845,7 @@ document.getElementById('fc-modal-save').addEventListener('click', () => {
 });
 
 // Fach-Suchfeld
-document.getElementById('fc-subject-search')?.addEventListener('input', () => renderSubjectList());
+document.getElementById('fc-subject-search')?.addEventListener('input', () => renderSubjectList({ detail: false }));
 
 // =========================
 // LEARN SESSION (Panel)
@@ -722,12 +859,16 @@ const learnSession = {
   subjId: null,
   groupIds: [],   // eine Themengruppe oder alle Themen einer Prüfung
   exam: null,     // { id, name } bei Prüfungs-Session, sonst null
+  mode: 'due',    // 'due' = nur fällige · 'all' = alle · 'retry' = gezielte Karten (falsch beantwortete)
   stats: { correct: 0, wrong: 0 },
+  wrongIds: [],   // in dieser Session nicht gewusst/schwer → „Falsche nochmal“
   leitnerChanges: [] // { card, from, to }
 };
 
-function startLearnSession(subjId, groupId){
-  startGroupsLearnSession(subjId, [groupId], null);
+const FC_MODE_LABELS = { due: 'nur fällige', all: 'alle Karten', retry: 'falsche nochmal' };
+
+function startLearnSession(subjId, groupId, mode = 'due'){
+  startGroupsLearnSession(subjId, [groupId], null, { mode });
 }
 
 // Themengruppen der laufenden Session (nur noch existierende)
@@ -750,15 +891,28 @@ function uniqueCardsByFront(cards){
   return cards.filter(c => { const k = fcCardKey(c); if(seen.has(k)) return false; seen.add(k); return true; });
 }
 
-// Gemeinsamer Einstieg: eine Themengruppe (nach Leitner-Box sortiert) oder
-// eine Prüfung = mehrere Themengruppen, bewusst durchgemischt.
-// Liegt für genau diese Themen noch eine gespeicherte Session vor, geht es
+// Warteschlange: Leitner-Regel = nur fällige Karten (Standard), auf Wunsch
+// alle oder gezielt einzelne (cardIds). Themen: nach Box, innerhalb der Box
+// gemischt (sonst lernt man die Reihenfolge mit); Prüfungen: ganz gemischt.
+function buildLearnQueue(groups, exam, mode, cardIds){
+  let cards = groups.flatMap(g => g.cards);
+  if(cardIds){ const ids = new Set(cardIds); cards = cards.filter(c => ids.has(c.id)); }
+  else if(mode === 'due'){ const today = parseLocalDate(getTodayStr()); cards = cards.filter(c => isCardDue(c, today)); }
+  const mixed = shuffleCards(cards);
+  if(!exam) mixed.sort((a,b) => (a.box||1)-(b.box||1)); // sort ist stabil → Mischung je Box bleibt
+  return uniqueCardsByFront(mixed);
+}
+
+// Gemeinsamer Einstieg: eine Themengruppe oder eine Prüfung (mehrere Themen).
+// opts.mode 'due' | 'all', opts.cardIds = gezielte Karten ('retry').
+// Liegt für genau diese Auswahl noch eine gespeicherte Session vor, geht es
 // dort weiter; eine andere offene Session wird nur nach Rückfrage verworfen.
 // opts.fresh: immer neu beginnen („Nochmal“)
 function startGroupsLearnSession(subjId, groupIds, exam, opts = {}){
+  const mode = opts.cardIds ? 'retry' : (opts.mode || 'due');
   const saved = getSavedLearnSession();
   if(saved && !opts.fresh){
-    if(isSameLearnTarget(saved, subjId, groupIds)){ if(resumeLearnSession()) return; }
+    if(isSameLearnTarget(saved, subjId, groupIds, mode)){ if(resumeLearnSession()) return; }
     else {
       const info = savedLearnSessionInfo(saved);
       if(info){
@@ -766,22 +920,28 @@ function startGroupsLearnSession(subjId, groupIds, exam, opts = {}){
           title: 'Offene Session verwerfen?',
           message: `„${info.label}“ (${info.subj.name}) ist noch offen, ${info.rest} von ${info.total} Karten übrig. Startest du eine neue Session, geht dieser Stand verloren. Deine Antworten bis dahin bleiben gespeichert.`,
           confirmText: 'Neue Session starten', danger: true,
-        }).then(ok => { if(ok) startGroupsLearnSession(subjId, groupIds, exam, { fresh: true }); });
+        }).then(ok => { if(ok) startGroupsLearnSession(subjId, groupIds, exam, { ...opts, fresh: true }); });
         return;
       }
     }
   }
   const subj = subjects.find(s => s.id === subjId);
+  if(!subj) return;
   learnSession.groupIds = groupIds;
   const groups = learnSessionGroups(subj);
-  const all = groups.flatMap(g => g.cards);
-  if(!subj || all.length === 0) return;
-  const ordered = exam ? shuffleCards(all) : [...all].sort((a,b) => (a.box||1)-(b.box||1));
-  openLearnSession(subj, groupIds, exam, uniqueCardsByFront(ordered), 0, { correct: 0, wrong: 0 }, []);
+  if(!groups.some(g => g.cards.length)) return;
+  const queue = buildLearnQueue(groups, exam, mode, opts.cardIds);
+  if(!queue.length){
+    hubAlert('Heute nichts fällig 🎉', 'Alle Karten sind erst später wieder dran (Leitner-System). Wenn du trotzdem üben willst: „↻ Alle wiederholen“.');
+    return;
+  }
+  openLearnSession(subj, groupIds, exam, queue, 0, { correct: 0, wrong: 0 }, [], { mode, wrongIds: [] });
 }
 
-function openLearnSession(subj, groupIds, exam, queue, index, stats, leitnerChanges){
+function openLearnSession(subj, groupIds, exam, queue, index, stats, leitnerChanges, extra = {}){
   learnSession.active = true;
+  learnSession.mode = extra.mode || 'all';
+  learnSession.wrongIds = extra.wrongIds || [];
   learnSession.groupIds = groupIds;
   learnSession.queue = queue;
   learnSession.index = index;
@@ -796,7 +956,7 @@ function openLearnSession(subj, groupIds, exam, queue, index, stats, leitnerChan
   document.getElementById('flashcard-layout')?.classList.add('session-open');
   const panel = document.getElementById('fc-session-panel');
   panel.classList.remove('hidden');
-  document.getElementById('fc-session-panel-title').textContent = exam ? 'Prüfung lernen' : 'Lernsession';
+  document.getElementById('fc-session-panel-title').textContent = `${exam ? 'Prüfung lernen' : 'Lernsession'} · ${FC_MODE_LABELS[learnSession.mode]}`;
   // Kontext bleibt während der ganzen Session sichtbar: wofür lerne ich gerade?
   const topicRow = exam
     ? `<div class="fc-session-ctx-row"><span class="fc-session-ctx-lbl">Prüfung</span><span class="fc-session-ctx-group">${escHtml(exam.name)}</span></div>
@@ -841,16 +1001,19 @@ function saveLearnSessionState(paused){
     exam: learnSession.exam,
     queueIds: learnSession.queue.map(c => c.id),
     index: learnSession.index,
+    mode: learnSession.mode,
     stats: learnSession.stats,
+    wrongIds: learnSession.wrongIds,
     leitnerChanges: learnSession.leitnerChanges,
     paused: !!paused,
     savedAt: new Date().toISOString(),
   });
 }
 
-function isSameLearnTarget(saved, subjId, groupIds){
+// Gezielte Wiederholungen ('retry') werden nie „fortgesetzt“, sondern neu gestartet
+function isSameLearnTarget(saved, subjId, groupIds, mode){
   const a = [...saved.groupIds].sort().join('|'), b = [...groupIds].sort().join('|');
-  return saved.subjId === subjId && a === b;
+  return saved.subjId === subjId && a === b && mode !== 'retry' && (saved.mode || 'all') === mode;
 }
 
 // Gespeicherte Reihenfolge auf die aktuellen Karten abbilden (gelöschte
@@ -862,7 +1025,7 @@ function savedLearnSessionInfo(saved){
   const done = saved.queueIds.slice(0, saved.index).map(id => byId.get(id)).filter(Boolean);
   const rest = saved.queueIds.slice(saved.index).map(id => byId.get(id)).filter(Boolean);
   if(!rest.length) return null;
-  const label = saved.exam ? saved.exam.name : (subj.groups.find(g => g.id === saved.groupIds[0])?.name || 'Lernsession');
+  const label = (saved.exam ? saved.exam.name : (subj.groups.find(g => g.id === saved.groupIds[0])?.name || 'Lernsession')) + ` (${FC_MODE_LABELS[saved.mode || 'all']})`;
   return { subj, done, restCards: rest, rest: rest.length, total: done.length + rest.length, label };
 }
 
@@ -871,7 +1034,7 @@ function resumeLearnSession(){
   const info = saved && savedLearnSessionInfo(saved);
   if(!info){ clearSavedLearnSession(); renderResumeBanner(); return false; }
   if(state.activeSubjectId !== info.subj.id){ state.activeSubjectId = info.subj.id; renderSubjectList(); }
-  openLearnSession(info.subj, saved.groupIds, saved.exam, [...info.done, ...info.restCards], info.done.length, saved.stats || {}, saved.leitnerChanges);
+  openLearnSession(info.subj, saved.groupIds, saved.exam, [...info.done, ...info.restCards], info.done.length, saved.stats || {}, saved.leitnerChanges, { mode: saved.mode || 'all', wrongIds: saved.wrongIds || [] });
   return true;
 }
 
@@ -955,20 +1118,20 @@ function jumpToHardCard(subj, group, fc){
   // Aktuelle Lernsession pausieren und direkt zur Karte im Fach springen
   pauseLearnSession();
   state.activeSubjectId = subj.id;
-  renderSubjectList();
-  renderSubjectDetail();
+  resetFcCardFilter();
   collapsedGroups.delete(group.id);
   DB.set('collapsedGroups', [...collapsedGroups]);
-  renderGroupList(subj);
-  setTimeout(() => {
-    const groupCards = document.querySelectorAll('.group-card');
-    groupCards.forEach(gc => {
-      const titleEl = gc.querySelector('.group-title');
-      if(titleEl && titleEl.textContent === group.name){
-        gc.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    });
-  }, 60);
+  renderSubjectList();
+  setTimeout(() => flashFcCardRow(fc.id), 60);
+}
+
+// Kartenzeile in der Liste anspringen und kurz hervorheben
+function flashFcCardRow(cardId){
+  const row = document.querySelector(`.fc-row[data-card-id="${cardId}"]`);
+  if(!row) return;
+  row.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
+  row.classList.add('fc-row-flash');
+  setTimeout(() => row.classList.remove('fc-row-flash'), 1800);
 }
 
 function showLearnCard(){
@@ -994,17 +1157,21 @@ function showLearnCard(){
   inner.classList.remove('flipped');
   learnSession.flipped = false;
   document.getElementById('learn-card-front').textContent = card.front;
-  document.getElementById('learn-card-back').textContent = card.back;
-  document.getElementById('learn-card-hint').textContent = 'Klicken für die Antwort';
+  const back = document.getElementById('learn-card-back');
+  back.innerHTML = fcRenderBack(card.back);
+  back.scrollTop = 0; document.getElementById('learn-card-front').scrollTop = 0;
+  document.getElementById('learn-card-hint').textContent = 'Klicken oder Leertaste: Antwort';
   updateLiveStats();
 }
 
 // Erneutes Klicken dreht die Karte hin und her (Frage nochmal ansehen);
 // die Antwort-Knöpfe bleiben nach dem ersten Umdrehen stehen
-window.flipLearnCard = function(){
+window.flipLearnCard = function(e){
+  // Knöpfe/Links auf der Rückseite (z. B. „Kopieren“ am Code-Block) drehen nicht mit
+  if(e?.target?.closest?.('button, a')) return;
   learnSession.flipped = !learnSession.flipped;
   document.getElementById('learn-card-inner').classList.toggle('flipped', learnSession.flipped);
-  document.getElementById('learn-card-hint').textContent = learnSession.flipped ? 'Klicken für die Frage' : 'Klicken für die Antwort';
+  document.getElementById('learn-card-hint').textContent = learnSession.flipped ? 'Klicken oder Leertaste: Frage · 1/2/3 antworten' : 'Klicken oder Leertaste: Antwort';
   document.getElementById('learn-actions').classList.remove('hidden');
   document.getElementById('learn-actions').style.display = 'flex';
 };
@@ -1057,7 +1224,8 @@ function answerLearn(knew, mode){
     if(realCards.length) saveSubjects();
   }
   if(knew) learnSession.stats.correct++; else learnSession.stats.wrong++;
-  recordAnswer(knew);
+  if(!knew && !learnSession.wrongIds.includes(card.id)) learnSession.wrongIds.push(card.id);
+  recordAnswer(knew, card.id);
   renderTodayProgress();
   if(subj) renderHardCardsPanel(subj);
   learnSession.index++;
@@ -1084,10 +1252,18 @@ function endLearnSession(){
   const up = learnSession.leitnerChanges.filter(c => c.to > c.from).length;
   const down = learnSession.leitnerChanges.filter(c => c.to < c.from).length;
   const leitnerHTML = (up||down) ? `
-    <div style="font-size:12px;color:var(--text-3);margin-top:6px;">
-      ${up ? `<span class="fc-tone" style="--fc-tone-src:var(--leitner-3);">▲ ${up} Karte${up!==1?'n':''} aufgestiegen</span>` : ''}
+    <div class="session-done-leitner">
+      ${up ? `<span class="fc-tone fc-tone-up">▲ ${up} Karte${up!==1?'n':''} aufgestiegen</span>` : ''}
       ${up&&down?' · ':''}
       ${down ? `<span class="fc-tone">▼ ${down} Karte${down!==1?'n':''} zurückgefallen</span>` : ''}
+    </div>` : '';
+  // Nicht gewusst / schwer: zum gezielten Nachlernen auflisten
+  const wrongCards = learnSession.wrongIds.map(id => learnSession.queue.find(c => c.id === id)).filter(Boolean);
+  const wrongHTML = wrongCards.length ? `
+    <div class="session-done-wrong">
+      <div class="session-done-wrong-title">Noch nicht sicher (${wrongCards.length})</div>
+      <ul>${wrongCards.slice(0, 8).map(c => `<li>${escHtml(c.front)}</li>`).join('')}</ul>
+      ${wrongCards.length > 8 ? `<div class="session-done-wrong-more">… und ${wrongCards.length - 8} weitere</div>` : ''}
     </div>` : '';
 
   document.getElementById('learn-card-wrap').style.display = 'none';
@@ -1109,13 +1285,17 @@ function endLearnSession(){
         <div class="session-done-stat"><span class="session-done-val">${pct}%</span><span class="session-done-lbl">Quote</span></div>
       </div>
       ${leitnerHTML}
-      <div class="modal-actions" style="justify-content:center;gap:10px;margin-top:14px;">
-        <button id="learn-restart" class="btn-primary">Nochmal</button>
+      ${wrongHTML}
+      <div class="modal-actions session-done-actions">
+        ${wrongCards.length ? `<button id="learn-retry-wrong" class="btn-primary">↻ Nur diese nochmal</button>` : ''}
+        <button id="learn-restart" class="${wrongCards.length ? 'btn-ghost' : 'btn-primary'}">Alle nochmal</button>
         <button id="learn-close-panel" class="btn-ghost">Schließen</button>
       </div>
     </div>
   `;
-  document.getElementById('learn-restart').addEventListener('click', () => startGroupsLearnSession(learnSession.subjId, learnSession.groupIds, learnSession.exam, { fresh: true }));
+  const wrongIds = wrongCards.map(c => c.id);
+  document.getElementById('learn-retry-wrong')?.addEventListener('click', () => startGroupsLearnSession(learnSession.subjId, learnSession.groupIds, learnSession.exam, { fresh: true, cardIds: wrongIds }));
+  document.getElementById('learn-restart').addEventListener('click', () => startGroupsLearnSession(learnSession.subjId, learnSession.groupIds, learnSession.exam, { fresh: true, mode: 'all' }));
   document.getElementById('learn-close-panel').addEventListener('click', closeSessionPanel);
   renderGlobalStats();
 }
@@ -1138,49 +1318,100 @@ function stopLearnSession(){
   closeSessionPanel();
 }
 
+// Tastatur: Leertaste/Enter = umdrehen, 1/2/3 = Nicht gewusst/Schwer/Gewusst,
+// Esc = pausieren. Nur bei offener Session, nicht in Eingabefeldern/Modals.
+document.addEventListener('keydown', e => {
+  if(!learnSession.active || e.ctrlKey || e.metaKey || e.altKey) return;
+  if(!document.getElementById('view-flashcards')?.classList.contains('active')) return;
+  if(document.getElementById('fc-session-panel').classList.contains('hidden')) return;
+  if(e.target.closest?.('input, textarea, select, [contenteditable="true"]')) return;
+  if(document.querySelector('.modal-backdrop:not(.hidden)')) return;
+  const answering = !document.getElementById('learn-actions').classList.contains('hidden');
+  if(e.key === ' ' || e.key === 'Enter'){
+    // Fokus auf einem anderen Knopf: dessen eigene Aktion nicht überfahren
+    if(e.target.closest?.('button')) return;
+    e.preventDefault(); flipLearnCard();
+  } else if(answering && ['1','2','3'].includes(e.key)){
+    e.preventDefault();
+    answerLearn(e.key === '3', e.key === '1' ? 'repeat' : e.key === '2' ? 'hard' : 'easy');
+  } else if(e.key === 'Escape'){
+    e.preventDefault(); pauseLearnSession();
+  }
+});
+
 document.getElementById('fc-session-panel-close').addEventListener('click', pauseLearnSession);
 document.getElementById('fc-session-pause')?.addEventListener('click', pauseLearnSession);
 document.getElementById('fc-session-end')?.addEventListener('click', stopLearnSession);
 
 // =========================
-// EXPORT
+// EXPORT — als Markdown im Import-Format (AI documentation/flashcards-import-
+// format.md), damit Exporte wieder importiert, geteilt oder an Claude gegeben
+// werden können. Lerndaten (Boxen, Statistik) bleiben bewusst draußen.
+// Prüfungen werden nicht mit exportiert (das Format kennt nur eine pro Fach-Block).
 // =========================
 
-function stripCardForExport(c){
-  return { id: c.id, front: c.front, back: c.back };
+function fcSafeFileName(name){
+  return String(name || 'export').replace(/[\\/:*?"<>|\u0000-\u001f]+/g, '-').replace(/\s+/g, ' ').trim().slice(0, 80) || 'export';
 }
 
-function exportSubject(subj){
-  const data = JSON.stringify({
-    name: subj.name,
-    teacher: subj.teacher || '',
-    groups: subj.groups.map(g => ({ name: g.name, cards: g.cards.map(stripCardForExport) }))
-  }, null, 2);
-  const blob = new Blob([data], {type:'application/json'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href=url; a.download=`${subj.name}.json`; a.click();
-  URL.revokeObjectURL(url);
+function fcDownloadFile(name, text, type = 'text/markdown'){
+  const url = URL.createObjectURL(new Blob([text], { type: type + ';charset=utf-8' }));
+  const a = document.createElement('a'); a.href = url; a.download = fcSafeFileName(name.replace(/\.md$/, '')) + '.md'; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-function exportGroup(subj, group){
-  const data = JSON.stringify({
-    subjectName: subj.name,
-    group: { name: group.name, cards: group.cards.map(stripCardForExport) }
-  }, null, 2);
-  const blob = new Blob([data], {type:'application/json'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href=url; a.download=`${subj.name}_${group.name}.json`; a.click();
-  URL.revokeObjectURL(url);
+// Überschriften #–### in Rückseiten (außerhalb von Code) würden beim
+// Re-Import als neue Karte/Gruppe gelesen → zu #### herabstufen
+function fcExportBack(back){
+  let fence = null;
+  return String(back || '').replace(/\r\n?/g, '\n').split('\n').map(line => {
+    const f = line.match(/^\s*(```|~~~)/);
+    if(f){ if(!fence) fence = f[1]; else if(line.trim().startsWith(fence)) fence = null; return line; }
+    return !fence && /^#{1,3}\s/.test(line) ? line.replace(/^#{1,3}/, '####') : line;
+  }).join('\n');
 }
 
-function exportCard(fc){
-  const data = JSON.stringify(stripCardForExport(fc), null, 2);
-  const blob = new Blob([data], {type:'application/json'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href=url; a.download=`${fc.front.slice(0,30)}.json`; a.click();
-  URL.revokeObjectURL(url);
+function fcExportMarkdown(subj, groups, onlyCard = null){
+  const out = [`# ${subj.name}`];
+  if(subj.teacher) out.push(`Lehrer: ${subj.teacher}`);
+  groups.forEach(g => {
+    out.push('', `## ${g.name}`);
+    (onlyCard ? [onlyCard] : g.cards).forEach(c => {
+      out.push('', `### ${String(c.front || '').replace(/\s*\n\s*/g, ' ').trim()}`, fcExportBack(c.back));
+    });
+  });
+  return out.join('\n') + '\n';
 }
 
+function exportSubject(subj){ fcDownloadFile(subj.name, fcExportMarkdown(subj, subj.groups)); }
+function exportGroup(subj, group){ fcDownloadFile(`${subj.name} - ${group.name}`, fcExportMarkdown(subj, [group])); }
+function exportCard(subj, group, fc){ fcDownloadFile(String(fc.front).slice(0, 40), fcExportMarkdown(subj, [group], fc)); }
+
+// =========================
+// MARKDOWN-RÜCKSEITE
+// Importierte Rückseiten sind roher Markdown (Listen, **fett**, Code,
+// Tabellen, Schaubilder in Code-Blöcken). Gerendert mit dem Markdown-
+// Renderer der Anleitungen (guides.js: renderMarkdown, nur lesend genutzt —
+// ohne Kapitel-ID, also ohne Lesezeichen-Knöpfe). Escapen übernimmt er.
+// =========================
+
+function fcRenderBack(text){
+  const html = typeof renderMarkdown === 'function'
+    ? renderMarkdown(text)
+    : `<p>${escHtml(text || '').replace(/\n/g, '<br>')}</p>`;
+  // Nur ein schlichter Absatz → zentriert wie bisher, sonst linksbündig lesen
+  const rich = /<(ul|ol|pre|table|h\d|blockquote|div)/.test(html);
+  return `<div class="fc-md${rich ? ' fc-md-rich' : ''}">${html}</div>`;
+}
+
+// Kurzvorschau für die Kartenliste: Markdown-Zeichen weg, eine Zeile
+function fcPlainPreview(text){
+  return String(text || '')
+    .replace(/```[\w+#.-]*\n?/g, '').replace(/~~~/g, '')
+    .replace(/^\s{0,3}(#{1,6}|>|[-*+]|\d+\.)\s+/gm, '')
+    .replace(/(\*\*|__|\*|_|~~|==|`)/g, '')
+    .replace(/\|/g, ' ').replace(/\s+/g, ' ').trim();
+}
 
 // =========================
 // SUCHQUELLE (js/hub-search.js, AI documentation/search.md) — nur lesen;
@@ -1192,7 +1423,7 @@ registerSearchProvider({
     id: fc.id, title: fc.front || '(leere Karte)', sub: `${subj.name} › ${group.name}`, text: fc.back || '',
     open: () => {
       showView('flashcards');
-      closeSessionPanel();
+      if(learnSession.active) pauseLearnSession(); else closeSessionPanel();
       state.activeSubjectId = subj.id;
       renderSubjectList();
       renderSubjectDetail();

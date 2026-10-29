@@ -143,7 +143,7 @@
 }
 
 /* Karteikarten: Fachtitel und Hinweise direkt auf dem Holz */
-[data-pages-style="rpg"] :is(#subject-detail-title, #subject-detail-meta, #flashcard-placeholder, #group-list > .empty-state) {
+[data-pages-style="rpg"] :is(#subject-detail-title, #subject-detail-meta, #flashcard-placeholder, #group-list > .empty-state, .fc-filter-result) {
   color: var(--sage-fg) !important;
   text-shadow: 0 1px 2px color-mix(in srgb, var(--shadow-tint) 80%, transparent);
 }
@@ -168,6 +168,12 @@
 /* Rückseite: Tinte statt --sage-fg (wäre hell auf hellem Papier), leicht
    grün getönt, damit man Vorder- und Rückseite unterscheidet */
 [data-pages-style="rpg"] #learn-card-back { background: color-mix(in srgb, var(--sage) 16%, var(--surface-solid)); color: var(--text); }
+/* Kartenfilter: schmaler Zettel, Inhalt weg von der Kante; aktiver Filter = Messing */
+[data-pages-style="rpg"] #view-flashcards #fc-filter-bar { padding: 16px 24px 14px; --tilt: 0.2deg; }
+[data-pages-style="rpg"] #fc-filter-btn.active { box-shadow: 0 0 0 2px var(--brass-hi), 0 0 10px color-mix(in srgb, var(--amber) 55%, transparent); }
+/* „Alle mischen“ auf der Ledertafel: Messing-Umriss statt dunkler Ghost-Knopf */
+[data-pages-style="rpg"] .fc-exam-learn-all { background: transparent; border: 1px solid color-mix(in srgb, var(--brass) 70%, transparent); color: var(--brass-hi); }
+[data-pages-style="rpg"] .fc-exam-learn-all:not(:disabled):hover { background: color-mix(in srgb, var(--brass) 18%, transparent); color: var(--sheen); }
 /* Pausierte Session: Zettel, Inhalt weg von der gerissenen Kante */
 [data-pages-style="rpg"] #view-flashcards #fc-resume-banner { padding: 20px 28px 18px; --tilt: -0.3deg; }
 /* Nachts ist das Papier gedimmt — die Lernkarte mit, sonst leuchtet sie

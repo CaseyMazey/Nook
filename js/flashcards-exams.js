@@ -47,7 +47,8 @@ function renderExamList(subj){
 
   exams.forEach(exam => {
     const groups = examGroups(subj, exam);
-    const cards = groups.flatMap(g => g.cards);
+    // Wie in der Session: gleiche Frage in zwei Themen zählt einmal
+    const cards = uniqueCardsByFront(groups.flatMap(g => g.cards));
     const due = calcDueCount(cards);
 
     const card = document.createElement('div');
@@ -61,10 +62,12 @@ function renderExamList(subj){
         <div class="fc-exam-topics">${groups.map(g => `<span class="fc-exam-topic">${escHtml(g.name)}</span>`).join('')}</div>
       </div>
       <div class="fc-exam-actions">
-        <button class="btn-primary fc-exam-learn" ${cards.length ? '' : 'disabled'}>▶ Gemischt lernen</button>
-        <button class="fc-meatball" title="Optionen">⋮</button>
+        ${due ? `<button class="btn-primary fc-exam-learn" data-mode="due" title="Nur die heute fälligen Karten, gemischt">▶ Fällige lernen (${due})</button>` : ''}
+        <button class="${due ? 'btn-ghost fc-exam-learn-all' : 'btn-primary fc-exam-learn'}" data-mode="all" ${cards.length ? '' : 'disabled'} title="Alle Karten der Prüfung gemischt – zur Prüfungsvorbereitung">${due ? 'Alle mischen' : '▶ Alle gemischt lernen'}</button>
+        <button class="fc-meatball" title="Optionen" aria-label="Optionen für ${escHtml(exam.name)}">⋮</button>
       </div>`;
-    card.querySelector('.fc-exam-learn').addEventListener('click', () => startGroupsLearnSession(subj.id, exam.groupIds, { id: exam.id, name: exam.name }));
+    card.querySelectorAll('[data-mode]').forEach(btn => btn.addEventListener('click', () =>
+      startGroupsLearnSession(subj.id, exam.groupIds, { id: exam.id, name: exam.name }, { mode: btn.dataset.mode })));
     card.querySelector('.fc-meatball').addEventListener('click', e => { e.stopPropagation(); openExamMenu(subj, exam, e.currentTarget); });
     wrap.appendChild(card);
   });

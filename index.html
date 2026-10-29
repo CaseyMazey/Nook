@@ -811,16 +811,30 @@
               <div id="flashcard-subject-view" class="hidden">
                 <div id="subject-detail-header">
                   <div>
-                    <h2 id="subject-detail-title" class="view-title" style="font-size:20px;margin:0;"></h2>
-                    <div id="subject-detail-meta" style="font-size:13px;color:var(--text-3);margin-top:2px;"></div>
+                    <h2 id="subject-detail-title" class="view-title"></h2>
+                    <div id="subject-detail-meta"></div>
                   </div>
-                  <div style="display:flex;gap:8px;align-items:center;">
-                    <button class="btn-ghost" id="fc-filter-btn" style="font-size:13px;display:flex;align-items:center;gap:5px;">
-                      <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M4 8h8M6 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                  <div class="fc-detail-actions">
+                    <button class="btn-ghost" id="fc-filter-btn" aria-controls="fc-filter-bar" aria-expanded="false" title="Karten nach Lernstand oder Text filtern">
+                      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 4h12M4 8h8M6 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
                       Filter
                     </button>
                     <button class="btn-primary" id="add-group-btn">+ Themengruppe</button>
                   </div>
+                </div>
+                <!-- Kartenfilter (flashcards.js: fcCardFilter) -->
+                <div id="fc-filter-bar" class="panel hidden">
+                  <div class="fc-subject-search-wrap fc-filter-search">
+                    <svg class="fc-search-icon" width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" stroke-width="1.5"/><path d="M10 10l3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                    <input id="fc-card-search" class="fc-subject-search-input" type="search" placeholder="Karten in diesem Fach durchsuchen…" aria-label="Karten durchsuchen">
+                  </div>
+                  <div class="fc-filter-chips" role="group" aria-label="Nach Lernstand filtern">
+                    <button class="fc-filter-chip active" data-filter="all">Alle</button>
+                    <button class="fc-filter-chip" data-filter="due">Fällig</button>
+                    <button class="fc-filter-chip" data-filter="hard">⭐ Schwierig</button>
+                    <button class="fc-filter-chip" data-filter="new">Neu (Box 1)</button>
+                  </div>
+                  <button class="btn-ghost fc-filter-reset">Zurücksetzen</button>
                 </div>
                 <!-- Prüfungen: js/flashcards-exams.js -->
                 <div id="fc-exam-list"></div>
@@ -833,7 +847,7 @@
             <div id="fc-session-panel" class="hidden">
               <div class="fc-session-panel-head">
                 <span id="fc-session-panel-title">Lernsession</span>
-                <button class="modal-x" id="fc-session-panel-close" title="Pausieren – später fortsetzen">✕</button>
+                <button class="modal-x" id="fc-session-panel-close" title="Pausieren – später fortsetzen (Esc)" aria-label="Session pausieren">✕</button>
               </div>
               <div class="fc-session-body">
                 <!-- Fach · Lehrer · Themengruppe -->
@@ -862,18 +876,18 @@
                   <div id="learn-live-stats"></div>
                   <div id="learn-motivation"></div>
                   <div id="learn-card-wrap">
-                    <div id="learn-card" onclick="flipLearnCard()">
-                      <div id="learn-card-inner">
+                    <div id="learn-card" onclick="flipLearnCard(event)" tabindex="0" role="button" aria-label="Karte umdrehen (Leertaste)">
+                      <div id="learn-card-inner" aria-live="polite">
                         <div id="learn-card-front"></div>
                         <div id="learn-card-back"></div>
                       </div>
-                      <div id="learn-card-hint">Klicken für die Antwort</div>
+                      <div id="learn-card-hint">Klicken oder Leertaste: Antwort</div>
                     </div>
                   </div>
                   <div id="learn-actions" class="hidden" style="display:flex;">
-                    <button id="learn-didnt" class="btn-ghost fc-tone"><span class="learn-btn-main">✗ Nicht gewusst</span><span class="learn-btn-sub">zurück in Box 1</span></button>
-                    <button id="learn-hard" class="btn-ghost"><span class="learn-btn-main">∼ Schwer</span><span class="learn-btn-sub">eine Box zurück</span></button>
-                    <button id="learn-knew" class="btn-primary"><span class="learn-btn-main">✓ Gewusst</span><span class="learn-btn-sub">eine Box weiter</span></button>
+                    <button id="learn-didnt" class="btn-ghost fc-tone" title="Taste 1"><span class="learn-btn-main">✗ Nicht gewusst <kbd>1</kbd></span><span class="learn-btn-sub">zurück in Box 1</span></button>
+                    <button id="learn-hard" class="btn-ghost" title="Taste 2"><span class="learn-btn-main">∼ Schwer <kbd>2</kbd></span><span class="learn-btn-sub">eine Box zurück</span></button>
+                    <button id="learn-knew" class="btn-primary" title="Taste 3"><span class="learn-btn-main">✓ Gewusst <kbd>3</kbd></span><span class="learn-btn-sub">eine Box weiter</span></button>
                   </div>
                   <div id="learn-done" class="hidden"></div>
                 </div>
@@ -2350,6 +2364,25 @@
       <div class="modal-actions">
         <button id="fc-exam-modal-cancel" class="btn-ghost">Abbrechen</button>
         <button id="fc-exam-modal-save" class="btn-primary">Erstellen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Karte verschieben (flashcards.js: openFcMoveModal) -->
+  <div id="fc-move-modal-overlay" class="modal-backdrop hidden">
+    <div class="modal-box" style="width:420px;">
+      <div class="modal-head"><span>Karte verschieben</span><button class="modal-x" id="fc-move-modal-close">✕</button></div>
+      <div class="modal-row">
+        <div class="modal-hint" id="fc-move-card-front"></div>
+      </div>
+      <div class="modal-row">
+        <label for="fc-move-target">Nach Themengruppe</label>
+        <select class="modal-select" id="fc-move-target"></select>
+        <div class="modal-hint">Lernstand und Statistik der Karte bleiben erhalten.</div>
+      </div>
+      <div class="modal-actions">
+        <button id="fc-move-modal-cancel" class="btn-ghost">Abbrechen</button>
+        <button id="fc-move-modal-save" class="btn-primary">Verschieben</button>
       </div>
     </div>
   </div>

@@ -266,9 +266,18 @@ Dadurch ist jederzeit sichtbar, wie weit ein Thema gelernt wurde.
 
 # Lernsession
 
-Eine Lernsession wird für eine einzelne Themengruppe gestartet.
+Eine Lernsession wird für eine Themengruppe oder eine Prüfung (mehrere Themen) gestartet.
 
-Dabei werden alle Karten dieser Gruppe nacheinander gelernt. Karten mit gleicher Vorderseite (Groß-/Kleinschreibung und Leerraum egal) kommen nur einmal; das betrifft vor allem Prüfungen, in denen dieselbe Frage in zwei Themen steckt. Die Antwort gilt dann für alle gleichen Karten der Session.
+Auswahl der Karten (Leitner-Regel):
+
+- **Standard: nur fällige Karten** – „▶ Lernen (n)“ an der Gruppe, „▶ Fällige lernen (n)“ an der Prüfung.
+- **Alle Karten** – ist nichts fällig, wird der Knopf zu „↻ Alle wiederholen“; außerdem im ⋮-Menü der Gruppe und als „Alle mischen“ an der Prüfung (Prüfungsvorbereitung).
+- **Nur die falschen** – „↻ Nur diese nochmal“ im Sessionabschluss.
+- Ist nichts fällig und wird trotzdem „fällig“ gestartet, kommt ein Hinweis statt einer leeren Session.
+
+Reihenfolge: Themen nach Leitner-Box, innerhalb einer Box gemischt (sonst lernt man die Reihenfolge mit); Prüfungen ganz gemischt.
+
+Fälligkeit und „heute“ richten sich nach dem lokalen Kalendertag (nicht UTC). Karten mit gleicher Vorderseite (Groß-/Kleinschreibung und Leerraum egal) kommen nur einmal; das betrifft vor allem Prüfungen, in denen dieselbe Frage in zwei Themen steckt. Die Antwort gilt dann für alle gleichen Karten der Session.
 
 Der Stand (Reihenfolge, Position, Richtig/Falsch) wird nach jeder Antwort unter `fc_learn_session` gespeichert:
 
@@ -306,6 +315,10 @@ Eine Karte wird zunächst mit ihrer Vorderseite angezeigt.
 Durch Anklicken wird sie umgedreht. Erneutes Anklicken dreht sie zurück (Frage nochmal lesen), beliebig oft.
 
 Erst nach dem ersten Umdrehen erscheinen die Antwortmöglichkeiten; sie bleiben dann stehen.
+
+Die Rückseite wird als Markdown dargestellt (Listen, **fett**, Tabellen, Code-Blöcke für Schaubilder) – mit dem Renderer der Anleitungen (`renderMarkdown` aus `guides.js`, nur lesend genutzt). In der Kartenliste steht eine einzeilige Textvorschau ohne Markdown-Zeichen.
+
+Tastatur: Leertaste/Enter dreht um, 1/2/3 = Nicht gewusst/Schwer/Gewusst, Esc pausiert. Die Karte ist fokussierbar.
 
 ---
 
@@ -379,8 +392,9 @@ Sie zeigt:
 - falsche Antworten
 - Erfolgsquote
 - Veränderungen der Leitner-Boxen
+- die nicht gewussten/schweren Karten als Liste
 
-Von dort aus kann die Session erneut gestartet oder geschlossen werden.
+Von dort: „↻ Nur diese nochmal“ (nur die falschen), „Alle nochmal“ oder schließen.
 
 ---
 
@@ -388,8 +402,8 @@ Von dort aus kann die Session erneut gestartet oder geschlossen werden.
 
 Für jeden Kalendertag werden gespeichert:
 
-- gelernte Karten
-- Wiederholungen
+- gelernte Karten (verschiedene Karten an diesem Tag)
+- Wiederholungen (alle Antworten, auch mehrfach dieselbe Karte)
 - richtige Antworten
 - falsche Antworten
 
@@ -429,22 +443,33 @@ Die Suche filtert die Liste sofort während der Eingabe.
 Fächer
 
 - bearbeiten
-- exportieren
+- ins Archiv / aus dem Archiv
+- exportieren (Markdown)
 - löschen
 
 Themengruppen
 
+- alle Karten wiederholen
 - umbenennen
-- exportieren
+- exportieren (Markdown)
 - löschen
 
 Karteikarten
 
 - bearbeiten
+- verschieben nach … (anderes Thema, auch anderes Fach; Lernstand bleibt)
 - duplizieren
 - schwierig markieren
-- exportieren
+- exportieren (Markdown)
 - löschen
+
+Löschen fragt immer nach (Nook-Dialog, nicht der Browser-Dialog).
+
+---
+
+# Kartenfilter
+
+„Filter“ im Fachkopf öffnet eine Leiste: Textsuche in Vorder- und Rückseite sowie Alle / Fällig / Schwierig / Neu (Box 1). Gefiltert werden nur die Kartenlisten des Fachs, Themen ohne Treffer werden ausgeblendet, Themen mit Treffern aufgeklappt. Reiner Anzeigefilter, wird beim Fachwechsel zurückgesetzt.
 
 ---
 
@@ -456,11 +481,9 @@ Exportiert werden können:
 - Themengruppe
 - gesamtes Fach
 
-Exportiert wird als JSON.
+Exportiert wird als Markdown im Import-Format (`flashcards-import-format.md`), damit sich Exporte wieder importieren, teilen oder an Claude geben lassen. Überschriften `#`–`###` in Rückseiten werden dabei zu `####`, damit der Re-Import sie nicht als neue Karte liest.
 
-Dabei werden nur die eigentlichen Lerndaten exportiert.
-
-Persönliche Statistiken werden bewusst nicht übernommen.
+Exportiert werden nur Fach, Lehrer, Themen, Vorder- und Rückseiten. Persönliche Statistiken und Leitner-Boxen werden bewusst nicht übernommen, Prüfungen ebenfalls nicht.
 
 ---
 
@@ -584,9 +607,7 @@ Neue Funktionen sollen nicht:
 
 Geplante Erweiterungen:
 
-- Import der JSON-Exportdateien
 - Bilder auf Karteikarten
-- Markdown-Unterstützung
 - Lernziele
 - tägliche Erinnerungen
 - Statistiken über längere Zeiträume
