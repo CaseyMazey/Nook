@@ -294,9 +294,9 @@ Die Lernansicht besteht aus:
 
 Eine Karte wird zunächst mit ihrer Vorderseite angezeigt.
 
-Durch Anklicken wird sie umgedreht.
+Durch Anklicken wird sie umgedreht. Erneutes Anklicken dreht sie zurück (Frage nochmal lesen), beliebig oft.
 
-Erst danach erscheinen die Antwortmöglichkeiten.
+Erst nach dem ersten Umdrehen erscheinen die Antwortmöglichkeiten; sie bleiben dann stehen.
 
 ---
 
@@ -309,6 +309,8 @@ Nach dem Umdrehen kann der Benutzer auswählen:
 - Nicht gewusst
 
 Die Auswahl beeinflusst automatisch die Leitner-Stufe.
+
+Die Knöpfe heißen genau so (nicht „Leicht“/„Wiederholen“ — man denkt beim Lernen in gewusst/nicht gewusst) und zeigen darunter klein, was mit der Karte passiert. „Schwer“ zählt in der Statistik als falsch.
 
 ---
 

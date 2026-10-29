@@ -214,7 +214,9 @@
 #learn-card-hint { position: absolute; bottom: 8px; width: 100%; text-align: center; font-size: calc(11px * var(--core-font-scale)); color: var(--text-3); pointer-events: none; }
 
 #learn-actions { gap: 8px; flex-shrink: 0; }
-#learn-actions > button { flex: 1; font-size: calc(13px * var(--core-font-scale)); }
+#learn-actions > button { flex: 1; font-size: calc(13px * var(--core-font-scale)); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; line-height: 1.25; }
+.learn-btn-main { font-weight: 600; }
+.learn-btn-sub { font-size: calc(10.5px * var(--core-font-scale)); font-weight: 400; opacity: .72; }
 #learn-done { overflow-y: auto; min-height: 0; }
 #learn-actions.hidden { display: none !important; }
 

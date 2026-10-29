@@ -864,15 +864,16 @@ function showLearnCard(){
   learnSession.flipped = false;
   document.getElementById('learn-card-front').textContent = card.front;
   document.getElementById('learn-card-back').textContent = card.back;
-  document.getElementById('learn-card-hint').textContent = 'Klicken zum Umdrehen';
+  document.getElementById('learn-card-hint').textContent = 'Klicken für die Antwort';
   updateLiveStats();
 }
 
+// Erneutes Klicken dreht die Karte hin und her (Frage nochmal ansehen);
+// die Antwort-Knöpfe bleiben nach dem ersten Umdrehen stehen
 window.flipLearnCard = function(){
-  if(learnSession.flipped) return;
-  learnSession.flipped = true;
-  document.getElementById('learn-card-inner').classList.add('flipped');
-  document.getElementById('learn-card-hint').textContent = '';
+  learnSession.flipped = !learnSession.flipped;
+  document.getElementById('learn-card-inner').classList.toggle('flipped', learnSession.flipped);
+  document.getElementById('learn-card-hint').textContent = learnSession.flipped ? 'Klicken für die Frage' : 'Klicken für die Antwort';
   document.getElementById('learn-actions').classList.remove('hidden');
   document.getElementById('learn-actions').style.display = 'flex';
 };
