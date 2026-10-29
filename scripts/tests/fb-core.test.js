@@ -67,3 +67,30 @@ test('makeQuestion: Set mit 2 Karten ergibt 2 Optionen', () => {
   const deck = [{ id: 'a', front: 'A', back: 'x' }, { id: 'b', front: 'B', back: 'y' }];
   assert.equal(FBCore.makeQuestion(deck[0], deck, rng(3)).options.length, 2);
 });
+
+// ── Kampf-Formeln ──
+
+test('comboMultiplier steigt um 0.5 und deckelt bei x5', () => {
+  assert.equal(FBCore.comboMultiplier(1), 1);
+  assert.equal(FBCore.comboMultiplier(2), 1.5);
+  assert.equal(FBCore.comboMultiplier(9), 5);
+  assert.equal(FBCore.comboMultiplier(30), 5);
+  assert.equal(FBCore.comboMultiplier(0), 1);
+});
+
+test('calcDamage: kritisch unter 5 s gibt +50 %', () => {
+  assert.deepEqual(FBCore.calcDamage(1, 4999), { amount: 15, crit: true });
+  assert.deepEqual(FBCore.calcDamage(1, 5000), { amount: 10, crit: false });
+  assert.deepEqual(FBCore.calcDamage(9, 1000), { amount: 75, crit: true });
+});
+
+test('enemyStats skaliert nur im Endlosmodus', () => {
+  assert.deepEqual(FBCore.enemyStats('normal', 6, 'fixed'), { hp: 30, atk: 15, xp: 10 });
+  assert.deepEqual(FBCore.enemyStats('normal', 6, 'endless'), { hp: 45, atk: 23, xp: 10 });
+});
+
+test('levelFromXp: Level L braucht 100 × L XP', () => {
+  assert.deepEqual(FBCore.levelFromXp(0),   { level: 1, intoLevel: 0,  needed: 100 });
+  assert.deepEqual(FBCore.levelFromXp(150), { level: 2, intoLevel: 50, needed: 200 });
+  assert.deepEqual(FBCore.levelFromXp(300), { level: 3, intoLevel: 0,  needed: 300 });
+});

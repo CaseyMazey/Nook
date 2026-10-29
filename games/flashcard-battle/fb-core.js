@@ -70,6 +70,40 @@
     return { cardId: card.id, prompt: card.front, options, correctIndex: options.indexOf(card.back) };
   }
 
-  window.FBCore = { CONFIG, shuffle, buildDeck, makeQuestion };
+  // ── Kampf-Formeln ──
+
+  function comboMultiplier(streak) {
+    if (streak < 1) return 1;
+    return Math.min(1 + CONFIG.comboStep * (streak - 1), CONFIG.comboMax);
+  }
+
+  // Kritisch, wenn innerhalb des Zeitfensters richtig geantwortet wurde
+  function calcDamage(streak, answerMs) {
+    const crit = answerMs < CONFIG.critWindowMs;
+    const amount = Math.round(CONFIG.baseDamage * comboMultiplier(streak) * (crit ? CONFIG.critBonus : 1));
+    return { amount, crit };
+  }
+
+  // Nur im Endlosmodus werden HP und Angriff pro Raum stärker, XP bleibt gleich
+  function enemyStats(tier, room, mode) {
+    const base = CONFIG.enemy[tier];
+    const scale = mode === 'endless' ? 1 + CONFIG.endlessScale * (room - 1) : 1;
+    return { hp: Math.round(base.hp * scale), atk: Math.round(base.atk * scale), xp: base.xp };
+  }
+
+  function levelFromXp(xp) {
+    let level = 1;
+    let rest = Math.max(0, xp || 0);
+    while (rest >= CONFIG.xpPerLevel * level) {
+      rest -= CONFIG.xpPerLevel * level;
+      level++;
+    }
+    return { level, intoLevel: rest, needed: CONFIG.xpPerLevel * level };
+  }
+
+  window.FBCore = {
+    CONFIG, shuffle, buildDeck, makeQuestion,
+    comboMultiplier, calcDamage, enemyStats, levelFromXp
+  };
 
 })();
