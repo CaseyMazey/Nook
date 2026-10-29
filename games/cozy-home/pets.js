@@ -207,6 +207,12 @@ function checkUnlock(unlock) {
             return total >= unlock.value;
         }
 
+        case "counter": {
+            // Zählerstand, den ein Spiel unter gameHighscores[target].counters führt
+            const count = scores[unlock.target]?.counters?.[unlock.counter] ?? 0;
+            return count >= unlock.value;
+        }
+
         // Weitere Typen hier ergänzen:
         // case "achievement":  return DB.get('achievements', {})[unlock.target] === true;
         // case "questCompleted": ...
