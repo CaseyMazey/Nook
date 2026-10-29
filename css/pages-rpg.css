@@ -1028,7 +1028,7 @@
 [data-pages-style="rpg"] .fc-stat-total .fc-stat-label { color: color-mix(in srgb, var(--brass-hi) 88%, transparent); }
 [data-pages-style="rpg"] .fc-stat-total :is(.fc-stat-value, .fc-stat-label) { text-shadow: 0 -1px 0 color-mix(in srgb, var(--deco-ink) 70%, transparent); }
 
-[data-pages-style="rpg"] .fc-stat-due {
+[data-pages-style="rpg"] .fc-stat-today {
   border: 1px solid color-mix(in srgb, var(--deco-ink) 80%, transparent);
   background:
     var(--rivet) left 7px center / 8px 8px no-repeat,
@@ -1041,9 +1041,9 @@
   outline-offset: -5px;
   padding-inline: 24px;
 }
-[data-pages-style="rpg"] .fc-stat-due :is(.fc-stat-value, .fc-stat-icon) { color: color-mix(in srgb, var(--deco-orange) 60%, var(--sheen)); }
-[data-pages-style="rpg"] .fc-stat-due .fc-stat-label { color: color-mix(in srgb, var(--sheen) 62%, var(--amber)); }
-[data-pages-style="rpg"] .fc-stat-due :is(.fc-stat-value, .fc-stat-label) { text-shadow: 0 -1px 0 color-mix(in srgb, var(--deco-ink) 70%, transparent); }
+[data-pages-style="rpg"] .fc-stat-today :is(.fc-stat-value, .fc-stat-icon) { color: color-mix(in srgb, var(--deco-orange) 60%, var(--sheen)); }
+[data-pages-style="rpg"] .fc-stat-today .fc-stat-label { color: color-mix(in srgb, var(--sheen) 62%, var(--amber)); }
+[data-pages-style="rpg"] .fc-stat-today :is(.fc-stat-value, .fc-stat-label) { text-shadow: 0 -1px 0 color-mix(in srgb, var(--deco-ink) 70%, transparent); }
 
 [data-pages-style="rpg"] .fc-stat-rate {
   border: 1px solid var(--brass-lo);

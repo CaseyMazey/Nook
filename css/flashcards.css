@@ -19,7 +19,7 @@
 .fc-stat-icon { width: 18px; height: 18px; flex-shrink: 0; color: var(--sage-dark); }
 .fc-stat-value { font-size: calc(20px * var(--core-font-scale)); font-weight: 700; color: var(--text); font-family: var(--mono); line-height: 1.1; }
 .fc-stat-label { font-size: calc(12px * var(--core-font-scale)); color: var(--text-3); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fc-stat-due :is(.fc-stat-value, .fc-stat-icon) { color: color-mix(in srgb, var(--fc-danger) 62%, var(--text)); }
+.fc-stat-today :is(.fc-stat-value, .fc-stat-icon) { color: color-mix(in srgb, var(--fc-danger) 62%, var(--text)); }
 
 /* Layout: 3 Spalten */
 #flashcard-layout { display: grid; grid-template-columns: 248px 1fr; gap: 18px; transition: grid-template-columns 300ms ease; align-items: start; }

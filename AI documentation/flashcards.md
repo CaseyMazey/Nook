@@ -64,8 +64,10 @@ Am oberen Rand befindet sich eine globale Statistik.
 Sie zeigt:
 
 - Karten insgesamt
-- heute fällige Karten
+- heute schon gelernt (Antworten heute, über alle Fächer)
 - Erfolgsquote
+
+Bewusst nicht „heute fällig“: eine große Zahl offener Karten wirkt wie ein Berg, das heute Geschaffte motiviert. Fällige Karten stehen weiterhin je Fach, Thema und im Inhaltsverzeichnis.
 
 Bewusst ohne Lernserie (Streak): Ein Zähler, der nach einem verpassten Tag auf null fällt, setzt unter Druck statt zu motivieren. Bitte nicht wieder einführen.
 
@@ -101,7 +103,7 @@ Die Fachliste ist kompakt (Name + fällig-Zahl, darunter Lehrer, Kartenzahl und 
 
 Unter den aktiven Fächern liegt ein aufklappbares Archiv mit eigenen Gruppen (z. B. „1. Schuljahr“, „2. Schuljahr“). Fächer werden über ⋮ → „Ins Archiv…“ in eine bestehende oder neue Gruppe verschoben und über „Aus dem Archiv holen“ zurückgeholt.
 
-- Archivierte Fächer bleiben vollständig nutzbar und lernbar, sie zählen nur nicht mehr in der globalen Statistik („Heute fällig“).
+- Archivierte Fächer bleiben vollständig nutzbar und lernbar, sie zählen nur nicht mehr in der globalen Statistik (Karten insgesamt, Erfolgsquote).
 - Die Suche findet auch archivierte Fächer und klappt die passenden Gruppen auf.
 - „Gruppe auflösen“ holt alle Fächer der Gruppe zurück zu den aktiven Fächern, es gehen nie Karten verloren.
 

@@ -38,7 +38,7 @@ function recordAnswer(knew){
 const LEITNER_INTERVALS = [0,1,2,4,8];
 
 // Globale Statistik zählt nur aktive Fächer — archivierte bleiben lernbar,
-// sollen aber „Heute fällig“ nicht aufblähen
+// sollen aber die Gesamtzahlen oben nicht aufblähen
 function allCards(){
   return subjects.filter(subj => !isSubjectArchived(subj)).flatMap(subj => subj.groups.flatMap(g => g.cards));
 }
@@ -82,6 +82,8 @@ function fcIcon(cls, paths){
   return `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
 }
 
+// Mitte: was heute schon geschafft ist statt eines Bergs fälliger Karten —
+// motiviert mehr (fällig steht weiterhin je Fach und Thema)
 function renderGlobalStats(){
   const s = calcGlobalStats();
   const pct = calcGlobalAccuracy();
@@ -93,10 +95,10 @@ function renderGlobalStats(){
       <span class="fc-stat-value">${s.total}</span>
       <span class="fc-stat-label">Karten insgesamt</span>
     </div>
-    <div class="fc-stat-card fc-stat-due">
-      ${fcIcon('fc-stat-icon', '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="m9 15 2 2 4-4"/>')}
-      <span class="fc-stat-value">${s.dueToday}</span>
-      <span class="fc-stat-label">Heute fällig</span>
+    <div class="fc-stat-card fc-stat-today">
+      ${fcIcon('fc-stat-icon', '<path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5z"/><path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5z"/>')}
+      <span class="fc-stat-value">${s.todayLearned}</span>
+      <span class="fc-stat-label">Heute schon gelernt</span>
     </div>
     <div class="fc-stat-card fc-stat-rate">
       ${fcIcon('fc-stat-icon', '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/>')}
