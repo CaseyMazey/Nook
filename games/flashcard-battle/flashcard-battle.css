@@ -1,0 +1,132 @@
+/* =========================
+   FLASHCARD BATTLE
+   Wird vom Hub dynamisch geladen/entfernt — siehe games.js loadCss()/unloadCss().
+   Farben über die Theme-Variablen, damit das Spiel jedem Theme folgt.
+========================= */
+
+.fb-root { --fb-hit: var(--status-ok); --fb-hurt: var(--status-danger); --fb-crit: var(--amber); }
+
+.fb-setup, .fb-battle, .fb-result { display: flex; flex-direction: column; gap: 18px; }
+
+/* ---- Level / Balken ---- */
+.fb-level { display: flex; align-items: center; gap: 10px; }
+.fb-level-num { font-weight: 700; color: var(--text); white-space: nowrap; }
+.fb-level-xp { font-size: 12px; color: var(--text-3); font-family: var(--mono); white-space: nowrap; }
+.fb-bar-xp { flex: 1; }
+.fb-bar { height: 10px; flex-shrink: 0; border-radius: 999px; background: var(--track-bg); overflow: hidden; }
+.fb-bar-fill { height: 100%; border-radius: inherit; background: var(--sage); transition: width 0.35s ease; }
+.fb-bar-enemy .fb-bar-fill { background: var(--fb-hurt); }
+.fb-bar-player .fb-bar-fill { background: var(--fb-hit); }
+
+/* ---- Setup ---- */
+.fb-set-list { display: flex; flex-direction: column; gap: 4px; max-height: 260px; overflow-y: auto; padding-right: 4px; }
+.fb-set {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  padding: 9px 12px; border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border); background: var(--surface-2);
+  color: var(--text); text-align: left; cursor: pointer; font: inherit;
+}
+.fb-set-sub { margin-left: 18px; }
+.fb-set:not(.fb-set-sub) .fb-set-name { font-weight: 700; }
+.fb-set.active { border-color: var(--sage); background: var(--sage-bg); }
+.fb-set:disabled { opacity: 0.55; cursor: not-allowed; }
+.fb-set-count { font-size: 12px; color: var(--text-3); white-space: nowrap; }
+.fb-empty { color: var(--text-2); margin: 0; }
+
+.fb-modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.fb-mode {
+  display: flex; flex-direction: column; gap: 4px; padding: 12px;
+  border-radius: var(--radius); border: 1.5px solid var(--border);
+  background: var(--surface-2); color: var(--text); text-align: left; cursor: pointer; font: inherit;
+}
+.fb-mode.active { border-color: var(--sage); background: var(--sage-bg); }
+.fb-mode-name { font-weight: 700; }
+.fb-mode-hint { font-size: 12px; color: var(--text-2); line-height: 1.4; }
+
+#fb-start:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ---- Kampf ---- */
+.fb-battle { position: relative; }
+.fb-top { display: flex; align-items: center; gap: 12px; }
+.fb-room { font-weight: 700; color: var(--text); }
+.fb-combo { margin-right: auto; font-family: var(--mono); font-weight: 700; color: var(--text-3); opacity: 0.4; }
+.fb-combo.on { color: var(--fb-crit); opacity: 1; }
+
+.fb-arena { display: flex; flex-direction: column; gap: 14px; padding: 16px; border-radius: var(--radius-lg); background: var(--surface-2); }
+.fb-fighter { position: relative; display: flex; align-items: center; gap: 14px; }
+.fb-player { justify-content: flex-end; }
+.fb-player .fb-fighter-info { max-width: 60%; }
+.fb-fighter-info { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.fb-fighter-name { font-weight: 700; color: var(--text); }
+.fb-tier { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 1px 6px; border-radius: 999px; background: var(--accent-soft); color: var(--text-2); }
+.fb-hp-text { font-size: 12px; font-family: var(--mono); color: var(--text-3); }
+
+.fb-enemy-art { width: 72px; height: 72px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: transform 0.3s, opacity 0.4s; }
+.fb-enemy-art img { max-width: 100%; max-height: 100%; image-rendering: pixelated; }
+.fb-emoji { font-size: 52px; line-height: 1; }
+.fb-tier-boss .fb-enemy-art { width: 96px; height: 96px; }
+.fb-tier-boss .fb-emoji { font-size: 72px; }
+.fb-enemy.defeated .fb-enemy-art { transform: scale(0.6) rotate(-12deg); opacity: 0.2; }
+
+.fb-float { position: absolute; top: -6px; right: 8px; font-weight: 800; font-family: var(--mono); opacity: 0; pointer-events: none; }
+.fb-float.show { animation: fb-float 0.8s ease-out forwards; }
+.fb-float.hit { color: var(--fb-hit); }
+.fb-float.crit { color: var(--fb-crit); font-size: 1.2em; }
+.fb-float.hurt { color: var(--fb-hurt); }
+.fb-float.heal { color: var(--fb-hit); }
+@keyframes fb-float {
+  0% { opacity: 0; transform: translateY(6px); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-18px); }
+}
+
+/* 5-Sekunden-Fenster für den kritischen Treffer */
+.fb-crit { height: 4px; border-radius: 999px; background: var(--track-bg); overflow: hidden; }
+.fb-crit-fill { height: 100%; background: var(--fb-crit); animation: fb-crit 5s linear forwards; }
+.fb-crit.stopped .fb-crit-fill { animation-play-state: paused; }
+@keyframes fb-crit { from { width: 100%; } to { width: 0%; } }
+
+.fb-question { font-size: 18px; font-weight: 700; color: var(--text); text-align: center; overflow-wrap: anywhere; }
+
+.fb-options { display: flex; flex-direction: column; gap: 8px; }
+.fb-option {
+  display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px;
+  border-radius: var(--radius); border: 1.5px solid var(--border-strong);
+  background: var(--surface-solid); color: var(--text); text-align: left;
+  cursor: pointer; font: inherit; overflow-wrap: anywhere; touch-action: manipulation;
+}
+.fb-option:hover:not(:disabled) { border-color: var(--sage); }
+.fb-option kbd { font-family: var(--mono); font-size: 12px; color: var(--text-3); padding: 1px 6px; border: 1px solid var(--border); border-radius: 4px; flex-shrink: 0; }
+.fb-option:disabled { cursor: default; }
+.fb-option.correct { border-color: var(--fb-hit); background: color-mix(in srgb, var(--fb-hit) 14%, var(--surface-solid)); }
+.fb-option.wrong { border-color: var(--fb-hurt); background: color-mix(in srgb, var(--fb-hurt) 14%, var(--surface-solid)); }
+
+.fb-banner {
+  position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%);
+  padding: 14px 26px; border-radius: var(--radius-lg);
+  background: var(--surface-solid); border: 2px solid var(--fb-hurt); box-shadow: var(--shadow-lg);
+  font-size: 20px; font-weight: 800; color: var(--fb-hurt); white-space: nowrap;
+}
+.fb-banner.hidden { display: none; }
+
+/* ---- Ergebnis ---- */
+.fb-result { align-items: stretch; text-align: center; padding: 10px 0; }
+.fb-result-title { font-size: 24px; font-weight: 800; color: var(--text); }
+.fb-result-stats { display: flex; justify-content: center; gap: 28px; color: var(--text-2); }
+.fb-result-stats div { display: flex; flex-direction: column; font-size: 12px; }
+.fb-result-stats span { font-size: 22px; font-weight: 700; color: var(--text); font-family: var(--mono); }
+.fb-levelup { font-weight: 700; color: var(--sage-dark); }
+.fb-result-btns { display: flex; justify-content: center; gap: 8px; }
+
+/* ---- Schmale Ansicht ---- */
+@media (max-width: 600px) {
+  .fb-modes { grid-template-columns: 1fr; }
+  .fb-player .fb-fighter-info { max-width: 100%; }
+  .fb-result-stats { gap: 16px; }
+  .fb-enemy-art { width: 56px; height: 56px; }
+  .fb-emoji { font-size: 40px; }
+}
+@media (max-width: 480px) {
+  .fb-option { width: 100%; }
+  .fb-question { font-size: 16px; }
+}
