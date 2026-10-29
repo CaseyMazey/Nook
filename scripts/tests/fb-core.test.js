@@ -94,3 +94,130 @@ test('levelFromXp: Level L braucht 100 × L XP', () => {
   assert.deepEqual(FBCore.levelFromXp(150), { level: 2, intoLevel: 50, needed: 200 });
   assert.deepEqual(FBCore.levelFromXp(300), { level: 3, intoLevel: 0,  needed: 300 });
 });
+
+// ── Run-Logik ──
+
+const MONSTERS = [
+  { id: 'n1', name: 'N1', tier: 'normal', emoji: '🟢' },
+  { id: 'n2', name: 'N2', tier: 'normal', emoji: '🦇' },
+  { id: 'r1', name: 'R1', tier: 'rare',   emoji: '👻' },
+  { id: 'b1', name: 'B1', tier: 'boss',   emoji: '🐉' }
+];
+
+function deckOf(n) {
+  return Array.from({ length: n }, (_, i) => ({ id: 'k' + i, front: 'F' + i, back: 'B' + i }));
+}
+// Jede Abfrage der Uhr springt weiter: 6000 ms → nie kritisch, 1000 ms → immer kritisch
+function clock(step) { let t = 0; return () => (t += step); }
+function answerRight(run) { return run.question.correctIndex; }
+function answerWrong(run) { return (run.question.correctIndex + 1) % run.question.options.length; }
+function newRun(mode, n, seed, step = 6000) {
+  return FBCore.createRun({ mode, deck: deckOf(n), monsters: MONSTERS, rng: rng(seed), now: clock(step) });
+}
+
+test('fixed: 5 Räume, der 5. ist Boss, Sieg nach dem Boss', () => {
+  const run = newRun('fixed', 6, 4);
+  const spawns = [run.events[0]];
+  while (!run.over) spawns.push(...FBCore.answer(run, answerRight(run)).filter(e => e.type === 'spawn'));
+  assert.deepEqual(spawns.map(s => s.room), [1, 2, 3, 4, 5]);
+  assert.deepEqual(spawns.map(s => s.tier === 'boss'), [false, false, false, false, true]);
+  assert.equal(run.won, true);
+  assert.equal(run.roomsCleared, 5);
+});
+
+test('falsche Antwort: Schaden am Spieler und Combo weg', () => {
+  const run = newRun('fixed', 6, 5);
+  FBCore.answer(run, answerRight(run));
+  assert.equal(run.streak, 1);
+  const atk = run.enemy.atk;
+  const ev = FBCore.answer(run, answerWrong(run));
+  assert.deepEqual(ev[0], { type: 'hurt', amount: atk });
+  assert.equal(run.hp, 100 - atk);
+  assert.equal(run.streak, 0);
+});
+
+test('fixed: Heilung nach Sieg, gedeckelt auf maxHp', () => {
+  const run = newRun('fixed', 6, 6);
+  run.hp = 90;
+  run.enemy.hp = 1;
+  const ev = FBCore.answer(run, answerRight(run));
+  assert.deepEqual(ev.find(e => e.type === 'heal'), { type: 'heal', amount: 10 });
+  assert.equal(run.hp, 100);
+});
+
+test('endless: Raum 5 und 10 sind Boss, Ende nur durch HP 0', () => {
+  const run = newRun('endless', 6, 7);
+  const spawns = [run.events[0]];
+  while (run.room < 11) spawns.push(...FBCore.answer(run, answerRight(run)).filter(e => e.type === 'spawn'));
+  assert.deepEqual(spawns.filter(s => s.tier === 'boss').map(s => s.room), [5, 10]);
+  assert.equal(run.over, false);
+  let last = [];
+  while (!run.over) last = FBCore.answer(run, answerWrong(run));
+  const end = last.find(e => e.type === 'end');
+  assert.equal(end.won, false);
+  assert.equal(end.roomsCleared, 10);
+  assert.equal(run.hp, 0);
+});
+
+test('cards: jede Karte höchstens einmal, Boss bei 5 übrigen Karten', () => {
+  const run = newRun('cards', 8, 8);
+  const asked = [run.question.cardId];
+  const perAnswer = [];
+  let i = 0;
+  while (!run.over) {
+    perAnswer.push(FBCore.answer(run, i++ % 2 === 0 ? answerRight(run) : answerWrong(run)));
+    if (!run.over) asked.push(run.question.cardId);
+  }
+  assert.equal(asked.length, 8);
+  assert.equal(new Set(asked).size, 8);
+  const types = perAnswer.map(ev => ev.map(e => e.type + (e.tier ? ':' + e.tier : '')));
+  assert.ok(types[2].includes('retreat'));
+  assert.ok(types[2].includes('spawn:boss'));
+  assert.equal(types.flat().filter(t => t === 'retreat').length, 1);
+  assert.equal(types.flat().filter(t => t === 'spawn:boss').length, 1);
+});
+
+test('cards: Ende nach der letzten Karte, Sieg bei HP > 0', () => {
+  const run = newRun('cards', 8, 9);
+  let answers = 0, last = [];
+  while (!run.over) {
+    last = FBCore.answer(run, answerWrong(run));
+    answers++;
+    if (last.some(e => e.type === 'spawn' && e.tier === 'boss')) run.enemy.atk = 1;
+  }
+  assert.equal(answers, 8);
+  assert.ok(run.hp > 0);
+  assert.equal(last.find(e => e.type === 'end').won, true);
+});
+
+test('cards: Boss besiegt beendet den Run vorzeitig mit Sieg', () => {
+  const run = newRun('cards', 8, 10);
+  let answers = 0, last = [];
+  while (!run.over) {
+    last = FBCore.answer(run, answerRight(run));
+    answers++;
+  }
+  assert.ok(answers < 8);
+  assert.deepEqual(last.filter(e => e.type === 'defeat').map(e => e.tier), ['boss']);
+  assert.equal(last.find(e => e.type === 'end').won, true);
+});
+
+test('cards: höchstens 5 Karten → erster Gegner ist Boss', () => {
+  assert.equal(newRun('cards', 5, 11).events[0].tier, 'boss');
+  assert.notEqual(newRun('cards', 6, 11).events[0].tier, 'boss');
+});
+
+test('answer nach Run-Ende tut nichts', () => {
+  const run = newRun('fixed', 6, 12);
+  run.hp = 1;
+  FBCore.answer(run, answerWrong(run));
+  assert.equal(run.over, true);
+  assert.equal(run.won, false);
+  assert.deepEqual(FBCore.answer(run, 0), []);
+});
+
+test('kritischer Treffer erhöht Schaden im Run', () => {
+  const run = newRun('fixed', 6, 13, 1000);
+  const hit = FBCore.answer(run, answerRight(run))[0];
+  assert.deepEqual(hit, { type: 'hit', amount: 15, crit: true, streak: 1 });
+});

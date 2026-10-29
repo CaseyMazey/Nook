@@ -101,9 +101,112 @@
     return { level, intoLevel: rest, needed: CONFIG.xpPerLevel * level };
   }
 
+  // ── Run (ein Dungeon-Durchlauf) ──
+  // Modi: 'fixed' (feste Räume), 'endless', 'cards' (jede Karte einmal).
+  // answer() liefert Ereignisse, aus denen UI und Fortschritt lesen.
+
+  function isBossNext(run) {
+    const nextRoom = run.room + 1;
+    if (run.mode === 'fixed') return nextRoom >= CONFIG.fixedRooms;
+    if (run.mode === 'endless') return nextRoom % CONFIG.endlessBossEvery === 0;
+    return run.unanswered <= CONFIG.cardModeBossCards;
+  }
+
+  function pickMonster(run, tier) {
+    const pool = run._monsters.filter(m => m.tier === tier);
+    const list = pool.length ? pool : run._monsters;
+    return list[Math.floor(run._rng() * list.length)];
+  }
+
+  function spawnNext(run, ev) {
+    const tier = isBossNext(run) ? 'boss' : (run._rng() < CONFIG.rareChance ? 'rare' : 'normal');
+    run.room++;
+    const monster = pickMonster(run, tier);
+    const stats = enemyStats(tier, run.room, run.mode);
+    run.enemy = { monsterId: monster.id, tier, hp: stats.hp, maxHp: stats.hp, atk: stats.atk, xp: stats.xp };
+    ev.push({ type: 'spawn', monsterId: monster.id, tier, room: run.room });
+  }
+
+  function nextQuestion(run) {
+    if (!run.queue.length) run.queue = shuffle(run.deck, run._rng);
+    const card = run.queue.shift();
+    run.question = makeQuestion(card, run.deck, run._rng);
+    run.questionStartedAt = run._now();
+  }
+
+  function endRun(run, won, ev) {
+    run.over = true;
+    run.won = won;
+    run.question = null;
+    ev.push({ type: 'end', won, mode: run.mode, roomsCleared: run.roomsCleared, maxStreak: run.maxStreak });
+  }
+
+  function createRun({ mode, deck, monsters, rng = Math.random, now = () => Date.now() }) {
+    const run = {
+      mode, hp: CONFIG.playerHp, maxHp: CONFIG.playerHp, room: 0, roomsCleared: 0,
+      enemy: null, streak: 0, maxStreak: 0,
+      deck, queue: shuffle(deck, rng), unanswered: deck.length,
+      question: null, questionStartedAt: 0, over: false, won: false, events: [],
+      _rng: rng, _now: now, _monsters: monsters
+    };
+    spawnNext(run, run.events);
+    nextQuestion(run);
+    return run;
+  }
+
+  function answer(run, optionIndex) {
+    if (run.over) return [];
+    const ev = [];
+    const answerMs = run._now() - run.questionStartedAt;
+    if (run.mode === 'cards') run.unanswered--;
+
+    if (optionIndex === run.question.correctIndex) {
+      run.streak++;
+      run.maxStreak = Math.max(run.maxStreak, run.streak);
+      const dmg = calcDamage(run.streak, answerMs);
+      run.enemy.hp = Math.max(0, run.enemy.hp - dmg.amount);
+      ev.push({ type: 'hit', amount: dmg.amount, crit: dmg.crit, streak: run.streak });
+
+      if (run.enemy.hp === 0) {
+        const e = run.enemy;
+        ev.push({ type: 'defeat', monsterId: e.monsterId, tier: e.tier, xp: e.xp });
+        run.roomsCleared++;
+        run.enemy = null;
+        if (e.tier === 'boss' && run.mode !== 'endless') { endRun(run, true, ev); }
+        else if (run.mode === 'cards' && run.unanswered === 0) { endRun(run, true, ev); }
+        else {
+          if (run.mode === 'fixed') {
+            const heal = Math.min(CONFIG.healBetweenRooms, run.maxHp - run.hp);
+            if (heal > 0) { run.hp += heal; ev.push({ type: 'heal', amount: heal }); }
+          }
+          spawnNext(run, ev);
+        }
+      }
+    } else {
+      run.streak = 0;
+      run.hp = Math.max(0, run.hp - run.enemy.atk);
+      ev.push({ type: 'hurt', amount: run.enemy.atk });
+      if (run.hp === 0) endRun(run, false, ev);
+    }
+
+    if (!run.over && run.mode === 'cards') {
+      if (run.unanswered === 0) endRun(run, run.hp > 0, ev);
+      else if (run.enemy.tier !== 'boss' && run.unanswered <= CONFIG.cardModeBossCards) {
+        // Der Boss löst den aktuellen Gegner ab – zählt nicht als besiegt
+        ev.push({ type: 'retreat', monsterId: run.enemy.monsterId });
+        spawnNext(run, ev);
+      }
+    }
+
+    if (!run.over) nextQuestion(run);
+    run.events.push(...ev);
+    return ev;
+  }
+
   window.FBCore = {
     CONFIG, shuffle, buildDeck, makeQuestion,
-    comboMultiplier, calcDamage, enemyStats, levelFromXp
+    comboMultiplier, calcDamage, enemyStats, levelFromXp,
+    createRun, answer
   };
 
 })();
