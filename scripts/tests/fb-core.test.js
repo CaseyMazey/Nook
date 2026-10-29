@@ -190,16 +190,17 @@ test('cards: Ende nach der letzten Karte, Sieg bei HP > 0', () => {
   assert.equal(last.find(e => e.type === 'end').won, true);
 });
 
-test('cards: Boss besiegt beendet den Run vorzeitig mit Sieg', () => {
+test('cards: Boss besiegt mit übrigen Karten → nächster Boss, Ende erst nach der letzten Karte', () => {
   const run = newRun('cards', 8, 10);
-  let answers = 0, last = [];
+  let answers = 0;
+  const all = [];
   while (!run.over) {
-    last = FBCore.answer(run, answerRight(run));
+    all.push(...FBCore.answer(run, answerRight(run)));
     answers++;
   }
-  assert.ok(answers < 8);
-  assert.deepEqual(last.filter(e => e.type === 'defeat').map(e => e.tier), ['boss']);
-  assert.equal(last.find(e => e.type === 'end').won, true);
+  assert.equal(answers, 8);
+  assert.ok(all.filter(e => e.type === 'defeat' && e.tier === 'boss').length >= 1);
+  assert.equal(all.find(e => e.type === 'end').won, true);
 });
 
 test('cards: höchstens 5 Karten → erster Gegner ist Boss', () => {
@@ -272,4 +273,28 @@ test('applyEvents verträgt alten, unvollständigen Speicherstand', () => {
   const p = FBCore.applyEvents({ totalGames: 3 }, [{ type: 'hurt', amount: 5 }]);
   assert.equal(p.totalGames, 3);
   assert.equal(p.counters.wrong, 1);
+});
+
+// ── Review-Fixes ──
+
+test('startQuestionTimer: Kritisch-Fenster startet erst, wenn die Frage gezeigt wird', () => {
+  let t = 0;
+  const run = FBCore.createRun({ mode: 'fixed', deck: deckOf(6), monsters: MONSTERS, rng: rng(14), now: () => t });
+  t = 1000; FBCore.answer(run, answerRight(run));
+  t = 5000; FBCore.startQuestionTimer(run);   // Feedback-Pause vorbei, Frage erscheint
+  t = 9500;                                   // 4,5 s nach Erscheinen
+  const hit = FBCore.answer(run, answerRight(run))[0];
+  assert.equal(hit.crit, true);
+});
+
+test('abortRun: Endlos-Rekord bleibt beim Aufgeben erhalten, kein Sieg', () => {
+  const run = newRun('endless', 6, 15);
+  while (run.room < 4) FBCore.answer(run, answerRight(run));
+  const ev = FBCore.abortRun(run);
+  assert.deepEqual(ev, [{ type: 'end', won: false, mode: 'endless', roomsCleared: 3, maxStreak: run.maxStreak, aborted: true }]);
+  assert.equal(run.over, true);
+  const p = FBCore.applyEvents(FBCore.emptyProgress(), ev);
+  assert.equal(p.bestEndless, 3);
+  assert.equal(p.runsWon, 0);
+  assert.deepEqual(FBCore.abortRun(run), []);
 });

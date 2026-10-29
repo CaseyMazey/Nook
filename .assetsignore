@@ -13,6 +13,7 @@
 .claude/
 .agents/
 .wrangler/
+.superpowers/
 scripts/
 AI documentation/
 mockups/

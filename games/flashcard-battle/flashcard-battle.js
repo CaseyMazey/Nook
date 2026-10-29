@@ -257,9 +257,17 @@
         <div class="fb-banner hidden" id="fb-banner">Ein Boss erscheint!</div>
       </div>`;
 
-    state.root.querySelector('#fb-abort').addEventListener('click', () => { state.run = null; renderSetup(); });
+    state.root.querySelector('#fb-abort').addEventListener('click', () => { abortActiveRun(); renderSetup(); });
     state.root.querySelectorAll('.fb-option').forEach(b =>
       b.addEventListener('click', () => onAnswer(Number(b.dataset.i))));
+    // Das Kritisch-Fenster startet erst jetzt, wo die Frage sichtbar ist
+    FBCore.startQuestionTimer(run);
+  }
+
+  // Aufgeben/Schließen: kein Sieg, aber ein Endlos-Rekord bleibt erhalten
+  function abortActiveRun() {
+    if (state.run) saveProgress(FBCore.applyEvents(readProgress(), FBCore.abortRun(state.run)));
+    state.run = null;
   }
 
   function onAnswer(i) {
@@ -375,9 +383,9 @@
     // Feedback-Timer stoppen, sonst rendert er nach dem Schließen ins leere Modal.
     clearTimer();
     document.removeEventListener('keydown', onKey);
+    abortActiveRun();
     if (state.root) state.root.classList.remove('fb-root');
     state.root = null;
-    state.run = null;
     state.locked = false;
     state.screen = 'setup';
   }

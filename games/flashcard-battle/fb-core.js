@@ -134,11 +134,28 @@
     run.questionStartedAt = run._now();
   }
 
-  function endRun(run, won, ev) {
+  function endRun(run, won, ev, aborted) {
     run.over = true;
     run.won = won;
     run.question = null;
-    ev.push({ type: 'end', won, mode: run.mode, roomsCleared: run.roomsCleared, maxStreak: run.maxStreak });
+    const end = { type: 'end', won, mode: run.mode, roomsCleared: run.roomsCleared, maxStreak: run.maxStreak };
+    if (aborted) end.aborted = true;
+    ev.push(end);
+  }
+
+  // Die UI ruft das auf, sobald die Frage wirklich sichtbar ist (nach der
+  // Feedback-Pause), damit das 5-Sekunden-Fenster nicht schon vorher läuft.
+  function startQuestionTimer(run) {
+    if (!run.over) run.questionStartedAt = run._now();
+  }
+
+  // Aufgeben / Fenster schließen: kein Sieg, aber der Endlos-Rekord zählt
+  function abortRun(run) {
+    if (run.over) return [];
+    const ev = [];
+    endRun(run, false, ev, true);
+    run.events.push(...ev);
+    return ev;
   }
 
   function createRun({ mode, deck, monsters, rng = Math.random, now = () => Date.now() }) {
@@ -172,7 +189,8 @@
         ev.push({ type: 'defeat', monsterId: e.monsterId, tier: e.tier, xp: e.xp });
         run.roomsCleared++;
         run.enemy = null;
-        if (e.tier === 'boss' && run.mode !== 'endless') { endRun(run, true, ev); }
+        // Kartenmodus: Boss besiegt, aber noch Karten übrig → nächster Boss (jede Karte kommt dran)
+        if (e.tier === 'boss' && run.mode === 'fixed') { endRun(run, true, ev); }
         else if (run.mode === 'cards' && run.unanswered === 0) { endRun(run, true, ev); }
         else {
           if (run.mode === 'fixed') {
@@ -271,7 +289,7 @@
   window.FBCore = {
     CONFIG, shuffle, buildDeck, makeQuestion,
     comboMultiplier, calcDamage, enemyStats, levelFromXp,
-    createRun, answer,
+    createRun, answer, startQuestionTimer, abortRun,
     emptyProgress, startRun, applyEvents
   };
 

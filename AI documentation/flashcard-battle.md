@@ -189,3 +189,5 @@ Alle Zahlen stehen gesammelt in `CONFIG` in `games/flashcard-battle/fb-core.js` 
 - **Kleine Sets**: weniger Antwortmöglichkeiten statt Auffüllen aus anderen Sets.
 - **Monster**: Casey gestaltet sie als Assets, kein Editor im MVP.
 - **Tägliche Challenge**: bleibt Platzhalter, kommt später.
+- **Kartenmodus, Boss früh besiegt**: Sind noch Karten übrig, erscheint der nächste Boss. Der Run endet erst nach der letzten Karte, damit jede Karte drankommt.
+- **Aufgeben/Schließen** zählt nie als Sieg, ein erreichter Endlos-Rekord bleibt aber gespeichert.
