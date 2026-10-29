@@ -99,14 +99,14 @@ Gamifiziertes Planungsbrett im Tavernen-Look: Daily, Weekly/Check, Time und Side
 Taschenrechner, Focus Timer, Converter, Datenübertragungsraten-Rechner mit Lernmodus, Notenmanager.
 → [Wiki: Tools](https://github.com/CaseyMazey/Nook/wiki/Tools)
 
-### ⚙️ Einstellungen 🔧 *Momentan in Bearbeitung*
+### ⚙️ Einstellungen
 
 Themes & Theme-Editor, Tab-Verwaltung, Backup, optionaler Geräte-Sync, Google-Calendar-Verbindung.
 → [Wiki: Einstellungen](https://github.com/CaseyMazey/Nook/wiki/Einstellungen)
 
 ---
 
-# 🎮 Spiele
+# 🎮 Spiele 🔧 *Momentan in Bearbeitung*
 
 Lokaler Cozy-Game-Hub mit modularer Plugin-Architektur und spielübergreifendem virtuellem Haustier-System (Cozy Home).
 → [Wiki: Spiele](https://github.com/CaseyMazey/Nook/wiki/Spiele) für die Übersicht aller Spiele und Cozy-Home-Features.
