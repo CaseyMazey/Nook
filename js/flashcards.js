@@ -37,8 +37,10 @@ function recordAnswer(knew){
 
 const LEITNER_INTERVALS = [0,1,2,4,8];
 
+// Globale Statistik zählt nur aktive Fächer — archivierte bleiben lernbar,
+// sollen aber „Heute fällig“ nicht aufblähen
 function allCards(){
-  return subjects.flatMap(subj => subj.groups.flatMap(g => g.cards));
+  return subjects.filter(subj => !isSubjectArchived(subj)).flatMap(subj => subj.groups.flatMap(g => g.cards));
 }
 
 function calcDueCount(cards){
@@ -105,68 +107,214 @@ function renderGlobalStats(){
 }
 
 // =========================
-// SUBJECT LIST
+// SUBJECT LIST + ARCHIV
+// Archiv = eigene Gruppen („1. Schuljahr“ …) unter den aktiven Fächern.
+// Archivierte Fächer bleiben vollständig lernbar, zählen aber nicht in der
+// globalen Statistik. Daten: subject.archiveGroupId (fehlt = aktiv), die
+// Gruppen unter 'fc_archive_groups' = [{ id, name }], aufgeklappte Gruppen
+// unter 'fc_archive_open' ('root' = das Archiv selbst).
 // =========================
+
+let fcArchiveGroups = DB.get('fc_archive_groups', []);
+let fcArchiveOpen = new Set(DB.get('fc_archive_open', []));
+function saveFcArchiveGroups(){ DB.set('fc_archive_groups', fcArchiveGroups); }
+function saveFcArchiveOpen(){ DB.set('fc_archive_open', [...fcArchiveOpen]); }
+function toggleFcArchiveOpen(id){
+  if(fcArchiveOpen.has(id)) fcArchiveOpen.delete(id); else fcArchiveOpen.add(id);
+  saveFcArchiveOpen(); renderSubjectList();
+}
+// Verweist ein Fach auf eine aufgelöste Gruppe, gilt es wieder als aktiv
+function isSubjectArchived(subj){
+  return !!subj.archiveGroupId && fcArchiveGroups.some(g => g.id === subj.archiveGroupId);
+}
+
+function buildSubjectItem(subj){
+  const cardCount = subj.groups.reduce((s,g)=>s+g.cards.length, 0);
+  const dueCount = calcSubjectDue(subj);
+  const pct = calcSubjectAccuracy(subj);
+  const isActive = state.activeSubjectId === subj.id;
+
+  const btn = document.createElement('div');
+  btn.className = 'subject-item' + (isActive ? ' active' : '');
+  btn.innerHTML = `
+    <div class="subject-item-top">
+      <span class="subject-name" title="${escHtml(subj.name)}">${escHtml(subj.name)}</span>
+      ${dueCount ? `<span class="subject-due-badge" title="${dueCount} heute fällig">${dueCount}</span>` : ''}
+      <button class="fc-meatball" data-subj-id="${subj.id}" title="Optionen">⋮</button>
+    </div>
+    <div class="subject-item-meta">
+      <span class="subject-teacher">${escHtml(subj.teacher||'')}</span>
+      <span class="subject-item-stats">${cardCount} Karten · ${pct}%</span>
+    </div>
+    <div class="subject-mini-bar"><div class="subject-mini-fill" style="width:${pct}%"></div></div>
+  `;
+  btn.addEventListener('click', e => {
+    if(e.target.closest('.fc-meatball')) return;
+    state.activeSubjectId = subj.id;
+    renderSubjectList();
+    renderSubjectDetail();
+  });
+  btn.querySelector('.fc-meatball').addEventListener('click', e => {
+    e.stopPropagation();
+    openSubjectMenu(subj, e.currentTarget);
+  });
+  return btn;
+}
 
 function renderSubjectList(){
   const list = document.getElementById('subject-list'); list.innerHTML = '';
   const empty = document.getElementById('subject-empty');
   const search = (document.getElementById('fc-subject-search')?.value||'').toLowerCase();
-  const filtered = subjects.filter(s => s.name.toLowerCase().includes(search) || (s.teacher||'').toLowerCase().includes(search));
-  empty.classList.toggle('hidden', filtered.length > 0 || subjects.length > 0);
-  if(subjects.length === 0){ empty.classList.remove('hidden'); renderGlobalStats(); return; }
-  empty.classList.add('hidden');
+  const matches = s => s.name.toLowerCase().includes(search) || (s.teacher||'').toLowerCase().includes(search);
   renderGlobalStats();
+  if(subjects.length === 0){ empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
 
-  filtered.forEach(subj => {
-    const cardCount = subj.groups.reduce((s,g)=>s+g.cards.length, 0);
-    const dueCount = calcSubjectDue(subj);
-    const pct = calcSubjectAccuracy(subj);
-    const isActive = state.activeSubjectId === subj.id;
+  const active = subjects.filter(s => !isSubjectArchived(s) && matches(s));
+  active.forEach(subj => list.appendChild(buildSubjectItem(subj)));
+  if(!active.length && !search){
+    const p = document.createElement('p'); p.className = 'fc-archive-empty'; p.textContent = 'Alle Fächer liegen im Archiv.'; list.appendChild(p);
+  }
 
-    const btn = document.createElement('div');
-    btn.className = 'subject-item' + (isActive ? ' active' : '');
-    btn.innerHTML = `
-      <div class="subject-item-top">
-        <span class="subject-name">${escHtml(subj.name)}</span>
-        <button class="fc-meatball" data-subj-id="${subj.id}" title="Optionen">⋮</button>
-      </div>
-      <span class="subject-teacher">${escHtml(subj.teacher||'')}</span>
-      <div class="subject-item-stats">
-        <span>${cardCount} Karten</span>
-        <span class="subject-due">${dueCount} fällig</span>
-        <span>${pct}%</span>
-      </div>
-      <div class="subject-mini-bar"><div class="subject-mini-fill" style="width:${pct}%"></div></div>
-    `;
-    btn.addEventListener('click', e => {
-      if(e.target.closest('.fc-meatball')) return;
-      state.activeSubjectId = subj.id;
-      renderSubjectList();
-      renderSubjectDetail();
+  const archived = subjects.filter(s => isSubjectArchived(s) && matches(s));
+  if(fcArchiveGroups.length && (!search || archived.length)){
+    // Bei aktiver Suche ist alles mit Treffern aufgeklappt
+    const open = !!search || fcArchiveOpen.has('root');
+    const sec = document.createElement('div');
+    sec.className = 'fc-archive' + (open ? ' open' : '');
+    const head = document.createElement('button');
+    head.className = 'fc-archive-head';
+    head.innerHTML = `<span class="fc-archive-chevron" aria-hidden="true"></span><span>Archiv</span><span class="fc-archive-count">${subjects.filter(isSubjectArchived).length}</span>`;
+    head.addEventListener('click', () => { if(!search) toggleFcArchiveOpen('root'); });
+    sec.appendChild(head);
+
+    if(open) fcArchiveGroups.forEach(group => {
+      const subs = archived.filter(s => s.archiveGroupId === group.id);
+      if(search && !subs.length) return;
+      const gOpen = !!search || fcArchiveOpen.has(group.id);
+      const gEl = document.createElement('div');
+      gEl.className = 'fc-archive-group' + (gOpen ? ' open' : '');
+      const gHead = document.createElement('div');
+      gHead.className = 'fc-archive-group-head';
+      gHead.tabIndex = 0; gHead.setAttribute('role', 'button');
+      gHead.innerHTML = `<span class="fc-archive-chevron" aria-hidden="true"></span><span class="fc-archive-group-name">${escHtml(group.name)}</span><span class="fc-archive-count">${subs.length}</span><button class="fc-meatball" title="Optionen">⋮</button>`;
+      const toggle = () => { if(!search) toggleFcArchiveOpen(group.id); };
+      gHead.addEventListener('click', e => { if(!e.target.closest('.fc-meatball')) toggle(); });
+      gHead.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toggle(); } });
+      gHead.querySelector('.fc-meatball').addEventListener('click', e => { e.stopPropagation(); openFcArchiveGroupMenu(group, e.currentTarget); });
+      gEl.appendChild(gHead);
+      if(gOpen){
+        subs.forEach(subj => gEl.appendChild(buildSubjectItem(subj)));
+        if(!subs.length){
+          const p = document.createElement('p'); p.className = 'fc-archive-empty'; p.textContent = 'Leer – Fächer über ⋮ → „Ins Archiv“ hierher verschieben.'; gEl.appendChild(p);
+        }
+      }
+      sec.appendChild(gEl);
     });
-
-    // Meatball-Menü
-    btn.querySelector('.fc-meatball').addEventListener('click', e => {
-      e.stopPropagation();
-      openSubjectMenu(subj, e.currentTarget);
-    });
-
-    list.appendChild(btn);
-  });
+    list.appendChild(sec);
+  }
   if(state.activeSubjectId) renderSubjectDetail();
 }
+
+function openFcArchiveGroupMenu(group, anchor){
+  closeAllMenus();
+  const menu = document.createElement('div');
+  menu.className = 'fc-context-menu';
+  menu.innerHTML = `
+    <button class="fc-menu-item" data-action="rename">✏️ Umbenennen</button>
+    <button class="fc-menu-item fc-menu-danger" data-action="dissolve">🗑️ Gruppe auflösen</button>
+  `;
+  menu.querySelector('[data-action="rename"]').addEventListener('click', () => { closeAllMenus(); openFcArchiveModal(null, group); });
+  menu.querySelector('[data-action="dissolve"]').addEventListener('click', async () => {
+    closeAllMenus();
+    const ok = await hubConfirm({ title: `„${group.name}“ auflösen?`, message: 'Die Fächer darin kommen zurück zu den aktiven Fächern. Es gehen keine Karten verloren.', confirmText: 'Auflösen', danger: true });
+    if(!ok) return;
+    subjects.forEach(s => { if(s.archiveGroupId === group.id) delete s.archiveGroupId; });
+    fcArchiveGroups = fcArchiveGroups.filter(g => g.id !== group.id);
+    fcArchiveOpen.delete(group.id);
+    saveSubjects(); saveFcArchiveGroups(); saveFcArchiveOpen(); renderSubjectList();
+  });
+  positionMenu(menu, anchor);
+}
+
+// Ein Modal für beides: Fach in eine Archiv-Gruppe verschieben (Auswahl oder
+// neue Gruppe) und eine Archiv-Gruppe umbenennen (nur Namensfeld)
+let fcArchiveModalContext = null;
+const fcArchiveModal = wireModal('fc-archive-modal-overlay', {
+  closeIds: ['fc-archive-modal-close', 'fc-archive-modal-cancel'],
+  inputId: 'fc-archive-name-input',
+  saveId: 'fc-archive-modal-save',
+  onClose: () => { fcArchiveModalContext = null; },
+});
+
+function syncFcArchiveNameRow(){
+  const ctx = fcArchiveModalContext;
+  const show = !!ctx && (!!ctx.group || document.getElementById('fc-archive-group-select').value === 'new');
+  document.getElementById('fc-archive-name-row').classList.toggle('hidden', !show);
+}
+
+function openFcArchiveModal(subj, group = null){
+  fcArchiveModalContext = { subjId: subj ? subj.id : null, group };
+  const select = document.getElementById('fc-archive-group-select');
+  const nameInput = document.getElementById('fc-archive-name-input');
+  document.getElementById('fc-archive-modal-title').textContent = group ? 'Archiv-Gruppe umbenennen' : (subj && isSubjectArchived(subj) ? 'Archiv-Gruppe wechseln' : 'Ins Archiv verschieben');
+  document.getElementById('fc-archive-modal-save').textContent = group ? 'Speichern' : 'Verschieben';
+  document.getElementById('fc-archive-select-row').classList.toggle('hidden', !!group);
+  document.getElementById('fc-archive-name-label').textContent = group ? 'Name' : 'Name der neuen Gruppe';
+  nameInput.value = group ? group.name : '';
+  if(!group){
+    select.innerHTML = fcArchiveGroups.map(g => `<option value="${g.id}">${escHtml(g.name)}</option>`).join('') + '<option value="new">＋ Neue Gruppe…</option>';
+    const current = subj && isSubjectArchived(subj) ? subj.archiveGroupId : null;
+    select.value = current || (fcArchiveGroups.length ? fcArchiveGroups[fcArchiveGroups.length-1].id : 'new');
+  }
+  syncFcArchiveNameRow();
+  fcArchiveModal.open();
+  setTimeout(() => (group || select.value === 'new' ? nameInput : select).focus(), 50);
+}
+
+document.getElementById('fc-archive-group-select').addEventListener('change', () => {
+  syncFcArchiveNameRow();
+  if(document.getElementById('fc-archive-group-select').value === 'new') document.getElementById('fc-archive-name-input').focus();
+});
+
+document.getElementById('fc-archive-modal-save').addEventListener('click', () => {
+  const ctx = fcArchiveModalContext; if(!ctx) return;
+  const name = document.getElementById('fc-archive-name-input').value.trim();
+  if(ctx.group){
+    if(!name) return;
+    ctx.group.name = name; saveFcArchiveGroups();
+  } else {
+    const subj = subjects.find(s => s.id === ctx.subjId); if(!subj) return;
+    let groupId = document.getElementById('fc-archive-group-select').value;
+    if(groupId === 'new'){
+      if(!name) return;
+      const g = { id: crypto.randomUUID(), name };
+      fcArchiveGroups.push(g); saveFcArchiveGroups(); groupId = g.id;
+    }
+    subj.archiveGroupId = groupId;
+    // Ziel sichtbar machen, damit das Fach nicht scheinbar verschwindet
+    fcArchiveOpen.add('root'); fcArchiveOpen.add(groupId); saveFcArchiveOpen();
+    saveSubjects();
+  }
+  fcArchiveModal.close(); renderSubjectList();
+});
 
 function openSubjectMenu(subj, anchor){
   closeAllMenus();
   const menu = document.createElement('div');
   menu.className = 'fc-context-menu';
+  const archived = isSubjectArchived(subj);
   menu.innerHTML = `
     <button class="fc-menu-item" data-action="edit">✏️ Bearbeiten</button>
+    ${archived ? `<button class="fc-menu-item" data-action="archive">🗄️ Archiv-Gruppe wechseln</button>
+    <button class="fc-menu-item" data-action="unarchive">↩️ Aus dem Archiv holen</button>`
+      : `<button class="fc-menu-item" data-action="archive">🗄️ Ins Archiv…</button>`}
     <button class="fc-menu-item" data-action="export">📤 Exportieren</button>
     <button class="fc-menu-item fc-menu-danger" data-action="delete">🗑️ Löschen</button>
   `;
   menu.querySelector('[data-action="edit"]').addEventListener('click', () => { closeAllMenus(); openSubjectEditModal(subj); });
+  menu.querySelector('[data-action="archive"]').addEventListener('click', () => { closeAllMenus(); openFcArchiveModal(subj); });
+  menu.querySelector('[data-action="unarchive"]')?.addEventListener('click', () => { closeAllMenus(); delete subj.archiveGroupId; saveSubjects(); renderSubjectList(); });
   menu.querySelector('[data-action="export"]').addEventListener('click', () => { closeAllMenus(); exportSubject(subj); });
   menu.querySelector('[data-action="delete"]').addEventListener('click', () => {
     closeAllMenus();

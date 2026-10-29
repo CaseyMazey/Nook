@@ -17,6 +17,7 @@ window.NOOK_CHANGELOG = [
     version: '2026.10.13',
     date: '2026-10-29',
     items: [
+      'Karteikarten: Archiv für Fächer – eigene Gruppen wie „1. Schuljahr“ anlegen und alte Fächer hineinschieben, sie bleiben lernbar, zählen aber nicht mehr bei „Heute fällig“; kompaktere Fachliste, die bei vielen Fächern in sich scrollt, im RPG-Theme als Kreidetafel',
       'Karteikarten: Inhaltsverzeichnis unter „Fächer“ – Prüfungen und Themen des Fachs auf einen Blick, Klick springt hin (und klappt auf), „Alle ein-/aufklappen“',
       'Karteikarten: eingeklappte Themengruppen sind nur noch eine schmale Zeile mit Fortschrittsbalken; Fachtitel im RPG-Theme besser lesbar',
       'RPG-Karteikarten: Themen auf drei Papiersorten (Pergament, Büttenpapier, honigfarben gealtert) mit wechselnden Befestigungen an verschiedenen Stellen – Messingpins, Eisen-Reißzwecken, Kupfer- und Schmiedenägel, Wachssiegel in Rot, Grün und Schwarz; Prüfungen als ledergebundene Tafel mit Goldnaht, Messingknöpfe für Lernen, Filter und + Prüfung',

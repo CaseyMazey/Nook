@@ -69,7 +69,7 @@ Sie zeigt:
 
 Bewusst ohne Lernserie (Streak): Ein Zähler, der nach einem verpassten Tag auf null fällt, setzt unter Druck statt zu motivieren. Bitte nicht wieder einführen.
 
-Diese Werte werden automatisch berechnet.
+Diese Werte werden automatisch berechnet. Archivierte Fächer zählen nicht mit.
 
 Kompakt in einer Zeile (Icon, Zahl, Beschriftung), mit schlichten Linien-Icons statt Emojis. Im RPG-Theme sind die drei Kennzahlen kein Papier, sondern Werkstoffe (Holzschild, Lederriemen, Messingschild), damit sie sich vom Inhalt abheben.
 
@@ -92,6 +92,20 @@ Intern besitzt ein Fach außerdem:
 - Themengruppen
 - Karteikarten
 - Lernstatistiken
+
+Die Fachliste ist kompakt (Name + fällig-Zahl, darunter Lehrer, Kartenzahl und Quote) und scrollt am Desktop in sich, damit auch viele Fächer Platz haben. Im RPG-Theme ist sie eine Kreidetafel wie der Speiseplan in „Heute“.
+
+---
+
+# Archiv
+
+Unter den aktiven Fächern liegt ein aufklappbares Archiv mit eigenen Gruppen (z. B. „1. Schuljahr“, „2. Schuljahr“). Fächer werden über ⋮ → „Ins Archiv…“ in eine bestehende oder neue Gruppe verschoben und über „Aus dem Archiv holen“ zurückgeholt.
+
+- Archivierte Fächer bleiben vollständig nutzbar und lernbar, sie zählen nur nicht mehr in der globalen Statistik („Heute fällig“).
+- Die Suche findet auch archivierte Fächer und klappt die passenden Gruppen auf.
+- „Gruppe auflösen“ holt alle Fächer der Gruppe zurück zu den aktiven Fächern, es gehen nie Karten verloren.
+
+Gespeichert als `subject.archiveGroupId` (fehlt = aktiv) im Key `subjects`, die Gruppen unter `fc_archive_groups = [{ id, name }]`, aufgeklappte Gruppen unter `fc_archive_open` (`'root'` = das Archiv selbst). Verweist ein Fach auf eine nicht mehr vorhandene Gruppe, gilt es als aktiv.
 
 ---
 
@@ -498,6 +512,7 @@ flashcards.js ist verantwortlich für:
 - Export
 - Markdown-Import
 - Prüfungen
+- Archiv
 - Suchfunktion
 - Kontextmenüs
 

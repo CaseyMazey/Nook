@@ -182,6 +182,39 @@
   --text-3: color-mix(in srgb, var(--deco-ink) 74%, transparent);
 }
 
+/* Fächerliste: Kreidetafel wie der Speiseplan in „Heute“ — Kreide statt
+   Tinte. Doppelte ID, damit die Tinten-Tokens der Zettel (auch die
+   Nacht-Variante oben) hier nicht greifen */
+[data-pages-style="rpg"] #view-flashcards #subject-list-panel {
+  --text:   color-mix(in srgb, var(--sheen) 93%, transparent);
+  --text-2: color-mix(in srgb, var(--sheen) 80%, transparent);
+  --text-3: color-mix(in srgb, var(--sheen) 62%, transparent);
+  --border:        color-mix(in srgb, var(--sheen) 14%, transparent);
+  --border-strong: color-mix(in srgb, var(--sheen) 28%, transparent);
+  --surface-2:     color-mix(in srgb, var(--sheen) 7%, transparent);
+  --surface-3:     color-mix(in srgb, var(--sheen) 12%, transparent);
+  --accent-soft:   color-mix(in srgb, var(--sheen) 10%, transparent);
+  --sage-bg:       color-mix(in srgb, var(--sheen) 11%, transparent);
+  --sage-dark:     var(--sheen);
+  --fc-danger:     var(--deco-orange);
+  color-scheme: dark;
+  padding: 14px 14px 26px;
+}
+[data-pages-style="rpg"] #view-flashcards #subject-list-panel::before {
+  border-width: 16px 16px 26px;
+  border-image: url('../assets/today/chalkboard.webp?v=2') 48 48 78 fill / 16px 16px 26px / 0 stretch;
+}
+[data-pages-style="rpg"] #view-flashcards #subject-list-panel::after { display: none; }
+[data-pages-style="rpg"] #subject-list-panel .panel-header { border-bottom-style: dashed; }
+[data-pages-style="rpg"] #subject-list-panel .subject-item.active { border-left-color: color-mix(in srgb, var(--sheen) 75%, transparent); }
+[data-pages-style="rpg"] #subject-list-panel .subject-mini-fill { background: color-mix(in srgb, var(--sheen) 70%, transparent); }
+[data-pages-style="rpg"] #subject-list-panel .subject-due-badge { color: color-mix(in srgb, var(--deco-orange) 40%, var(--sheen)); background: color-mix(in srgb, var(--deco-orange) 22%, transparent); }
+[data-pages-style="rpg"] #subject-list-panel .fc-subject-search-input { background: color-mix(in srgb, var(--sheen) 8%, transparent); border-color: var(--border); }
+[data-pages-style="rpg"] #subject-list-panel .fc-subject-search-input:focus { border-color: var(--border-strong); background: color-mix(in srgb, var(--sheen) 12%, transparent); }
+[data-pages-style="rpg"] #subject-list-panel #add-subject-btn-2 { color: var(--text-2); border-color: var(--border-strong); background: transparent; }
+[data-pages-style="rpg"] #subject-list-panel #add-subject-btn-2:hover { color: var(--text); background: var(--surface-2); }
+[data-pages-style="rpg"] #subject-list-panel > div[style*="border-top"] { border-top-style: dashed !important; }
+
 /* Etwas Innenabstand, damit nichts an der Papierkante klebt */
 [data-pages-style="rpg"] :is(.b-main-card, .b-card, #view-flashcards .panel, #view-settings .settings-panel) { padding: 6px 6px 10px; }
 /* Große Budget-Blätter: Inhalt deutlich weg von der ausgefransten Kante */
