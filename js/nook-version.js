@@ -17,6 +17,7 @@ window.NOOK_CHANGELOG = [
     version: '2026.10.13',
     date: '2026-10-29',
     items: [
+      'RPG-Theme: Schalter klar erkennbar – aus blass mit stumpfem Zinnknopf, an mit glühender Messingschiene und leuchtendem Knopf',
       'Karteikarten: oben steht jetzt „Heute schon gelernt“ statt „Heute fällig“',
       'Karteikarten: Lernsessions pausieren und später fortsetzen; Neuladen verliert den Fortschritt nicht mehr. Doppelte Fragen (gleiche Vorderseite in mehreren Themen einer Prüfung) kommen pro Session nur noch einmal; Lernkarte im RPG-Nachtmodus nicht mehr grell',
       'Karteikarten: Antwort-Knöpfe heißen jetzt „Nicht gewusst“, „Schwer“ und „Gewusst“ und zeigen, was mit der Karte passiert; nochmal auf die Karte klicken dreht sie zurück zur Frage',

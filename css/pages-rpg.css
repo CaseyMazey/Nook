@@ -948,22 +948,21 @@
   --brass-lo:  color-mix(in srgb, var(--amber) 70%, var(--deco-ink));
   --brass-ink: color-mix(in srgb, var(--amber) 35%, var(--deco-ink));
 }
+/* Aus: blasse, matte Rille mit stumpfem Zinnknopf; an: glühende
+   Messingschiene, der Knopf leuchtet — an/aus auf einen Blick */
 [data-pages-style="rpg"] .toggle-slider {
-  background: linear-gradient(to bottom,
-    color-mix(in srgb, var(--deco-ink) 78%, var(--amber)),
-    color-mix(in srgb, var(--deco-ink) 60%, var(--amber)));
-  border: 1px solid var(--brass-lo);
-  box-shadow:
-    inset 0 2px 3px color-mix(in srgb, var(--deco-ink) 70%, transparent),
-    0 1px 0 color-mix(in srgb, var(--sheen) 35%, transparent);
+  background: color-mix(in srgb, var(--deco-ink) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--deco-ink) 28%, transparent);
+  box-shadow: inset 0 1px 2px color-mix(in srgb, var(--deco-ink) 22%, transparent);
 }
 [data-pages-style="rpg"] .toggle-slider::before {
   top: 2px; left: 2px;
   background: radial-gradient(circle at 35% 30%, var(--sheen) 0 10%, var(--brass-hi) 32%, var(--brass) 65%, var(--brass-lo) 100%);
   border: 1px solid var(--brass-ink);
-  box-shadow:
-    inset 0 -1px 1px color-mix(in srgb, var(--deco-ink) 35%, transparent),
-    0 1px 3px color-mix(in srgb, var(--shadow-tint) 60%, transparent);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--shadow-tint) 35%, transparent);
+  filter: grayscale(.85) brightness(1.05);
+  opacity: .7;
+  transition: transform var(--transition), filter var(--transition), opacity var(--transition), box-shadow var(--transition);
 }
 [data-pages-style="rpg"] .toggle input:checked + .toggle-slider {
   background: linear-gradient(to bottom, color-mix(in srgb, var(--amber) 72%, var(--deco-ink)), color-mix(in srgb, var(--amber) 92%, var(--deco-ink)));
@@ -971,6 +970,14 @@
   box-shadow:
     inset 0 1px 2px color-mix(in srgb, var(--deco-ink) 45%, transparent),
     0 0 7px color-mix(in srgb, var(--amber) 55%, transparent);
+}
+[data-pages-style="rpg"] .toggle input:checked + .toggle-slider::before {
+  background: radial-gradient(circle at 35% 30%, var(--sheen) 0 18%, var(--brass-hi) 42%, var(--brass) 75%, var(--brass-lo) 100%);
+  filter: none;
+  opacity: 1;
+  box-shadow:
+    0 0 4px 1px color-mix(in srgb, var(--brass-hi) 85%, transparent),
+    0 0 12px 2px color-mix(in srgb, var(--amber) 60%, transparent);
 }
 
 [data-pages-style="rpg"] .toggle input:focus-visible + .toggle-slider { outline: 2px solid var(--brass-hi); outline-offset: 2px; }
