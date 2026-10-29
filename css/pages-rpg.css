@@ -168,6 +168,12 @@
 /* Rückseite: Tinte statt --sage-fg (wäre hell auf hellem Papier), leicht
    grün getönt, damit man Vorder- und Rückseite unterscheidet */
 [data-pages-style="rpg"] #learn-card-back { background: color-mix(in srgb, var(--sage) 16%, var(--surface-solid)); color: var(--text); }
+/* Pausierte Session: Zettel, Inhalt weg von der gerissenen Kante */
+[data-pages-style="rpg"] #view-flashcards #fc-resume-banner { padding: 20px 28px 18px; --tilt: -0.3deg; }
+/* Nachts ist das Papier gedimmt — die Lernkarte mit, sonst leuchtet sie
+   als weißer Kasten aus dem Blatt */
+[data-pages-style="rpg"][data-theme-family="dark"] #learn-card-front { background: color-mix(in srgb, var(--sheen) 12%, transparent); }
+[data-pages-style="rpg"][data-theme-family="dark"] #learn-card-back { background: color-mix(in srgb, var(--sage) 14%, color-mix(in srgb, var(--sheen) 10%, transparent)); }
 [data-pages-style="rpg"] .group-header { background: transparent; }
 /* Prüfungen: Kopfzeile + Hinweis direkt auf dem Holz */
 [data-pages-style="rpg"] :is(.fc-exam-head-label, .fc-exam-empty) {

@@ -17,6 +17,7 @@ window.NOOK_CHANGELOG = [
     version: '2026.10.13',
     date: '2026-10-29',
     items: [
+      'Karteikarten: Lernsessions pausieren und später fortsetzen; Neuladen verliert den Fortschritt nicht mehr. Doppelte Fragen (gleiche Vorderseite in mehreren Themen einer Prüfung) kommen pro Session nur noch einmal; Lernkarte im RPG-Nachtmodus nicht mehr grell',
       'Karteikarten: Antwort-Knöpfe heißen jetzt „Nicht gewusst“, „Schwer“ und „Gewusst“ und zeigen, was mit der Karte passiert; nochmal auf die Karte klicken dreht sie zurück zur Frage',
       'Karteikarten: Archiv für Fächer – eigene Gruppen wie „1. Schuljahr“ anlegen und alte Fächer hineinschieben, sie bleiben lernbar, zählen aber nicht mehr bei „Heute fällig“; kompaktere Fachliste, die bei vielen Fächern in sich scrollt, im RPG-Theme als Kreidetafel',
       'Karteikarten: Inhaltsverzeichnis unter „Fächer“ – Prüfungen und Themen des Fachs auf einen Blick, Klick springt hin (und klappt auf), „Alle ein-/aufklappen“',

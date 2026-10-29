@@ -167,6 +167,8 @@ function renderSubjectList(){
   const search = (document.getElementById('fc-subject-search')?.value||'').toLowerCase();
   const matches = s => s.name.toLowerCase().includes(search) || (s.teacher||'').toLowerCase().includes(search);
   renderGlobalStats();
+  renderResumeBanner();
+  maybeAutoResumeLearnSession();
   if(subjects.length === 0){ empty.classList.remove('hidden'); return; }
   empty.classList.add('hidden');
 
@@ -737,23 +739,56 @@ function shuffleCards(cards){
   return a;
 }
 
+// Gleiche Vorderseite = gleiche Karte. In einer Prüfung über mehrere Themen
+// steckt dieselbe Frage oft in zwei Themengruppen (z. B. aus zwei
+// Lernzetteln) — in der Session soll sie trotzdem nur einmal kommen.
+function fcCardKey(c){ return String(c.front || '').trim().replace(/\s+/g, ' ').toLowerCase(); }
+function uniqueCardsByFront(cards){
+  const seen = new Set();
+  return cards.filter(c => { const k = fcCardKey(c); if(seen.has(k)) return false; seen.add(k); return true; });
+}
+
 // Gemeinsamer Einstieg: eine Themengruppe (nach Leitner-Box sortiert) oder
-// eine Prüfung = mehrere Themengruppen, bewusst durchgemischt
-function startGroupsLearnSession(subjId, groupIds, exam){
+// eine Prüfung = mehrere Themengruppen, bewusst durchgemischt.
+// Liegt für genau diese Themen noch eine gespeicherte Session vor, geht es
+// dort weiter; eine andere offene Session wird nur nach Rückfrage verworfen.
+// opts.fresh: immer neu beginnen („Nochmal“)
+function startGroupsLearnSession(subjId, groupIds, exam, opts = {}){
+  const saved = getSavedLearnSession();
+  if(saved && !opts.fresh){
+    if(isSameLearnTarget(saved, subjId, groupIds)){ if(resumeLearnSession()) return; }
+    else {
+      const info = savedLearnSessionInfo(saved);
+      if(info){
+        hubConfirm({
+          title: 'Offene Session verwerfen?',
+          message: `„${info.label}“ (${info.subj.name}) ist noch offen, ${info.rest} von ${info.total} Karten übrig. Startest du eine neue Session, geht dieser Stand verloren. Deine Antworten bis dahin bleiben gespeichert.`,
+          confirmText: 'Neue Session starten', danger: true,
+        }).then(ok => { if(ok) startGroupsLearnSession(subjId, groupIds, exam, { fresh: true }); });
+        return;
+      }
+    }
+  }
   const subj = subjects.find(s => s.id === subjId);
   learnSession.groupIds = groupIds;
   const groups = learnSessionGroups(subj);
-  const cards = groups.flatMap(g => g.cards);
-  if(!subj || cards.length === 0) return;
+  const all = groups.flatMap(g => g.cards);
+  if(!subj || all.length === 0) return;
+  const ordered = exam ? shuffleCards(all) : [...all].sort((a,b) => (a.box||1)-(b.box||1));
+  openLearnSession(subj, groupIds, exam, uniqueCardsByFront(ordered), 0, { correct: 0, wrong: 0 }, []);
+}
 
+function openLearnSession(subj, groupIds, exam, queue, index, stats, leitnerChanges){
   learnSession.active = true;
-  learnSession.queue = exam ? shuffleCards(cards) : [...cards].sort((a,b) => (a.box||1)-(b.box||1));
-  learnSession.index = 0;
+  learnSession.groupIds = groupIds;
+  learnSession.queue = queue;
+  learnSession.index = index;
   learnSession.flipped = false;
-  learnSession.subjId = subjId;
+  learnSession.subjId = subj.id;
   learnSession.exam = exam;
-  learnSession.stats = { correct: 0, wrong: 0 };
-  learnSession.leitnerChanges = [];
+  learnSession.stats = { correct: stats.correct || 0, wrong: stats.wrong || 0 };
+  learnSession.leitnerChanges = leitnerChanges || [];
+  const groups = learnSessionGroups(subj);
 
   // Session-Panel öffnen + Layout-Klasse
   document.getElementById('flashcard-layout')?.classList.add('session-open');
@@ -777,6 +812,100 @@ function startGroupsLearnSession(subjId, groupIds, exam){
   showLearnCard();
   // Liste/Fächer sind jetzt ausgeblendet — Blatt an den Anfang holen
   panel.scrollIntoView({ block: 'start' });
+  saveLearnSessionState(false);
+  renderResumeBanner();
+}
+
+// =========================
+// SESSION SPEICHERN / PAUSIEREN
+// Der Stand der laufenden Session liegt unter 'fc_learn_session'
+// ({ subjId, groupIds, exam, queueIds, index, stats, leitnerChanges, paused }),
+// damit Neuladen nichts verliert. Nur Karten-IDs, die Karten selbst bleiben
+// in 'subjects'. paused = bewusst pausiert (Hinweis „Fortsetzen“ über den
+// Fächern); sonst geht es beim nächsten Öffnen des Tabs von selbst weiter.
+// =========================
+
+function getSavedLearnSession(){
+  const s = DB.get('fc_learn_session', null);
+  return s && Array.isArray(s.queueIds) && Array.isArray(s.groupIds) ? s : null;
+}
+function clearSavedLearnSession(){ DB.set('fc_learn_session', null); }
+
+function saveLearnSessionState(paused){
+  if(!learnSession.active) return;
+  DB.set('fc_learn_session', {
+    subjId: learnSession.subjId,
+    groupIds: learnSession.groupIds,
+    exam: learnSession.exam,
+    queueIds: learnSession.queue.map(c => c.id),
+    index: learnSession.index,
+    stats: learnSession.stats,
+    leitnerChanges: learnSession.leitnerChanges,
+    paused: !!paused,
+    savedAt: new Date().toISOString(),
+  });
+}
+
+function isSameLearnTarget(saved, subjId, groupIds){
+  const a = [...saved.groupIds].sort().join('|'), b = [...groupIds].sort().join('|');
+  return saved.subjId === subjId && a === b;
+}
+
+// Gespeicherte Reihenfolge auf die aktuellen Karten abbilden (gelöschte
+// Karten fallen raus). null, wenn nichts mehr zu lernen ist.
+function savedLearnSessionInfo(saved){
+  const subj = subjects.find(s => s.id === saved.subjId);
+  if(!subj) return null;
+  const byId = new Map(subj.groups.filter(g => saved.groupIds.includes(g.id)).flatMap(g => g.cards).map(c => [c.id, c]));
+  const done = saved.queueIds.slice(0, saved.index).map(id => byId.get(id)).filter(Boolean);
+  const rest = saved.queueIds.slice(saved.index).map(id => byId.get(id)).filter(Boolean);
+  if(!rest.length) return null;
+  const label = saved.exam ? saved.exam.name : (subj.groups.find(g => g.id === saved.groupIds[0])?.name || 'Lernsession');
+  return { subj, done, restCards: rest, rest: rest.length, total: done.length + rest.length, label };
+}
+
+function resumeLearnSession(){
+  const saved = getSavedLearnSession();
+  const info = saved && savedLearnSessionInfo(saved);
+  if(!info){ clearSavedLearnSession(); renderResumeBanner(); return false; }
+  if(state.activeSubjectId !== info.subj.id){ state.activeSubjectId = info.subj.id; renderSubjectList(); }
+  openLearnSession(info.subj, saved.groupIds, saved.exam, [...info.done, ...info.restCards], info.done.length, saved.stats || {}, saved.leitnerChanges);
+  return true;
+}
+
+function renderResumeBanner(){
+  const el = document.getElementById('fc-resume-banner');
+  if(!el) return;
+  const saved = getSavedLearnSession();
+  const info = saved && !learnSession.active ? savedLearnSessionInfo(saved) : null;
+  el.classList.toggle('hidden', !info);
+  if(!info){ el.innerHTML = ''; return; }
+  const st = saved.stats || {};
+  el.innerHTML = `
+    <div class="fc-resume-text">
+      <span class="fc-resume-label">Pausierte Session</span>
+      <span class="fc-resume-title">${escHtml(info.label)} <span class="fc-resume-subj">· ${escHtml(info.subj.name)}</span></span>
+      <span class="fc-resume-meta">noch ${info.rest} von ${info.total} Karten · ✓ ${st.correct || 0} · ✗ ${st.wrong || 0}</span>
+    </div>
+    <div class="fc-resume-actions">
+      <button class="btn-ghost fc-resume-drop">Verwerfen</button>
+      <button class="btn-primary fc-resume-go">▶ Fortsetzen</button>
+    </div>`;
+  el.querySelector('.fc-resume-go').addEventListener('click', () => resumeLearnSession());
+  el.querySelector('.fc-resume-drop').addEventListener('click', async () => {
+    const ok = await hubConfirm({ title: 'Session verwerfen?', message: 'Der Stand der Session geht verloren. Deine bisherigen Antworten (Leitner-Boxen) bleiben gespeichert.', confirmText: 'Verwerfen', danger: true });
+    if(ok){ clearSavedLearnSession(); renderResumeBanner(); }
+  });
+}
+
+// Nach einem Neuladen mitten in der Session: beim ersten Öffnen des Tabs
+// direkt weitermachen (bewusst pausierte Sessions warten auf „Fortsetzen“)
+let fcAutoResumeChecked = false;
+function maybeAutoResumeLearnSession(){
+  if(fcAutoResumeChecked) return;
+  fcAutoResumeChecked = true;
+  const saved = getSavedLearnSession();
+  if(saved && !saved.paused && !learnSession.active) setTimeout(() => resumeLearnSession(), 0);
 }
 
 function renderTodayProgress(){
@@ -821,8 +950,8 @@ function renderHardCardsPanel(subj){
 }
 
 function jumpToHardCard(subj, group, fc){
-  // Aktuelle Lernsession unterbrechen und direkt zur Karte im Fach springen
-  closeSessionPanel();
+  // Aktuelle Lernsession pausieren und direkt zur Karte im Fach springen
+  pauseLearnSession();
   state.activeSubjectId = subj.id;
   renderSubjectList();
   renderSubjectDetail();
@@ -909,8 +1038,11 @@ function answerLearn(knew, mode){
   const subj = subjects.find(s => s.id === learnSession.subjId);
   const groups = learnSessionGroups(subj);
   {
-    const realCard = groups.flatMap(g => g.cards).find(c => c.id === card.id);
-    if(realCard){
+    // Doppelte (gleiche Vorderseite in anderen Themen der Session) bekommen
+    // dieselbe Bewertung, sonst tauchen sie später wieder als fällig auf
+    const key = fcCardKey(card);
+    const realCards = groups.flatMap(g => g.cards).filter(c => c.id === card.id || fcCardKey(c) === key);
+    realCards.forEach(realCard => {
       const oldBox = realCard.box || 1;
       if(mode === 'easy') realCard.box = Math.min(oldBox+1, 5);
       else if(mode === 'hard') realCard.box = Math.max(oldBox-1, 1);
@@ -918,9 +1050,9 @@ function answerLearn(knew, mode){
       realCard.lastSeen = new Date().toISOString();
       realCard.totalAnswers = (realCard.totalAnswers||0) + 1;
       if(knew) realCard.correctAnswers = (realCard.correctAnswers||0) + 1;
-      if(realCard.box !== oldBox) learnSession.leitnerChanges.push({ front: realCard.front, from: oldBox, to: realCard.box });
-      saveSubjects();
-    }
+      if(realCard.id === card.id && realCard.box !== oldBox) learnSession.leitnerChanges.push({ front: realCard.front, from: oldBox, to: realCard.box });
+    });
+    if(realCards.length) saveSubjects();
   }
   if(knew) learnSession.stats.correct++; else learnSession.stats.wrong++;
   recordAnswer(knew);
@@ -932,12 +1064,14 @@ function answerLearn(knew, mode){
     if(subj){ renderGroupList(subj); renderExamList(subj); }
     renderSubjectList();
   } else {
+    saveLearnSessionState(false);
     showLearnCard();
   }
 }
 
 function endLearnSession(){
   learnSession.active = false;
+  clearSavedLearnSession();
   const total = learnSession.queue.length;
   const correct = learnSession.stats.correct;
   const wrong = learnSession.stats.wrong;
@@ -979,7 +1113,7 @@ function endLearnSession(){
       </div>
     </div>
   `;
-  document.getElementById('learn-restart').addEventListener('click', () => startGroupsLearnSession(learnSession.subjId, learnSession.groupIds, learnSession.exam));
+  document.getElementById('learn-restart').addEventListener('click', () => startGroupsLearnSession(learnSession.subjId, learnSession.groupIds, learnSession.exam, { fresh: true }));
   document.getElementById('learn-close-panel').addEventListener('click', closeSessionPanel);
   renderGlobalStats();
 }
@@ -989,10 +1123,22 @@ function closeSessionPanel(){
   document.getElementById('fc-session-panel').classList.add('hidden');
   document.getElementById('flashcard-layout')?.classList.remove('session-open');
   renderGlobalStats();
+  renderResumeBanner();
 }
 
-document.getElementById('fc-session-panel-close').addEventListener('click', closeSessionPanel);
-document.getElementById('fc-session-end')?.addEventListener('click', closeSessionPanel);
+// ✕ und „Pausieren“ behalten den Stand, „Beenden“ verwirft ihn
+function pauseLearnSession(){
+  if(learnSession.active) saveLearnSessionState(true);
+  closeSessionPanel();
+}
+function stopLearnSession(){
+  clearSavedLearnSession();
+  closeSessionPanel();
+}
+
+document.getElementById('fc-session-panel-close').addEventListener('click', pauseLearnSession);
+document.getElementById('fc-session-pause')?.addEventListener('click', pauseLearnSession);
+document.getElementById('fc-session-end')?.addEventListener('click', stopLearnSession);
 
 // =========================
 // EXPORT

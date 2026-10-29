@@ -266,7 +266,14 @@ Dadurch ist jederzeit sichtbar, wie weit ein Thema gelernt wurde.
 
 Eine Lernsession wird für eine einzelne Themengruppe gestartet.
 
-Dabei werden alle Karten dieser Gruppe nacheinander gelernt.
+Dabei werden alle Karten dieser Gruppe nacheinander gelernt. Karten mit gleicher Vorderseite (Groß-/Kleinschreibung und Leerraum egal) kommen nur einmal; das betrifft vor allem Prüfungen, in denen dieselbe Frage in zwei Themen steckt. Die Antwort gilt dann für alle gleichen Karten der Session.
+
+Der Stand (Reihenfolge, Position, Richtig/Falsch) wird nach jeder Antwort unter `fc_learn_session` gespeichert:
+
+- Neuladen verliert nichts: beim nächsten Öffnen des Tabs geht die Session von selbst weiter.
+- „⏸ Pausieren“ (und ✕) schließt die Session mit Stand; über den Fächern erscheint „Pausierte Session“ mit „Fortsetzen“ / „Verwerfen“. Startet man dieselbe Gruppe/Prüfung erneut, geht es ebenfalls dort weiter.
+- „Beenden“ verwirft den Stand. Eine andere Session zu starten, während eine offen ist, fragt vorher nach.
+- Leitner-Boxen werden ohnehin bei jeder Antwort sofort gespeichert; verworfen wird nur der Session-Stand.
 
 Die Lernsession nimmt den ganzen Bereich ein: Kopfleiste (Titel, Import, + Fach), Fächer, Kartenliste und Statistik sind währenddessen ausgeblendet. Man soll nicht vorab die nächsten Fragen samt Antworten sehen können, die Session ist nur zum Lernen.
 

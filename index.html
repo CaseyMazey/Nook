@@ -781,6 +781,8 @@
         <div class="dash-content">
           <!-- Statistikleiste -->
           <div id="fc-global-stats"></div>
+          <!-- Pausierte Lernsession (flashcards.js: renderResumeBanner) -->
+          <div id="fc-resume-banner" class="panel hidden"></div>
           <!-- 3-Spalten-Layout -->
           <div id="flashcard-layout">
             <!-- Spalte 1: Fachliste + Inhaltsverzeichnis des gewählten Fachs -->
@@ -831,7 +833,7 @@
             <div id="fc-session-panel" class="hidden">
               <div class="fc-session-panel-head">
                 <span id="fc-session-panel-title">Lernsession</span>
-                <button class="modal-x" id="fc-session-panel-close">✕</button>
+                <button class="modal-x" id="fc-session-panel-close" title="Pausieren – später fortsetzen">✕</button>
               </div>
               <div class="fc-session-body">
                 <!-- Fach · Lehrer · Themengruppe -->
@@ -847,7 +849,10 @@
                     <div class="fc-session-section-label">Schwierige Karten <span id="fc-hard-count" class="leitner-badge"></span></div>
                     <div id="fc-hard-list"></div>
                   </div>
-                  <button id="fc-session-end" class="btn-ghost">Session beenden</button>
+                  <div class="fc-session-end-row">
+                    <button id="fc-session-pause" class="btn-ghost" title="Stand speichern und später fortsetzen">⏸ Pausieren</button>
+                    <button id="fc-session-end" class="btn-ghost" title="Session beenden, Stand verwerfen">Beenden</button>
+                  </div>
                 </div>
                 <div class="fc-session-main">
                   <div id="learn-progress-bar-wrap">
