@@ -101,6 +101,7 @@ const MONSTERS = [
   { id: 'n1', name: 'N1', tier: 'normal', emoji: '🟢' },
   { id: 'n2', name: 'N2', tier: 'normal', emoji: '🦇' },
   { id: 'r1', name: 'R1', tier: 'rare',   emoji: '👻' },
+  { id: 'm1', name: 'M1', tier: 'miniboss', emoji: '🐛' },
   { id: 'b1', name: 'B1', tier: 'boss',   emoji: '🐉' }
 ];
 
@@ -115,14 +116,25 @@ function newRun(mode, n, seed, step = 6000) {
   return FBCore.createRun({ mode, deck: deckOf(n), monsters: MONSTERS, rng: rng(seed), now: clock(step) });
 }
 
-test('fixed: 5 Räume, der 5. ist Boss, Sieg nach dem Boss', () => {
+test('fixed: 5 Räume à 5 Gegner, der 5. ist Miniboss, danach der große Boss', () => {
   const run = newRun('fixed', 6, 4);
   const spawns = [run.events[0]];
   while (!run.over) spawns.push(...FBCore.answer(run, answerRight(run)).filter(e => e.type === 'spawn'));
-  assert.deepEqual(spawns.map(s => s.room), [1, 2, 3, 4, 5]);
-  assert.deepEqual(spawns.map(s => s.tier === 'boss'), [false, false, false, false, true]);
+  assert.equal(spawns.length, 26);
+  for (let r = 0; r < 5; r++) {
+    const room = spawns.slice(r * 5, r * 5 + 5);
+    assert.deepEqual(room.map(s => [s.room, s.fight]), [1, 2, 3, 4, 5].map(f => [r + 1, f]));
+    assert.deepEqual(room.map(s => s.tier === 'miniboss'), [false, false, false, false, true]);
+    assert.ok(room.every(s => s.tier !== 'boss'));
+  }
+  assert.equal(spawns[25].tier, 'boss');
+  assert.equal(spawns[25].room, 6);
   assert.equal(run.won, true);
   assert.equal(run.roomsCleared, 5);
+});
+
+test('fixed: Miniboss-Werte aus CONFIG', () => {
+  assert.deepEqual(FBCore.enemyStats('miniboss', 1, 'fixed'), { hp: 50, atk: 20, xp: 35 });
 });
 
 test('falsche Antwort: Schaden am Spieler und Combo weg', () => {
@@ -136,13 +148,33 @@ test('falsche Antwort: Schaden am Spieler und Combo weg', () => {
   assert.equal(run.streak, 0);
 });
 
-test('fixed: Heilung nach Sieg, gedeckelt auf maxHp', () => {
+test('fixed: keine Heilung zwischen normalen Gegnern', () => {
   const run = newRun('fixed', 6, 6);
-  run.hp = 90;
+  run.hp = 50;
   run.enemy.hp = 1;
   const ev = FBCore.answer(run, answerRight(run));
-  assert.deepEqual(ev.find(e => e.type === 'heal'), { type: 'heal', amount: 10 });
-  assert.equal(run.hp, 100);
+  assert.ok(ev.some(e => e.type === 'defeat'));
+  assert.equal(ev.find(e => e.type === 'heal'), undefined);
+  assert.equal(run.hp, 50);
+});
+
+test('fixed: Heilung nach dem Miniboss (Raumende), gedeckelt auf maxHp', () => {
+  const run = newRun('fixed', 6, 6);
+  for (let i = 0; i < 4; i++) { run.enemy.hp = 1; FBCore.answer(run, answerRight(run)); }
+  assert.equal(run.enemy.tier, 'miniboss');
+  run.hp = 50;
+  run.enemy.hp = 1;
+  let ev = FBCore.answer(run, answerRight(run));
+  assert.deepEqual(ev.find(e => e.type === 'heal'), { type: 'heal', amount: 40 });
+  assert.equal(run.hp, 90);
+  assert.deepEqual(ev.find(e => e.type === 'spawn').room, 2);
+  assert.equal(run.roomsCleared, 1);
+  // gedeckelt
+  for (let i = 0; i < 4; i++) { run.enemy.hp = 1; FBCore.answer(run, answerRight(run)); }
+  run.hp = 80;
+  run.enemy.hp = 1;
+  ev = FBCore.answer(run, answerRight(run));
+  assert.deepEqual(ev.find(e => e.type === 'heal'), { type: 'heal', amount: 20 });
 });
 
 test('endless: Raum 5 und 10 sind Boss, Ende nur durch HP 0', () => {

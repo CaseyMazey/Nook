@@ -18,7 +18,8 @@
 // ────────────────────────────────────
 // MONSTER-REGISTRY (reine Daten)
 //
-// tier:   "normal" | "rare" | "boss"
+// tier:   "normal" | "rare" | "miniboss" | "boss"
+//         (Minibosse stehen am Ende jedes Raums in "Feste Räume", keine Haustiere)
 // emoji:  Platzhalter, solange es keine Grafik gibt
 // sprite: optional, Pfad zur Monster-Grafik
 //         (games/flashcard-battle/assets/monsters/<id>.png)
@@ -32,10 +33,13 @@ window.FB_MONSTERS = [
   { id: 'fledermaus',   name: 'Flatterfrage',     tier: 'normal', emoji: '🦇' },
   { id: 'ratte',        name: 'Bücherratte',      tier: 'normal', emoji: '🐀' },
   { id: 'irrlicht',     name: 'Irrlicht',         tier: 'rare',   emoji: '👻' },
+  { id: 'buecherwurm',  name: 'Bücherwurm',       tier: 'miniboss', emoji: '🐛' },
+  { id: 'tintenkrake',  name: 'Tintenkrake',      tier: 'miniboss', emoji: '🐙' },
   { id: 'wissensboss',  name: 'Der Wissens-Boss', tier: 'boss',   emoji: '🐉' }
 ];
 
 // Siege gegen ein Monster, bis es als Haustier freigeschaltet ist
+// (Stufen ohne Eintrag, z. B. Minibosse, werden keine Haustiere)
 window.FB_PET_WINS = { normal: 50, rare: 25, boss: 10 };
 
 function readFlashcardBattleProgress() {
@@ -77,7 +81,7 @@ window.registerGame({
   },
 
   // Cozy Home sammelt diese Haustiere ein (collectCrossGamePets in pets.js)
-  pets: window.FB_MONSTERS.filter(m => m.pet).map(m => ({
+  pets: window.FB_MONSTERS.filter(m => m.pet && window.FB_PET_WINS[m.tier]).map(m => ({
     ...m.pet,
     id: 'fb-' + m.id,
     sourceGame: 'flashcard-battle',

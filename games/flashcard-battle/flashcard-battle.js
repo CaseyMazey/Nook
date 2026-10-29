@@ -14,11 +14,11 @@
   const BOSS_BANNER_MS = 1400;
   const DEBUG_KEY = 'fb_debug';
   const MODES = [
-    { id: 'fixed',   label: 'Feste Räume',       hint: '5 Gegner, der letzte ist ein Boss. Zwischen den Kämpfen heilst du dich ein wenig.' },
+    { id: 'fixed',   label: 'Feste Räume',       hint: '5 Räume mit je 5 Gegnern, am Ende jedes Raums ein Miniboss, zum Schluss der große Boss. Nach jedem Raum heilst du dich.' },
     { id: 'endless', label: 'Endlos',            hint: 'Immer stärkere Gegner, alle 5 Räume ein Boss. Wie weit kommst du?' },
     { id: 'cards',   label: 'Nach Kartenanzahl', hint: 'Jede Karte kommt genau einmal dran. Bei den letzten 5 Karten wartet der Boss.' }
   ];
-  const TIER_LABELS = { normal: 'Normal', rare: 'Selten', boss: 'Boss' };
+  const TIER_LABELS = { normal: 'Normal', rare: 'Selten', miniboss: 'Miniboss', boss: 'Boss' };
 
   const state = {
     root: null, screen: 'setup',
@@ -188,7 +188,7 @@
                 <span class="fb-mon-name">${esc(m.name)}</span>
                 <span class="fb-mon-tier">${TIER_LABELS[m.tier]}</span>
                 <span class="fb-mon-wins">Besiegt: ${wins}×</span>
-                ${m.pet ? `<span class="fb-mon-pet">Haustier: ${Math.min(wins, need)}/${need}</span>` : ''}
+                ${m.pet && need ? `<span class="fb-mon-pet">Haustier: ${Math.min(wins, need)}/${need}</span>` : ''}
               </div>`;
     }).join('');
     const seenCount = window.FB_MONSTERS.filter(m => p.seen[m.id]).length;
@@ -236,7 +236,10 @@
   }
 
   function roomLabel(run) {
-    if (run.mode === 'fixed') return `Raum ${run.room}/${FBCore.CONFIG.fixedRooms}`;
+    if (run.mode === 'fixed') {
+      if (run.room > FBCore.CONFIG.fixedRooms) return 'Endboss';
+      return `Raum ${run.room}/${FBCore.CONFIG.fixedRooms} · Gegner ${run.fight}/${FBCore.CONFIG.monstersPerRoom}`;
+    }
     if (run.mode === 'endless') return `Raum ${run.room}`;
     return `noch ${run.unanswered} Karten`;
   }
@@ -364,8 +367,14 @@
       else floatText('#fb-float-player', '+' + heal.amount, 'heal');
     }
 
-    const bossComing = events.some(e => e.type === 'spawn' && e.tier === 'boss');
-    if (bossComing) state.root.querySelector('#fb-banner').classList.remove('hidden');
+    const bossSpawn = events.find(e => e.type === 'spawn' && (e.tier === 'boss' || e.tier === 'miniboss'));
+    const bossComing = !!bossSpawn;
+    if (bossComing) {
+      const banner = state.root.querySelector('#fb-banner');
+      banner.textContent = bossSpawn.tier === 'miniboss' ? 'Ein Miniboss erscheint!'
+        : run.mode === 'fixed' ? 'Der Endboss erscheint!' : 'Ein Boss erscheint!';
+      banner.classList.remove('hidden');
+    }
 
     state.timer = setTimeout(() => {
       state.locked = false;
@@ -434,15 +443,16 @@
       { path: 'baseDamage', label: 'Schaden geben (Grundschaden)', step: 1 },
       { path: 'comboStep', label: 'Combo pro Treffer (+×)', step: 0.1 },
       { path: 'comboMax', label: 'Combo maximal (×)', step: 0.5 },
-      { path: 'healBetweenRooms', label: 'Heilung zwischen Räumen', step: 1 }
+      { path: 'healBetweenRooms', label: 'Heilung nach jedem Raum', step: 1 }
     ]},
-    ...['normal', 'rare', 'boss'].map(t => ({ group: 'Gegner: ' + TIER_LABELS[t], fields: [
+    ...['normal', 'rare', 'miniboss', 'boss'].map(t => ({ group: 'Gegner: ' + TIER_LABELS[t], fields: [
       { path: `enemy.${t}.hp`, label: 'HP', step: 1 },
       { path: `enemy.${t}.atk`, label: 'Schaden bekommen (Angriff)', step: 1 },
       { path: `enemy.${t}.xp`, label: 'XP', step: 1 }
     ]})),
     { group: 'Dungeon', fields: [
       { path: 'fixedRooms', label: 'Feste Räume: Anzahl', step: 1 },
+      { path: 'monstersPerRoom', label: 'Feste Räume: Gegner pro Raum (inkl. Miniboss)', step: 1 },
       { path: 'endlessBossEvery', label: 'Endlos: Boss alle … Räume', step: 1 },
       { path: 'endlessScale', label: 'Endlos: Stärker pro Raum (%)', scale: 0.01, step: 1 },
       { path: 'cardModeBossCards', label: 'Kartenmodus: Boss bei … Karten', step: 1 },

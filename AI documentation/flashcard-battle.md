@@ -45,7 +45,7 @@ Der Spieler wählt den Modus beim Start selbst:
 
 | Modus | Ablauf | Gewonnen | Boss |
 |---|---|---|---|
-| **Feste Räume** | feste Anzahl Gegner hintereinander, kleine Heilung zwischen den Kämpfen | alle Gegner besiegt | am Dungeon-Ende |
+| **Feste Räume** | 5 Räume mit je 5 Gegnern, der 5. Gegner jedes Raums ist ein **Miniboss**; Heilung nur nach jedem Raum | großer Boss besiegt | großer Boss nach dem letzten Raum |
 | **Endlos** | Gegner werden immer stärker, bis die HP leer sind | kein Sieg, der Rekord (erreichter Raum) zählt als Highscore | alle X Gegner (Startwert 5) |
 | **Nach Kartenanzahl** | Dungeon ist so lang wie das Set, jede Karte kommt einmal dran | alle Karten durch, HP > 0 | mit der letzten Karte |
 
@@ -161,12 +161,12 @@ Alle Zahlen stehen gesammelt in `CONFIG` in `games/flashcard-battle/fb-core.js` 
 | Combo | +0,5 pro Treffer in Folge, max. x5 (ab dem 9. Treffer) |
 | Lesezeit | 10 s, per Klick überspringbar |
 | Kritisch | Antwort unter 5 s nach Erscheinen der Antworten, ×1,5 |
-| Heilung zwischen Räumen (Feste Räume) | 20 |
-| Feste Räume | 5, der letzte ist Boss |
+| Heilung nach jedem Raum (Feste Räume) | 40 |
+| Feste Räume | 5 Räume à 5 Gegner (4 + Miniboss), danach der große Boss = 26 Kämpfe |
 | Endlos | Boss alle 5 Räume, Gegner +10 % HP/Angriff pro Raum |
 | Kartenmodus | Boss bei ≤ 5 übrigen Karten |
 | Seltene Monster | 15 % |
-| Gegner normal / selten / Boss | 30/15/10 · 40/20/25 · 80/25/50 (HP/Angriff/XP) |
+| Gegner normal / selten / Miniboss / Boss | 30/15/10 · 40/20/25 · 50/20/35 · 80/25/50 (HP/Angriff/XP) |
 | Level | von Level L auf L+1: 100 × L XP |
 
 ---
@@ -192,7 +192,8 @@ Alle Zahlen stehen gesammelt in `CONFIG` in `games/flashcard-battle/fb-core.js` 
 
 - **Bosse und Seltenheit** sind im MVP enthalten (abweichend vom Juni-Plan), damit die Haustier-Tabelle normal/selten/Boss funktioniert.
 - **Spielmodi**: Der Spieler wählt selbst zwischen Feste Räume, Endlos und Nach Kartenanzahl.
-- **Boss-Position**: Feste Räume am Ende, Endlos alle X Gegner, Kartenanzahl mit der letzten Karte.
+- **Boss-Position**: Feste Räume am Ende (nach 5 Räumen mit je einem Miniboss), Endlos alle X Gegner, Kartenanzahl mit der letzten Karte.
+- **Minibosse** (29.10.2026): nur in „Feste Räume“, als 5. Gegner jedes Raums. Sie werden keine Cozy-Home-Haustiere (keine Stufe in `FB_PET_WINS`).
 - **Kleine Sets**: weniger Antwortmöglichkeiten statt Auffüllen aus anderen Sets.
 - **Monster**: Casey gestaltet sie als Assets, kein Editor im MVP.
 - **Tägliche Challenge**: bleibt Platzhalter, kommt später.

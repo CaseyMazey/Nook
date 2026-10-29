@@ -16,8 +16,9 @@
     critBonus: 1.5,
     comboStep: 0.5,          // Multiplikator = min(1 + 0.5 × (Serie − 1), 5)
     comboMax: 5,
-    healBetweenRooms: 20,
-    fixedRooms: 5,           // Raum 5 ist der Boss
+    healBetweenRooms: 40,    // Feste Räume: Heilung nach jedem Raum (nach dem Miniboss)
+    fixedRooms: 5,           // danach kommt der große Boss
+    monstersPerRoom: 5,      // der letzte Gegner eines Raums ist der Miniboss
     endlessBossEvery: 5,     // Endlos: jeder 5. Raum ist ein Boss
     endlessScale: 0.1,       // Endlos: HP und Angriff +10 % pro Raum
     cardModeBossCards: 5,    // Kartenmodus: Boss erscheint, sobald ≤ 5 Karten übrig sind (aktuelle Frage mitgezählt)
@@ -26,6 +27,7 @@
     enemy: {
       normal: { hp: 30, atk: 15, xp: 10 },
       rare:   { hp: 40, atk: 20, xp: 25 },
+      miniboss: { hp: 50, atk: 20, xp: 35 },
       boss:   { hp: 80, atk: 25, xp: 50 }
     },
     xpPerLevel: 100          // von Level L auf L+1 braucht man 100 × L XP
@@ -155,12 +157,24 @@
   // ── Run (ein Dungeon-Durchlauf) ──
   // Modi: 'fixed' (feste Räume), 'endless', 'cards' (jede Karte einmal).
   // answer() liefert Ereignisse, aus denen UI und Fortschritt lesen.
+  // fixed: run.room = Raum (1–fixedRooms, danach Endboss), run.fight = Gegner im Raum.
+  // endless/cards: run.room zählt jeden Gegner.
 
   function isBossNext(run) {
     const nextRoom = run.room + 1;
-    if (run.mode === 'fixed') return nextRoom >= CONFIG.fixedRooms;
     if (run.mode === 'endless') return nextRoom % CONFIG.endlessBossEvery === 0;
     return run.unanswered <= CONFIG.cardModeBossCards;
+  }
+
+  function randomTier(run) { return run._rng() < CONFIG.rareChance ? 'rare' : 'normal'; }
+
+  // Feste Räume: weiterzählen und Stufe bestimmen (Miniboss am Raumende, Endboss nach dem letzten Raum)
+  function advanceFixed(run) {
+    if (run.room === 0) { run.room = 1; run.fight = 1; }
+    else if (run.fight < CONFIG.monstersPerRoom) run.fight++;
+    else { run.room++; run.fight = 1; }
+    if (run.room > CONFIG.fixedRooms) return 'boss';
+    return run.fight >= CONFIG.monstersPerRoom ? 'miniboss' : randomTier(run);
   }
 
   function pickMonster(run, tier) {
@@ -171,12 +185,15 @@
   }
 
   function spawnNext(run, ev) {
-    const tier = isBossNext(run) ? 'boss' : (run._rng() < CONFIG.rareChance ? 'rare' : 'normal');
-    run.room++;
+    let tier;
+    if (run.mode === 'fixed') tier = advanceFixed(run);
+    else { tier = isBossNext(run) ? 'boss' : randomTier(run); run.room++; }
     const monster = pickMonster(run, tier);
     const stats = enemyStats(tier, run.room, run.mode);
     run.enemy = { monsterId: monster.id, tier, hp: stats.hp, maxHp: stats.hp, atk: stats.atk, xp: stats.xp };
-    ev.push({ type: 'spawn', monsterId: monster.id, tier, room: run.room });
+    const spawn = { type: 'spawn', monsterId: monster.id, tier, room: run.room };
+    if (run.mode === 'fixed') spawn.fight = run.fight;
+    ev.push(spawn);
   }
 
   function nextQuestion(run) {
@@ -212,7 +229,7 @@
 
   function createRun({ mode, deck, monsters, rng = Math.random, now = () => Date.now() }) {
     const run = {
-      mode, hp: CONFIG.playerHp, maxHp: CONFIG.playerHp, room: 0, roomsCleared: 0,
+      mode, hp: CONFIG.playerHp, maxHp: CONFIG.playerHp, room: 0, fight: 0, roomsCleared: 0,
       enemy: null, streak: 0, maxStreak: 0,
       deck, queue: shuffle(deck, rng), unanswered: deck.length,
       question: null, questionStartedAt: 0, over: false, won: false, events: [],
@@ -239,13 +256,14 @@
       if (run.enemy.hp === 0) {
         const e = run.enemy;
         ev.push({ type: 'defeat', monsterId: e.monsterId, tier: e.tier, xp: e.xp });
-        run.roomsCleared++;
+        // Feste Räume zählen geschaffte Räume (Miniboss), die anderen Modi jeden Gegner
+        if (run.mode !== 'fixed' || e.tier === 'miniboss') run.roomsCleared++;
         run.enemy = null;
         // Kartenmodus: Boss besiegt, aber noch Karten übrig → nächster Boss (jede Karte kommt dran)
         if (e.tier === 'boss' && run.mode === 'fixed') { endRun(run, true, ev); }
         else if (run.mode === 'cards' && run.unanswered === 0) { endRun(run, true, ev); }
         else {
-          if (run.mode === 'fixed') {
+          if (run.mode === 'fixed' && e.tier === 'miniboss') {
             const heal = Math.min(CONFIG.healBetweenRooms, run.maxHp - run.hp);
             if (heal > 0) { run.hp += heal; ev.push({ type: 'heal', amount: heal }); }
           }
