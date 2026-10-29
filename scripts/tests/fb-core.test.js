@@ -221,3 +221,55 @@ test('kritischer Treffer erhöht Schaden im Run', () => {
   const hit = FBCore.answer(run, answerRight(run))[0];
   assert.deepEqual(hit, { type: 'hit', amount: 15, crit: true, streak: 1 });
 });
+
+// ── Fortschritt ──
+
+test('startRun: Streak zählt Folgetage, gleicher Tag nicht doppelt', () => {
+  let p = FBCore.startRun(FBCore.emptyProgress(), '2026-10-29');
+  p = FBCore.startRun(p, '2026-10-29');
+  assert.deepEqual([p.totalGames, p.streak.days], [2, 1]);
+  p = FBCore.startRun(p, '2026-10-30');
+  assert.equal(p.streak.days, 2);
+  p = FBCore.startRun(p, '2026-11-02');
+  assert.equal(p.streak.days, 1);
+});
+
+test('startRun: Streak über Monatswechsel', () => {
+  let p = FBCore.startRun(FBCore.emptyProgress(), '2026-10-31');
+  p = FBCore.startRun(p, '2026-11-01');
+  assert.equal(p.streak.days, 2);
+});
+
+test('applyEvents zählt Treffer, Siege, XP und Rekord', () => {
+  const p = FBCore.applyEvents(FBCore.emptyProgress(), [
+    { type: 'spawn', monsterId: 'irrlicht', tier: 'rare', room: 1 },
+    { type: 'hit', amount: 15, crit: true, streak: 3 },
+    { type: 'hurt', amount: 20 },
+    { type: 'defeat', monsterId: 'irrlicht', tier: 'rare', xp: 25 },
+    { type: 'end', won: false, mode: 'endless', roomsCleared: 7, maxStreak: 3 }
+  ]);
+  assert.equal(p.counters.correct, 1);
+  assert.equal(p.counters.crits, 1);
+  assert.equal(p.counters.wrong, 1);
+  assert.equal(p.counters.maxCombo, 3);
+  assert.equal(p.counters.monstersDefeated, 1);
+  assert.equal(p.counters['defeat:irrlicht'], 1);
+  assert.equal(p.xp, 25);
+  assert.equal(p.seen.irrlicht, true);
+  assert.equal(p.bestEndless, 7);
+  assert.equal(p.runsWon, 0);
+});
+
+test('applyEvents: gewonnener Run zählt runsWon, Original bleibt unverändert', () => {
+  const before = FBCore.emptyProgress();
+  const p = FBCore.applyEvents(before, [{ type: 'end', won: true, mode: 'fixed', roomsCleared: 5, maxStreak: 2 }]);
+  assert.equal(p.runsWon, 1);
+  assert.equal(p.bestEndless, 0);
+  assert.equal(before.runsWon, 0);
+});
+
+test('applyEvents verträgt alten, unvollständigen Speicherstand', () => {
+  const p = FBCore.applyEvents({ totalGames: 3 }, [{ type: 'hurt', amount: 5 }]);
+  assert.equal(p.totalGames, 3);
+  assert.equal(p.counters.wrong, 1);
+});

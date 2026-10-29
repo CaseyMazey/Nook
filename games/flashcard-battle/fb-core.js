@@ -203,10 +203,76 @@
     return ev;
   }
 
+  // ── Fortschritt (liegt unter gameHighscores['flashcard-battle']) ──
+  // Rein: gibt immer ein neues Objekt zurück und ergänzt fehlende Felder,
+  // damit ältere Speicherstände nicht brechen.
+
+  function emptyProgress() {
+    return {
+      totalGames: 0, runsWon: 0, bestEndless: 0, xp: 0,
+      counters: { correct: 0, wrong: 0, crits: 0, maxCombo: 0, monstersDefeated: 0 },
+      seen: {},
+      streak: { last: null, days: 0 }
+    };
+  }
+
+  function normalizeProgress(p) {
+    const base = emptyProgress();
+    const src = p || {};
+    return {
+      ...base, ...src,
+      counters: { ...base.counters, ...(src.counters || {}) },
+      seen: { ...(src.seen || {}) },
+      streak: { ...base.streak, ...(src.streak || {}) }
+    };
+  }
+
+  // 'YYYY-MM-DD' → Tagesnummer (UTC, nur zum Vergleichen aufeinanderfolgender Tage)
+  function dayNumber(dateStr) {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    return Math.round(Date.UTC(y, m - 1, d) / 86400000);
+  }
+
+  function startRun(progress, today) {
+    const p = normalizeProgress(progress);
+    p.totalGames++;
+    const last = p.streak.last;
+    if (last !== today) {
+      const consecutive = last && dayNumber(today) - dayNumber(last) === 1;
+      p.streak = { last: today, days: consecutive ? p.streak.days + 1 : 1 };
+    }
+    return p;
+  }
+
+  function applyEvents(progress, events) {
+    const p = normalizeProgress(progress);
+    const c = p.counters;
+    (events || []).forEach(e => {
+      if (e.type === 'hit') {
+        c.correct++;
+        if (e.crit) c.crits++;
+        c.maxCombo = Math.max(c.maxCombo, e.streak);
+      } else if (e.type === 'hurt') {
+        c.wrong++;
+      } else if (e.type === 'defeat') {
+        p.xp += e.xp;
+        c.monstersDefeated++;
+        c['defeat:' + e.monsterId] = (c['defeat:' + e.monsterId] || 0) + 1;
+      } else if (e.type === 'spawn') {
+        p.seen[e.monsterId] = true;
+      } else if (e.type === 'end') {
+        if (e.won) p.runsWon++;
+        if (e.mode === 'endless') p.bestEndless = Math.max(p.bestEndless, e.roomsCleared);
+      }
+    });
+    return p;
+  }
+
   window.FBCore = {
     CONFIG, shuffle, buildDeck, makeQuestion,
     comboMultiplier, calcDamage, enemyStats, levelFromXp,
-    createRun, answer
+    createRun, answer,
+    emptyProgress, startRun, applyEvents
   };
 
 })();
