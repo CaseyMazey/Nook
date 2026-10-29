@@ -41,6 +41,7 @@ function renderExamList(subj){
     hint.className = 'fc-exam-empty';
     hint.textContent = 'Fasse die Themen der nächsten Prüfung zusammen, um sie gemischt zu lernen.';
     wrap.appendChild(hint);
+    renderSubjectToc(subj);
     return;
   }
 
@@ -51,6 +52,7 @@ function renderExamList(subj){
 
     const card = document.createElement('div');
     card.className = 'fc-exam-card';
+    card.dataset.examId = exam.id;
     card.innerHTML = `
       ${fcIcon('fc-exam-icon', '<path d="M9 4h6a1 1 0 0 1 1 1v1H8V5a1 1 0 0 1 1-1z"/><path d="M8 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><path d="m9 13 2 2 4-4"/>')}
       <div class="fc-exam-main">
@@ -66,6 +68,7 @@ function renderExamList(subj){
     card.querySelector('.fc-meatball').addEventListener('click', e => { e.stopPropagation(); openExamMenu(subj, exam, e.currentTarget); });
     wrap.appendChild(card);
   });
+  renderSubjectToc(subj);
 }
 
 function openExamMenu(subj, exam, anchor){

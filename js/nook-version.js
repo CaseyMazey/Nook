@@ -10,9 +10,17 @@
 // hinten wegfallen, angezeigt werden ohnehin nur die neuesten.
 // =========================
 
-window.NOOK_VERSION = '2026.10.12';
+window.NOOK_VERSION = '2026.10.13';
 
 window.NOOK_CHANGELOG = [
+  {
+    version: '2026.10.13',
+    date: '2026-10-29',
+    items: [
+      'Karteikarten: Inhaltsverzeichnis unter „Fächer“ – Prüfungen und Themen des Fachs auf einen Blick, Klick springt hin (und klappt auf), „Alle ein-/aufklappen“',
+      'Karteikarten: eingeklappte Themengruppen sind nur noch eine schmale Zeile mit Fortschrittsbalken; Fachtitel im RPG-Theme besser lesbar',
+    ],
+  },
   {
     version: '2026.10.12',
     date: '2026-10-28',

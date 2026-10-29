@@ -95,9 +95,19 @@ Intern besitzt ein Fach außerdem:
 
 ---
 
+# Inhaltsverzeichnis
+
+Unter der Fächerliste steht für das gewählte Fach ein Inhaltsverzeichnis: Prüfungen und Themengruppen (mit Kartenzahl bzw. fälligen Karten). Ein Klick springt zur Stelle und klappt die Themengruppe dabei auf. „Alle ein-/aufklappen“ schaltet alle Themengruppen auf einmal. Auf dem Handy startet es zugeklappt.
+
+Es ist reine Navigation und ändert keine Lerndaten (nur den Klappzustand).
+
+---
+
 # Themengruppen
 
 Jedes Fach kann beliebig viele Themengruppen besitzen.
+
+Eingeklappt nimmt eine Themengruppe nur eine schmale Zeile ein: Kopfzeile und dünner Leitner-Balken (Verteilung als Tooltip).
 
 Eine Themengruppe dient dazu, ein Fach in kleinere Themenbereiche aufzuteilen.
 

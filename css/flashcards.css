@@ -39,8 +39,24 @@
 #flashcard-layout.session-open { flex: 1; min-height: 0; grid-template-rows: minmax(0, 1fr); }
 #flashcard-layout.session-open #fc-session-panel { position: relative; top: auto; width: 100%; max-width: 1000px; justify-self: center; align-self: stretch; min-height: 0; max-height: none; padding: 18px 22px; overflow: hidden; }
 
-/* Spalte 1: Fächerliste */
+/* Spalte 1: Fächerliste + Inhaltsverzeichnis */
+.fc-side-col { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
 #subject-list-panel { min-height: 200px; }
+#fc-toc.hidden { display: none; }
+#fc-toc > summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; }
+#fc-toc > summary::-webkit-details-marker { display: none; }
+.fc-toc-chevron { width: 7px; height: 7px; border-right: 1.5px solid var(--text-3); border-bottom: 1.5px solid var(--text-3); transform: rotate(45deg); transition: transform var(--transition); margin-right: 4px; }
+#fc-toc:not([open]) .fc-toc-chevron { transform: rotate(-45deg); }
+#fc-toc-body { padding: 4px 8px 10px; display: flex; flex-direction: column; }
+.fc-toc-section { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: calc(10px * var(--core-font-scale)); font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--text-3); padding: 10px 6px 4px; }
+.fc-toc-toggle-all { font-size: calc(10px * var(--core-font-scale)); font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--text-3); background: none; border: none; cursor: pointer; padding: 2px 4px; border-radius: var(--radius-sm); }
+.fc-toc-toggle-all:hover { color: var(--text); background: var(--surface-2); }
+.fc-toc-item { display: flex; align-items: baseline; gap: 8px; width: 100%; text-align: left; padding: 5px 6px; border-radius: var(--radius); background: none; border: none; cursor: pointer; font-family: var(--font); font-size: calc(13px * var(--core-font-scale)); color: var(--text-2); transition: background var(--transition), color var(--transition); }
+.fc-toc-item:hover { background: var(--surface-2); color: var(--text); }
+.fc-toc-name { flex: 1; min-width: 0; }
+.fc-toc-count { font-family: var(--mono); font-size: calc(11px * var(--core-font-scale)); color: var(--text-3); white-space: nowrap; }
+.fc-toc-exam .fc-toc-name { font-weight: 600; color: var(--text); }
+.group-card, .fc-exam-card { scroll-margin-top: 16px; }
 .fc-subject-search-wrap { position: relative; padding: 10px 12px 6px; }
 .fc-search-icon { position: absolute; left: 22px; top: 50%; transform: translateY(-50%); color: var(--text-3); pointer-events: none; }
 .fc-subject-search-input { width: 100%; padding: 7px 10px 7px 30px; font-size: calc(13px * var(--core-font-scale)); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-2); color: var(--text); font-family: var(--font); outline: none; box-sizing: border-box; }
@@ -72,6 +88,11 @@
 .group-title { font-size: calc(15px * var(--core-font-scale)); font-weight: 600; flex: 1; color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .group-count { font-size: calc(12px * var(--core-font-scale)); font-family: var(--mono); color: var(--text-3); white-space: nowrap; }
 .group-actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+/* Eingeklappt: nur Kopfzeile + dünner Fortschrittsbalken (Details per Tooltip) */
+.group-card.collapsed .group-header { padding-block: 8px; border-bottom: none; }
+.group-card.collapsed .group-progress-row { padding: 0 16px 8px; border-bottom: none; }
+.group-card.collapsed .leitner-bar { height: 4px; margin-bottom: 0; }
+.group-card.collapsed .leitner-legend { display: none; }
 
 /* Leitner progress bar */
 .group-progress-row { padding: 10px 16px 8px; border-bottom: 1px solid var(--border); background: var(--surface); }

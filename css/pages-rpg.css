@@ -147,6 +147,21 @@
   color: var(--sage-fg) !important;
   text-shadow: 0 1px 2px color-mix(in srgb, var(--shadow-tint) 80%, transparent);
 }
+/* Fachtitel: Fraktur bleibt, aber mit Luft zwischen den Buchstaben, nicht
+   fett (fette Fraktur läuft zu) und warmes Messing mit dunkler Kontur statt
+   reinem Weiß — sonst auf dem hellen Holz schwer lesbar */
+[data-pages-style="rpg"] #subject-detail-title {
+  color: var(--brass-hi) !important;
+  font-weight: 400 !important;
+  letter-spacing: .06em;
+  word-spacing: .12em;
+  line-height: 1.25;
+  font-size: calc(24px * var(--core-font-scale)) !important;
+  text-shadow:
+    0 1px 0 color-mix(in srgb, var(--deco-ink) 85%, transparent),
+    0 0 1px color-mix(in srgb, var(--deco-ink) 90%, transparent),
+    0 2px 6px color-mix(in srgb, var(--shadow-tint) 70%, transparent);
+}
 /* Lernkarte im Session-Blatt: eigene helle Fläche, damit Vorder-/Rückseite
    beim Umdrehen sichtbar bleiben */
 [data-pages-style="rpg"] :is(#learn-card-front, #learn-card-back) { background: var(--surface-solid); }

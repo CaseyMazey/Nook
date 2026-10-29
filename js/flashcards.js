@@ -172,7 +172,7 @@ function openSubjectMenu(subj, anchor){
     closeAllMenus();
     if(!confirm(`Fach "${subj.name}" wirklich löschen? Alle Karten gehen verloren.`)) return;
     subjects = subjects.filter(s => s.id !== subj.id);
-    if(state.activeSubjectId === subj.id){ state.activeSubjectId = null; document.getElementById('flashcard-subject-view').classList.add('hidden'); document.getElementById('flashcard-placeholder').classList.remove('hidden'); }
+    if(state.activeSubjectId === subj.id){ state.activeSubjectId = null; document.getElementById('flashcard-subject-view').classList.add('hidden'); document.getElementById('flashcard-placeholder').classList.remove('hidden'); renderSubjectToc(null); }
     saveSubjects(); renderSubjectList();
   });
   positionMenu(menu, anchor);
@@ -276,7 +276,7 @@ function renderSubjectDetail(){
 function renderGroupList(subj){
   const list = document.getElementById('group-list'); list.innerHTML = '';
   if(subj.groups.length === 0){
-    const p = document.createElement('p'); p.className='empty-state'; p.textContent='Noch keine Themengruppen.'; list.appendChild(p); return;
+    const p = document.createElement('p'); p.className='empty-state'; p.textContent='Noch keine Themengruppen.'; list.appendChild(p); renderSubjectToc(subj); return;
   }
   subj.groups.forEach(group => {
     const collapsed = collapsedGroups.has(group.id);
@@ -286,7 +286,7 @@ function renderGroupList(subj){
     const pct = calcGroupAccuracy(group);
     const totalCards = group.cards.length;
 
-    const card = document.createElement('div'); card.className='group-card';
+    const card = document.createElement('div'); card.className='group-card' + (collapsed ? ' collapsed' : ''); card.dataset.groupId = group.id;
 
     // Header
     const head = document.createElement('div'); head.className='group-header';
@@ -325,6 +325,7 @@ function renderGroupList(subj){
       leitnerBar.appendChild(seg);
     });
     const leitnerLegend = document.createElement('div'); leitnerLegend.className='leitner-legend';
+    progRow.title = labels.map((l,i) => boxes[i] ? `${l}: ${boxes[i]}` : '').filter(Boolean).join(' · ');
     boxes.forEach((cnt,i) => {
       if(!cnt) return;
       const badge = document.createElement('span'); badge.className='leitner-badge';
@@ -368,7 +369,48 @@ function renderGroupList(subj){
   addGroupBtn2.addEventListener('click', () => openGroupModal(subj.id));
   addGroupWrap.appendChild(addGroupBtn2);
   list.appendChild(addGroupWrap);
+  renderSubjectToc(subj);
 }
+
+// =========================
+// INHALTSVERZEICHNIS (linke Spalte unter „Fächer“)
+// Prüfungen + Themengruppen des gewählten Fachs; Klick klappt die Gruppe
+// auf und springt hin. Reine Navigation, ändert nur collapsedGroups.
+// =========================
+
+function renderSubjectToc(subj){
+  const toc = document.getElementById('fc-toc');
+  const body = document.getElementById('fc-toc-body');
+  if(!toc || !body) return;
+  if(!subj || (!subj.groups.length && !(subj.exams || []).length)){ toc.classList.add('hidden'); return; }
+  toc.classList.remove('hidden');
+  const exams = subj.exams || [];
+  const allCollapsed = subj.groups.length > 0 && subj.groups.every(g => collapsedGroups.has(g.id));
+  body.innerHTML = `
+    ${exams.length ? `<div class="fc-toc-section">Prüfungen</div>
+      ${exams.map(ex => `<button class="fc-toc-item fc-toc-exam" data-exam-id="${ex.id}"><span class="fc-toc-name">${escHtml(ex.name)}</span></button>`).join('')}` : ''}
+    <div class="fc-toc-section">Themen <button class="fc-toc-toggle-all">${allCollapsed ? 'Alle aufklappen' : 'Alle einklappen'}</button></div>
+    ${subj.groups.map(g => {
+      const due = calcDueCount(g.cards);
+      return `<button class="fc-toc-item" data-group-id="${g.id}"><span class="fc-toc-name">${escHtml(g.name)}</span><span class="fc-toc-count${due ? ' subject-due' : ''}">${due ? due + ' fällig' : g.cards.length}</span></button>`;
+    }).join('')}`;
+
+  body.querySelectorAll('.fc-toc-item[data-group-id]').forEach(btn => btn.addEventListener('click', () => {
+    const id = btn.dataset.groupId;
+    if(collapsedGroups.has(id)){ collapsedGroups.delete(id); DB.set('collapsedGroups', [...collapsedGroups]); renderGroupList(subj); }
+    document.querySelector(`.group-card[data-group-id="${id}"]`)?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+  }));
+  body.querySelectorAll('.fc-toc-exam').forEach(btn => btn.addEventListener('click', () => {
+    document.querySelector(`.fc-exam-card[data-exam-id="${btn.dataset.examId}"]`)?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+  }));
+  body.querySelector('.fc-toc-toggle-all')?.addEventListener('click', () => {
+    subj.groups.forEach(g => { if(allCollapsed) collapsedGroups.delete(g.id); else collapsedGroups.add(g.id); });
+    DB.set('collapsedGroups', [...collapsedGroups]); renderGroupList(subj);
+  });
+}
+
+// Auf dem Handy steht das Verzeichnis über dem Inhalt — dort zugeklappt starten
+if(window.matchMedia('(max-width: 480px)').matches) document.getElementById('fc-toc')?.removeAttribute('open');
 
 function calcGroupDue(group){
   return calcDueCount(group.cards);
