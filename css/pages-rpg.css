@@ -1022,3 +1022,120 @@
 [data-pages-style="rpg"] .fc-stat-rate :is(.fc-stat-value, .fc-stat-label, .fc-stat-icon) { color: var(--brass-ink); }
 [data-pages-style="rpg"] .fc-stat-rate :is(.fc-stat-value, .fc-stat-label) { text-shadow: 0 1px 0 color-mix(in srgb, var(--sheen) 45%, transparent); }
 [data-pages-style="rpg"] .fc-stat-value { font-family: var(--font-heading); font-weight: 400; }
+
+/* =============================================================
+   KARTEIKARTEN: THEMENGRUPPEN ABWECHSLUNGSREICH
+   Drei Papiersorten (Zyklus 3), fünf Befestigungen (Zyklus 5) und
+   gelegentliche Deko (Zyklus 7) überlagern sich — dadurch wiederholt
+   sich eine Kombination erst nach 105 Gruppen. Breitere Slices bei den
+   neuen Blättern legen Randstrich bzw. verbrannte Ecken in den Rand.
+============================================================= */
+[data-pages-style="rpg"] #group-list > .group-card:nth-child(3n+2)::before {
+  border-image: url('../assets/questboard/note-ruled.webp') 72 fill / 22px / 0 stretch;
+}
+[data-pages-style="rpg"] #group-list > .group-card:nth-child(3n)::before {
+  border-image: url('../assets/questboard/note-aged.webp') 120 fill / 22px / 0 stretch;
+}
+/* leichte, unterschiedliche Schräglage des Papiers */
+[data-pages-style="rpg"] #group-list > .group-card:nth-child(4n+1) { --tilt: -0.25deg; }
+[data-pages-style="rpg"] #group-list > .group-card:nth-child(4n+2) { --tilt: 0.2deg; --flip: -1; }
+[data-pages-style="rpg"] #group-list > .group-card:nth-child(4n+3) { --tilt: 0.35deg; }
+[data-pages-style="rpg"] #group-list > .group-card:nth-child(4n)   { --tilt: -0.15deg; --flip: -1; }
+
+/* Befestigungen: Messingpin (Standard) · rote Pinnnadel · Klebestreifen · Nagel · Wachssiegel */
+[data-pages-style="rpg"] #group-list > .group-card:nth-child(5n+2)::after {
+  background-image: url('../assets/questboard/pin-red.webp');
+  left: 22%; width: 20px; height: 26px; top: -11px;
+}
+[data-pages-style="rpg"] #group-list > .group-card:nth-child(5n+3)::after {
+  background-image: url('../assets/questboard/tape.webp');
+  width: 74px; height: 30px; margin-left: -37px; top: -13px;
+  transform: rotate(-4deg); opacity: .92;
+}
+[data-pages-style="rpg"] #group-list > .group-card:nth-child(5n+4)::after {
+  background-image: url('../assets/questboard/pin-nail.webp');
+  left: auto; right: 24%; width: 15px; height: 20px; top: -8px;
+}
+[data-pages-style="rpg"] #group-list > .group-card:nth-child(5n)::after {
+  background-image: url('../assets/questboard/seal.webp');
+  left: 30px; width: 30px; height: 30px; margin-left: 0; top: -12px;
+}
+
+/* Deko unten links auf manchen Blättern (weg von den Knöpfen rechts) (über die Fortschrittszeile,
+   damit sie auch eingeklappt sichtbar bleibt) */
+[data-pages-style="rpg"] #group-list > .group-card:is(:nth-child(7n+3), :nth-child(7n+5), :nth-child(7n+6)) .group-progress-row::after {
+  content: '';
+  position: absolute;
+  left: 14px; bottom: -12px;
+  width: 30px; height: 30px;
+  background: center / contain no-repeat;
+  pointer-events: none;
+  z-index: 2;
+  filter: drop-shadow(0 2px 2px color-mix(in srgb, var(--shadow-tint) 40%, transparent));
+}
+[data-pages-style="rpg"] #group-list > .group-card:nth-child(7n+3) .group-progress-row::after {
+  background-image: url('../assets/questboard/quill.webp');
+  width: 44px; height: 44px; bottom: -16px; transform: rotate(12deg);
+}
+[data-pages-style="rpg"] #group-list > .group-card:nth-child(7n+5) .group-progress-row::after { background-image: url('../assets/questboard/coin.webp'); width: 24px; height: 24px; }
+[data-pages-style="rpg"] #group-list > .group-card:nth-child(7n+6) .group-progress-row::after { background-image: url('../assets/questboard/d20.webp'); width: 26px; height: 26px; transform: rotate(-14deg); }
+
+/* =============================================================
+   KARTEIKARTEN: PRÜFUNGEN — ledergebundene Tafel mit Goldnaht und
+   Messingnieten statt Papier, damit sie sich von den Themen abhebt
+============================================================= */
+[data-pages-style="rpg"] .fc-exam-card {
+  position: relative;
+  border-radius: 8px;
+  border: 2px solid color-mix(in srgb, var(--deco-ink) 80%, transparent);
+  background:
+    var(--rivet) left 8px top 8px / 8px 8px no-repeat,
+    var(--rivet) right 8px top 8px / 8px 8px no-repeat,
+    var(--rivet) left 8px bottom 8px / 8px 8px no-repeat,
+    var(--rivet) right 8px bottom 8px / 8px 8px no-repeat,
+    radial-gradient(ellipse at 30% 20%, color-mix(in srgb, var(--leather-hi) 70%, transparent), transparent 65%),
+    linear-gradient(to bottom, var(--leather-hi), var(--leather) 50%, color-mix(in srgb, var(--leather) 75%, var(--deco-ink)));
+  outline: 1px dashed color-mix(in srgb, var(--brass-hi) 55%, transparent);
+  outline-offset: -8px;
+  box-shadow:
+    inset 0 0 0 4px color-mix(in srgb, var(--deco-ink) 22%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--sheen) 15%, transparent),
+    0 8px 16px color-mix(in srgb, var(--shadow-tint) 50%, transparent);
+  padding: 16px 22px;
+}
+[data-pages-style="rpg"] .fc-exam-icon { color: var(--brass-hi); }
+[data-pages-style="rpg"] .fc-exam-name {
+  font-family: var(--font-heading); font-weight: 400; letter-spacing: .04em;
+  font-size: calc(18px * var(--core-font-scale));
+  color: var(--brass-hi);
+  text-shadow: 0 -1px 0 color-mix(in srgb, var(--deco-ink) 70%, transparent);
+}
+[data-pages-style="rpg"] .fc-exam-meta { color: color-mix(in srgb, var(--sheen) 62%, var(--amber)); }
+[data-pages-style="rpg"] .fc-exam-meta .subject-due { color: color-mix(in srgb, var(--deco-orange) 55%, var(--sheen)); }
+/* Themen als kleine Pergament-Etiketten */
+[data-pages-style="rpg"] .fc-exam-topic {
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--sheen) 88%, var(--amber)), color-mix(in srgb, var(--sheen) 72%, var(--amber)));
+  border: 1px solid color-mix(in srgb, var(--deco-ink) 30%, transparent);
+  border-radius: 3px;
+  color: var(--deco-ink);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--shadow-tint) 40%, transparent);
+}
+[data-pages-style="rpg"] .fc-exam-card .fc-meatball { color: color-mix(in srgb, var(--sheen) 70%, var(--amber)); }
+[data-pages-style="rpg"] .fc-exam-card .fc-meatball:hover { background: color-mix(in srgb, var(--sheen) 12%, transparent); color: var(--brass-hi); }
+
+/* Messingknöpfe: „Gemischt lernen“ und die Bedienknöpfe direkt auf dem Holz */
+[data-pages-style="rpg"] :is(.fc-exam-learn, #fc-filter-btn, .fc-exam-add) {
+  border: 1px solid var(--brass-lo);
+  background: linear-gradient(170deg, var(--brass-hi), var(--brass) 50%, var(--brass-lo));
+  color: var(--brass-ink);
+  font-weight: 700;
+  text-shadow: 0 1px 0 color-mix(in srgb, var(--sheen) 45%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--sheen) 55%, transparent),
+    inset 0 -1px 2px color-mix(in srgb, var(--deco-ink) 30%, transparent),
+    0 3px 6px color-mix(in srgb, var(--shadow-tint) 45%, transparent);
+}
+[data-pages-style="rpg"] :is(.fc-exam-learn, #fc-filter-btn, .fc-exam-add):not(:disabled):hover {
+  background: linear-gradient(170deg, color-mix(in srgb, var(--brass-hi) 80%, var(--sheen)), var(--brass-hi) 50%, var(--brass));
+  color: var(--brass-ink);
+}
