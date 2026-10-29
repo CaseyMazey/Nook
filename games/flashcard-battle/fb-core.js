@@ -11,7 +11,8 @@
   const CONFIG = {
     playerHp: 100,
     baseDamage: 10,
-    critWindowMs: 5000,
+    readMs: 10000,           // Lesezeit für die Frage, bevor die Antworten erscheinen (vorher per Klick überspringbar)
+    critWindowMs: 5000,      // zählt erst ab Erscheinen der Antworten
     critBonus: 1.5,
     comboStep: 0.5,          // Multiplikator = min(1 + 0.5 × (Serie − 1), 5)
     comboMax: 5,
@@ -30,8 +31,53 @@
     xpPerLevel: 100          // von Level L auf L+1 braucht man 100 × L XP
   };
 
+  // ── Debug-/Test-Werte ──
+  // CONFIG bleibt dasselbe Objekt; applyConfig() setzt erst alles auf die
+  // Standardwerte zurück und übernimmt dann nur bekannte Zahlen-Felder.
+  const DEFAULTS = JSON.parse(JSON.stringify(CONFIG));
+
+  function resetConfig() {
+    Object.keys(DEFAULTS).forEach(k => {
+      if (k === 'enemy') Object.keys(DEFAULTS.enemy).forEach(t => Object.assign(CONFIG.enemy[t], DEFAULTS.enemy[t]));
+      else CONFIG[k] = DEFAULTS[k];
+    });
+  }
+
+  function applyConfig(overrides) {
+    resetConfig();
+    const o = overrides || {};
+    const num = v => typeof v === 'number' && isFinite(v);
+    Object.keys(DEFAULTS).forEach(k => {
+      if (k === 'enemy') {
+        Object.keys(DEFAULTS.enemy).forEach(t => Object.keys(DEFAULTS.enemy[t]).forEach(s => {
+          const v = o.enemy?.[t]?.[s];
+          if (num(v)) CONFIG.enemy[t][s] = v;
+        }));
+      } else if (num(o[k])) {
+        CONFIG[k] = o[k];
+      }
+    });
+  }
+
   // Vergleichsschlüssel wie fcCardKey im Karteikarten-Tab
   function norm(s) { return String(s || '').trim().replace(/\s+/g, ' ').toLowerCase(); }
+
+  // Markdown → Klartext: nur Formatierung entfernen (Paare wie **x**, `x`,
+  // Überschriften-/Listenzeichen), Inhaltszeichen wie _ * | bleiben stehen.
+  function plainText(md) {
+    return String(md || '')
+      .replace(/(```|~~~)[\w+#.-]*\n?/g, '')
+      .replace(/^\s{0,3}(#{1,6}|>|[-*+]|\d+\.)\s+/gm, '')
+      .replace(/\*\*(.+?)\*\*/g, '$1')
+      .replace(/__(.+?)__/g, '$1')
+      .replace(/~~(.+?)~~/g, '$1')
+      .replace(/==(.+?)==/g, '$1')
+      .replace(/`([^`\n]+)`/g, '$1')
+      .replace(/(^|[^\w*])\*(?!\s)([^*\n]+?)\*(?!\w)/g, '$1$2')
+      .replace(/(^|[^\w])_(?!\s)([^_\n]+?)_(?!\w)/g, '$1$2')
+      .replace(/[ \t]+/g, ' ')                  // Zeilenumbrüche bleiben (Listen in Antworten)
+      .split('\n').map(l => l.trim()).filter(Boolean).join('\n');
+  }
 
   function shuffle(arr, rng) {
     const a = arr.slice();
@@ -47,14 +93,19 @@
     const seen = new Set();
     const deck = [];
     (cards || []).forEach(c => {
-      const front = String(c.front || '').trim();
+      const front = String(toText(c.front || '')).trim();
       const back = String(toText(c.back || '')).trim();
-      const key = norm(front);
+      const key = norm(c.front);
       if (!front || !back || seen.has(key)) return;
       seen.add(key);
       deck.push({ id: c.id, front, back });
     });
     return deck;
+  }
+
+  // Spielbar, wenn es genug unterschiedliche Antworten für Multiple Choice gibt
+  function playable(deck) {
+    return new Set((deck || []).map(c => norm(c.back))).size >= CONFIG.minCards;
   }
 
   // Multiple Choice: richtige Rückseite + bis zu 2 Distraktoren mit anderem Text
@@ -115,6 +166,7 @@
   function pickMonster(run, tier) {
     const pool = run._monsters.filter(m => m.tier === tier);
     const list = pool.length ? pool : run._monsters;
+    if (!list.length) return { id: 'unbekannt', name: 'Unbekanntes Monster', tier, emoji: '❔' };
     return list[Math.floor(run._rng() * list.length)];
   }
 
@@ -262,6 +314,13 @@
     return p;
   }
 
+  // Anzeige: ein Streak gilt nur, wenn zuletzt heute oder gestern gespielt wurde
+  function currentStreak(progress, today) {
+    const s = progress?.streak;
+    if (!s || !s.last) return 0;
+    return dayNumber(today) - dayNumber(s.last) <= 1 ? s.days : 0;
+  }
+
   function applyEvents(progress, events) {
     const p = normalizeProgress(progress);
     const c = p.counters;
@@ -287,10 +346,11 @@
   }
 
   window.FBCore = {
-    CONFIG, shuffle, buildDeck, makeQuestion,
+    CONFIG, DEFAULTS, applyConfig, resetConfig,
+    shuffle, plainText, buildDeck, playable, makeQuestion,
     comboMultiplier, calcDamage, enemyStats, levelFromXp,
     createRun, answer, startQuestionTimer, abortRun,
-    emptyProgress, startRun, applyEvents
+    emptyProgress, startRun, applyEvents, currentStreak
   };
 
 })();

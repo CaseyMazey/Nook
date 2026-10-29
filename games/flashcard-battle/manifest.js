@@ -45,7 +45,7 @@ function readFlashcardBattleProgress() {
 window.registerGame({
   id: 'flashcard-battle',
   title: 'Flashcard Battle',
-  modalSize: "large",
+  modalSize: "big",
   description: 'Kämpfe gegen den Wissens-Boss und steige im Level auf!',
   icon: '🃏',
   accent: '',
@@ -53,15 +53,20 @@ window.registerGame({
   getStats() {
     const p = readFlashcardBattleProgress();
     const c = p.counters || {};
-    const level = window.FBCore ? window.FBCore.levelFromXp(p.xp || 0).level : '—';
+    const core = window.FBCore;
+    const level = core ? core.levelFromXp(p.xp || 0).level : '—';
+    const d = new Date();
+    const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const streak = core ? core.currentStreak(p, today) : (p.streak?.days || 0);
+    const rooms = p.bestEndless || 0;
     return [
       { label: 'Level', value: level },
       { label: 'Siege', value: p.runsWon || 0 },
-      { label: 'Endlos-Rekord', value: (p.bestEndless || 0) + ' Räume' },
+      { label: 'Endlos-Rekord', value: rooms + (rooms === 1 ? ' Raum' : ' Räume') },
       { label: 'Besiegte Monster', value: c.monstersDefeated || 0 },
       { label: 'Höchste Combo', value: c.maxCombo || 0 },
       { label: 'Kritische Treffer', value: c.crits || 0 },
-      { label: 'Lern-Streak', value: (p.streak?.days || 0) + (p.streak?.days === 1 ? ' Tag' : ' Tage') }
+      { label: 'Lern-Streak', value: streak + (streak === 1 ? ' Tag' : ' Tage') }
     ];
   },
 

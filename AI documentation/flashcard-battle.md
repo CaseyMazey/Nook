@@ -69,9 +69,13 @@ Im MVP gibt es nur Multiple Choice. Ankreuzaufgaben und weitere Fragetypen komme
 - Längere Serien erhöhen den Schaden, Multiplikator bis maximal **x5**
 - Eine falsche Antwort setzt die Combo zurück
 
+## Lesezeit
+
+- Jede Frage erscheint zuerst allein. Die Antworten kommen nach **10 Sekunden** Lesezeit oder früher per Klick auf „Antworten zeigen“ bzw. Leertaste/Enter.
+
 ## Kritische Treffer
 
-- Richtige Antwort **innerhalb von 5 Sekunden** → kritischer Treffer, **+50 % Schaden**
+- Richtige Antwort **innerhalb von 5 Sekunden nach Erscheinen der Antworten** → kritischer Treffer, **+50 % Schaden**. Die Lesezeit zählt nicht mit.
 
 ---
 
@@ -155,7 +159,8 @@ Alle Zahlen stehen gesammelt in `CONFIG` in `games/flashcard-battle/fb-core.js` 
 | Spieler-HP | 100 |
 | Grundschaden | 10 |
 | Combo | +0,5 pro Treffer in Folge, max. x5 (ab dem 9. Treffer) |
-| Kritisch | Antwort unter 5 s, ×1,5 |
+| Lesezeit | 10 s, per Klick überspringbar |
+| Kritisch | Antwort unter 5 s nach Erscheinen der Antworten, ×1,5 |
 | Heilung zwischen Räumen (Feste Räume) | 20 |
 | Feste Räume | 5, der letzte ist Boss |
 | Endlos | Boss alle 5 Räume, Gegner +10 % HP/Angriff pro Raum |
@@ -175,6 +180,8 @@ Alle Zahlen stehen gesammelt in `CONFIG` in `games/flashcard-battle/fb-core.js` 
 | `games/flashcard-battle/flashcard-battle.js` / `.css` | UI: Setup, Kampf, Ergebnis, Kompendium, Statistik |
 | `scripts/tests/fb-core.test.js` | Tests für `fb-core.js`: `node --test "scripts/tests/*.test.js"` |
 
+- **Debug-Menü** (🐞 im Setup und im Kampf): Lesezeit, Schnellangriff-Fenster und -Bonus, Spieler-HP, Schaden, Combo, Heilung, HP/Angriff/XP je Gegnerstufe und Dungeon-Werte anpassen, im Kampf zusätzlich die aktuellen HP von Spieler und Monster sowie den Monster-Angriff. Die Werte liegen unter DB `fb_debug` und werden per `FBCore.applyConfig()` auf `CONFIG` angewendet; „Standardwerte“ löscht sie. Im Setup zeigt „Debug-Werte aktiv“, wenn etwas abweicht.
+- **Karteninhalt**: Markdown wird per `FBCore.plainText()` in Klartext umgewandelt (nur Formatierung, Zeichen wie `_ * |` bleiben, Zeilenumbrüche auch). Ein Set braucht mindestens 2 unterschiedliche Antworten.
 - **Speicher**: alles unter `gameHighscores['flashcard-battle']` (Siege, XP, Zähler, gesehene Monster, Streak). Wird nach jeder Antwort geschrieben, ein abgebrochener Run verliert also nichts.
 - **Monster ergänzen**: Eintrag in `FB_MONSTERS` mit `id`, `name`, `tier`, `emoji`. Für eine Grafik `sprite: 'games/flashcard-battle/assets/monsters/<id>.png'` ergänzen, ohne Grafik wird das Emoji gezeigt.
 - **Haustier freischalten**: dem Monster ein `pet`-Objekt geben (Felder wie bei Snake) und unter `games/flashcard-battle/assets/pets/<id>/` die Bilder `default.png`, `icon.png` und `sleep.png` ablegen. Cozy Home prüft das über den allgemeinen Unlock-Typ `counter` (`games/cozy-home/pets.js`), der Zähler heißt `defeat:<id>`.

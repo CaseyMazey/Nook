@@ -298,3 +298,60 @@ test('abortRun: Endlos-Rekord bleibt beim Aufgeben erhalten, kein Sieg', () => {
   assert.equal(p.runsWon, 0);
   assert.deepEqual(FBCore.abortRun(run), []);
 });
+
+// ── Lesezeit, Debug-Werte, Review-Minors ──
+
+test('CONFIG: 10 s Lesezeit als Standard', () => {
+  assert.equal(FBCore.CONFIG.readMs, 10000);
+});
+
+test('applyConfig überschreibt Werte, resetConfig stellt Standard wieder her', () => {
+  FBCore.applyConfig({ baseDamage: 50, readMs: 2000, enemy: { boss: { hp: 5 } }, unbekannt: 1, playerHp: 'x' });
+  assert.equal(FBCore.CONFIG.baseDamage, 50);
+  assert.equal(FBCore.CONFIG.readMs, 2000);
+  assert.equal(FBCore.CONFIG.enemy.boss.hp, 5);
+  assert.equal(FBCore.CONFIG.enemy.boss.atk, 25);
+  assert.equal(FBCore.CONFIG.playerHp, 100);
+  assert.equal('unbekannt' in FBCore.CONFIG, false);
+  FBCore.applyConfig({ baseDamage: 20 });
+  assert.equal(FBCore.CONFIG.readMs, 10000);      // jede Anwendung startet bei den Standardwerten
+  FBCore.resetConfig();
+  assert.equal(FBCore.CONFIG.baseDamage, 10);
+  assert.equal(FBCore.CONFIG.enemy.boss.hp, 80);
+});
+
+test('playable: braucht mindestens 2 unterschiedliche Antworten', () => {
+  assert.equal(FBCore.playable([{ id: 'a', front: 'A', back: 'Ja' }, { id: 'b', front: 'B', back: ' ja' }]), false);
+  assert.equal(FBCore.playable([{ id: 'a', front: 'A', back: 'Ja' }, { id: 'b', front: 'B', back: 'Nein' }]), true);
+  assert.equal(FBCore.playable([{ id: 'a', front: 'A', back: 'Ja' }]), false);
+});
+
+test('plainText: entfernt nur Markdown-Formatierung, keine Inhaltszeichen', () => {
+  assert.equal(FBCore.plainText('snake_case'), 'snake_case');
+  assert.equal(FBCore.plainText('3*4=12'), '3*4=12');
+  assert.equal(FBCore.plainText('a|b'), 'a|b');
+  assert.equal(FBCore.plainText('**horse** und __Pferd__'), 'horse und Pferd');
+  assert.equal(FBCore.plainText('*kursiv* und `code`'), 'kursiv und code');
+  assert.equal(FBCore.plainText('# Titel\n- eins\n- zwei'), 'Titel\neins\nzwei');
+  assert.equal(FBCore.plainText('a  b\n\n\n  c '), 'a b\nc');
+  assert.equal(FBCore.plainText('```js\nlet x = 1;\n```'), 'let x = 1;');
+  assert.equal(FBCore.plainText('~~alt~~ ==neu=='), 'alt neu');
+});
+
+test('buildDeck: Vorderseite wird ebenfalls als Klartext angezeigt', () => {
+  const deck = FBCore.buildDeck([{ id: 'a', front: '**Hund**', back: 'dog' }], FBCore.plainText);
+  assert.equal(deck[0].front, 'Hund');
+});
+
+test('currentStreak: veralteter Streak zählt als 0', () => {
+  const p = { streak: { last: '2026-10-27', days: 7 } };
+  assert.equal(FBCore.currentStreak(p, '2026-10-28'), 7);
+  assert.equal(FBCore.currentStreak(p, '2026-10-27'), 7);
+  assert.equal(FBCore.currentStreak(p, '2026-10-29'), 0);
+  assert.equal(FBCore.currentStreak({}, '2026-10-29'), 0);
+});
+
+test('createRun mit leerer Monster-Liste stürzt nicht ab', () => {
+  const run = FBCore.createRun({ mode: 'fixed', deck: deckOf(4), monsters: [], rng: rng(16), now: clock(6000) });
+  assert.equal(typeof run.enemy.monsterId, 'string');
+});
