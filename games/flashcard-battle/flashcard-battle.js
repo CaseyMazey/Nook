@@ -116,6 +116,10 @@
           </div>
         </div>
         <button class="game-action-btn" id="fb-start" ${state.setKey ? '' : 'disabled'}>Kampf starten</button>
+        <div class="fb-setup-links">
+          <button class="game-toggle-btn" id="fb-open-compendium">Kompendium</button>
+          <button class="game-toggle-btn" id="fb-open-stats">Statistik</button>
+        </div>
       </div>`;
 
     state.root.querySelectorAll('.fb-set:not([disabled])').forEach(b =>
@@ -123,6 +127,67 @@
     state.root.querySelectorAll('.fb-mode').forEach(b =>
       b.addEventListener('click', () => { state.mode = b.dataset.mode; renderSetup(); }));
     state.root.querySelector('#fb-start').addEventListener('click', startBattle);
+    state.root.querySelector('#fb-open-compendium').addEventListener('click', renderCompendium);
+    state.root.querySelector('#fb-open-stats').addEventListener('click', renderStats);
+  }
+
+  // ---- Kompendium & Statistik ----
+
+  function subScreen(title, body) {
+    state.root.innerHTML = `
+      <div class="fb-sub">
+        <div class="fb-sub-top">
+          <span class="fb-sub-title">${title}</span>
+          <button class="game-toggle-btn" id="fb-sub-back">Zurück</button>
+        </div>
+        ${body}
+      </div>`;
+    state.root.querySelector('#fb-sub-back').addEventListener('click', renderSetup);
+  }
+
+  function renderCompendium() {
+    state.screen = 'compendium';
+    const p = FBCore.applyEvents(readProgress(), []);
+    const cards = window.FB_MONSTERS.map(m => {
+      if (!p.seen[m.id]) {
+        return `<div class="fb-mon unknown"><div class="fb-mon-art"><span class="fb-emoji">❔</span></div>
+                  <span class="fb-mon-name">???</span><span class="fb-mon-tier">${TIER_LABELS[m.tier]}</span></div>`;
+      }
+      const wins = p.counters['defeat:' + m.id] || 0;
+      const need = window.FB_PET_WINS[m.tier];
+      return `<div class="fb-mon fb-tier-${m.tier}">
+                ${monsterArt(m, 'fb-mon-art')}
+                <span class="fb-mon-name">${esc(m.name)}</span>
+                <span class="fb-mon-tier">${TIER_LABELS[m.tier]}</span>
+                <span class="fb-mon-wins">Besiegt: ${wins}×</span>
+                ${m.pet ? `<span class="fb-mon-pet">Haustier: ${Math.min(wins, need)}/${need}</span>` : ''}
+              </div>`;
+    }).join('');
+    const seenCount = window.FB_MONSTERS.filter(m => p.seen[m.id]).length;
+    subScreen(`Kompendium <span class="fb-sub-count">${seenCount}/${window.FB_MONSTERS.length}</span>`,
+      `<div class="fb-mon-grid">${cards}</div>`);
+  }
+
+  function renderStats() {
+    state.screen = 'stats';
+    const p = FBCore.applyEvents(readProgress(), []);
+    const c = p.counters;
+    const rows = [
+      ['Gewonnene Kämpfe', p.runsWon],
+      ['Besiegte Monster', c.monstersDefeated],
+      ['Richtige Antworten', c.correct],
+      ['Falsche Antworten', c.wrong],
+      ['Höchste Combo', c.maxCombo],
+      ['Kritische Treffer', c.crits],
+      ['Gesammelte XP', p.xp],
+      ['Level', FBCore.levelFromXp(p.xp).level],
+      ['Endlos-Rekord', p.bestEndless + ' Räume'],
+      ['Lern-Streak', p.streak.days + (p.streak.days === 1 ? ' Tag' : ' Tage')]
+    ];
+    subScreen('Statistik', `
+      <div class="fb-stat-grid">
+        ${rows.map(([l, v]) => `<div class="fb-stat"><span class="fb-stat-label">${l}</span><span class="fb-stat-value">${v}</span></div>`).join('')}
+      </div>`);
   }
 
   // ---- Kampf ----

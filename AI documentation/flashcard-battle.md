@@ -1,9 +1,9 @@
 # Flashcard Battle
 
-Version: 0.2 (Konzept, noch keine Spiellogik)
+Version: 1.0 (MVP spielbar)
 
 Stand: 29.10.2026. Zusammengeführt aus den Plänen vom 18.06.2026 (ChatGPT-Gespräch) und Caseys Beschreibung vom 29.10.2026.
-Aktueller Code: nur `games/flashcard-battle/manifest.js` als Platzhalter mit `comingSoon: true`.
+MVP umgesetzt am 29.10.2026 (Umsetzungsplan: `AI documentation/plans/2026-10-29-flashcard-battle-mvp.md`).
 
 ---
 
@@ -59,7 +59,9 @@ Die Fragen werden aus den Karteikarten erzeugt, z. B.:
 - Ankreuzaufgaben
 - weitere Typen später möglich
 
-Sets mit weniger als 3 Karten: **weniger Optionen** (2 Antworten bzw. Richtig/Falsch). Es wird nicht mit Karten aus anderen Sets aufgefüllt.
+Sets mit weniger als 3 Karten: **weniger Optionen** (2 Antworten). Es wird nicht mit Karten aus anderen Sets aufgefüllt. Ein Set braucht mindestens 2 Karten.
+
+Im MVP gibt es nur Multiple Choice. Ankreuzaufgaben und weitere Fragetypen kommen später.
 
 ## Combo-System
 
@@ -141,6 +143,41 @@ Flashcard Battle:
 - verändert keine Lernstatistik und keine Fälligkeiten des Karteikarten-Tabs
 
 Das Import-/Exportformat der Karteikarten (`flashcards-import-format.md`) ist ausdrücklich stabil gehalten, damit Flashcard Battle darauf aufbauen kann.
+
+---
+
+# Balancing-Startwerte
+
+Alle Zahlen stehen gesammelt in `CONFIG` in `games/flashcard-battle/fb-core.js` und werden nur dort geändert:
+
+| Wert | Start |
+|---|---|
+| Spieler-HP | 100 |
+| Grundschaden | 10 |
+| Combo | +0,5 pro Treffer in Folge, max. x5 (ab dem 9. Treffer) |
+| Kritisch | Antwort unter 5 s, ×1,5 |
+| Heilung zwischen Räumen (Feste Räume) | 20 |
+| Feste Räume | 5, der letzte ist Boss |
+| Endlos | Boss alle 5 Räume, Gegner +10 % HP/Angriff pro Raum |
+| Kartenmodus | Boss bei ≤ 5 übrigen Karten |
+| Seltene Monster | 15 % |
+| Gegner normal / selten / Boss | 30/15/10 · 40/20/25 · 80/25/50 (HP/Angriff/XP) |
+| Level | von Level L auf L+1: 100 × L XP |
+
+---
+
+# Technik
+
+| Datei | Inhalt |
+|---|---|
+| `games/flashcard-battle/manifest.js` | Monster-Registry `window.FB_MONSTERS`, Haustier-Schwellen `window.FB_PET_WINS`, `getStats`/`resetStats`, `pets`, lädt `fb-core.js` vor |
+| `games/flashcard-battle/fb-core.js` | reine Spiellogik `window.FBCore` (Fragen, Schaden, Run, Fortschritt), ohne DOM und ohne DB |
+| `games/flashcard-battle/flashcard-battle.js` / `.css` | UI: Setup, Kampf, Ergebnis, Kompendium, Statistik |
+| `scripts/tests/fb-core.test.js` | Tests für `fb-core.js`: `node --test "scripts/tests/*.test.js"` |
+
+- **Speicher**: alles unter `gameHighscores['flashcard-battle']` (Siege, XP, Zähler, gesehene Monster, Streak). Wird nach jeder Antwort geschrieben, ein abgebrochener Run verliert also nichts.
+- **Monster ergänzen**: Eintrag in `FB_MONSTERS` mit `id`, `name`, `tier`, `emoji`. Für eine Grafik `sprite: 'games/flashcard-battle/assets/monsters/<id>.png'` ergänzen, ohne Grafik wird das Emoji gezeigt.
+- **Haustier freischalten**: dem Monster ein `pet`-Objekt geben (Felder wie bei Snake) und unter `games/flashcard-battle/assets/pets/<id>/` die Bilder `default.png`, `icon.png` und `sleep.png` ablegen. Cozy Home prüft das über den allgemeinen Unlock-Typ `counter` (`games/cozy-home/pets.js`), der Zähler heißt `defeat:<id>`.
 
 ---
 

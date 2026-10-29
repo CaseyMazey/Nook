@@ -1,6 +1,7 @@
 // =========================
-// MANIFEST: FLASHCARD BATTLE (Platzhalter)
-// Noch nicht spielbar — erscheint als "Bald verfügbar", bis die UI fertig ist.
+// MANIFEST: FLASHCARD BATTLE
+// Lädt sofort beim Start (für die Library-Karte).
+// Die eigentliche Spiel-UI (flashcard-battle.js) lädt erst beim Klick auf "Spielen".
 // Lädt fb-core.js (reine Spiellogik) vorab, damit getStats() und
 // flashcard-battle.js dieselben Regeln nutzen.
 // Konzept: AI documentation/flashcard-battle.md
@@ -48,7 +49,6 @@ window.registerGame({
   description: 'Kämpfe gegen den Wissens-Boss und steige im Level auf!',
   icon: '🃏',
   accent: '',
-  comingSoon: true,
 
   getStats() {
     const p = readFlashcardBattleProgress();
@@ -61,7 +61,7 @@ window.registerGame({
       { label: 'Besiegte Monster', value: c.monstersDefeated || 0 },
       { label: 'Höchste Combo', value: c.maxCombo || 0 },
       { label: 'Kritische Treffer', value: c.crits || 0 },
-      { label: 'Lern-Streak', value: (p.streak?.days || 0) + ' Tage' }
+      { label: 'Lern-Streak', value: (p.streak?.days || 0) + (p.streak?.days === 1 ? ' Tag' : ' Tage') }
     ];
   },
 

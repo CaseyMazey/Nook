@@ -246,7 +246,7 @@ Nook befindet sich weiterhin in aktiver Entwicklung.
 - **Projekte**: Meilensteine, Aufgaben-Abhängigkeiten, Vorlagen, Tags, Notizen, Dateianhänge
 - **Kalender**: Wochen-/Jahresansicht, Drag & Drop für Termine, ICS-Import/Export, weitere externe Kalender-Anbieter (z. B. Outlook/CalDAV) neben Google
 - **Budget**: Diagramme, Kategorien, CSV-Import/Export, Jahresübersicht, mehrere Konten
-- **Spiele**: Debug Hero und Flashcard Battle sind bisher nur als Platzhalter angelegt, noch keine Spiellogik; weitere spielübergreifende Cozy-Home-Haustiere, Spielzeitstatistiken
+- **Spiele**: Debug Hero ist bisher nur als Platzhalter angelegt, noch keine Spiellogik; Flashcard Battle (MVP spielbar) braucht noch eigene Monster-Grafiken und Cozy-Home-Haustiere; weitere spielübergreifende Cozy-Home-Haustiere, Spielzeitstatistiken
 - **Tools**: Signallaufzeiten-Rechner, Netzwerktechnik/IPv4/Subnetting-Modul
 - **Karteikarten**: Karten-Import, Bilder auf Karteikarten, Markdown-Unterstützung
 
