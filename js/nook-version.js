@@ -19,7 +19,7 @@ window.NOOK_CHANGELOG = [
     items: [
       'Karteikarten: Inhaltsverzeichnis unter „Fächer“ – Prüfungen und Themen des Fachs auf einen Blick, Klick springt hin (und klappt auf), „Alle ein-/aufklappen“',
       'Karteikarten: eingeklappte Themengruppen sind nur noch eine schmale Zeile mit Fortschrittsbalken; Fachtitel im RPG-Theme besser lesbar',
-      'RPG-Karteikarten: Themen auf drei Papiersorten (Blanko, liniert, gealtert) mit wechselnden Befestigungen (Messingpin, rote Pinnnadel, Klebestreifen, Nagel, Wachssiegel) und gelegentlicher Deko; Prüfungen als ledergebundene Tafel mit Goldnaht, Messingknöpfe für Lernen, Filter und + Prüfung',
+      'RPG-Karteikarten: Themen auf drei Papiersorten (Pergament, Büttenpapier, honigfarben gealtert) mit wechselnden Befestigungen an verschiedenen Stellen – Messingpins, Eisen-Reißzwecken, Kupfer- und Schmiedenägel, Wachssiegel in Rot, Grün und Schwarz; Prüfungen als ledergebundene Tafel mit Goldnaht, Messingknöpfe für Lernen, Filter und + Prüfung',
     ],
   },
   {

@@ -1025,60 +1025,73 @@
 
 /* =============================================================
    KARTEIKARTEN: THEMENGRUPPEN ABWECHSLUNGSREICH
-   Drei Papiersorten (Zyklus 3), fünf Befestigungen (Zyklus 5) und
-   gelegentliche Deko (Zyklus 7) überlagern sich — dadurch wiederholt
-   sich eine Kombination erst nach 105 Gruppen. Breitere Slices bei den
-   neuen Blättern legen Randstrich bzw. verbrannte Ecken in den Rand.
+   Drei Papiere (Zyklus 3: Pergament · Büttenpapier · gealtert) und
+   sieben Befestigungen in wechselnden Positionen (Zyklus 7: Nägel,
+   Pins, Wachssiegel) überlagern sich — dieselbe Kombination kommt erst
+   nach 21 Themen wieder. Siegelfarben entstehen per Filter aus seal.webp.
+   Siegel hängen so hoch, dass sie nur die Papierkante überdecken, nie
+   Titel oder Knöpfe.
 ============================================================= */
 [data-pages-style="rpg"] #group-list > .group-card:nth-child(3n+2)::before {
-  border-image: url('../assets/questboard/note-ruled.webp') 72 fill / 22px / 0 stretch;
+  border-image: url('../assets/questboard/note-rag.webp') 40 fill / 22px / 0 stretch;
 }
-[data-pages-style="rpg"] #group-list > .group-card:nth-child(3n)::before {
-  border-image: url('../assets/questboard/note-aged.webp') 120 fill / 22px / 0 stretch;
-}
+/* gealtert: dasselbe Pergament, honigfarben getönt (nachts zusätzlich gedimmt) */
+[data-pages-style="rpg"] #group-list > .group-card:nth-child(3n) { --paper-dim: sepia(.5) saturate(1.45) brightness(.94) hue-rotate(-6deg); }
+[data-pages-style="rpg"][data-theme-family="dark"] #group-list > .group-card:nth-child(3n) { --paper-dim: sepia(.5) saturate(1.2) brightness(.78) hue-rotate(-6deg); }
 /* leichte, unterschiedliche Schräglage des Papiers */
 [data-pages-style="rpg"] #group-list > .group-card:nth-child(4n+1) { --tilt: -0.25deg; }
 [data-pages-style="rpg"] #group-list > .group-card:nth-child(4n+2) { --tilt: 0.2deg; --flip: -1; }
 [data-pages-style="rpg"] #group-list > .group-card:nth-child(4n+3) { --tilt: 0.35deg; }
 [data-pages-style="rpg"] #group-list > .group-card:nth-child(4n)   { --tilt: -0.15deg; --flip: -1; }
 
-/* Befestigungen: Messingpin (Standard) · rote Pinnnadel · Klebestreifen · Nagel · Wachssiegel */
-[data-pages-style="rpg"] #group-list > .group-card:nth-child(5n+2)::after {
-  background-image: url('../assets/questboard/pin-red.webp');
-  left: 22%; width: 20px; height: 26px; top: -11px;
-}
-[data-pages-style="rpg"] #group-list > .group-card:nth-child(5n+3)::after {
-  background-image: url('../assets/questboard/tape.webp');
-  width: 74px; height: 30px; margin-left: -37px; top: -13px;
-  transform: rotate(-4deg); opacity: .92;
-}
-[data-pages-style="rpg"] #group-list > .group-card:nth-child(5n+4)::after {
-  background-image: url('../assets/questboard/pin-nail.webp');
-  left: auto; right: 24%; width: 15px; height: 20px; top: -8px;
-}
-[data-pages-style="rpg"] #group-list > .group-card:nth-child(5n)::after {
-  background-image: url('../assets/questboard/seal.webp');
-  left: 30px; width: 30px; height: 30px; margin-left: 0; top: -12px;
-}
-
-/* Deko unten links auf manchen Blättern (weg von den Knöpfen rechts) (über die Fortschrittszeile,
-   damit sie auch eingeklappt sichtbar bleibt) */
-[data-pages-style="rpg"] #group-list > .group-card:is(:nth-child(7n+3), :nth-child(7n+5), :nth-child(7n+6)) .group-progress-row::after {
-  content: '';
-  position: absolute;
-  left: 14px; bottom: -12px;
-  width: 30px; height: 30px;
+/* Befestigungen (::after = erste, .group-progress-row::after = zweite) */
+[data-pages-style="rpg"] #group-list > .group-card::after { width: 24px; height: 31px; margin-left: -12px; top: -12px; }
+[data-pages-style="rpg"] #group-list > .group-card .group-progress-row::after {
+  content: none;
+  position: absolute; top: -7px;
   background: center / contain no-repeat;
-  pointer-events: none;
-  z-index: 2;
-  filter: drop-shadow(0 2px 2px color-mix(in srgb, var(--shadow-tint) 40%, transparent));
+  pointer-events: none; z-index: 2;
+}
+/* 2: Eisen-Reißzwecke links */
+[data-pages-style="rpg"] #group-list > .group-card:nth-child(7n+2)::after {
+  background-image: url('../assets/questboard/tack-iron.webp');
+  left: 16%; width: 28px; height: 28px; margin-left: 0; top: -10px;
+}
+/* 3: zwei Kupfernägel in den oberen Ecken */
+[data-pages-style="rpg"] #group-list > .group-card:nth-child(7n+3)::after {
+  background-image: url('../assets/questboard/nail-copper.webp');
+  left: 20px; width: 24px; height: 24px; margin-left: 0; top: -7px;
 }
 [data-pages-style="rpg"] #group-list > .group-card:nth-child(7n+3) .group-progress-row::after {
-  background-image: url('../assets/questboard/quill.webp');
-  width: 44px; height: 44px; bottom: -16px; transform: rotate(12deg);
+  content: ''; background-image: url('../assets/questboard/nail-copper.webp');
+  right: 20px; width: 24px; height: 24px;
 }
-[data-pages-style="rpg"] #group-list > .group-card:nth-child(7n+5) .group-progress-row::after { background-image: url('../assets/questboard/coin.webp'); width: 24px; height: 24px; }
-[data-pages-style="rpg"] #group-list > .group-card:nth-child(7n+6) .group-progress-row::after { background-image: url('../assets/questboard/d20.webp'); width: 26px; height: 26px; transform: rotate(-14deg); }
+/* 4: rotes Wachssiegel links */
+[data-pages-style="rpg"] #group-list > .group-card:nth-child(7n+4)::after {
+  background-image: url('../assets/questboard/seal.webp');
+  left: 34px; width: 38px; height: 38px; margin-left: 0; top: -22px;
+}
+/* 5: rostiger Schmiedenagel rechts */
+[data-pages-style="rpg"] #group-list > .group-card:nth-child(7n+5)::after {
+  background-image: url('../assets/questboard/pin-nail.webp');
+  left: auto; right: 22%; width: 22px; height: 29px; margin-left: 0; top: -12px;
+}
+/* 6: grünes Wachssiegel mittig */
+[data-pages-style="rpg"] #group-list > .group-card:nth-child(7n+6)::after {
+  background-image: url('../assets/questboard/seal.webp');
+  width: 36px; height: 36px; margin-left: -18px; top: -21px;
+  filter: hue-rotate(115deg) saturate(.75) brightness(.95);
+}
+/* 7: schwarzes Siegel + Eisen-Reißzwecke links */
+[data-pages-style="rpg"] #group-list > .group-card:nth-child(7n)::after {
+  background-image: url('../assets/questboard/seal.webp');
+  left: 44%; width: 36px; height: 36px; margin-left: 0; top: -21px;
+  filter: grayscale(1) brightness(.5) contrast(1.2);
+}
+[data-pages-style="rpg"] #group-list > .group-card:nth-child(7n) .group-progress-row::after {
+  content: ''; background-image: url('../assets/questboard/tack-iron.webp');
+  left: 22px; width: 26px; height: 26px; top: -9px;
+}
 
 /* =============================================================
    KARTEIKARTEN: PRÜFUNGEN — ledergebundene Tafel mit Goldnaht und
