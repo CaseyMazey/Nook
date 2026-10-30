@@ -17,6 +17,7 @@ window.NOOK_CHANGELOG = [
     version: '2026.10.13',
     date: '2026-10-29',
     items: [
+      'Heute passt am Handy wieder in die Breite; Karteikarten auf Tablet und offenem Foldable einspaltig statt zerquetscht; Box 1 heißt „Anfang“ statt „Neu“',
       'Karteikarten: Lernen nimmt jetzt nur die fälligen Karten (Leitner), „↻ Alle wiederholen“ wenn nichts fällig ist; Prüfungen wahlweise fällige oder alle gemischt; Karten innerhalb einer Box gemischt',
       'Karteikarten: nach der Session die nicht gewussten Karten als Liste mit „Nur diese nochmal“; Tastatur in der Session (Leertaste umdrehen, 1/2/3 antworten, Esc pausieren)',
       'Karteikarten: Rückseiten mit Markdown (Listen, fett, Tabellen, Code-Blöcke für Schaubilder); Filter für Karten (Text, fällig, schwierig, neu); Karte in ein anderes Thema verschieben; Export als Markdown, der sich wieder importieren lässt',

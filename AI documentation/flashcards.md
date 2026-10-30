@@ -201,7 +201,7 @@ Jede Karte befindet sich in einer von fünf Boxen.
 
 Box 1
 
-Neue Karten
+Anfang (neue und zurückgefallene Karten)
 
 Box 2
 
@@ -469,7 +469,7 @@ Löschen fragt immer nach (Nook-Dialog, nicht der Browser-Dialog).
 
 # Kartenfilter
 
-„Filter“ im Fachkopf öffnet eine Leiste: Textsuche in Vorder- und Rückseite sowie Alle / Fällig / Schwierig / Neu (Box 1). Gefiltert werden nur die Kartenlisten des Fachs, Themen ohne Treffer werden ausgeblendet, Themen mit Treffern aufgeklappt. Reiner Anzeigefilter, wird beim Fachwechsel zurückgesetzt.
+„Filter“ im Fachkopf öffnet eine Leiste: Textsuche in Vorder- und Rückseite sowie Alle / Fällig / Schwierig / Anfang (Box 1). Gefiltert werden nur die Kartenlisten des Fachs, Themen ohne Treffer werden ausgeblendet, Themen mit Treffern aufgeklappt. Reiner Anzeigefilter, wird beim Fachwechsel zurückgesetzt.
 
 ---
 

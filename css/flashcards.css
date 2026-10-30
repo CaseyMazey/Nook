@@ -341,7 +341,26 @@
    Liste, unten an der Seite würde man das Panel nicht bemerken.
    Liegt über der Bottom-Nav (z-index 90), Schließen über ✕ / „Session beenden“. */
 @media (max-width: 1024px) {
-  #flashcard-layout { grid-template-columns: 200px minmax(0, 1fr); }
+  /* Schmaler Inhalt (Tablet, offenes Foldable, neben der Seitenleiste oft nur
+     ~500 px): eine Spalte statt 200-px-Liste + zerquetschter Fachansicht.
+     Fächer und Inhalt nebeneinander, die Listen scrollen in sich. */
+  #flashcard-layout { grid-template-columns: minmax(0, 1fr); }
+  .fc-side-col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+  .fc-side-col:has(#fc-toc.hidden) { grid-template-columns: minmax(0, 1fr); }
+  #subject-list, #fc-toc-body { max-height: 38vh; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+  /* Kennzahlen: Icon + Zahl über der Beschriftung, sonst bleibt von ihr nur „K…“ */
+  #fc-global-stats { gap: 8px; }
+  .fc-stat-card { flex-wrap: wrap; gap: 2px 8px; padding: 8px 10px; }
+  .fc-stat-label { flex-basis: 100%; white-space: normal; }
+  #subject-detail-header { flex-wrap: wrap; }
+  .fc-detail-actions { flex-wrap: wrap; }
+  /* Gruppen-Kopf und Prüfung: Titel oben, Knöpfe darunter statt die Spalte zu sprengen */
+  .group-header { flex-wrap: wrap; }
+  .group-header > div:first-child { flex-basis: 100%; }
+  .group-actions { width: 100%; justify-content: flex-end; }
+  .fc-exam-card { flex-wrap: wrap; }
+  .fc-exam-main { flex-basis: calc(100% - 36px); }
+  .fc-exam-actions { width: 100%; justify-content: flex-end; flex-wrap: wrap; }
   #flashcard-layout.session-open::before { content: ''; position: fixed; inset: 0; z-index: 94; background: color-mix(in srgb, var(--bg) 75%, transparent); backdrop-filter: blur(4px); }
   #flashcard-layout.session-open #fc-session-panel { position: fixed; inset: 0; height: 100dvh; min-height: 0; z-index: 95; width: auto; max-width: 1000px; margin: 0 auto; border-radius: 0; padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px)); overscroll-behavior: contain; }
   /* RPG: das gerissene Papier (::before) passt nicht zu einem Vollbild-Blatt —
@@ -368,22 +387,13 @@ body:has(#flashcard-layout.session-open) { overflow: hidden; }
 @media (min-width: 1025px) { body:has(#flashcard-layout.session-open) { overflow: visible; } }
 
 @media (max-width: 480px) {
-  #fc-global-stats { gap: 8px; }
-  .fc-stat-card { flex-direction: column; align-items: flex-start; gap: 2px; padding: 8px 10px; }
-  .fc-stat-label { white-space: normal; }
-  #flashcard-layout { grid-template-columns: minmax(0, 1fr); }
-  #subject-detail-header { flex-wrap: wrap; }
-  /* Gruppen-Kopf: Titel oben, Knöpfe darunter statt die Spalte zu sprengen */
-  .group-header { flex-wrap: wrap; }
-  .group-header > div:first-child { flex-basis: 100%; }
-  .group-actions { width: 100%; justify-content: flex-end; }
+  .fc-stat-card { flex-direction: column; align-items: flex-start; }
+  .fc-side-col { display: flex; }
   .fc-row { grid-template-columns: minmax(0, 1fr) auto; row-gap: 4px; }
   .fc-front { grid-area: 1 / 1; }
   .fc-box { grid-area: 1 / 2; }
   .fc-back { grid-area: 2 / 1; }
   .fc-card-meatball { grid-area: 2 / 2; justify-self: end; }
-  .fc-exam-card { flex-wrap: wrap; }
-  .fc-exam-actions { width: 100%; justify-content: flex-end; }
 }
 /* Touch-Geräte ohne Hover: Karten-Menü immer sichtbar */
 @media (hover: none) { .fc-card-meatball { opacity: 1; } }

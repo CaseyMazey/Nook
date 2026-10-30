@@ -238,8 +238,8 @@
 }
 
 @media (max-width: 1024px) {
-  [data-today-style="rpg"] #today-layout { grid-template-columns: 1fr; }
-  [data-today-style="rpg"] #today-right { width: 100%; }
+  [data-today-style="rpg"] #today-layout { grid-template-columns: minmax(0, 1fr); }
+  [data-today-style="rpg"] #today-right { width: 100%; min-width: 0; }
 }
 @media (max-width: 640px) {
   [data-today-style="rpg"] #today-main,

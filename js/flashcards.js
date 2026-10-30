@@ -508,7 +508,8 @@ document.getElementById('fc-card-search')?.addEventListener('input', e => {
 // =========================
 
 const FC_LEITNER_COLORS = ['var(--leitner-1)','var(--leitner-2)','var(--leitner-3)','var(--leitner-4)','var(--leitner-5)'];
-const FC_LEITNER_LABELS = ['Neu','Lernen','Gut','Sehr gut','Sicher'];
+// Box 1 heißt nicht „Neu“: dort liegen auch Karten, die zurückgefallen sind
+const FC_LEITNER_LABELS = ['Anfang','Lernen','Gut','Sehr gut','Sicher'];
 
 function renderGroupList(subj){
   const list = document.getElementById('group-list'); list.innerHTML = '';

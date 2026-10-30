@@ -409,7 +409,8 @@ body.bg-frosted .modal-box {
 [data-sidebar-collapsed] #nav-list { padding: 6px 8px; }
 [data-sidebar-collapsed] #nav-list .nav-btn { justify-content: center; padding: 10px 0; font-size: 0; gap: 0; }
 [data-sidebar-collapsed] #sidebar #sidebar-positivity,
-[data-sidebar-collapsed] #sidebar #sidebar-countdowns { display: none; }
+/* !important: renderCountdowns (today.js) setzt display inline */
+[data-sidebar-collapsed] #sidebar #sidebar-countdowns { display: none !important; }
 
 /* ── Sidebar countdowns section ──────────────────────────── */
 #sidebar-countdowns {

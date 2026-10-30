@@ -1248,8 +1248,9 @@
   .tool-card:first-child { grid-column: 1 / -1; }
 }
 
-@media (max-width: 700px) {
-  .tools-grid { grid-template-columns: 1fr; }
+/* Neben der Seitenleiste bleiben auf Tablet/offenem Foldable nur ~500 px */
+@media (max-width: 1024px) {
+  .tools-grid { grid-template-columns: minmax(0, 1fr); }
   .tool-card:first-child { grid-column: auto; }
 }
 

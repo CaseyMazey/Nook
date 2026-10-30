@@ -526,8 +526,9 @@
    neben den Hauptbereich — wird unter #today-main gestapelt.
 ============================================================= */
 @media (max-width: 1024px) {
-  #today-layout { grid-template-columns: 1fr; }
-  #today-right { position: static; width: 100%; }
+  /* minmax(0, …): sonst wächst die Spalte mit dem breitesten Inhalt über den Rand */
+  #today-layout { grid-template-columns: minmax(0, 1fr); }
+  #today-right { position: static; width: 100%; min-width: 0; }
 }
 
 @media (max-width: 480px) {
@@ -535,6 +536,7 @@
   [data-start-header-theme]:not([data-start-header-theme="none"]) #today-main-header { height: auto; min-height: 170px; padding: 20px; }
   .today-weather { width: 100%; box-sizing: border-box; }
 
+  #gd-widget .panel-header { flex-wrap: wrap; row-gap: 6px; }
   .gd-row { flex-direction: column; }
   .gd-col { padding: 10px 0 !important; }
   .gd-col + .gd-col { border-left: none; border-top: 1px solid var(--border); }
