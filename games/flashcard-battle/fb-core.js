@@ -177,21 +177,33 @@
     return run.fight >= CONFIG.monstersPerRoom ? 'miniboss' : randomTier(run);
   }
 
+  // Monster aus dem aktuellen Dungeon. Der Miniboss eines Raums ist der Boss des Dungeons.
   function pickMonster(run, tier) {
-    const pool = run._monsters.filter(m => m.tier === tier);
+    const wanted = tier === 'miniboss' && run._dungeons.length ? 'boss' : tier;
+    const pool = run._monsters.filter(m => m.tier === wanted && (!run.dungeon || m.dungeon === run.dungeon));
     const list = pool.length ? pool : run._monsters;
     if (!list.length) return { id: 'unbekannt', name: 'Unbekanntes Monster', tier, emoji: '❔' };
     return list[Math.floor(run._rng() * list.length)];
+  }
+
+  // Feste Räume: Dungeons der Reihe nach, der Endboss im letzten Dungeon.
+  // Endlos/Kartenmodus: run.dungeonIndex wechselt nach jedem Boss (siehe answer).
+  function updateDungeon(run) {
+    const n = run._dungeons.length;
+    if (!n) { run.dungeon = null; return; }
+    if (run.mode === 'fixed') run.dungeonIndex = run.room > CONFIG.fixedRooms ? n - 1 : (run.room - 1) % n;
+    run.dungeon = run._dungeons[run.dungeonIndex].id;
   }
 
   function spawnNext(run, ev) {
     let tier;
     if (run.mode === 'fixed') tier = advanceFixed(run);
     else { tier = isBossNext(run) ? 'boss' : randomTier(run); run.room++; }
+    updateDungeon(run);
     const monster = pickMonster(run, tier);
     const stats = enemyStats(tier, run.room, run.mode);
     run.enemy = { monsterId: monster.id, tier, hp: stats.hp, maxHp: stats.hp, atk: stats.atk, xp: stats.xp };
-    const spawn = { type: 'spawn', monsterId: monster.id, tier, room: run.room };
+    const spawn = { type: 'spawn', monsterId: monster.id, tier, room: run.room, dungeon: run.dungeon };
     if (run.mode === 'fixed') spawn.fight = run.fight;
     ev.push(spawn);
   }
@@ -227,9 +239,11 @@
     return ev;
   }
 
-  function createRun({ mode, deck, monsters, rng = Math.random, now = () => Date.now() }) {
+  function createRun({ mode, deck, monsters, dungeons = [], rng = Math.random, now = () => Date.now() }) {
     const run = {
       mode, hp: CONFIG.playerHp, maxHp: CONFIG.playerHp, room: 0, fight: 0, roomsCleared: 0,
+      dungeon: null, dungeonIndex: mode !== 'fixed' && dungeons.length ? Math.floor(rng() * dungeons.length) : 0,
+      _dungeons: dungeons,
       enemy: null, streak: 0, maxStreak: 0,
       deck, queue: shuffle(deck, rng), unanswered: deck.length,
       question: null, questionStartedAt: 0, over: false, won: false, events: [],
@@ -259,6 +273,9 @@
         // Feste Räume zählen geschaffte Räume (Miniboss), die anderen Modi jeden Gegner
         if (run.mode !== 'fixed' || e.tier === 'miniboss') run.roomsCleared++;
         run.enemy = null;
+        if (e.tier === 'boss' && run.mode !== 'fixed' && run._dungeons.length) {
+          run.dungeonIndex = (run.dungeonIndex + 1) % run._dungeons.length;
+        }
         // Kartenmodus: Boss besiegt, aber noch Karten übrig → nächster Boss (jede Karte kommt dran)
         if (e.tier === 'boss' && run.mode === 'fixed') { endRun(run, true, ev); }
         else if (run.mode === 'cards' && run.unanswered === 0) { endRun(run, true, ev); }

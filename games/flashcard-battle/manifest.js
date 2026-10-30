@@ -16,31 +16,43 @@
 })();
 
 // ────────────────────────────────────
-// MONSTER-REGISTRY (reine Daten)
+// DUNGEONS & MONSTER (reine Daten)
+// Neuer Dungeon: Eintrag in FB_DUNGEONS plus seine Monster in FB_MONSTERS.
 //
-// tier:   "normal" | "rare" | "miniboss" | "boss"
-//         (Minibosse stehen am Ende jedes Raums in "Feste Räume", keine Haustiere)
-// emoji:  Platzhalter, solange es keine Grafik gibt
-// sprite: optional, Pfad zur Monster-Grafik
-//         (games/flashcard-battle/assets/monsters/<id>.png)
-// pet:    optional, Cozy-Home-Haustier-Felder wie in games/snake/manifest.js
-//         (name, species, description, favoriteFood, … thoughts). Nur
-//         eintragen, wenn unter games/flashcard-battle/assets/pets/<id>/
-//         default.png, icon.png und sleep.png liegen.
+// Grafiken einfach ablegen, ohne Code-Änderung:
+//   games/flashcard-battle/assets/dungeons/<dungeon-id>.png  (Hintergrund)
+//   games/flashcard-battle/assets/monsters/<monster-id>.png  (transparent,
+//     normal/selten 64 × 64, Boss 128 × 128)
+// Solange eine Datei fehlt, zeigt das Spiel den Farbverlauf bzw. das Emoji.
+//
+// colors: Farbverlauf ohne Hintergrundbild
+// tier:   "normal" | "rare" | "boss"
 // ────────────────────────────────────
-window.FB_MONSTERS = [
-  { id: 'schleimling',  name: 'Schleimling',      tier: 'normal', emoji: '🟢' },
-  { id: 'fledermaus',   name: 'Flatterfrage',     tier: 'normal', emoji: '🦇' },
-  { id: 'ratte',        name: 'Bücherratte',      tier: 'normal', emoji: '🐀' },
-  { id: 'irrlicht',     name: 'Irrlicht',         tier: 'rare',   emoji: '👻' },
-  { id: 'buecherwurm',  name: 'Bücherwurm',       tier: 'miniboss', emoji: '🐛' },
-  { id: 'tintenkrake',  name: 'Tintenkrake',      tier: 'miniboss', emoji: '🐙' },
-  { id: 'wissensboss',  name: 'Der Wissens-Boss', tier: 'boss',   emoji: '🐉' }
+window.FB_DUNGEONS = [
+  { id: 'tempel',     name: 'Der überwucherte Tempel',    icon: '🌿', colors: ['#5f7f4f', '#c9bb94', '#3f9c94'] },
+  { id: 'bibliothek', name: 'Die verzauberte Bibliothek', icon: '🔮', colors: ['#1d2550', '#5a2f8c', '#c9a23f'] },
+  { id: 'hoehlen',    name: 'Die Drachenhöhlen',          icon: '🌋', colors: ['#7a1f1f', '#d9702a', '#33353b'] }
 ];
 
-// Siege gegen ein Monster, bis es als Haustier freigeschaltet ist
-// (Stufen ohne Eintrag, z. B. Minibosse, werden keine Haustiere)
-window.FB_PET_WINS = { normal: 50, rare: 25, boss: 10 };
+window.FB_MONSTERS = [
+  { id: 'schleimling',      name: 'Schleimling',            tier: 'normal', dungeon: 'tempel',     emoji: '🟢' },
+  { id: 'pilzling',         name: 'Pilzling',               tier: 'normal', dungeon: 'tempel',     emoji: '🍄' },
+  { id: 'dornwusel',        name: 'Dornwusel',              tier: 'normal', dungeon: 'tempel',     emoji: '🌵' },
+  { id: 'moosgeist',        name: 'Moosgeist',              tier: 'rare',   dungeon: 'tempel',     emoji: '🍃' },
+  { id: 'wurzelhueter',     name: 'Der uralte Wurzelhüter', tier: 'boss',   dungeon: 'tempel',     emoji: '🌳' },
+
+  { id: 'flatterfrage',     name: 'Flatterfrage',           tier: 'normal', dungeon: 'bibliothek', emoji: '🦇' },
+  { id: 'buecherwurm',      name: 'Bücherwurm',             tier: 'normal', dungeon: 'bibliothek', emoji: '📖' },
+  { id: 'tintengeist',      name: 'Tintengeist',            tier: 'normal', dungeon: 'bibliothek', emoji: '👻' },
+  { id: 'runenwaechter',    name: 'Runenwächter',           tier: 'rare',   dungeon: 'bibliothek', emoji: '🔮' },
+  { id: 'archivar',         name: 'Der Archivar',           tier: 'boss',   dungeon: 'bibliothek', emoji: '📚' },
+
+  { id: 'funkenkobold',     name: 'Funkenkobold',           tier: 'normal', dungeon: 'hoehlen',    emoji: '🔥' },
+  { id: 'kristallkrabbler', name: 'Kristallkrabbler',       tier: 'normal', dungeon: 'hoehlen',    emoji: '🦀' },
+  { id: 'hoehlendrache',    name: 'Höhlendrache',           tier: 'normal', dungeon: 'hoehlen',    emoji: '🐲' },
+  { id: 'kristallfuchs',    name: 'Kristallfuchs',          tier: 'rare',   dungeon: 'hoehlen',    emoji: '🦊' },
+  { id: 'urdrache',         name: 'Der Urdrache',           tier: 'boss',   dungeon: 'hoehlen',    emoji: '🐉' }
+];
 
 function readFlashcardBattleProgress() {
   return DB.get('gameHighscores', {})['flashcard-battle'] || {};
@@ -78,21 +90,5 @@ window.registerGame({
     const all = DB.get('gameHighscores', {});
     delete all['flashcard-battle'];
     DB.set('gameHighscores', all);
-  },
-
-  // Cozy Home sammelt diese Haustiere ein (collectCrossGamePets in pets.js)
-  pets: window.FB_MONSTERS.filter(m => m.pet && window.FB_PET_WINS[m.tier]).map(m => ({
-    ...m.pet,
-    id: 'fb-' + m.id,
-    sourceGame: 'flashcard-battle',
-    shopPrice: 200,
-    assets: { basePath: 'games/flashcard-battle/assets/pets/' + m.id + '/' },
-    unlock: {
-      type: 'counter',
-      target: 'flashcard-battle',
-      counter: 'defeat:' + m.id,
-      value: window.FB_PET_WINS[m.tier],
-      description: 'Besiege ' + m.name + ' ' + window.FB_PET_WINS[m.tier] + '× in Flashcard Battle'
-    }
-  }))
+  }
 });

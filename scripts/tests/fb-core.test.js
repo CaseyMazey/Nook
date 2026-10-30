@@ -387,3 +387,66 @@ test('createRun mit leerer Monster-Liste stürzt nicht ab', () => {
   const run = FBCore.createRun({ mode: 'fixed', deck: deckOf(4), monsters: [], rng: rng(16), now: clock(6000) });
   assert.equal(typeof run.enemy.monsterId, 'string');
 });
+
+// ── Dungeons ──
+
+const DUNGEONS = [{ id: 'd1' }, { id: 'd2' }, { id: 'd3' }];
+const D_MONSTERS = DUNGEONS.flatMap(d => [
+  { id: d.id + '-n', name: 'N', tier: 'normal', dungeon: d.id, emoji: '🟢' },
+  { id: d.id + '-r', name: 'R', tier: 'rare',   dungeon: d.id, emoji: '👻' },
+  { id: d.id + '-b', name: 'B', tier: 'boss',   dungeon: d.id, emoji: '🐉' }
+]);
+function dungeonRun(mode, n, seed) {
+  return FBCore.createRun({ mode, deck: deckOf(n), monsters: D_MONSTERS, dungeons: DUNGEONS, rng: rng(seed), now: clock(6000) });
+}
+function playAllRight(run) {
+  const spawns = run.events.filter(e => e.type === 'spawn');
+  while (!run.over) spawns.push(...FBCore.answer(run, answerRight(run)).filter(e => e.type === 'spawn'));
+  return spawns;
+}
+
+test('fixed: Dungeons wechseln sich über 5 Räume ab, Endboss im letzten Dungeon', () => {
+  const spawns = playAllRight(dungeonRun('fixed', 6, 20));
+  assert.deepEqual(spawns.filter((_, i) => i % 5 === 0).map(s => s.dungeon), ['d1', 'd2', 'd3', 'd1', 'd2', 'd3']);
+  assert.ok(spawns.every(s => s.monsterId.startsWith(s.dungeon + '-')));
+});
+
+test('fixed: Miniboss ist der Boss des Dungeons, Endboss der Boss des letzten Dungeons', () => {
+  const spawns = playAllRight(dungeonRun('fixed', 6, 21));
+  const minis = spawns.filter(s => s.tier === 'miniboss');
+  assert.deepEqual(minis.map(s => s.monsterId), ['d1-b', 'd2-b', 'd3-b', 'd1-b', 'd2-b']);
+  assert.equal(spawns[spawns.length - 1].tier, 'boss');
+  assert.equal(spawns[spawns.length - 1].monsterId, 'd3-b');
+  assert.ok(spawns.filter(s => s.tier === 'normal').every(s => s.monsterId.endsWith('-n')));
+});
+
+test('endless: zufälliger Start, Dungeon wechselt erst nach dem Boss', () => {
+  const run = dungeonRun('endless', 6, 22);
+  const spawns = run.events.filter(e => e.type === 'spawn');
+  while (spawns.length < 11) spawns.push(...FBCore.answer(run, answerRight(run)).filter(e => e.type === 'spawn'));
+  const start = DUNGEONS.findIndex(d => d.id === spawns[0].dungeon);
+  const at = k => DUNGEONS[(start + k) % 3].id;
+  assert.deepEqual(spawns.map(s => s.dungeon), [0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2].map(at));
+  assert.ok(spawns.every(s => s.monsterId.startsWith(s.dungeon + '-')));
+});
+
+test('endless: verschiedene Seeds können in verschiedenen Dungeons starten', () => {
+  const starts = new Set([1, 2, 3, 4, 5, 6, 7, 8].map(s => dungeonRun('endless', 6, s).events[0].dungeon));
+  assert.ok(starts.size > 1);
+});
+
+test('cards: Boss gehört zum aktuellen Dungeon, nach seinem Tod kommt der nächste Dungeon', () => {
+  const run = dungeonRun('cards', 12, 23);
+  const spawns = playAllRight(run);
+  const bosses = spawns.filter(s => s.tier === 'boss');
+  assert.ok(bosses.length >= 2);
+  assert.ok(bosses.every(s => s.monsterId === s.dungeon + '-b'));
+  const i = DUNGEONS.findIndex(d => d.id === bosses[0].dungeon);
+  assert.equal(bosses[1].dungeon, DUNGEONS[(i + 1) % 3].id);
+});
+
+test('createRun ohne Dungeons: dungeon ist null', () => {
+  const run = newRun('fixed', 4, 24);
+  assert.equal(run.events[0].dungeon, null);
+  assert.equal(run.dungeon, null);
+});

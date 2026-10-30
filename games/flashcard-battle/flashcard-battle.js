@@ -15,8 +15,8 @@
   const DEBUG_KEY = 'fb_debug';
   const MODES = [
     { id: 'fixed',   label: 'Feste Räume',       hint: '5 Räume mit je 5 Gegnern, am Ende jedes Raums ein Miniboss, zum Schluss der große Boss. Nach jedem Raum heilst du dich.' },
-    { id: 'endless', label: 'Endlos',            hint: 'Immer stärkere Gegner, alle 5 Räume ein Boss. Wie weit kommst du?' },
-    { id: 'cards',   label: 'Nach Kartenanzahl', hint: 'Jede Karte kommt genau einmal dran. Bei den letzten 5 Karten wartet der Boss.' }
+    { id: 'endless', label: 'Endlos',            hint: 'Immer stärkere Gegner, alle 5 Gegner ein Boss, danach wechselt der Dungeon. Wie weit kommst du?' },
+    { id: 'cards',   label: 'Nach Kartenanzahl', hint: 'Jede Karte kommt genau einmal dran. Bei den letzten 5 Karten wartet der Boss. Nach jedem Boss wechselt der Dungeon.' }
   ];
   const TIER_LABELS = { normal: 'Normal', rare: 'Selten', miniboss: 'Miniboss', boss: 'Boss' };
 
@@ -65,11 +65,9 @@
 
   function monsterById(id) { return window.FB_MONSTERS.find(m => m.id === id) || { id, name: 'Unbekanntes Monster', emoji: '❔', tier: 'normal' }; }
 
-  // Grafik, falls vorhanden – sonst (oder wenn das Bild fehlt) das Emoji
+  // Grafik aus assets/monsters/ – fehlt die Datei, zeigt bindArtFallback das Emoji
   function monsterArt(m, cls) {
-    const emoji = `<span class="fb-emoji">${esc(m.emoji)}</span>`;
-    if (!m.sprite) return `<div class="${cls}">${emoji}</div>`;
-    return `<div class="${cls}"><img src="${esc(m.sprite)}" alt="${esc(m.name)}" data-emoji="${esc(m.emoji)}"></div>`;
+    return `<div class="${cls}"><img src="games/flashcard-battle/assets/monsters/${esc(m.id)}.png" alt="${esc(m.name)}" data-emoji="${esc(m.emoji)}"></div>`;
   }
   // Fehlende Monster-Grafik → Emoji (statt Inline-onerror)
   function bindArtFallback() {
@@ -176,24 +174,25 @@
   function renderCompendium() {
     state.screen = 'compendium';
     const p = FBCore.applyEvents(readProgress(), []);
-    const cards = window.FB_MONSTERS.map(m => {
+    const card = m => {
       if (!p.seen[m.id]) {
         return `<div class="fb-mon unknown"><div class="fb-mon-art"><span class="fb-emoji">❔</span></div>
                   <span class="fb-mon-name">???</span><span class="fb-mon-tier">${TIER_LABELS[m.tier]}</span></div>`;
       }
-      const wins = p.counters['defeat:' + m.id] || 0;
-      const need = window.FB_PET_WINS[m.tier];
       return `<div class="fb-mon fb-tier-${m.tier}">
                 ${monsterArt(m, 'fb-mon-art')}
                 <span class="fb-mon-name">${esc(m.name)}</span>
                 <span class="fb-mon-tier">${TIER_LABELS[m.tier]}</span>
-                <span class="fb-mon-wins">Besiegt: ${wins}×</span>
-                ${m.pet && need ? `<span class="fb-mon-pet">Haustier: ${Math.min(wins, need)}/${need}</span>` : ''}
+                <span class="fb-mon-wins">Besiegt: ${p.counters['defeat:' + m.id] || 0}×</span>
               </div>`;
-    }).join('');
+    };
+    const sections = window.FB_DUNGEONS.map(d => `
+      <div class="fb-mon-section">
+        <span class="fb-mon-dungeon">${d.icon} ${esc(d.name)}</span>
+        <div class="fb-mon-grid">${window.FB_MONSTERS.filter(m => m.dungeon === d.id).map(card).join('')}</div>
+      </div>`).join('');
     const seenCount = window.FB_MONSTERS.filter(m => p.seen[m.id]).length;
-    subScreen(`Kompendium <span class="fb-sub-count">${seenCount}/${window.FB_MONSTERS.length}</span>`,
-      `<div class="fb-mon-grid">${cards}</div>`);
+    subScreen(`Kompendium <span class="fb-sub-count">${seenCount}/${window.FB_MONSTERS.length}</span>`, sections);
   }
 
   function renderStats() {
@@ -229,7 +228,7 @@
 
     const p = FBCore.startRun(readProgress(), today());
     state.runStart = { xp: p.xp, level: FBCore.levelFromXp(p.xp).level };
-    state.run = FBCore.createRun({ mode: state.mode, deck: set.deck, monsters: window.FB_MONSTERS, now: () => performance.now() });
+    state.run = FBCore.createRun({ mode: state.mode, deck: set.deck, monsters: window.FB_MONSTERS, dungeons: window.FB_DUNGEONS, now: () => performance.now() });
     saveProgress(FBCore.applyEvents(p, state.run.events));
     state.locked = false;
     renderBattle();
@@ -242,6 +241,12 @@
     }
     if (run.mode === 'endless') return `Raum ${run.room}`;
     return `noch ${run.unanswered} Karten`;
+  }
+
+  // Bild aus assets/dungeons/ über dem Farbverlauf: fehlt die Datei, bleibt der Verlauf sichtbar
+  function dungeonBackground(d) {
+    if (!d) return '';
+    return `background-image:url(games/flashcard-battle/assets/dungeons/${esc(d.id)}.png),linear-gradient(160deg,${d.colors.join(',')})`;
   }
 
   function hpBar(cur, max, cls) {
@@ -260,10 +265,12 @@
     const m = monsterById(e.monsterId);
     const q = run.question;
     const readMs = Math.max(0, FBCore.CONFIG.readMs);
+    const d = window.FB_DUNGEONS.find(x => x.id === run.dungeon);
 
     state.root.innerHTML = `
       <div class="fb-battle">
-        <div class="fb-arena">
+        <div class="fb-arena" style="${dungeonBackground(d)}">
+          <span class="fb-dungeon-name">${d ? d.icon + ' ' + esc(d.name) : ''}</span>
           <div class="fb-fighter fb-enemy fb-tier-${e.tier}">
             ${monsterArt(m, 'fb-enemy-art')}
             <div class="fb-fighter-info">

@@ -19,7 +19,7 @@ Die vier Säulen:
 1. **Lernen**: Fragen beantworten, Wissen festigen
 2. **Kämpfen**: Combos aufbauen, Schaden machen, Monster besiegen
 3. **Sammeln**: Monster entdecken, Kompendium füllen
-4. **Fortschritt**: XP, Level, Statistiken, Haustiere für Cozy Home
+4. **Fortschritt**: XP, Level, Statistiken
 
 ---
 
@@ -86,8 +86,9 @@ Im MVP gibt es nur Multiple Choice. Ankreuzaufgaben und weitere Fragetypen komme
 | Monsterkämpfe | kurze Kämpfe, 2–5 Minuten, im Dungeon hintereinander |
 | Spielmodi | Feste Räume, Endlos, Nach Kartenanzahl |
 | Bosse | siehe Spielmodi |
-| Seltenheit | normale und seltene Monster (für die Haustier-Freischaltung) |
-| Pixelmonster | Casey gestaltet die Monster als Assets (GIMP oder `scripts/gen-image.py`), gepflegt als Daten in einer Monster-Registry |
+| Seltenheit | normale und seltene Monster |
+| Dungeons | 3 Dungeons mit je einem Hintergrund und 5 eigenen Monstern (siehe unten) |
+| Pixelmonster | Casey liefert je Monster eine Grafik, gepflegt als Daten in `FB_MONSTERS` |
 | Schaden | richtig → Gegner, falsch → Spieler |
 | Combo | bis x5 |
 | Kritische Treffer | < 5 s → +50 % |
@@ -112,7 +113,10 @@ Im MVP gibt es nur Multiple Choice. Ankreuzaufgaben und weitere Fragetypen komme
 
 - Klassen
 - Skills/Fähigkeiten
-- Verschiedene Gebiete
+- Weitere Dungeons mit eigenen Monstern
+- Animierte Hintergründe und Monster-Animationen
+- Seltene Farbvarianten von Monstern und Bossen
+- Cozy-Home-Haustiere (siehe Hinweis unten)
 - Items und Ausrüstung
 - Spielwährung
 - weitere Seltenheitsstufen über normal/selten/Boss hinaus
@@ -121,20 +125,51 @@ Im MVP gibt es nur Multiple Choice. Ankreuzaufgaben und weitere Fragetypen komme
 
 ---
 
-# Cozy-Home-Haustiere
+# Dungeons
 
-Monster lassen sich durch Siege als Haustiere für Cozy Home freischalten.
+Dungeons heißen im Spiel vorerst „Räume“. Sie sind eine visuelle und inhaltliche Ebene ohne eigene Mechanik: ein statisches Hintergrundbild und eine eigene Monsterliste.
 
-| Monsterart | Benötigte Siege |
-|---|---:|
-| Normales Monster | 50 |
-| Seltenes Monster | 25 |
-| Bossmonster | 10 |
+| Dungeon | Atmosphäre | Farbpalette | Gegner-Thema |
+|---|---|---|---|
+| 🌿 Der überwucherte Tempel | alte Ruinen, Wurzeln, magische Pflanzen | Moosgrün, Beige, Türkis | Schleime, Pflanzenwesen, Insekten |
+| 🔮 Die verzauberte Bibliothek | verstaubte Bücher, schwebende Schriftrollen, Magie | Dunkelblau, Violett, Gold | Büchergeister, Fledermäuse, magische Kreaturen |
+| 🌋 Die Drachenhöhlen | Kristalle, Lava, uralte Schätze | Dunkelrot, Orange, Anthrazit | Feuerwesen, Kristallmonster, Drachen |
 
-(Seltenere Monster brauchen weniger Siege, weil man sie seltener trifft.)
+| ID | Monster | Stufe | Dungeon | Designidee |
+|---|---|---|---|---|
+| `schleimling` | Schleimling | Normal | Tempel | kleiner grüner Schleim mit großen Augen |
+| `pilzling` | Pilzling | Normal | Tempel | kleiner wandelnder Pilz mit gepunktetem Hut |
+| `dornwusel` | Dornwusel | Normal | Tempel | Pflanzenwesen mit Ranken und kleinen Dornen |
+| `moosgeist` | Moosgeist | Selten | Tempel | leuchtender Naturgeist mit schwebenden Blättern |
+| `wurzelhueter` | Der uralte Wurzelhüter | Boss | Tempel | großes Pflanzenwesen mit leuchtenden Augen und gewaltigen Wurzeln |
+| `flatterfrage` | Flatterfrage | Normal | Bibliothek | kleine magische Fledermaus |
+| `buecherwurm` | Bücherwurm | Normal | Bibliothek | lebendiges Buch mit Gesicht |
+| `tintengeist` | Tintengeist | Normal | Bibliothek | kleiner Geist aus schwarzer, magischer Tinte |
+| `runenwaechter` | Runenwächter | Selten | Bibliothek | schwebender Wächter mit leuchtenden Runen |
+| `archivar` | Der Archivar | Boss | Bibliothek | riesiges verzaubertes Buch mit magischen Seiten und Augen |
+| `funkenkobold` | Funkenkobold | Normal | Höhlen | kleines Feuerwesen mit glühendem Körper |
+| `kristallkrabbler` | Kristallkrabbler | Normal | Höhlen | kleine Kreatur mit kristallinem Panzer |
+| `hoehlendrache` | Höhlendrache | Normal | Höhlen | junger Drache mit kleinen Flügeln |
+| `kristallfuchs` | Kristallfuchs | Selten | Höhlen | leuchtender Fuchs mit Kristallen am Körper |
+| `urdrache` | Der Urdrache | Boss | Höhlen | mächtiger Drache mit Kristallhörnern und glühenden Schuppen |
 
-Technik: Im ursprünglichen Plan war eine `getPets()`-Schnittstelle vorgesehen. Im aktuellen Code deklarieren Spiele ihre Haustiere aber als `pets: [...]` direkt im `manifest.js` (Vorbild: `games/snake/manifest.js`, mit `sourceGame` und `unlock`). Diesem bestehenden Muster folgen.
-`checkUnlock()` in `games/cozy-home/pets.js` kennt bisher nur `highscore` und `gamesPlayed`. Für „X Siege gegen Monster Y“ braucht es dort einen neuen Unlock-Typ.
+## Einsatz in den Modi
+
+- **Feste Räume**: Raum 1 Tempel, Raum 2 Bibliothek, Raum 3 Höhlen, Raum 4 Tempel, Raum 5 Bibliothek, Endboss in den Höhlen. Der Miniboss am Raumende ist der Boss des Dungeons (mit den Miniboss-Werten), der Endboss der Urdrache (mit den Boss-Werten).
+- **Endlos und Nach Kartenanzahl**: Start in einem zufälligen Dungeon, nach jedem besiegten Boss der nächste.
+
+## Grafiken
+
+Dateien einfach ablegen, ohne Code-Änderung:
+
+- Hintergrund: `games/flashcard-battle/assets/dungeons/<tempel|bibliothek|hoehlen>.png`
+- Monster: `games/flashcard-battle/assets/monsters/<id>.png`, transparent, normal und selten 64 × 64 px, Boss 128 × 128 px, im Spiel doppelt so groß und ohne Weichzeichnen angezeigt
+
+Fehlt eine Datei, zeigt das Spiel einen Farbverlauf in der Dungeon-Palette bzw. das Emoji. Vorerst gibt es genau eine Grafik pro Monster und statische Hintergründe.
+
+## Cozy-Home-Haustiere
+
+Vorerst komplett zurückgestellt: Im Spiel gibt es keine Haustier-Anbindung und keine Anzeige dazu. Der allgemeine Unlock-Typ `counter` in `games/cozy-home/pets.js` bleibt bestehen und liest die Zähler `defeat:<id>`, falls das später wieder aufgegriffen wird.
 
 ---
 
@@ -175,7 +210,7 @@ Alle Zahlen stehen gesammelt in `CONFIG` in `games/flashcard-battle/fb-core.js` 
 
 | Datei | Inhalt |
 |---|---|
-| `games/flashcard-battle/manifest.js` | Monster-Registry `window.FB_MONSTERS`, Haustier-Schwellen `window.FB_PET_WINS`, `getStats`/`resetStats`, `pets`, lädt `fb-core.js` vor |
+| `games/flashcard-battle/manifest.js` | Dungeons `window.FB_DUNGEONS`, Monster `window.FB_MONSTERS`, `getStats`/`resetStats`, lädt `fb-core.js` vor |
 | `games/flashcard-battle/fb-core.js` | reine Spiellogik `window.FBCore` (Fragen, Schaden, Run, Fortschritt), ohne DOM und ohne DB |
 | `games/flashcard-battle/flashcard-battle.js` / `.css` | UI: Setup, Kampf, Ergebnis, Kompendium, Statistik |
 | `scripts/tests/fb-core.test.js` | Tests für `fb-core.js`: `node --test "scripts/tests/*.test.js"` |
@@ -183,17 +218,17 @@ Alle Zahlen stehen gesammelt in `CONFIG` in `games/flashcard-battle/fb-core.js` 
 - **Debug-Menü** (🐞 im Setup und im Kampf): Lesezeit, Schnellangriff-Fenster und -Bonus, Spieler-HP, Schaden, Combo, Heilung, HP/Angriff/XP je Gegnerstufe und Dungeon-Werte anpassen, im Kampf zusätzlich die aktuellen HP von Spieler und Monster sowie den Monster-Angriff. Die Werte liegen unter DB `fb_debug` und werden per `FBCore.applyConfig()` auf `CONFIG` angewendet; „Standardwerte“ löscht sie. Im Setup zeigt „Debug-Werte aktiv“, wenn etwas abweicht.
 - **Karteninhalt**: Markdown wird per `FBCore.plainText()` in Klartext umgewandelt (nur Formatierung, Zeichen wie `_ * |` bleiben, Zeilenumbrüche auch). Ein Set braucht mindestens 2 unterschiedliche Antworten.
 - **Speicher**: alles unter `gameHighscores['flashcard-battle']` (Siege, XP, Zähler, gesehene Monster, Streak). Wird nach jeder Antwort geschrieben, ein abgebrochener Run verliert also nichts.
-- **Monster ergänzen**: Eintrag in `FB_MONSTERS` mit `id`, `name`, `tier`, `emoji`. Für eine Grafik `sprite: 'games/flashcard-battle/assets/monsters/<id>.png'` ergänzen, ohne Grafik wird das Emoji gezeigt.
-- **Haustier freischalten**: dem Monster ein `pet`-Objekt geben (Felder wie bei Snake) und unter `games/flashcard-battle/assets/pets/<id>/` die Bilder `default.png`, `icon.png` und `sleep.png` ablegen. Cozy Home prüft das über den allgemeinen Unlock-Typ `counter` (`games/cozy-home/pets.js`), der Zähler heißt `defeat:<id>`.
+- **Dungeon oder Monster ergänzen**: Eintrag in `FB_DUNGEONS` (`id`, `name`, `icon`, `colors`) bzw. `FB_MONSTERS` (`id`, `name`, `tier`, `dungeon`, `emoji`), Grafiken wie unter „Dungeons“ ablegen. Jeder Dungeon braucht mindestens ein normales Monster und einen Boss.
 
 ---
 
 # Entscheidungen (29.10.2026)
 
-- **Bosse und Seltenheit** sind im MVP enthalten (abweichend vom Juni-Plan), damit die Haustier-Tabelle normal/selten/Boss funktioniert.
+- **Bosse und Seltenheit** sind im MVP enthalten (abweichend vom Juni-Plan), damals wegen der geplanten Haustier-Stufen.
 - **Spielmodi**: Der Spieler wählt selbst zwischen Feste Räume, Endlos und Nach Kartenanzahl.
 - **Boss-Position**: Feste Räume am Ende (nach 5 Räumen mit je einem Miniboss), Endlos alle X Gegner, Kartenanzahl mit der letzten Karte.
-- **Minibosse** (29.10.2026): nur in „Feste Räume“, als 5. Gegner jedes Raums. Sie werden keine Cozy-Home-Haustiere (keine Stufe in `FB_PET_WINS`).
+- **Minibosse** (29.10.2026): nur in „Feste Räume“, als 5. Gegner jedes Raums.
+- **Dungeons** (30.10.2026): 3 Dungeons mit je 5 Monstern. „Feste Räume“ behält 5 Räume und einen Endboss, die Dungeons wechseln sich ab; die Bosse der Dungeons dienen als Minibosse. Haustiere sind zurückgestellt.
 - **Kleine Sets**: weniger Antwortmöglichkeiten statt Auffüllen aus anderen Sets.
 - **Monster**: Casey gestaltet sie als Assets, kein Editor im MVP.
 - **Tägliche Challenge**: bleibt Platzhalter, kommt später.
