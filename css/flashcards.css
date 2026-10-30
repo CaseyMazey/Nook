@@ -161,11 +161,13 @@
 
 /* Cards list */
 .cards-list { padding: 4px 0; }
-.fc-row { display: grid; grid-template-columns: 1fr 1fr auto auto; align-items: center; gap: 10px; padding: 9px 16px; border-bottom: 1px solid var(--border); transition: background var(--transition); }
+.fc-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto auto; align-items: start; gap: 10px; padding: 9px 16px; border-bottom: 1px solid var(--border); transition: background var(--transition); }
 .fc-row:last-child { border-bottom: none; }
 .fc-row:hover { background: var(--surface-2); }
 .fc-front { font-size: calc(13px * var(--core-font-scale)); color: var(--text); }
-.fc-back { font-size: calc(13px * var(--core-font-scale)); color: var(--text-2); min-width: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.fc-back { font-size: calc(13px * var(--core-font-scale)); color: var(--text-2); min-width: 0; overflow-wrap: break-word; line-height: 1.45; }
+.fc-back .fc-md-rich { font-size: inherit; }
+.fc-back :is(.guide-table, pre) { display: block; max-width: 100%; overflow-x: auto; }
 /* Sprung aus „Schwierige Karten“: Zeile kurz hervorheben */
 .fc-row-flash { animation: fc-row-flash 1.8s ease; }
 @keyframes fc-row-flash { 0%, 40% { background: color-mix(in srgb, var(--sage) 26%, transparent); } 100% { background: transparent; } }
@@ -345,6 +347,13 @@
      ~500 px): eine Spalte statt 200-px-Liste + zerquetschter Fachansicht.
      Fächer und Inhalt nebeneinander, die Listen scrollen in sich. */
   #flashcard-layout { grid-template-columns: minmax(0, 1fr); }
+  /* Frage + Stufe + Menü oben, die ganze Antwort darunter über die volle Breite */
+  .fc-row { grid-template-columns: minmax(0, 1fr) auto auto; gap: 4px 6px; }
+  .fc-row { align-items: start; }
+  .fc-front { grid-area: 1 / 1; font-weight: 600; }
+  .fc-box { grid-area: 1 / 2; }
+  .fc-card-meatball { grid-area: 1 / 3; }
+  .fc-back { grid-area: 2 / 1 / 2 / -1; }
   .fc-side-col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
   .fc-side-col:has(#fc-toc.hidden) { grid-template-columns: minmax(0, 1fr); }
   #subject-list, #fc-toc-body { max-height: 38vh; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
@@ -396,16 +405,6 @@ body:has(#flashcard-layout.session-open) { overflow: hidden; }
   /* stretch: align-items:start aus dem 1024er-Block ließe die Fachliste auf
      die Breite ihres längsten Namens wachsen */
   .fc-side-col { display: flex; align-items: stretch; }
-  /* Frage + Stufe + Menü oben, die ganze Antwort darunter über die volle Breite */
-  .fc-row { grid-template-columns: minmax(0, 1fr) auto auto; gap: 4px 6px; }
-  .fc-row { align-items: start; }
-  .fc-front { grid-area: 1 / 1; font-weight: 600; }
-  .fc-box { grid-area: 1 / 2; }
-  .fc-card-meatball { grid-area: 1 / 3; }
-  .fc-back { grid-area: 2 / 1 / 2 / -1; }
-  .fc-back-full { display: block; overflow: visible; overflow-wrap: break-word; line-height: 1.45; }
-  .fc-back-full .fc-md-rich { font-size: inherit; }
-  .fc-back-full :is(.guide-table, pre) { display: block; max-width: 100%; overflow-x: auto; }
 }
 /* Touch-Geräte ohne Hover: Karten-Menü immer sichtbar */
 @media (hover: none) { .fc-card-meatball { opacity: 1; } }

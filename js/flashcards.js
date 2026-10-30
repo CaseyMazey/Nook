@@ -598,9 +598,8 @@ function renderGroupList(subj){
         const front = document.createElement('span'); front.className='fc-front';
         front.innerHTML = (fc.hard ? '<span class="fc-hard-star" title="Schwierig">⭐</span> ' : '') + escHtml(fc.front);
         const back = document.createElement('div'); back.className='fc-back';
-        // Handy: ganze Antwort zum Durchlesen und Lernen, sonst kurze Vorschau
-        if(window.matchMedia('(max-width: 480px)').matches){ back.classList.add('fc-back-full'); back.innerHTML = fcRenderBack(fc.back); }
-        else { back.textContent = fcPlainPreview(fc.back); back.title = fc.back; }
+        // Immer die ganze, formatierte Antwort: die Liste dient auch zum Durchlesen und Lernen
+        back.innerHTML = fcRenderBack(fc.back);
         const boxBadge = document.createElement('span'); boxBadge.className='fc-box';
         boxBadge.style.setProperty('--lc', FC_LEITNER_COLORS[(fc.box||1)-1]);
         boxBadge.textContent = FC_LEITNER_LABELS[(fc.box||1)-1];
@@ -1406,15 +1405,6 @@ function fcRenderBack(text){
   // Nur ein schlichter Absatz → zentriert wie bisher, sonst linksbündig lesen
   const rich = /<(ul|ol|pre|table|h\d|blockquote|div)/.test(html);
   return `<div class="fc-md${rich ? ' fc-md-rich' : ''}">${html}</div>`;
-}
-
-// Kurzvorschau für die Kartenliste: Markdown-Zeichen weg, eine Zeile
-function fcPlainPreview(text){
-  return String(text || '')
-    .replace(/```[\w+#.-]*\n?/g, '').replace(/~~~/g, '')
-    .replace(/^\s{0,3}(#{1,6}|>|[-*+]|\d+\.)\s+/gm, '')
-    .replace(/(\*\*|__|\*|_|~~|==|`)/g, '')
-    .replace(/\|/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
 // =========================
