@@ -287,6 +287,46 @@
 .session-done-wrong-more { font-size: calc(12px * var(--core-font-scale)); color: var(--text-3); margin-top: 4px; }
 .session-done-actions { justify-content: center; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
 
+/* Lernalltag (js/flashcards-study.js): Runden, Plan, Lesemodus */
+.fc-rounds { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; margin-top: 6px; font-size: calc(11.5px * var(--core-font-scale)); color: var(--text-3); }
+.fc-rounds-label { font-weight: 700; }
+.fc-round b { font-family: var(--mono); color: var(--text); font-weight: 600; }
+.fc-round-sep { opacity: .6; }
+.session-done-wrap > .fc-rounds { justify-content: center; margin-top: 10px; }
+.fc-plan { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 10px; padding: 8px 16px; border-bottom: 1px solid var(--border); font-size: calc(12.5px * var(--core-font-scale)); color: var(--text-2); }
+.fc-exam-main .fc-plan { padding: 6px 0 0; border-bottom: none; }
+.fc-plan-text { min-width: 0; }
+.fc-plan-btn { font-size: calc(12px * var(--core-font-scale)); padding: 5px 10px; white-space: nowrap; }
+.fc-plan-done { font-weight: 600; color: var(--sage-dark); }
+.fc-weak-mark { font-size: calc(11px * var(--core-font-scale)); }
+.fc-study-btn { white-space: nowrap; }
+.fc-exam-actions .group-btn { white-space: nowrap; }
+
+#flashcard-layout.read-open { grid-template-columns: minmax(0, 1fr); }
+#flashcard-layout.read-open > :not(#fc-read-panel) { display: none; }
+#view-flashcards:has(#flashcard-layout.read-open) :is(#fc-global-stats, #fc-resume-banner, .view-header) { display: none; }
+#flashcard-layout.read-open #fc-read-panel { display: block; }
+#fc-read-panel { width: 100%; max-width: 820px; justify-self: center; padding: 18px 22px 22px; box-sizing: border-box; }
+.fc-read-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+.fc-read-title { min-width: 0; }
+.fc-read-label, .fc-read-count { display: block; font-size: calc(12px * var(--core-font-scale)); color: var(--text-3); }
+.fc-read-title h2 { margin: 2px 0; font-family: var(--font-heading); font-size: calc(21px * var(--core-font-scale)); color: var(--text); overflow-wrap: anywhere; }
+.fc-read-tools { display: flex; align-items: center; gap: 8px; }
+.fc-read-cover-btn { font-size: calc(12.5px * var(--core-font-scale)); padding: 6px 10px; white-space: nowrap; }
+.fc-read-section > h3 { margin: 22px 0 4px; font-size: calc(13px * var(--core-font-scale)); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-3); }
+.fc-read-section-weak > h3 { color: color-mix(in srgb, var(--fc-danger) 62%, var(--text)); }
+.fc-read-card { padding: 14px 0; border-bottom: 1px solid var(--border); scroll-margin-top: 16px; }
+.fc-read-section:last-of-type .fc-read-card:last-child { border-bottom: none; }
+.fc-read-front { margin: 0 0 6px; font-size: calc(16px * var(--core-font-scale)); font-weight: 700; color: var(--text); line-height: 1.4; overflow-wrap: anywhere; }
+.fc-read-back { font-size: calc(15px * var(--core-font-scale)); line-height: 1.6; color: var(--text-2); overflow-wrap: break-word; }
+.fc-read-back .fc-md-rich { font-size: inherit; }
+.fc-read-back :is(.guide-table, pre) { display: block; max-width: 100%; overflow-x: auto; }
+.fc-read-cover-hint { display: none; padding: 10px; border: 1px dashed var(--border-strong); border-radius: var(--radius); text-align: center; font-size: calc(12.5px * var(--core-font-scale)); color: var(--text-3); }
+.fc-read-covered .fc-read-card { cursor: pointer; }
+.fc-read-covered .fc-read-card:not(.fc-read-revealed) .fc-read-back { display: none; }
+.fc-read-covered .fc-read-card:not(.fc-read-revealed) .fc-read-cover-hint { display: block; }
+.fc-read-foot { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding-top: 16px; }
+
 /* Prüfungen (js/flashcards-exams.js) */
 #fc-exam-list { margin-bottom: 18px; display: flex; flex-direction: column; gap: 10px; }
 .fc-exam-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
@@ -301,7 +341,7 @@
 .fc-exam-meta { font-size: calc(12px * var(--core-font-scale)); font-family: var(--mono); color: var(--text-3); }
 .fc-exam-topics { display: flex; flex-wrap: wrap; gap: 4px; }
 .fc-exam-topic { font-size: calc(11px * var(--core-font-scale)); padding: 1px 8px; border-radius: 99px; background: var(--surface-2); border: 1px solid var(--border); color: var(--text-2); }
-.fc-exam-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.fc-exam-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
 .fc-exam-learn, .fc-exam-learn-all { font-size: calc(12px * var(--core-font-scale)); padding: 6px 12px; white-space: nowrap; }
 #fc-exam-group-list { display: flex; flex-direction: column; gap: 2px; max-height: 280px; overflow-y: auto; }
 .fc-exam-check { display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: var(--radius); cursor: pointer; font-size: calc(13px * var(--core-font-scale)); color: var(--text); }

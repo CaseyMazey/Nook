@@ -62,12 +62,14 @@ function renderExamList(subj){
         <div class="fc-exam-topics">${groups.map(g => `<span class="fc-exam-topic">${escHtml(g.name)}</span>`).join('')}</div>
       </div>
       <div class="fc-exam-actions">
-        ${due ? `<button class="btn-primary fc-exam-learn" data-mode="due" title="Nur die heute fälligen Karten, gemischt">▶ Fällige lernen (${due})</button>` : ''}
-        <button class="${due ? 'btn-ghost fc-exam-learn-all' : 'btn-primary fc-exam-learn'}" data-mode="all" ${cards.length ? '' : 'disabled'} title="Alle Karten der Prüfung gemischt – zur Prüfungsvorbereitung">${due ? 'Alle mischen' : '▶ Alle gemischt lernen'}</button>
         <button class="fc-meatball" title="Optionen" aria-label="Optionen für ${escHtml(exam.name)}">⋮</button>
       </div>`;
-    card.querySelectorAll('[data-mode]').forEach(btn => btn.addEventListener('click', () =>
-      startGroupsLearnSession(subj.id, exam.groupIds, { id: exam.id, name: exam.name }, { mode: btn.dataset.mode })));
+    const info = { id: exam.id, name: exam.name };
+    card.querySelector('.fc-exam-actions').prepend(buildFcStudyButtons(subj, exam.groupIds, info, cards.length > 0));
+    card.querySelector('.fc-round-btn').classList.add('fc-exam-learn');
+    const planRow = buildFcPlanRow(subj, exam, exam.groupIds, info, cards);
+    if(planRow) card.querySelector('.fc-exam-main').appendChild(planRow);
+    card.querySelector('.fc-exam-main').insertAdjacentHTML('beforeend', fcRoundsHtml(exam.groupIds));
     card.querySelector('.fc-meatball').addEventListener('click', e => { e.stopPropagation(); openExamMenu(subj, exam, e.currentTarget); });
     wrap.appendChild(card);
   });
@@ -76,12 +78,21 @@ function renderExamList(subj){
 
 function openExamMenu(subj, exam, anchor){
   closeAllMenus();
+  const due = calcDueCount(uniqueCardsByFront(examGroups(subj, exam).flatMap(g => g.cards)));
+  const unsure = fcUnsureIds(exam.groupIds);
   const menu = document.createElement('div');
   menu.className = 'fc-context-menu';
   menu.innerHTML = `
+    <button class="fc-menu-item" data-action="due" ${due ? '' : 'disabled'}>🗓 Nur fällige lernen (${due})</button>
+    <button class="fc-menu-item" data-action="unsure" ${unsure.length ? '' : 'disabled'}>🎯 Nur die unsicheren (${unsure.length})</button>
+    <button class="fc-menu-item" data-action="countdown">📅 Countdown verbinden…</button>
     <button class="fc-menu-item" data-action="edit">✏️ Bearbeiten</button>
     <button class="fc-menu-item fc-menu-danger" data-action="delete">🗑️ Löschen</button>
   `;
+  const info = { id: exam.id, name: exam.name };
+  menu.querySelector('[data-action="due"]').addEventListener('click', () => { closeAllMenus(); startGroupsLearnSession(subj.id, exam.groupIds, info, { mode: 'due' }); });
+  menu.querySelector('[data-action="unsure"]').addEventListener('click', () => { closeAllMenus(); startGroupsLearnSession(subj.id, exam.groupIds, info, { mode: 'unsure', cardIds: unsure }); });
+  menu.querySelector('[data-action="countdown"]').addEventListener('click', () => { closeAllMenus(); openFcCountdownModal(subj, { examId: exam.id }); });
   menu.querySelector('[data-action="edit"]').addEventListener('click', () => { closeAllMenus(); openExamModal(subj, exam); });
   menu.querySelector('[data-action="delete"]').addEventListener('click', async () => {
     closeAllMenus();

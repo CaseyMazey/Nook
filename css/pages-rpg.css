@@ -1191,7 +1191,7 @@
 [data-pages-style="rpg"] .fc-exam-card .fc-meatball:hover { background: color-mix(in srgb, var(--sheen) 12%, transparent); color: var(--brass-hi); }
 
 /* Messingknöpfe: „Gemischt lernen“ und die Bedienknöpfe direkt auf dem Holz */
-[data-pages-style="rpg"] :is(.fc-exam-learn, #fc-filter-btn, .fc-exam-add) {
+[data-pages-style="rpg"] :is(.fc-exam-learn, .fc-exam-card .fc-plan-btn, #fc-filter-btn, .fc-exam-add) {
   border: 1px solid var(--brass-lo);
   background: linear-gradient(170deg, var(--brass-hi), var(--brass) 50%, var(--brass-lo));
   color: var(--brass-ink);
@@ -1202,7 +1202,7 @@
     inset 0 -1px 2px color-mix(in srgb, var(--deco-ink) 30%, transparent),
     0 3px 6px color-mix(in srgb, var(--shadow-tint) 45%, transparent);
 }
-[data-pages-style="rpg"] :is(.fc-exam-learn, #fc-filter-btn, .fc-exam-add):not(:disabled):hover {
+[data-pages-style="rpg"] :is(.fc-exam-learn, .fc-exam-card .fc-plan-btn, #fc-filter-btn, .fc-exam-add):not(:disabled):hover {
   background: linear-gradient(170deg, color-mix(in srgb, var(--brass-hi) 80%, var(--sheen)), var(--brass-hi) 50%, var(--brass));
   color: var(--brass-ink);
 }
@@ -1290,3 +1290,13 @@
   filter: drop-shadow(0 4px 5px color-mix(in srgb, var(--shadow-tint) 40%, transparent));
 }
 [data-pages-style="rpg"] #view-mehr .positivity-widget-text { font-size: calc(14px * var(--core-font-scale)); }
+
+/* Lesemodus: großes Pergament, Text weg von der gerissenen Kante */
+[data-pages-style="rpg"] #view-flashcards #fc-read-panel { padding: 30px 34px 30px; }
+@media (max-width: 480px) { [data-pages-style="rpg"] #view-flashcards #fc-read-panel { padding: 26px 22px; } }
+/* Auf der Ledertafel: helle Schrift, „Lesen“ und ⏱ mit Messing-Umriss */
+[data-pages-style="rpg"] .fc-exam-card .fc-study-btn { background: transparent; border: 1px solid color-mix(in srgb, var(--brass) 70%, transparent); color: var(--brass-hi); }
+[data-pages-style="rpg"] .fc-exam-card .fc-study-btn:not(:disabled):hover { background: color-mix(in srgb, var(--brass) 18%, transparent); color: var(--sheen); }
+[data-pages-style="rpg"] .fc-exam-card :is(.fc-rounds, .fc-plan) { color: color-mix(in srgb, var(--sheen) 72%, var(--amber)); }
+[data-pages-style="rpg"] .fc-exam-card .fc-round b { color: var(--sheen); }
+[data-pages-style="rpg"] .fc-exam-card .fc-plan-done { color: var(--brass-hi); }

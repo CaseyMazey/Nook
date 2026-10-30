@@ -17,6 +17,9 @@ window.NOOK_CHANGELOG = [
     version: '2026.10.13',
     date: '2026-10-29',
     items: [
+      'Karteikarten: Tagesrunden – „▶ Runde N“ fragt alle Karten ab, der Verlauf zeigt deine Verbesserung über den Tag; eine Karte steigt höchstens einmal pro Tag auf',
+      'Karteikarten: Lesemodus zum Einprägen, auf Wunsch mit verdeckten Antworten, heute unsichere Karten zuerst, die Lesestelle bleibt gemerkt',
+      'Karteikarten: Prüfungsplan – Thema oder Prüfung mit einem Countdown verbinden und ein Tagesziel bekommen; Zeit-Session von 2 bis 20 Minuten',
       'RPG am Handy: schmalere Ränder, mehr Platz für den Inhalt; die Mehr-Seite als genietete Lederschilder, der Motivationsspruch als Kreidetafel',
       'Karteikarten: in der Kartenliste steht immer die ganze Antwort, formatiert zum Durchlesen',
       'Heute passt am Handy wieder in die Breite; Karteikarten auf Handy, Tablet und Foldable sauber einspaltig; Box 1 heißt „Anfang“ statt „Neu“',

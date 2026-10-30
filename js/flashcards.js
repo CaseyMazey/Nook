@@ -351,15 +351,23 @@ function openSubjectMenu(subj, anchor){
 
 function openGroupMenu(subj, group, anchor){
   closeAllMenus();
+  const due = calcDueCount(group.cards);
+  const unsure = fcUnsureIds([group.id]);
   const menu = document.createElement('div');
   menu.className = 'fc-context-menu';
   menu.innerHTML = `
-    <button class="fc-menu-item" data-action="all" ${group.cards.length ? '' : 'disabled'}>↻ Alle Karten wiederholen</button>
+    <button class="fc-menu-item" data-action="due" ${due ? '' : 'disabled'}>🗓 Nur fällige lernen (${due})</button>
+    <button class="fc-menu-item" data-action="unsure" ${unsure.length ? '' : 'disabled'}>🎯 Nur die unsicheren (${unsure.length})</button>
+    <button class="fc-menu-item" data-action="add">➕ Karte hinzufügen</button>
+    <button class="fc-menu-item" data-action="countdown">📅 Countdown verbinden…</button>
     <button class="fc-menu-item" data-action="rename">✏️ Umbenennen</button>
     <button class="fc-menu-item" data-action="export">📤 Als Markdown exportieren</button>
     <button class="fc-menu-item fc-menu-danger" data-action="delete">🗑️ Löschen</button>
   `;
-  menu.querySelector('[data-action="all"]').addEventListener('click', () => { closeAllMenus(); startLearnSession(subj.id, group.id, 'all'); });
+  menu.querySelector('[data-action="due"]').addEventListener('click', () => { closeAllMenus(); startLearnSession(subj.id, group.id, 'due'); });
+  menu.querySelector('[data-action="unsure"]').addEventListener('click', () => { closeAllMenus(); startGroupsLearnSession(subj.id, [group.id], null, { mode: 'unsure', cardIds: unsure }); });
+  menu.querySelector('[data-action="add"]').addEventListener('click', () => { closeAllMenus(); openFcModal(subj.id, group.id); });
+  menu.querySelector('[data-action="countdown"]').addEventListener('click', () => { closeAllMenus(); openFcCountdownModal(subj, { groupId: group.id }); });
   menu.querySelector('[data-action="rename"]').addEventListener('click', () => { closeAllMenus(); openGroupModal(subj.id, group); });
   menu.querySelector('[data-action="export"]').addEventListener('click', () => { closeAllMenus(); exportGroup(subj, group); });
   menu.querySelector('[data-action="delete"]').addEventListener('click', async () => {
@@ -519,6 +527,7 @@ function renderGroupList(subj){
   }
   const filtering = fcCardFilterActive();
   const today = parseLocalDate(getTodayStr());
+  const day = getFcDay();
   let shownGroups = 0, shownCards = 0;
 
   subj.groups.forEach(group => {
@@ -552,20 +561,14 @@ function renderGroupList(subj){
     headLeft.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toggle(); } });
 
     const actions = document.createElement('div'); actions.className='group-actions';
-    const addCardBtn = document.createElement('button'); addCardBtn.className='btn-ghost group-btn'; addCardBtn.textContent='+ Karte';
-    addCardBtn.addEventListener('click', () => openFcModal(subj.id, group.id));
-    // Leitner: Standard sind nur die fälligen Karten; ist nichts fällig, alle wiederholen
-    const learnBtn = document.createElement('button'); learnBtn.className = 'btn-primary group-btn';
-    learnBtn.textContent = dueCount > 0 ? `▶ Lernen (${dueCount})` : '↻ Alle wiederholen';
-    learnBtn.title = dueCount > 0 ? `${dueCount} fällige Karte${dueCount!==1?'n':''} lernen` : 'Heute ist nichts fällig – alle Karten wiederholen';
-    learnBtn.disabled = totalCards === 0;
-    learnBtn.addEventListener('click', () => startLearnSession(subj.id, group.id, dueCount > 0 ? 'due' : 'all'));
     const meatball = document.createElement('button'); meatball.className='fc-meatball'; meatball.textContent='⋮';
     meatball.title = 'Optionen'; meatball.setAttribute('aria-label', `Optionen für ${group.name}`);
     meatball.addEventListener('click', e => { e.stopPropagation(); openGroupMenu(subj, group, meatball); });
-    actions.append(addCardBtn, learnBtn, meatball);
+    actions.append(buildFcStudyButtons(subj, [group.id], null, totalCards > 0), meatball);
     head.append(headLeft, actions);
     card.appendChild(head);
+    const planRow = buildFcPlanRow(subj, group, [group.id], null, group.cards);
+    if(planRow) card.appendChild(planRow);
 
     // Leitner progress bar
     const progRow = document.createElement('div'); progRow.className='group-progress-row';
@@ -588,6 +591,7 @@ function renderGroupList(subj){
       leitnerLegend.appendChild(badge);
     });
     progRow.append(leitnerBar, leitnerLegend);
+    progRow.insertAdjacentHTML('beforeend', fcRoundsHtml([group.id]));
     card.appendChild(progRow);
 
     // Cards list
@@ -596,7 +600,8 @@ function renderGroupList(subj){
       [...visibleCards].sort((a,b)=>(b.box||1)-(a.box||1)).forEach(fc => {
         const row = document.createElement('div'); row.className='fc-row'; row.dataset.cardId = fc.id;
         const front = document.createElement('span'); front.className='fc-front';
-        front.innerHTML = (fc.hard ? '<span class="fc-hard-star" title="Schwierig">⭐</span> ' : '') + escHtml(fc.front);
+        front.innerHTML = (fc.hard ? '<span class="fc-hard-star" title="Schwierig">⭐</span> ' : '')
+          + (isFcWeak(fc.id, day) ? '<span class="fc-weak-mark" title="Heute mehrfach falsch">🔁</span> ' : '') + escHtml(fc.front);
         const back = document.createElement('div'); back.className='fc-back';
         // Immer die ganze, formatierte Antwort: die Liste dient auch zum Durchlesen und Lernen
         back.innerHTML = fcRenderBack(fc.back);
@@ -862,15 +867,24 @@ const learnSession = {
   subjId: null,
   groupIds: [],   // eine Themengruppe oder alle Themen einer Prüfung
   exam: null,     // { id, name } bei Prüfungs-Session, sonst null
-  mode: 'due',    // 'due' = nur fällige · 'all' = alle · 'retry' = gezielte Karten (falsch beantwortete)
+  // 'round' = Tagesrunde (alle) · 'due' = nur fällige · 'unsure' = falsche der letzten Runde ·
+  // 'retry' = gezielte Karten · 'plan' = Tagesziel · 'timed' = Zeit-Session · 'all' = alt
+  mode: 'round',
+  timer: null,    // Zeit-Session: { minutes, leftMs, endsAt, up, iv }
   stats: { correct: 0, wrong: 0 },
   wrongIds: [],   // in dieser Session nicht gewusst/schwer → „Falsche nochmal“
   leitnerChanges: [] // { card, from, to }
 };
 
-const FC_MODE_LABELS = { due: 'nur fällige', all: 'alle Karten', retry: 'falsche nochmal' };
+const FC_MODE_LABELS = { round: 'Runde', due: 'nur fällige', all: 'alle Karten', retry: 'falsche nochmal', unsure: 'nur die unsicheren', plan: 'Tagesziel', timed: 'Zeit-Session' };
 
-function startLearnSession(subjId, groupId, mode = 'due'){
+function fcModeLabel(mode, groupIds, minutes){
+  if(mode === 'round') return `Runde ${fcNextRound(groupIds)}`;
+  if(mode === 'timed') return `${minutes} Minuten`;
+  return FC_MODE_LABELS[mode] || FC_MODE_LABELS.all;
+}
+
+function startLearnSession(subjId, groupId, mode = 'round'){
   startGroupsLearnSession(subjId, [groupId], null, { mode });
 }
 
@@ -902,7 +916,11 @@ function buildLearnQueue(groups, exam, mode, cardIds){
   if(cardIds){ const ids = new Set(cardIds); cards = cards.filter(c => ids.has(c.id)); }
   else if(mode === 'due'){ const today = parseLocalDate(getTodayStr()); cards = cards.filter(c => isCardDue(c, today)); }
   const mixed = shuffleCards(cards);
-  if(!exam) mixed.sort((a,b) => (a.box||1)-(b.box||1)); // sort ist stabil → Mischung je Box bleibt
+  if(mode === 'timed'){
+    // Wenig Zeit: zuerst was fällig ist, dann niedrige Boxen
+    const today = parseLocalDate(getTodayStr());
+    mixed.sort((a,b) => (isCardDue(b, today) - isCardDue(a, today)) || ((a.box||1)-(b.box||1)));
+  } else if(!exam) mixed.sort((a,b) => (a.box||1)-(b.box||1)); // sort ist stabil → Mischung je Box bleibt
   return uniqueCardsByFront(mixed);
 }
 
@@ -912,7 +930,8 @@ function buildLearnQueue(groups, exam, mode, cardIds){
 // dort weiter; eine andere offene Session wird nur nach Rückfrage verworfen.
 // opts.fresh: immer neu beginnen („Nochmal“)
 function startGroupsLearnSession(subjId, groupIds, exam, opts = {}){
-  const mode = opts.cardIds ? 'retry' : (opts.mode || 'due');
+  closeFcRead();
+  const mode = opts.mode || (opts.cardIds ? 'retry' : 'round');
   const saved = getSavedLearnSession();
   if(saved && !opts.fresh){
     if(isSameLearnTarget(saved, subjId, groupIds, mode)){ if(resumeLearnSession()) return; }
@@ -935,16 +954,17 @@ function startGroupsLearnSession(subjId, groupIds, exam, opts = {}){
   if(!groups.some(g => g.cards.length)) return;
   const queue = buildLearnQueue(groups, exam, mode, opts.cardIds);
   if(!queue.length){
-    hubAlert('Heute nichts fällig 🎉', 'Alle Karten sind erst später wieder dran (Leitner-System). Wenn du trotzdem üben willst: „↻ Alle wiederholen“.');
+    hubAlert('Heute nichts fällig 🎉', 'Alle Karten sind erst später wieder dran (Leitner-System). Wenn du trotzdem üben willst: „▶ Runde“ fragt alle Karten ab.');
     return;
   }
-  openLearnSession(subj, groupIds, exam, queue, 0, { correct: 0, wrong: 0 }, [], { mode, wrongIds: [] });
+  openLearnSession(subj, groupIds, exam, queue, 0, { correct: 0, wrong: 0 }, [], { mode, wrongIds: [], minutes: opts.minutes, leftMs: opts.minutes ? opts.minutes * 60000 : null });
 }
 
 function openLearnSession(subj, groupIds, exam, queue, index, stats, leitnerChanges, extra = {}){
   learnSession.active = true;
   learnSession.mode = extra.mode || 'all';
   learnSession.wrongIds = extra.wrongIds || [];
+  fcStartTimer(extra.minutes, extra.leftMs);
   learnSession.groupIds = groupIds;
   learnSession.queue = queue;
   learnSession.index = index;
@@ -959,7 +979,7 @@ function openLearnSession(subj, groupIds, exam, queue, index, stats, leitnerChan
   document.getElementById('flashcard-layout')?.classList.add('session-open');
   const panel = document.getElementById('fc-session-panel');
   panel.classList.remove('hidden');
-  document.getElementById('fc-session-panel-title').textContent = `${exam ? 'Prüfung lernen' : 'Lernsession'} · ${FC_MODE_LABELS[learnSession.mode]}`;
+  document.getElementById('fc-session-panel-title').textContent = `${exam ? 'Prüfung lernen' : 'Lernsession'} · ${fcModeLabel(learnSession.mode, groupIds, extra.minutes)}`;
   // Kontext bleibt während der ganzen Session sichtbar: wofür lerne ich gerade?
   const topicRow = exam
     ? `<div class="fc-session-ctx-row"><span class="fc-session-ctx-lbl">Prüfung</span><span class="fc-session-ctx-group">${escHtml(exam.name)}</span></div>
@@ -1007,6 +1027,8 @@ function saveLearnSessionState(paused){
     mode: learnSession.mode,
     stats: learnSession.stats,
     wrongIds: learnSession.wrongIds,
+    minutes: learnSession.timer?.minutes || null,
+    leftMs: learnSession.timer ? fcTimerLeft() : null,
     leitnerChanges: learnSession.leitnerChanges,
     paused: !!paused,
     savedAt: new Date().toISOString(),
@@ -1016,7 +1038,7 @@ function saveLearnSessionState(paused){
 // Gezielte Wiederholungen ('retry') werden nie „fortgesetzt“, sondern neu gestartet
 function isSameLearnTarget(saved, subjId, groupIds, mode){
   const a = [...saved.groupIds].sort().join('|'), b = [...groupIds].sort().join('|');
-  return saved.subjId === subjId && a === b && mode !== 'retry' && (saved.mode || 'all') === mode;
+  return saved.subjId === subjId && a === b && mode !== 'retry' && mode !== 'timed' && (saved.mode || 'all') === mode;
 }
 
 // Gespeicherte Reihenfolge auf die aktuellen Karten abbilden (gelöschte
@@ -1028,7 +1050,7 @@ function savedLearnSessionInfo(saved){
   const done = saved.queueIds.slice(0, saved.index).map(id => byId.get(id)).filter(Boolean);
   const rest = saved.queueIds.slice(saved.index).map(id => byId.get(id)).filter(Boolean);
   if(!rest.length) return null;
-  const label = (saved.exam ? saved.exam.name : (subj.groups.find(g => g.id === saved.groupIds[0])?.name || 'Lernsession')) + ` (${FC_MODE_LABELS[saved.mode || 'all']})`;
+  const label = (saved.exam ? saved.exam.name : (subj.groups.find(g => g.id === saved.groupIds[0])?.name || 'Lernsession')) + ` (${saved.mode === 'timed' ? 'Zeit-Session' : (FC_MODE_LABELS[saved.mode] || FC_MODE_LABELS.all)})`;
   return { subj, done, restCards: rest, rest: rest.length, total: done.length + rest.length, label };
 }
 
@@ -1037,7 +1059,7 @@ function resumeLearnSession(){
   const info = saved && savedLearnSessionInfo(saved);
   if(!info){ clearSavedLearnSession(); renderResumeBanner(); return false; }
   if(state.activeSubjectId !== info.subj.id){ state.activeSubjectId = info.subj.id; renderSubjectList(); }
-  openLearnSession(info.subj, saved.groupIds, saved.exam, [...info.done, ...info.restCards], info.done.length, saved.stats || {}, saved.leitnerChanges, { mode: saved.mode || 'all', wrongIds: saved.wrongIds || [] });
+  openLearnSession(info.subj, saved.groupIds, saved.exam, [...info.done, ...info.restCards], info.done.length, saved.stats || {}, saved.leitnerChanges, { mode: saved.mode || 'all', wrongIds: saved.wrongIds || [], minutes: saved.minutes, leftMs: saved.leftMs });
   return true;
 }
 
@@ -1137,6 +1159,33 @@ function flashFcCardRow(cardId){
   setTimeout(() => row.classList.remove('fc-row-flash'), 1800);
 }
 
+// ---------- Zeit-Session: läuft nach Uhrzeit, nicht nach Ticks (Tab im Hintergrund) ----------
+function fcTimerLeft(){ const t = learnSession.timer; return t ? Math.max(0, t.endsAt - Date.now()) : 0; }
+function fcStopTimer(){ if(learnSession.timer?.iv) clearInterval(learnSession.timer.iv); if(learnSession.timer) learnSession.timer.iv = null; }
+function fcStartTimer(minutes, leftMs){
+  fcStopTimer();
+  learnSession.timer = null;
+  if(!minutes) return;
+  const left = leftMs != null ? leftMs : minutes * 60000;
+  const t = learnSession.timer = { minutes, endsAt: Date.now() + left, up: left <= 0, iv: null, lastSave: Date.now() };
+  t.iv = setInterval(fcTimerTick, 1000);
+}
+function fcFormatLeft(ms){ const sec = Math.ceil(ms / 1000); return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`; }
+function fcTimerTick(){
+  const t = learnSession.timer; if(!t) return;
+  const left = fcTimerLeft();
+  const val = document.getElementById('learn-timer-val');
+  if(val) val.textContent = fcFormatLeft(left);
+  document.getElementById('learn-progress-bar').style.width = `${100 - (left / (t.minutes * 60000)) * 100}%`;
+  if(Date.now() - t.lastSave > 15000){ t.lastSave = Date.now(); saveLearnSessionState(false); }
+  if(left <= 0 && !t.up){
+    t.up = true;
+    fcStopTimer();
+    const m = document.getElementById('learn-motivation');
+    if(m){ m.textContent = '⏰ Zeit um – beantworte noch diese Karte'; m.style.display = ''; }
+  }
+}
+
 function showLearnCard(){
   const q = learnSession.queue, total = q.length, idx = learnSession.index;
   if(idx >= total){ endLearnSession(); return; }
@@ -1145,13 +1194,13 @@ function showLearnCard(){
   document.getElementById('learn-actions').classList.add('hidden');
   document.getElementById('learn-card-wrap').style.display = '';
 
-  document.getElementById('learn-progress-label').textContent = `${idx+1} / ${total}`;
-  document.getElementById('learn-progress-bar').style.width = `${(idx/total)*100}%`;
+  document.getElementById('learn-progress-label').textContent = learnSession.timer ? `Karte ${idx+1}` : `${idx+1} / ${total}`;
+  if(!learnSession.timer) document.getElementById('learn-progress-bar').style.width = `${(idx/total)*100}%`;
 
   const remaining = total - idx;
   const motivEl = document.getElementById('learn-motivation');
   if(motivEl){
-    const txt = getMotivationText(remaining, total);
+    const txt = learnSession.timer ? '' : getMotivationText(remaining, total);
     motivEl.textContent = txt; motivEl.style.display = txt ? '' : 'none';
   }
 
@@ -1186,7 +1235,9 @@ function updateLiveStats(){
   el.innerHTML = `
     <div class="learn-stat"><span class="learn-stat-val learn-stat-correct">✓ ${learnSession.stats.correct}</span><span class="learn-stat-lbl">Richtig</span></div>
     <div class="learn-stat"><span class="learn-stat-val learn-stat-wrong">✗ ${learnSession.stats.wrong}</span><span class="learn-stat-lbl">Falsch</span></div>
-    <div class="learn-stat"><span class="learn-stat-val">${remaining}</span><span class="learn-stat-lbl">Verbleibend</span></div>
+    ${learnSession.timer
+      ? `<div class="learn-stat"><span class="learn-stat-val" id="learn-timer-val">${fcFormatLeft(fcTimerLeft())}</span><span class="learn-stat-lbl">Zeit</span></div>`
+      : `<div class="learn-stat"><span class="learn-stat-val">${remaining}</span><span class="learn-stat-lbl">Verbleibend</span></div>`}
   `;
 }
 
@@ -1213,10 +1264,15 @@ function answerLearn(knew, mode){
     // Doppelte (gleiche Vorderseite in anderen Themen der Session) bekommen
     // dieselbe Bewertung, sonst tauchen sie später wieder als fällig auf
     const key = fcCardKey(card);
+    const today = getTodayStr();
     const realCards = groups.flatMap(g => g.cards).filter(c => c.id === card.id || fcCardKey(c) === key);
     realCards.forEach(realCard => {
       const oldBox = realCard.box || 1;
-      if(mode === 'easy') realCard.box = Math.min(oldBox+1, 5);
+      // Aufstieg höchstens einmal pro Tag: mehrere Runden am selben Tag sollen
+      // eine Karte nicht bis „Sicher“ durchreichen. Absteigen wirkt immer.
+      if(mode === 'easy'){
+        if(realCard.lastRaised !== today){ realCard.box = Math.min(oldBox+1, 5); realCard.lastRaised = today; }
+      }
       else if(mode === 'hard') realCard.box = Math.max(oldBox-1, 1);
       else realCard.box = 1; // repeat
       realCard.lastSeen = new Date().toISOString();
@@ -1228,11 +1284,12 @@ function answerLearn(knew, mode){
   }
   if(knew) learnSession.stats.correct++; else learnSession.stats.wrong++;
   if(!knew && !learnSession.wrongIds.includes(card.id)) learnSession.wrongIds.push(card.id);
+  if(!knew) recordFcMiss(card.id);
   recordAnswer(knew, card.id);
   renderTodayProgress();
   if(subj) renderHardCardsPanel(subj);
   learnSession.index++;
-  if(learnSession.index >= q.length){
+  if(learnSession.index >= q.length || learnSession.timer?.up){
     endLearnSession();
     if(subj){ renderGroupList(subj); renderExamList(subj); }
     renderSubjectList();
@@ -1245,9 +1302,11 @@ function answerLearn(knew, mode){
 function endLearnSession(){
   learnSession.active = false;
   clearSavedLearnSession();
-  const total = learnSession.queue.length;
+  fcStopTimer();
   const correct = learnSession.stats.correct;
   const wrong = learnSession.stats.wrong;
+  const total = correct + wrong; // Zeit-Session: nur die beantworteten Karten
+  fcRecordCurrentRound();
   const pct = total > 0 ? Math.round((correct/total)*100) : 0;
   let rating = pct===100?'🏆 Perfekt!':pct>=80?'⭐ Super!':pct>=60?'👍 Gut!':'💪 Weiter so!';
 
@@ -1272,7 +1331,7 @@ function endLearnSession(){
   document.getElementById('learn-card-wrap').style.display = 'none';
   document.getElementById('learn-actions').style.display = 'none';
   document.getElementById('learn-progress-bar').style.width = '100%';
-  document.getElementById('learn-progress-label').textContent = `${total} / ${total}`;
+  document.getElementById('learn-progress-label').textContent = learnSession.timer ? `${total} Karten` : `${total} / ${total}`;
   const motivEl = document.getElementById('learn-motivation');
   if(motivEl) motivEl.style.display = 'none';
   updateLiveStats();
@@ -1288,22 +1347,32 @@ function endLearnSession(){
         <div class="session-done-stat"><span class="session-done-val">${pct}%</span><span class="session-done-lbl">Quote</span></div>
       </div>
       ${leitnerHTML}
+      ${fcRoundsHtml(learnSession.groupIds)}
       ${wrongHTML}
       <div class="modal-actions session-done-actions">
         ${wrongCards.length ? `<button id="learn-retry-wrong" class="btn-primary">↻ Nur diese nochmal</button>` : ''}
-        <button id="learn-restart" class="${wrongCards.length ? 'btn-ghost' : 'btn-primary'}">Alle nochmal</button>
+        <button id="learn-restart" class="${wrongCards.length ? 'btn-ghost' : 'btn-primary'}">${learnSession.timer ? `Nochmal ${learnSession.timer.minutes} Minuten` : `▶ Runde ${fcNextRound(learnSession.groupIds)}`}</button>
         <button id="learn-close-panel" class="btn-ghost">Schließen</button>
       </div>
     </div>
   `;
   const wrongIds = wrongCards.map(c => c.id);
   document.getElementById('learn-retry-wrong')?.addEventListener('click', () => startGroupsLearnSession(learnSession.subjId, learnSession.groupIds, learnSession.exam, { fresh: true, cardIds: wrongIds }));
-  document.getElementById('learn-restart').addEventListener('click', () => startGroupsLearnSession(learnSession.subjId, learnSession.groupIds, learnSession.exam, { fresh: true, mode: 'all' }));
+  document.getElementById('learn-restart').addEventListener('click', () => startGroupsLearnSession(learnSession.subjId, learnSession.groupIds, learnSession.exam, learnSession.timer ? { fresh: true, mode: 'timed', minutes: learnSession.timer.minutes } : { fresh: true, mode: 'round' }));
   document.getElementById('learn-close-panel').addEventListener('click', closeSessionPanel);
   renderGlobalStats();
 }
 
+// Tagesrunde festhalten (auch abgebrochene, sobald etwas beantwortet wurde)
+function fcRecordCurrentRound(){
+  if(learnSession.mode !== 'round') return;
+  const { correct, wrong } = learnSession.stats;
+  if(!(correct + wrong)) return;
+  recordFcRound(learnSession.groupIds, { correct, answered: correct + wrong, size: learnSession.queue.length, wrongIds: [...learnSession.wrongIds] });
+}
+
 function closeSessionPanel(){
+  fcStopTimer();
   learnSession.active = false;
   document.getElementById('fc-session-panel').classList.add('hidden');
   document.getElementById('flashcard-layout')?.classList.remove('session-open');
@@ -1318,7 +1387,10 @@ function pauseLearnSession(){
 }
 function stopLearnSession(){
   clearSavedLearnSession();
+  fcRecordCurrentRound();
   closeSessionPanel();
+  const subj = subjects.find(s => s.id === state.activeSubjectId);
+  if(subj){ renderGroupList(subj); renderExamList(subj); }
 }
 
 // Tastatur: Leertaste/Enter = umdrehen, 1/2/3 = Nicht gewusst/Schwer/Gewusst,

@@ -268,12 +268,19 @@ Dadurch ist jederzeit sichtbar, wie weit ein Thema gelernt wurde.
 
 Eine Lernsession wird für eine Themengruppe oder eine Prüfung (mehrere Themen) gestartet.
 
-Auswahl der Karten (Leitner-Regel):
+Gelernt wird typischerweise so: Karten mehrfach durchlesen, dann über den Tag verteilt abfragen. Darauf ist der Tab ausgelegt (`js/flashcards-study.js`).
 
-- **Standard: nur fällige Karten** – „▶ Lernen (n)“ an der Gruppe, „▶ Fällige lernen (n)“ an der Prüfung.
-- **Alle Karten** – ist nichts fällig, wird der Knopf zu „↻ Alle wiederholen“; außerdem im ⋮-Menü der Gruppe und als „Alle mischen“ an der Prüfung (Prüfungsvorbereitung).
-- **Nur die falschen** – „↻ Nur diese nochmal“ im Sessionabschluss.
-- Ist nichts fällig und wird trotzdem „fällig“ gestartet, kommt ein Hinweis statt einer leeren Session.
+Auswahl der Karten:
+
+- **Tagesrunde (Hauptknopf „▶ Runde N“)** – immer alle Karten von Thema oder Prüfung. Das Ergebnis jeder Runde erscheint als Verlauf („Heute: Runde 1 41/67 · Runde 2 55/67“), auch abgebrochene, sobald etwas beantwortet wurde. Gespeichert in `fc_day`, am nächsten Tag leer.
+- **Nur fällige** (⋮) – klassisch nach Leitner.
+- **Nur die unsicheren** (⋮) – die falschen Karten der letzten Runde.
+- **Nur diese nochmal** – die falschen aus dem Sessionabschluss.
+- **Tagesziel** – siehe Prüfungsplan.
+- **Zeit-Session (⏱, 2–20 Minuten)** – zuerst fällige Karten, dann niedrige Boxen. Läuft die Zeit ab, wird die aktuelle Karte noch beantwortet, dann kommt die Zusammenfassung. Die Restzeit übersteht Pausieren und Neuladen.
+- Ist nichts passend vorhanden, kommt ein Hinweis statt einer leeren Session.
+
+**Aufstieg höchstens einmal pro Tag** (`card.lastRaised`): Mehrere Runden am selben Tag sollen eine Karte nicht bis „Sicher“ durchreichen. Absteigen wirkt immer sofort.
 
 Reihenfolge: Themen nach Leitner-Box, innerhalb einer Box gemischt (sonst lernt man die Reihenfolge mit); Prüfungen ganz gemischt.
 
@@ -449,7 +456,10 @@ Fächer
 
 Themengruppen
 
-- alle Karten wiederholen
+- nur fällige lernen
+- nur die unsicheren
+- Karte hinzufügen
+- Countdown verbinden
 - umbenennen
 - exportieren (Markdown)
 - löschen
@@ -464,6 +474,23 @@ Karteikarten
 - löschen
 
 Löschen fragt immer nach (Nook-Dialog, nicht der Browser-Dialog).
+
+---
+
+# Lesemodus
+
+„📖 Lesen“ an Thema und Prüfung: ruhige Ansicht aller Karten mit voller Antwort, ohne Boxen und Bedienknöpfe.
+
+- „Antworten verdecken“: Antippen deckt die einzelne Antwort auf (aktives Abrufen statt nur Wiedererkennen).
+- Karten, die heute mindestens zweimal falsch waren (🔁), stehen zuerst.
+- Die Lesestelle wird je Thema/Prüfung gemerkt (`fc_read_pos`).
+- Am Ende führt „Jetzt abfragen“ direkt in die nächste Runde.
+
+---
+
+# Prüfungsplan
+
+Über ⋮ → „Countdown verbinden“ lässt sich ein Thema oder eine Prüfung mit einem Countdown aus dem Kalender verbinden (`countdownId`, nur lesend über `getCountdownItems()`). Nook verteilt dann alle Karten auf die verbleibenden Tage und zeigt ein Tagesziel: Karten ÷ Tage, zuerst niedrige Boxen und am längsten nicht gesehene Karten. Am Tag davor und am Termin selbst sind alle Karten dran. Liegt der Termin in der Vergangenheit oder ist der Countdown weg, verschwindet die Zeile, die Karten bleiben unberührt.
 
 ---
 
