@@ -17,6 +17,7 @@ window.NOOK_CHANGELOG = [
     version: '2026.10.13',
     date: '2026-10-29',
     items: [
+      'RPG am Handy: schmalere Ränder, mehr Platz für den Inhalt; die Mehr-Seite als genietete Lederschilder',
       'Karteikarten: am Handy steht in der Kartenliste die ganze Antwort, formatiert zum Durchlesen',
       'Heute passt am Handy wieder in die Breite; Karteikarten auf Handy, Tablet und Foldable sauber einspaltig; Box 1 heißt „Anfang“ statt „Neu“',
       'Karteikarten: Lernen nimmt jetzt nur die fälligen Karten (Leitner), „↻ Alle wiederholen“ wenn nichts fällig ist; Prüfungen wahlweise fällige oder alle gemischt; Karten innerhalb einer Box gemischt',

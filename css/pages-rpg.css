@@ -396,7 +396,7 @@
    - Monatsauswahl: graviertes Messingschild, Pfeile als Messingknöpfe
    - Menü-Zahnrad: gewölbter Messingknauf
 ============================================================= */
-[data-pages-style="rpg"] :is(#view-budget, #view-flashcards) {
+[data-pages-style="rpg"] :is(#view-budget, #view-flashcards, #view-mehr) {
   --brass-hi:   color-mix(in srgb, var(--amber) 45%, var(--sheen));
   --brass:      color-mix(in srgb, var(--amber) 88%, var(--sheen));
   --brass-lo:   color-mix(in srgb, var(--amber) 70%, var(--deco-ink));
@@ -1205,4 +1205,69 @@
 [data-pages-style="rpg"] :is(.fc-exam-learn, #fc-filter-btn, .fc-exam-add):not(:disabled):hover {
   background: linear-gradient(170deg, color-mix(in srgb, var(--brass-hi) 80%, var(--sheen)), var(--brass-hi) 50%, var(--brass));
   color: var(--brass-ink);
+}
+
+/* =============================================================
+   HANDY: mehr Platz für den Inhalt — Seitenrand, Holzrahmen und Brettabstand
+   zusammen nur noch ~16 px statt 44 px je Seite
+============================================================= */
+@media (max-width: 480px) {
+  [data-pages-style="rpg"] :is(#view-flashcards, #view-budget, #view-games, #view-tools, #view-settings) { padding-inline: 4px; }
+  [data-pages-style="rpg"] :is(#view-flashcards, #view-budget, #view-games, #view-tools, #view-settings) .view-header { padding-inline: 10px; }
+  [data-pages-style="rpg"] :is(#view-flashcards > .dash-content, #budget-dashboard,
+    #view-games .games-mock-wrapper, #view-tools > .dash-content, #view-settings > .dash-content) {
+    border-width: 4px;
+    padding-inline: 8px;
+  }
+  [data-pages-style="rpg"] .fc-row { padding-inline: 12px; }
+}
+
+/* =============================================================
+   MEHR (nur Handy): jeder Eintrag ein genietetes Lederschild mit
+   Messingschrift, wie „Heute schon gelernt“ bei den Karteikarten
+============================================================= */
+[data-pages-style="rpg"] #view-mehr :is(.view-title, .mehr-section-label) {
+  color: var(--text);
+  text-shadow: 0 0 3px var(--halo), 0 0 8px var(--halo), 0 0 14px var(--halo);
+}
+[data-pages-style="rpg"] #view-mehr .mehr-section-label { font-weight: 700; opacity: 1; }
+[data-pages-style="rpg"] #view-mehr .mehr-group.panel {
+  gap: 8px;
+  background: none;
+  border: none;
+  box-shadow: none;
+  overflow: visible;
+  -webkit-backdrop-filter: none;
+          backdrop-filter: none;
+}
+[data-pages-style="rpg"] #view-mehr :is(.mehr-group .nav-btn, .mehr-search-btn) {
+  position: relative;
+  padding: 13px 26px;
+  border: 1px solid color-mix(in srgb, var(--deco-ink) 80%, transparent);
+  border-radius: 6px;
+  background:
+    var(--rivet) left 8px center / 8px 8px no-repeat,
+    var(--rivet) right 8px center / 8px 8px no-repeat,
+    linear-gradient(to bottom, var(--leather-hi), var(--leather) 55%, color-mix(in srgb, var(--leather) 80%, var(--deco-ink)));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--sheen) 15%, transparent),
+    0 4px 8px color-mix(in srgb, var(--shadow-tint) 45%, transparent);
+  outline: 1px dashed color-mix(in srgb, var(--brass-hi) 45%, transparent);
+  outline-offset: -5px;
+  color: color-mix(in srgb, var(--deco-orange) 45%, var(--sheen));
+  text-shadow: 0 -1px 0 color-mix(in srgb, var(--deco-ink) 70%, transparent);
+}
+[data-pages-style="rpg"] #view-mehr :is(.mehr-group .nav-btn, .mehr-search-btn) svg { opacity: 1; color: var(--brass-hi); }
+[data-pages-style="rpg"] #view-mehr .mehr-group .nav-btn:not(.mehr-first) { border-top: 1px solid color-mix(in srgb, var(--deco-ink) 80%, transparent); }
+[data-pages-style="rpg"] #view-mehr .mehr-group .nav-btn::after { opacity: 1; color: var(--brass-hi); }
+[data-pages-style="rpg"] #view-mehr :is(.mehr-group .nav-btn, .mehr-search-btn):is(:hover, :active) { filter: brightness(1.12); }
+[data-pages-style="rpg"] #view-mehr .mehr-group .nav-btn.active { color: var(--sheen); }
+/* Spruch und Countdowns: kein weißer Kasten um die eigene Karte */
+[data-pages-style="rpg"] #view-mehr :is(#mehr-positivity-slot, #mehr-countdown-slot) {
+  background: none;
+  border: none;
+  box-shadow: none;
+  padding-inline: 0;
+  -webkit-backdrop-filter: none;
+          backdrop-filter: none;
 }

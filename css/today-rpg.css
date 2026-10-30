@@ -246,6 +246,12 @@
   [data-today-style="rpg"] #today-right { border-width: 6px; padding: 14px 10px 18px; }
   [data-today-style="rpg"] .block-slot { --tilt: 0deg; }
 }
+/* Handy: Seitenrand und Rahmen schmal, der Inhalt bekommt die Breite */
+@media (max-width: 480px) {
+  [data-today-style="rpg"] #view-today { padding-inline: 4px; }
+  [data-today-style="rpg"] #today-main,
+  [data-today-style="rpg"] #today-right { border-width: 4px; padding-inline: 8px; }
+}
 
 /* ── Astronomische Taschenuhr (js/today-clock-rpg.js) ─────────────
    Die Uhr liegt als Artefakt direkt auf dem Tisch (kein Pergament, keine
