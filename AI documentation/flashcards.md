@@ -316,7 +316,7 @@ Durch Anklicken wird sie umgedreht. Erneutes Anklicken dreht sie zurück (Frage 
 
 Erst nach dem ersten Umdrehen erscheinen die Antwortmöglichkeiten; sie bleiben dann stehen.
 
-Die Rückseite wird als Markdown dargestellt (Listen, **fett**, Tabellen, Code-Blöcke für Schaubilder) – mit dem Renderer der Anleitungen (`renderMarkdown` aus `guides.js`, nur lesend genutzt). In der Kartenliste steht eine einzeilige Textvorschau ohne Markdown-Zeichen.
+Die Rückseite wird als Markdown dargestellt (Listen, **fett**, Tabellen, Code-Blöcke für Schaubilder) – mit dem Renderer der Anleitungen (`renderMarkdown` aus `guides.js`, nur lesend genutzt). In der Kartenliste steht eine kurze Textvorschau ohne Markdown-Zeichen; am Handy (≤480px) die ganze, formatierte Antwort zum Durchlesen.
 
 Tastatur: Leertaste/Enter dreht um, 1/2/3 = Nicht gewusst/Schwer/Gewusst, Esc pausiert. Die Karte ist fokussierbar.
 

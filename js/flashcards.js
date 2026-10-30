@@ -597,7 +597,10 @@ function renderGroupList(subj){
         const row = document.createElement('div'); row.className='fc-row'; row.dataset.cardId = fc.id;
         const front = document.createElement('span'); front.className='fc-front';
         front.innerHTML = (fc.hard ? '<span class="fc-hard-star" title="Schwierig">⭐</span> ' : '') + escHtml(fc.front);
-        const back = document.createElement('span'); back.className='fc-back'; back.textContent = fcPlainPreview(fc.back); back.title = fc.back;
+        const back = document.createElement('div'); back.className='fc-back';
+        // Handy: ganze Antwort zum Durchlesen und Lernen, sonst kurze Vorschau
+        if(window.matchMedia('(max-width: 480px)').matches){ back.classList.add('fc-back-full'); back.innerHTML = fcRenderBack(fc.back); }
+        else { back.textContent = fcPlainPreview(fc.back); back.title = fc.back; }
         const boxBadge = document.createElement('span'); boxBadge.className='fc-box';
         boxBadge.style.setProperty('--lc', FC_LEITNER_COLORS[(fc.box||1)-1]);
         boxBadge.textContent = FC_LEITNER_LABELS[(fc.box||1)-1];

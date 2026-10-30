@@ -396,11 +396,16 @@ body:has(#flashcard-layout.session-open) { overflow: hidden; }
   /* stretch: align-items:start aus dem 1024er-Block ließe die Fachliste auf
      die Breite ihres längsten Namens wachsen */
   .fc-side-col { display: flex; align-items: stretch; }
-  .fc-row { grid-template-columns: minmax(0, 1fr) auto; row-gap: 4px; }
-  .fc-front { grid-area: 1 / 1; }
+  /* Frage + Stufe + Menü oben, die ganze Antwort darunter über die volle Breite */
+  .fc-row { grid-template-columns: minmax(0, 1fr) auto auto; gap: 4px 6px; }
+  .fc-row { align-items: start; }
+  .fc-front { grid-area: 1 / 1; font-weight: 600; }
   .fc-box { grid-area: 1 / 2; }
-  .fc-back { grid-area: 2 / 1; }
-  .fc-card-meatball { grid-area: 2 / 2; justify-self: end; }
+  .fc-card-meatball { grid-area: 1 / 3; }
+  .fc-back { grid-area: 2 / 1 / 2 / -1; }
+  .fc-back-full { display: block; overflow: visible; overflow-wrap: break-word; line-height: 1.45; }
+  .fc-back-full .fc-md-rich { font-size: inherit; }
+  .fc-back-full :is(.guide-table, pre) { display: block; max-width: 100%; overflow-x: auto; }
 }
 /* Touch-Geräte ohne Hover: Karten-Menü immer sichtbar */
 @media (hover: none) { .fc-card-meatball { opacity: 1; } }
