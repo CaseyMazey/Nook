@@ -1013,6 +1013,8 @@
   border-radius: 6px;
   padding: 10px 18px;
 }
+/* Handy: drei Schilder nebeneinander, die Beschriftung braucht die Breite */
+@media (max-width: 480px) { [data-pages-style="rpg"] #fc-global-stats .fc-stat-card { padding: 10px 7px; } }
 [data-pages-style="rpg"] .fc-stat-total {
   border: 2px solid color-mix(in srgb, var(--deco-ink) 75%, transparent);
   background:
