@@ -1271,3 +1271,22 @@
   -webkit-backdrop-filter: none;
           backdrop-filter: none;
 }
+/* Motivationsspruch: Kreidetafel wie Speiseplan und Fächerliste */
+[data-pages-style="rpg"] #view-mehr #sidebar-positivity { padding: 0; }
+[data-pages-style="rpg"] #view-mehr #positivity-widget-card {
+  --text:   color-mix(in srgb, var(--sheen) 93%, transparent);
+  --text-2: color-mix(in srgb, var(--sheen) 88%, transparent);
+  --text-3: color-mix(in srgb, var(--sheen) 66%, transparent);
+  --accent-soft: color-mix(in srgb, var(--sheen) 12%, transparent);
+  color-scheme: dark;
+  background: none;
+  box-shadow: none;
+  border-radius: 0;
+  border-style: solid;
+  border-color: transparent;
+  border-width: 16px 16px 26px;
+  border-image: url('../assets/today/chalkboard.webp?v=2') 48 48 78 fill / 16px 16px 26px / 0 stretch;
+  padding: 6px 8px 0;
+  filter: drop-shadow(0 4px 5px color-mix(in srgb, var(--shadow-tint) 40%, transparent));
+}
+[data-pages-style="rpg"] #view-mehr .positivity-widget-text { font-size: calc(14px * var(--core-font-scale)); }
