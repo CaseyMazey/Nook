@@ -321,15 +321,30 @@
     };
   }
 
+  const RENAMED_MONSTERS = { tintengeist: 'tintenrabe' };
+
   function normalizeProgress(p) {
     const base = emptyProgress();
     const src = p || {};
-    return {
+    const result = {
       ...base, ...src,
       counters: { ...base.counters, ...(src.counters || {}) },
       seen: { ...(src.seen || {}) },
       streak: { ...base.streak, ...(src.streak || {}) }
     };
+    // Umbenannte Monster: alte IDs in Speicherständen übernehmen
+    Object.entries(RENAMED_MONSTERS).forEach(([oldId, newId]) => {
+      const c = result.counters;
+      if (c['defeat:' + oldId]) {
+        c['defeat:' + newId] = (c['defeat:' + newId] || 0) + c['defeat:' + oldId];
+        delete c['defeat:' + oldId];
+      }
+      if (result.seen[oldId]) {
+        result.seen[newId] = true;
+        delete result.seen[oldId];
+      }
+    });
+    return result;
   }
 
   // 'YYYY-MM-DD' → Tagesnummer (UTC, nur zum Vergleichen aufeinanderfolgender Tage)

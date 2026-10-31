@@ -19,10 +19,10 @@
 // DUNGEONS & MONSTER (reine Daten)
 // Neuer Dungeon: Eintrag in FB_DUNGEONS plus seine Monster in FB_MONSTERS.
 //
-// Grafiken einfach ablegen, ohne Code-Änderung:
+// Grafiken: Original nach assets/_raw/flashcard-battle/{dungeons,monsters}/
+// legen und scripts/optimize-fb-assets.py ausführen. Das Ergebnis landet unter
 //   games/flashcard-battle/assets/dungeons/<dungeon-id>.png  (Hintergrund)
-//   games/flashcard-battle/assets/monsters/<monster-id>.png  (transparent,
-//     normal/selten 64 × 64, Boss 128 × 128)
+//   games/flashcard-battle/assets/monsters/<monster-id>.png  (transparent)
 // Solange eine Datei fehlt, zeigt das Spiel den Farbverlauf bzw. das Emoji.
 //
 // colors: Farbverlauf ohne Hintergrundbild
@@ -43,7 +43,7 @@ window.FB_MONSTERS = [
 
   { id: 'flatterfrage',     name: 'Flatterfrage',           tier: 'normal', dungeon: 'bibliothek', emoji: '🦇' },
   { id: 'buecherwurm',      name: 'Bücherwurm',             tier: 'normal', dungeon: 'bibliothek', emoji: '📖' },
-  { id: 'tintengeist',      name: 'Tintengeist',            tier: 'normal', dungeon: 'bibliothek', emoji: '👻' },
+  { id: 'tintenrabe',       name: 'Tintenrabe',             tier: 'normal', dungeon: 'bibliothek', emoji: '🐦‍⬛' },
   { id: 'runenwaechter',    name: 'Runenwächter',           tier: 'rare',   dungeon: 'bibliothek', emoji: '🔮' },
   { id: 'archivar',         name: 'Der Archivar',           tier: 'boss',   dungeon: 'bibliothek', emoji: '📚' },
 

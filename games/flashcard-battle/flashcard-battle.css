@@ -66,7 +66,7 @@
 .fb-hp-text { font-size: 12px; font-family: var(--mono); color: var(--text-3); }
 
 .fb-enemy-art { width: 128px; height: 128px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: transform 0.3s, opacity 0.4s; }
-.fb-enemy-art img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
+.fb-enemy-art img { width: 100%; height: 100%; object-fit: contain; }
 .fb-emoji { font-size: 96px; line-height: 1; }
 .fb-tier-miniboss .fb-enemy-art, .fb-tier-boss .fb-enemy-art { width: 256px; height: 256px; max-width: 100%; }
 .fb-tier-miniboss .fb-enemy-art .fb-emoji, .fb-tier-boss .fb-enemy-art .fb-emoji { font-size: 180px; }
@@ -150,7 +150,7 @@
 .fb-mon.fb-tier-boss { border-color: var(--fb-hurt); }
 .fb-mon.unknown { opacity: 0.55; }
 .fb-mon-art { width: 72px; height: 72px; display: flex; align-items: center; justify-content: center; }
-.fb-mon-art img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
+.fb-mon-art img { width: 100%; height: 100%; object-fit: contain; }
 .fb-mon .fb-emoji { font-size: 52px; }
 .fb-mon-name { font-weight: 700; color: var(--text); }
 .fb-mon-tier { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-3); }

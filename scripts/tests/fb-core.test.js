@@ -450,3 +450,12 @@ test('createRun ohne Dungeons: dungeon ist null', () => {
   assert.equal(run.events[0].dungeon, null);
   assert.equal(run.dungeon, null);
 });
+
+test('Speicherstand: alter Tintengeist wird zum Tintenraben', () => {
+  const p = FBCore.applyEvents({ counters: { 'defeat:tintengeist': 3, correct: 1 }, seen: { tintengeist: true } }, []);
+  assert.equal(p.counters['defeat:tintenrabe'], 3);
+  assert.equal('defeat:tintengeist' in p.counters, false);
+  assert.equal(p.seen.tintenrabe, true);
+  assert.equal('tintengeist' in p.seen, false);
+  assert.equal(p.counters.correct, 1);
+});

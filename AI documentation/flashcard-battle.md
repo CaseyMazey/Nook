@@ -142,14 +142,14 @@ Dungeons heißen im Spiel vorerst „Räume“. Sie sind eine visuelle und inhal
 | `dornwusel` | Dornwusel | Normal | Tempel | Pflanzenwesen mit Ranken und kleinen Dornen |
 | `moosgeist` | Moosgeist | Selten | Tempel | leuchtender Naturgeist mit schwebenden Blättern |
 | `wurzelhueter` | Der uralte Wurzelhüter | Boss | Tempel | großes Pflanzenwesen mit leuchtenden Augen und gewaltigen Wurzeln |
-| `flatterfrage` | Flatterfrage | Normal | Bibliothek | kleine magische Fledermaus |
-| `buecherwurm` | Bücherwurm | Normal | Bibliothek | lebendiges Buch mit Gesicht |
-| `tintengeist` | Tintengeist | Normal | Bibliothek | kleiner Geist aus schwarzer, magischer Tinte |
+| `flatterfrage` | Flatterfrage | Normal | Bibliothek | flatterndes, aufgeschlagenes Buch mit Auge |
+| `buecherwurm` | Bücherwurm | Normal | Bibliothek | Wurm aus Buchseiten |
+| `tintenrabe` | Tintenrabe | Normal | Bibliothek | schwarzer Rabe aus magischer Tinte |
 | `runenwaechter` | Runenwächter | Selten | Bibliothek | schwebender Wächter mit leuchtenden Runen |
-| `archivar` | Der Archivar | Boss | Bibliothek | riesiges verzaubertes Buch mit magischen Seiten und Augen |
-| `funkenkobold` | Funkenkobold | Normal | Höhlen | kleines Feuerwesen mit glühendem Körper |
+| `archivar` | Der Archivar | Boss | Bibliothek | Gestalt in Robe mit schwebenden Büchern und Seiten |
+| `funkenkobold` | Funkenkobold | Normal | Höhlen | Feuerwesen aus Lava mit glühendem Kern |
 | `kristallkrabbler` | Kristallkrabbler | Normal | Höhlen | kleine Kreatur mit kristallinem Panzer |
-| `hoehlendrache` | Höhlendrache | Normal | Höhlen | junger Drache mit kleinen Flügeln |
+| `hoehlendrache` | Höhlendrache | Normal | Höhlen | junge Lava-Echse |
 | `kristallfuchs` | Kristallfuchs | Selten | Höhlen | leuchtender Fuchs mit Kristallen am Körper |
 | `urdrache` | Der Urdrache | Boss | Höhlen | mächtiger Drache mit Kristallhörnern und glühenden Schuppen |
 
@@ -160,10 +160,10 @@ Dungeons heißen im Spiel vorerst „Räume“. Sie sind eine visuelle und inhal
 
 ## Grafiken
 
-Dateien einfach ablegen, ohne Code-Änderung:
+Die Monster sind detaillierte Illustrationen (keine Pixel-Art) von Casey. Die Originale liegen unter `assets/_raw/flashcard-battle/{dungeons,monsters}/` und werden weder committet noch deployt, also separat sichern. `python scripts/optimize-fb-assets.py` erzeugt daraus die Spiel-Versionen:
 
-- Hintergrund: `games/flashcard-battle/assets/dungeons/<tempel|bibliothek|hoehlen>.png`
-- Monster: `games/flashcard-battle/assets/monsters/<id>.png`, transparent, normal und selten 64 × 64 px, Boss 128 × 128 px, im Spiel doppelt so groß und ohne Weichzeichnen angezeigt
+- Hintergrund: `games/flashcard-battle/assets/dungeons/<tempel|bibliothek|hoehlen>.png`, 1024 px breit
+- Monster: `games/flashcard-battle/assets/monsters/<id>.png`, transparent und auf das Motiv zugeschnitten, längste Seite normal und selten 320 px, Boss 512 px; im Spiel 128 px bzw. 256 px groß
 
 Fehlt eine Datei, zeigt das Spiel einen Farbverlauf in der Dungeon-Palette bzw. das Emoji. Vorerst gibt es genau eine Grafik pro Monster und statische Hintergründe.
 
