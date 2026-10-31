@@ -269,23 +269,21 @@
 
     state.root.innerHTML = `
       <div class="fb-battle">
-        <div class="fb-arena" style="${dungeonBackground(d)}">
-          <span class="fb-dungeon-name">${d ? d.icon + ' ' + esc(d.name) : ''}</span>
-          <div class="fb-fighter fb-enemy fb-tier-${e.tier}">
-            ${monsterArt(m, 'fb-enemy-art')}
-            <div class="fb-fighter-info">
-              <span class="fb-fighter-name">${esc(m.name)}${e.tier !== 'normal' ? ` <span class="fb-tier">${TIER_LABELS[e.tier]}</span>` : ''}</span>
-              ${hpBar(e.hp, e.maxHp, 'fb-bar-enemy')}
-              <span class="fb-hp-text" id="fb-enemy-hp">${e.hp}/${e.maxHp}</span>
-            </div>
+        <div class="fb-arena">
+          <div class="fb-stage" style="${dungeonBackground(d)}">
+            <span class="fb-dungeon-name">${d ? d.icon + ' ' + esc(d.name) : ''}</span>
+            <div class="fb-enemy fb-tier-${e.tier}">${monsterArt(m, 'fb-enemy-art')}</div>
             <span class="fb-float" id="fb-float-enemy"></span>
           </div>
-          <div class="fb-fighter fb-player">
-            <div class="fb-fighter-info">
-              <span class="fb-fighter-name">Du</span>
-              ${hpBar(run.hp, run.maxHp, 'fb-bar-player')}
-              <span class="fb-hp-text" id="fb-player-hp">${run.hp}/${run.maxHp}</span>
-            </div>
+          <div class="fb-fighter-info">
+            <span class="fb-fighter-name">${esc(m.name)}${e.tier !== 'normal' ? ` <span class="fb-tier">${TIER_LABELS[e.tier]}</span>` : ''}</span>
+            ${hpBar(e.hp, e.maxHp, 'fb-bar-enemy')}
+            <span class="fb-hp-text" id="fb-enemy-hp">${e.hp}/${e.maxHp}</span>
+          </div>
+          <div class="fb-fighter-info fb-player">
+            <span class="fb-fighter-name">Du</span>
+            ${hpBar(run.hp, run.maxHp, 'fb-bar-player')}
+            <span class="fb-hp-text" id="fb-player-hp">${run.hp}/${run.maxHp}</span>
             <span class="fb-float" id="fb-float-player"></span>
           </div>
         </div>
