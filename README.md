@@ -23,12 +23,14 @@ Nook gibt es auch als Desktop-App, die ohne Browser läuft. Die aktuelle Version
 - **macOS:** die `.dmg`-Datei (Apple Silicon: mit `arm64` im Namen, Intel: ohne)
 - **Linux:** die `.AppImage`-Datei (vor dem Start ausführbar machen)
 
+Der Download ist rund 330 MB groß. Die `.yml`- und `.blockmap`-Dateien auf der Release-Seite kannst du ignorieren, sie sind nur für die Update-Funktion da.
+
 **Updates:** Unter Windows und Linux lädt die App neue Versionen automatisch. Unter macOS zeigt sie einen Hinweis mit einem Link, die neue Version von Hand herunterzuladen.
 
 **Warnungen beim ersten Start:** Die App ist nicht code-signiert, deshalb warnen Windows und macOS davor.
 
 - **Windows (SmartScreen):** *Weitere Informationen* → *Trotzdem ausführen*
-- **macOS (Gatekeeper):** Systemeinstellungen → *Datenschutz & Sicherheit* → *Trotzdem öffnen*
+- **macOS (Gatekeeper):** Versuche zuerst, die App einmal zu öffnen, und schließe die Warnung. Erst danach erscheint unter Systemeinstellungen → *Datenschutz & Sicherheit* die Schaltfläche *Trotzdem öffnen*.
 
 **Daten übernehmen:** Website und App speichern ihre Daten getrennt voneinander. Um deine Daten mitzunehmen, öffne die Web-Version und wähle unter *Einstellungen → Daten → Backup* den Eintrag *Backup exportieren*. In der App wählst du an derselben Stelle *Backup importieren*.
 

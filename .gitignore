@@ -23,6 +23,10 @@ Nook Garten.docx
 # fertige, verkleinerte Asset unter assets/<bereich>/ gehoert ins Repo.
 assets/_raw/
 
+# Lokale Sicherungen und Gimp-Rohdateien (bereits versionierte .xcf bleiben versioniert)
+Backups/
+*.xcf
+
 # Desktop-App (Electron): Staging-Kopie und Build-Ausgabe
 desktop/.stage/
 desktop/dist/

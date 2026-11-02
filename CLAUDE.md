@@ -54,7 +54,7 @@ Cozy Home (`games/cozy-home/`) additionally acts as a cross-game virtual pet sys
 
 ### Desktop app (`desktop/`)
 
-Electron shell around the unchanged web app, with its own `desktop/package.json` (the only `package.json` in the repo) and `node_modules`. It serves the app via the `app://nook` protocol. `desktop/` and `.github/` are listed in `.assetsignore` so they are not deployed.
+Electron shell around the unchanged web app, with its own `desktop/package.json` (the only `package.json` in the repo) and `node_modules`. It serves the app via the `app://nook` protocol. `desktop/` and `.github/` are listed in `.assetsignore` so they are not deployed; deployment honours `.assetsignore` only through `scripts/deploy.ps1`.
 
 - Tests: `cd desktop && npm test`.
 - Release: raise `NOOK_VERSION` in `js/nook-version.js` (plus a changelog entry), then push the tag `v<NOOK_VERSION>`. The workflow `.github/workflows/release.yml` builds for Windows, macOS and Linux and publishes via GitHub Releases (also the source of the in-app update check).
