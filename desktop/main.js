@@ -5,8 +5,9 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
-const { app, BrowserWindow, net, protocol, screen, session, shell } = require('electron');
+const { app, BrowserWindow, Menu, net, protocol, screen, session, shell } = require('electron');
 
+const { buildMenuTemplate } = require('./lib/menu.js');
 const { resolveAppPath } = require('./lib/protocol.js');
 const { startUpdates } = require('./lib/updates.js');
 const { loadWindowState, saveWindowState } = require('./lib/window-state.js');
@@ -77,7 +78,7 @@ function isAppUrl(raw) {
 function openIfExternal(raw) {
   try {
     const { protocol: scheme } = new URL(raw);
-    if (scheme === 'http:' || scheme === 'https:') {
+    if (scheme === 'http:' || scheme === 'https:' || scheme === 'mailto:') {
       shell.openExternal(raw).catch((err) => console.error('Link ließ sich nicht öffnen:', err));
     }
   } catch {
@@ -180,6 +181,9 @@ if (!app.requestSingleInstanceLock()) {
 
   app.whenReady().then(() => {
     protocol.handle(APP_SCHEME, handleAppRequest);
+    // Gleich der appId aus package.json. Die Methode gibt es nur unter Windows.
+    if (process.platform === 'win32') app.setAppUserModelId('io.github.caseymazey.nook');
+    Menu.setApplicationMenu(Menu.buildFromTemplate(buildMenuTemplate(process.platform)));
     mainWindow = createWindow();
     startUpdates(mainWindow);
   });
