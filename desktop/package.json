@@ -48,7 +48,8 @@
           "arm64"
         ]
       },
-      "identity": null,
+      "identity": "-",
+      "hardenedRuntime": false,
       "icon": "build/icon.png"
     },
     "nsis": {
