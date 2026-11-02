@@ -316,6 +316,10 @@ document.getElementById("sync-update-reload-btn")?.addEventListener("click", () 
 async function initSync() {
   if (!sbClient) {
     console.warn("Sync: Supabase-SDK nicht geladen (offline/blockiert?) — Nook läuft rein lokal weiter.");
+    const statusBtn = document.getElementById("sync-status-btn");
+    const statusSub = document.getElementById("sync-status-sub");
+    if (statusBtn) statusBtn.disabled = true;
+    if (statusSub) statusSub.textContent = "In dieser Version nicht verfügbar";
     return;
   }
 
