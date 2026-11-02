@@ -3,7 +3,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const { createFakeBackend } = require("./helpers/fake-sync-backend.js");
 const crypto = require("../../js/sync-crypto.js");
-const { createSyncEngine, KEYRING_KEY } = require("../../js/sync-engine.js");
+const { createSyncEngine, SYNC_KEYRING_KEY: KEYRING_KEY } = require("../../js/sync-engine.js");
 
 const A = "user-a";
 const B = "user-b";
@@ -65,6 +65,12 @@ test("Lesefehler ist nie unconfigured", async () => {
   const { engine, backend } = await setup({ withKeyring: false, stored: "none" });
   backend.failNext("select");
   assert.equal(await engine.start(A), "unknown");
+});
+
+test("Eintrag ohne Schlüssel gilt als kein Schlüssel", async () => {
+  const m = await material();
+  const { engine } = await setup({ keyStore: makeKeyStore({ [A]: { key: null, keyId: m.keyring.keyId } }) });
+  assert.equal(await engine.start(A), "locked");
 });
 
 test("Keyring ohne Schlüssel: locked", async () => {
@@ -175,6 +181,45 @@ test("Schreiben während laufendem Upload: neuerer Wert wird danach hochgeladen"
   engine.notifyLocalWrite("nook_x", "2", 2);
   await engine.flush();
   assert.equal(await crypto.decryptValue(m.dataKey, A, "nook_x", dataRows(backend)[0].value), 2);
+});
+
+test("Warteschlange: pro Key nie zwei Uploads gleichzeitig, Zwischenstände werden zusammengelegt", async () => {
+  const { engine, backend, m } = await setup();
+  await engine.start(A);
+  const gate = backend.holdNext("upsert");
+  engine.notifyLocalWrite("nook_x", "1", 1);
+  await gate.started; // erster Upload steckt im Backend fest
+  engine.notifyLocalWrite("nook_x", "2", 2);
+  engine.notifyLocalWrite("nook_x", "3", 3);
+  await new Promise((r) => setImmediate(r));
+  assert.equal(backend.events.filter((e) => e.row.key === "nook_x").length, 0);
+  gate.release();
+  await engine.flush();
+  const ups = backend.events.filter((e) => e.row.key === "nook_x");
+  const values = [];
+  for (const e of ups) values.push(await crypto.decryptValue(m.dataKey, A, "nook_x", e.row.value));
+  assert.deepEqual(values, [1, 3]);
+  assert.equal(backend.maxOpen("upsert"), 1);
+  assert.equal(await crypto.decryptValue(m.dataKey, A, "nook_x", dataRows(backend)[0].value), 3);
+});
+
+test("Kontowechsel während gehaltenem Upload: spätere Werte von A landen nicht unter B", async () => {
+  const { engine, backend, ks, m } = await setup();
+  await engine.start(A);
+  await backend.client("anderes").from("kv_store").insert(
+    { user_id: B, key: KEYRING_KEY, value: m.keyring, updated_at: new Date(1).toISOString() });
+  await ks.save(B, m.dataKey, m.keyring.keyId);
+  const gate = backend.holdNext("upsert");
+  engine.notifyLocalWrite("nook_x", "1", 1);
+  await gate.started;
+  engine.notifyLocalWrite("nook_x", "2", 2);
+  assert.equal(await engine.start(B), "unlocked");
+  gate.release();
+  await engine.flush();
+  const ups = backend.events.filter((e) => e.row.key === "nook_x");
+  assert.ok(ups.every((e) => e.row.user_id === A));
+  assert.equal(ups.length, 1); // nur der schon laufende Wert 1, nie Wert 2
+  assert.equal(await crypto.decryptValue(m.dataKey, A, "nook_x", ups[0].row.value), 1);
 });
 
 test("Schnappschuss: der übergebene JSON-String gilt", async () => {

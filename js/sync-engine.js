@@ -67,6 +67,7 @@
         return state;
       }
       if (gen !== generation) return state;
+      if (stored && !stored.key) stored = null; // Eintrag ohne Schlüssel gilt als kein Schlüssel
 
       // maybeSingle-Semantik: keine Zeile ist data=null ohne Fehler, ein Fehler ist ein Lesefehler.
       let res;
@@ -185,7 +186,7 @@
   }
 
   if (typeof module !== "undefined" && module.exports) {
-    module.exports = { createSyncEngine, KEYRING_KEY };
+    module.exports = { createSyncEngine, SYNC_KEYRING_KEY: KEYRING_KEY };
   } else {
     Object.assign(globalThis, { createSyncEngine, SYNC_KEYRING_KEY: KEYRING_KEY });
   }

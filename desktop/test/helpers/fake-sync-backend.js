@@ -7,11 +7,35 @@ function createFakeBackend() {
   const store = new Map(); // "userId|key" -> Zeile
   const events = [];       // Realtime-Ereignisse: { type, row, device }
   const failures = [];     // einmalige Fehler pro Operation
+  const holds = [];        // einmalige Gates: Operation bleibt offen, bis release() gerufen wird
+  const open = { current: {}, max: {} }; // gleichzeitig offene Operationen pro Typ
   const id = (r) => r.user_id + "|" + r.key;
   const clone = (x) => JSON.parse(JSON.stringify(x));
 
   function failNext(op, error) {
     failures.push({ op, error: error || { message: "fake " + op + " failure", code: "fake" } });
+  }
+
+  // Hält die nächste Operation dieses Typs offen. started löst auf, sobald sie im Backend ankommt.
+  function holdNext(op) {
+    let release, started;
+    const gate = new Promise((r) => { release = r; });
+    const startedP = new Promise((r) => { started = r; });
+    holds.push({ op, gate, started });
+    return { release, started: startedP };
+  }
+
+  async function execute(q, device) {
+    const i = holds.findIndex((h) => h.op === q.op);
+    const hold = i >= 0 ? holds.splice(i, 1)[0] : null;
+    open.current[q.op] = (open.current[q.op] || 0) + 1;
+    open.max[q.op] = Math.max(open.max[q.op] || 0, open.current[q.op]);
+    try {
+      if (hold) { hold.started(); await hold.gate; }
+      return run(q, device);
+    } finally {
+      open.current[q.op]--;
+    }
   }
 
   function takeFailure(op) {
@@ -85,14 +109,14 @@ function createFakeBackend() {
           insert(payload) { q.op = "insert"; q.payload = payload; return b; },
           update(payload) { q.op = "update"; q.payload = payload; return b; },
           delete() { q.op = "delete"; return b; },
-          then(res, rej) { return Promise.resolve().then(() => run(q, deviceName)).then(res, rej); }
+          then(res, rej) { return execute(q, deviceName).then(res, rej); }
         };
         return b;
       }
     };
   }
 
-  return { client, failNext, rows: () => Array.from(store.values()).map(clone), events };
+  return { client, failNext, holdNext, maxOpen: (op) => open.max[op] || 0, rows: () => Array.from(store.values()).map(clone), events };
 }
 
 module.exports = { createFakeBackend };
