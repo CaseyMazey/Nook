@@ -704,7 +704,7 @@ document.getElementById('gd-duty-delete')?.addEventListener('click', async () =>
 // PDF-EXPORT — Druckliste über mehrere Monate
 // Liest nur die gespeicherte Planung (gdSchedule), berechnet nichts neu.
 // Zwei Wege aus denselben Daten (gdExportData):
-//   - "PDF speichern": echte PDF-Datei per jsPDF + AutoTable (cdnjs, feste
+//   - "PDF speichern": echte PDF-Datei per jsPDF + AutoTable (js/vendor, feste
 //     Version, erst beim ersten Klick per <script>-Tag geladen) und direkter
 //     Download — nicht jeder Druckdialog (z.B. Android/Drucker-Apps) bietet
 //     "Als PDF speichern" an.
@@ -817,8 +817,8 @@ function gdBuildPrintHtml(data) {
 }
 
 // ── jsPDF lazy per <script>-Tag (wie pdf.js im Speiseplan) ──
-const GD_JSPDF_URL = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-const GD_AUTOTABLE_URL = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js';
+const GD_JSPDF_URL = 'js/vendor/jspdf.umd.min.js';
+const GD_AUTOTABLE_URL = 'js/vendor/jspdf.plugin.autotable.min.js';
 let gdJsPdfPromise = null;
 function gdLoadScript(src) {
   return new Promise((resolve, reject) => {

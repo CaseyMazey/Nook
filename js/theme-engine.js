@@ -93,9 +93,6 @@ const FONT_CATEGORIES = [
 ];
 const DEFAULT_FONT_STACK = FONT_CATEGORIES[0].fonts[0].stack;
 
-// Gleicher CDN wie DM Sans/DM Mono in index.html, alle SIL Open Font License.
-const THEME_WEB_FONTS_URL = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Orbitron:wght@400;700&family=Cinzel:wght@400;600&family=UnifrakturCook:wght@700&family=Press+Start+2P&family=Bangers&family=Permanent+Marker&family=Alegreya:ital,wght@0,400;0,500;0,700;1,400&family=Almendra:wght@400;700&family=Rubik+Dirt&display=swap';
-
 // Eigene Font-Dateien aus assets/fonts/ — nur frei lizenzierte Schriften,
 // siehe assets/fonts/README.md. Keine automatische Erkennung (unter
 // file:// gibt es kein Verzeichnis-Listing), jede Datei einmal eintragen.
@@ -114,16 +111,10 @@ function fontFormatFromPath(path) {
   return { woff2: 'woff2', woff: 'woff', ttf: 'truetype', otf: 'opentype' }[ext] || 'truetype';
 }
 
-// Hängt den Google-Fonts-Link und die @font-face-Regeln der eigenen
-// Dateien einmalig an <head> an — idempotent, beliebig oft aufrufbar.
+// Hängt die @font-face-Regeln der eigenen Dateien einmalig an <head> an —
+// idempotent, beliebig oft aufrufbar. Die Web-Schriften kommen lokal aus
+// css/fonts-local.css (index.html).
 function ensureThemeFontsLoaded() {
-  if (!document.getElementById('theme-web-fonts')) {
-    const link = document.createElement('link');
-    link.id = 'theme-web-fonts';
-    link.rel = 'stylesheet';
-    link.href = THEME_WEB_FONTS_URL;
-    document.head.appendChild(link);
-  }
   if (!document.getElementById('theme-custom-fonts') && CUSTOM_FONT_FILES.length) {
     const styleEl = document.createElement('style');
     styleEl.id = 'theme-custom-fonts';

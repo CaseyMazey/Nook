@@ -8,9 +8,7 @@
   <link rel="manifest" href="manifest.json" />
   <!-- theme-color setzt js/theme-engine.js (applyThemeEngine) auf --bg des aktiven Themes -->
   <meta name="theme-color" content="" />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="css/fonts-local.css" rel="stylesheet">
   <link rel="stylesheet" href="css/main.css" />
   <link rel="stylesheet" href="css/hub-search.css" />
   <link rel="stylesheet" href="css/budget.css" />
@@ -3993,7 +3991,7 @@
        nötig) — stellt window.supabase bereit, das js/sync.js direkt danach
        nutzt. Explizit der UMD-Pfad, nicht das bloße Paket (das würde den
        ESM-Build ausliefern, der keinen window.supabase-Global erzeugt). -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="js/vendor/supabase.js"></script>
   <!-- Persönliche, nicht versionierte Zugangsdaten (js/sync-config.js,
        siehe .gitignore + sync-config.example.js) — fehlt sie (z.B. bei
        einem frischen Fork ohne eigenes Supabase-Projekt), läuft Nook

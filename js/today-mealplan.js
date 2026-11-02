@@ -8,7 +8,7 @@
 // Kontrolle/Korrektur im Modal und das Widget danach jeden Tag die
 // Gerichte von heute.
 //
-// PDF-Auslesen: pdf.js (cdnjs, feste Version) wird erst beim ersten Import
+// PDF-Auslesen: pdf.js (js/vendor, feste Version) wird erst beim ersten Import
 // per <script>-Tag nachgeladen — kein fetch(), funktioniert auch unter
 // file://. Der Worker wird ebenfalls als normales Script geladen
 // (globalThis.pdfjsWorker), pdf.js rechnet dann im Hauptthread — ein
@@ -48,8 +48,7 @@ const MEALPLAN_SLOTS = [
 ];
 const MEALPLAN_WEEKDAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag'];
 
-const PDFJS_VERSION = '3.11.174';
-const PDFJS_BASE = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}/`;
+const PDFJS_BASE = "js/vendor/pdfjs/"; // pdf.js 3.11.174, lokal ausgeliefert
 
 function mealPlanEsc(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
