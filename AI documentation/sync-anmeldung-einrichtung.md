@@ -26,21 +26,23 @@ Nook hat zwei Anmeldewege, die unabhängig voneinander funktionieren:
 
 ## Teil 1: Google einrichten (etwa 20 Minuten, ohne Mailversand)
 
+Die Google-Schritte nennen die Begriffe der deutschen Oberfläche. Einzelne Beschriftungen können bei Google leicht abweichen. Die Testguthaben-Leiste oben kannst du ablehnen, die Anmeldung braucht sie nicht. Das Supabase-Dashboard ist englisch, deshalb stehen die Begriffe dort auf Englisch.
+
 ### 1. Projekt und Zustimmungsbildschirm
 
 1. Öffne die [Google Cloud Console](https://console.cloud.google.com/) und lege ein Projekt an, zum Beispiel `Nook`. Du kannst auch das Projekt nehmen, das du schon für den Google Kalender nutzt.
-2. Öffne die [Google Auth Platform](https://console.cloud.google.com/auth/overview) und klicke auf **Get started**.
-3. Trage als App-Namen `Nook` und deine Support-Mail ein, wähle als Zielgruppe **External** und schließe den Assistenten ab.
-4. Füge unter **Data Access** den Scope `openid` hinzu. `.../auth/userinfo.email` und `.../auth/userinfo.profile` sind schon voreingestellt. Weitere Scopes brauchst du nicht.
-5. Klicke unter **Audience** auf **Publish app**. Im Status „Testing“ können sich nur eingetragene Testnutzer anmelden.
+2. Öffne die [Google Auth Platform](https://console.cloud.google.com/auth/overview) und klicke auf **Erste Schritte**.
+3. Trage als App-Namen `Nook` und deine Support-Mail ein, wähle als Zielgruppe **Extern** und schließe den Assistenten ab.
+4. Füge links unter **Datenzugriff** den Bereich (Scope) `openid` hinzu. `.../auth/userinfo.email` und `.../auth/userinfo.profile` sind schon voreingestellt. Weitere Bereiche brauchst du nicht.
+5. Klicke links unter **Zielgruppe** auf **App veröffentlichen**. Im Status „Test“ können sich nur eingetragene Testnutzer anmelden.
 
 ### 2. OAuth-Client anlegen
 
 1. Öffne in Supabase **Authentication → Providers → Google** und kopiere die dort angezeigte **Callback URL**. Sie lautet für Nook: `https://iaatlbaawjjfthtxrfls.supabase.co/auth/v1/callback`
-2. Wähle in Google unter **Clients** den Punkt **Create client** und als Typ **Web application**, Name `Nook`.
-3. Trage unter **Authorized JavaScript origins** ein: `https://nook-ci7.pages.dev`
-4. Trage unter **Authorized redirect URIs** die Callback URL aus Schritt 1 ein.
-5. Klicke auf **Create** und notiere **Client ID** und **Client Secret**.
+2. Wähle in Google links unter **Clients** den Punkt **Client erstellen** und als Anwendungstyp **Webanwendung**, Name `Nook`.
+3. Trage unter **Autorisierte JavaScript-Quellen** ein: `https://nook-ci7.pages.dev`
+4. Trage unter **Autorisierte Weiterleitungs-URIs** die Callback URL aus Schritt 1 ein.
+5. Klicke auf **Erstellen** und notiere **Client-ID** und **Clientschlüssel**. In Supabase heißen sie **Client ID** und **Client Secret**.
 
 ### 3. In Supabase eintragen
 
