@@ -102,6 +102,25 @@
       base, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
   }
 
+  function isBox(b) { return !!b && typeof b.iv === "string" && typeof b.ct === "string"; }
+
+  // Der Keyring kommt aus der Cloud und ist unauthentifiziert: Parameter prüfen, bevor sie benutzt werden.
+  function assertKeyring(keyring) {
+    const bad = () => new SyncCryptoError("bad_keyring", "Keyring ist ungültig");
+    try {
+      const k = keyring, kdf = k && k.kdf;
+      if (!k || k.v !== 1 || typeof k.keyId !== "string" || !kdf) throw bad();
+      if (kdf.name !== "PBKDF2" || kdf.hash !== "SHA-256" || kdf.iterations !== KDF_ITERATIONS) throw bad();
+      if (typeof kdf.salt !== "string" || fromB64(kdf.salt).length !== SALT_BYTES) throw bad();
+      if (!isBox(k.byPassword) || !isBox(k.byRecovery)) throw bad();
+      fromB64(k.keyId);
+      fromB64(k.byPassword.iv); fromB64(k.byPassword.ct);
+      fromB64(k.byRecovery.iv); fromB64(k.byRecovery.ct);
+    } catch (e) {
+      throw e instanceof SyncCryptoError ? e : bad();
+    }
+  }
+
   const keyringAad = (keyId) => "nook-keyring:v1:" + keyId;
 
   async function unwrap(kek, box, keyId, extractable) {
@@ -111,7 +130,11 @@
     } catch (e) {
       throw new SyncCryptoError("wrong_secret", "Falsches Passwort oder falscher Wiederherstellungsschlüssel");
     }
-    return importAes(raw, !!extractable, ["encrypt", "decrypt"]);
+    try {
+      return await importAes(raw, !!extractable, ["encrypt", "decrypt"]);
+    } catch (e) {
+      throw new SyncCryptoError("bad_keyring", "Gewickelter Schlüssel ist ungültig");
+    }
   }
 
   // --- Öffentliche Funktionen ---
@@ -145,11 +168,13 @@
   }
 
   async function unlockWithPassword(keyring, password, extractable = false) {
+    assertKeyring(keyring);
     const kek = await deriveKek(password, keyring.kdf.salt, keyring.kdf.iterations);
     return unwrap(kek, keyring.byPassword, keyring.keyId, extractable);
   }
 
   async function unlockWithRecoveryKey(keyring, recoveryKey, extractable = false) {
+    assertKeyring(keyring);
     const bytes = parseRecoveryKey(recoveryKey);
     if (!bytes) throw new SyncCryptoError("wrong_secret", "Ungültiger Wiederherstellungsschlüssel");
     const kek = await importAes(bytes, false, ["decrypt"]);
@@ -158,11 +183,12 @@
 
   // Wickelt den Datenschlüssel unter einem neuen Passwort neu (neues Salt); byRecovery und keyId bleiben.
   async function rewrapKeyring(keyring, extractableDataKey, newPassword) {
+    assertKeyring(keyring);
     const rawKey = new Uint8Array(await subtle().exportKey("raw", extractableDataKey));
     const salt = toB64(randomBytes(SALT_BYTES));
-    const kek = await deriveKek(newPassword, salt, keyring.kdf.iterations);
+    const kek = await deriveKek(newPassword, salt, KDF_ITERATIONS);
     return Object.assign({}, keyring, {
-      kdf: Object.assign({}, keyring.kdf, { salt }),
+      kdf: { name: "PBKDF2", hash: "SHA-256", iterations: KDF_ITERATIONS, salt },
       byPassword: await aesEncrypt(kek, rawKey, keyringAad(keyring.keyId))
     });
   }

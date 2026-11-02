@@ -130,3 +130,37 @@ test('Extrahierbarkeit: Standard nicht, auf Wunsch ja', async () => {
   const e = await C.unlockWithPassword(keyring, PW, true);
   assert.strictEqual((await subtle.exportKey('raw', e)).byteLength, 32);
 });
+
+test('manipulierte KDF-Parameter werden mit bad_keyring abgelehnt', async () => {
+  const { keyring, recoveryKey } = await fx();
+  const ext = await C.unlockWithPassword(keyring, PW, true);
+  const variants = {
+    'iterations 1': { ...keyring, kdf: { ...keyring.kdf, iterations: 1 } },
+    'iterations riesig': { ...keyring, kdf: { ...keyring.kdf, iterations: 2 ** 31 } },
+    'Salt falsch': { ...keyring, kdf: { ...keyring.kdf, salt: 'AAAA' } },
+    'Salt kein Base64': { ...keyring, kdf: { ...keyring.kdf, salt: '!!' } },
+    'kdf fehlt': { ...keyring, kdf: undefined },
+    'v falsch': { ...keyring, v: 2 },
+    'hash falsch': { ...keyring, kdf: { ...keyring.kdf, hash: 'SHA-1' } },
+    'byPassword kaputt': { ...keyring, byPassword: { iv: '!!', ct: 5 } },
+    'keyId fehlt': { ...keyring, keyId: undefined }
+  };
+  const isBad = (e) => e instanceof C.SyncCryptoError && e.code === 'bad_keyring';
+  for (const [name, kr] of Object.entries(variants)) {
+    const t0 = Date.now();
+    await assert.rejects(C.unlockWithPassword(kr, PW), isBad, name);
+    await assert.rejects(C.unlockWithRecoveryKey(kr, recoveryKey), isBad, name);
+    await assert.rejects(C.rewrapKeyring(kr, ext, 'neu'), isBad, name);
+    assert.ok(Date.now() - t0 < 1000, name + ' muss sofort abgelehnt werden');
+  }
+  await assert.rejects(C.unlockWithPassword(null, PW), isBad);
+});
+
+test('rewrapKeyring schreibt immer 600000 Iterationen', async () => {
+  const { keyring } = await fx();
+  const ext = await C.unlockWithPassword(keyring, PW, true);
+  const next = await C.rewrapKeyring(keyring, ext, 'neu');
+  assert.strictEqual(next.kdf.iterations, 600000);
+  assert.strictEqual(next.kdf.name, 'PBKDF2');
+  assert.strictEqual(next.kdf.hash, 'SHA-256');
+});
