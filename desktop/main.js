@@ -8,6 +8,7 @@ const { pathToFileURL } = require('node:url');
 const { app, BrowserWindow, net, protocol, screen, session, shell } = require('electron');
 
 const { resolveAppPath } = require('./lib/protocol.js');
+const { startUpdates } = require('./lib/updates.js');
 const { loadWindowState, saveWindowState } = require('./lib/window-state.js');
 
 const APP_SCHEME = 'app';
@@ -180,5 +181,6 @@ if (!app.requestSingleInstanceLock()) {
   app.whenReady().then(() => {
     protocol.handle(APP_SCHEME, handleAppRequest);
     mainWindow = createWindow();
+    startUpdates(mainWindow);
   });
 }

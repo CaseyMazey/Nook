@@ -60,5 +60,8 @@
       "repo": "Nook",
       "releaseType": "draft"
     }
+  },
+  "dependencies": {
+    "electron-updater": "6.8.11"
   }
 }
