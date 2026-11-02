@@ -1,0 +1,108 @@
+name: Release
+
+# Läuft nur bei Versions-Tags (v*), nie bei normalen Commits.
+# Ablauf: check -> build (3 Systeme, Release-Entwurf) -> publish (nur wenn alle Builds grün).
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tag muss zu NOOK_VERSION passen
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION=$(sed -n "s/^window\.NOOK_VERSION = '\([^']*\)';.*/\1/p" js/nook-version.js)
+          if [ -z "$VERSION" ]; then
+            echo "::error::NOOK_VERSION in js/nook-version.js nicht gefunden"
+            exit 1
+          fi
+          if [ "$GITHUB_REF_NAME" != "v$VERSION" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME passt nicht zu NOOK_VERSION v$VERSION"
+            exit 1
+          fi
+          echo "Tag $GITHUB_REF_NAME passt zu NOOK_VERSION $VERSION"
+
+  build:
+    needs: check
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: desktop
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - name: Paketversion aus dem Tag setzen
+        shell: bash
+        run: npm version --no-git-tag-version --allow-same-version "${GITHUB_REF_NAME#v}"
+      - run: npm run stage
+      - run: npx electron-builder --dir
+      - name: Smoke-Test der entpackten App
+        shell: bash
+        env:
+          NOOK_SMOKE: '1'
+        run: |
+          set -euo pipefail
+          case "$RUNNER_OS" in
+            Windows)
+              BIN="dist/win-unpacked/Nook.exe"
+              ;;
+            macOS)
+              # Nur die zur Runner-Architektur passende App ist startbar
+              if [ "$(uname -m)" = "arm64" ]; then DIR="dist/mac-arm64"; else DIR="dist/mac"; fi
+              BIN="$DIR/Nook.app/Contents/MacOS/Nook"
+              ;;
+            Linux)
+              DIR="dist/linux-unpacked"
+              BIN=""
+              # Dateiname hängt von electron-builder ab (klein geschrieben) - Kandidaten prüfen
+              for cand in nook nook-desktop Nook; do
+                if [ -f "$DIR/$cand" ]; then BIN="$DIR/$cand"; break; fi
+              done
+              ;;
+            *)
+              echo "::error::Unbekanntes System $RUNNER_OS"; exit 1
+              ;;
+          esac
+          if [ -z "$BIN" ] || [ ! -f "$BIN" ]; then
+            echo "::error::Entpackte App nicht gefunden (${BIN:-kein Kandidat})"
+            ls -la dist dist/*-unpacked dist/mac* 2>/dev/null || true
+            exit 1
+          fi
+          echo "Smoke-Test: $BIN"
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            xvfb-run -a "$BIN" --no-sandbox
+          else
+            "$BIN"
+          fi
+      - name: Bauen und in Release-Entwurf hochladen
+        run: npx electron-builder --publish always
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      TAG: ${{ github.ref_name }}
+    steps:
+      - name: Release-Entwurf veröffentlichen
+        run: gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false
