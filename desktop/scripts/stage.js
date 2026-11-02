@@ -40,13 +40,15 @@ function likeToRegExp(pattern) {
   return new RegExp('^' + re + '$', 'is');
 }
 
-function isIgnored(relPath, patterns) {
+// isDir: Verzeichnisse nur per Präfix prüfen (wie deploy.ps1, das nur Dateien testet).
+function isIgnored(relPath, patterns, isDir = false) {
   const rel = relPath.replace(/\\/g, '/');
   const name = rel.slice(rel.lastIndexOf('/') + 1);
   for (const p of patterns) {
     const pl = p.toLowerCase();
     const rl = rel.toLowerCase();
     if (rl === pl || rl.startsWith(pl + '/')) return true;
+    if (isDir) continue;
     const re = likeToRegExp(p);
     if (re.test(name) || re.test(rel)) return true;
   }
@@ -65,7 +67,7 @@ function stageApp(rootDir, destDir) {
     const abs = rel ? path.join(rootDir, rel) : rootDir;
     for (const entry of fs.readdirSync(abs, { withFileTypes: true })) {
       const childRel = rel ? rel + '/' + entry.name : entry.name;
-      if (isIgnored(childRel, patterns)) continue;
+      if (isIgnored(childRel, patterns, entry.isDirectory())) continue;
       if (entry.isDirectory()) walk(childRel);
       else if (entry.isFile()) {
         const target = path.join(destDir, childRel);

@@ -92,3 +92,17 @@ test('findForbidden ist von .assetsignore unabhängig', () => {
   write(root, 'Backups/a.json');
   assert.strictEqual(findForbidden(root).length, 1);
 });
+
+test('stageApp: verschachtelte Ordner mit Ignore-Namen bleiben, Wurzel-Ordner nicht', () => {
+  const root = tmp(), dest = path.join(tmp(), 'stage');
+  write(root, '.assetsignore', 'docs/\nscripts/\n');
+  write(root, 'games/x/docs/a.md');
+  write(root, 'js/scripts/b.js');
+  write(root, 'docs/a.md');
+  write(root, 'scripts/c.js');
+  stageApp(root, dest);
+  assert.ok(fs.existsSync(path.join(dest, 'games/x/docs/a.md')));
+  assert.ok(fs.existsSync(path.join(dest, 'js/scripts/b.js')));
+  assert.ok(!fs.existsSync(path.join(dest, 'docs')));
+  assert.ok(!fs.existsSync(path.join(dest, 'scripts')));
+});
