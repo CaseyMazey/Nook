@@ -62,6 +62,7 @@
 .desk-edit-btn:focus-visible,
 .desk-grip:focus-visible,
 .note-del:focus-visible,
+.desk-item-edit-btn:focus-visible,
 .desk-card .icon-btn:focus-visible,
 .paper-cb-wrap:focus-visible,
 .checklist-text:focus-visible,
@@ -124,6 +125,12 @@
 .checklist-item.done .checklist-text { color: color-mix(in srgb, var(--card-fg, var(--text)) 55%, transparent); text-decoration: line-through; }
 .checklist-item .note-del { opacity: 0; color: inherit; }
 .checklist-item:hover .note-del { opacity: 1; }
+.desk-item-edit-btn { flex-shrink: 0; padding: 0 2px; color: inherit; opacity: 0; line-height: 1.4; font-size: calc(13px * var(--core-font-scale)); transition: opacity 150ms; }
+.checklist-item:hover .desk-item-edit-btn { opacity: 0.6; }
+.desk-item-edit-btn:hover { opacity: 1 !important; }
+.desk-item-edit-btn { flex-shrink: 0; padding: 0 2px; color: inherit; opacity: 0; line-height: 1.4; font-size: calc(13px * var(--core-font-scale)); transition: opacity 150ms; }
+.checklist-item:hover .desk-item-edit-btn { opacity: 0.6; }
+.desk-item-edit-btn:hover { opacity: 1 !important; }
 .checklist .empty-state { color: color-mix(in srgb, var(--card-fg, var(--text)) 60%, transparent); }
 .desk-item-edit, .desk-add-item { min-width: 0; font: inherit; color: inherit; box-sizing: border-box; }
 .desk-item-edit { flex: 1; padding: 0 4px; border: none; border-radius: 4px; outline: 1px solid color-mix(in srgb, var(--card-fg, var(--text)) 35%, transparent); background: transparent; }
@@ -191,6 +198,7 @@
 @media (hover: none) {
   .desk-edit-btn,
   .desk-grip,
+  .desk-item-edit-btn,
   .checklist-item .note-del,
   .desk-code-copy {
     opacity: 0.55;

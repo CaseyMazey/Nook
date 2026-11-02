@@ -439,6 +439,11 @@ function buildDeskChecklist(body, card) {
     span.addEventListener('keydown', e => {
       if (e.key === 'Enter' || e.key === 'F2') { e.preventDefault(); startDeskItemEdit(span, card, item); }
     });
+    const edit = document.createElement('button'); edit.className = 'desk-item-edit-btn'; edit.textContent = '✎';
+    edit.title = 'Eintrag bearbeiten';
+    edit.setAttribute('aria-label', `Eintrag „${item.text}“ bearbeiten`);
+    edit.dataset.deskFocus = 'edit:' + item.id;
+    edit.addEventListener('click', () => startDeskItemEdit(span, card, item));
     const del = document.createElement('button'); del.className = 'note-del'; del.textContent = '✕';
     del.title = 'Eintrag löschen';
     del.setAttribute('aria-label', `Eintrag „${item.text}“ löschen`);
@@ -449,7 +454,7 @@ function buildDeskChecklist(body, card) {
       saveDeskCards(); renderDesk();
       showDeskUndo('Eintrag gelöscht', () => { card.items.splice(index, 0, item); });
     });
-    li.append(grip, cb, span, del); ul.appendChild(li);
+    li.append(grip, cb, span, edit, del); ul.appendChild(li);
   });
   if (visible.length === 0) {
     const empty = document.createElement('li'); empty.className = 'empty-state';

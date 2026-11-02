@@ -19,7 +19,7 @@ window.NOOK_CHANGELOG = [
     items: [
       'Schnellnotiz: beim Ablegen als Pinnwand-Karte geht von einer langen ersten Zeile nichts mehr verloren',
       'Pinnwand: Karten und Checklisten-Einträge per Griff ziehen oder mit den Pfeiltasten verschieben',
-      'Pinnwand: Einträge direkt in der Karte hinzufügen (eingefügte Listen werden einzelne Einträge), per Doppelklick bearbeiten, Fortschritt im Kartenkopf, „Erledigte löschen“',
+      'Pinnwand: Einträge direkt in der Karte hinzufügen (eingefügte Listen werden einzelne Einträge), über ✎ oder per Doppelklick bearbeiten, Fortschritt im Kartenkopf, „Erledigte löschen“',
       'Pinnwand: Löschen lässt sich rückgängig machen; Textfelder wachsen mit, Doppelklick auf den Griff stellt die Höhe wieder automatisch ein; Berichtsheft als neue Karte wählbar',
       'Pinnwand: Stilwechsel wandelt Text und Checkliste ineinander um, Abhaken springt nicht mehr nach oben, bessere Lesbarkeit auf farbigen Karten, Bedienung per Tastatur',
       'Sync: Änderungen an Pinnwand-Karten von einem anderen Gerät werden nicht mehr überschrieben, Text wird nicht mehr bei jedem Tastendruck hochgeladen',
