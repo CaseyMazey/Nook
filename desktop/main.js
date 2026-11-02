@@ -42,6 +42,11 @@ function windowStateFile() {
   return path.join(app.getPath('userData'), 'window-state.json');
 }
 
+// localStorage wird verzögert geschrieben; das hier bringt ihn sicher auf die Platte.
+function flushStorage() {
+  if (app.isReady()) session.defaultSession.flushStorageData();
+}
+
 function notFound() {
   return new Response('Nicht gefunden', { status: 404 });
 }
@@ -105,6 +110,10 @@ function createWindow() {
       console.error('Fensterzustand ließ sich nicht speichern:', err);
     }
   });
+  // Abmelden oder Herunterfahren unter Windows läuft nicht über before-quit.
+  win.on('session-end', flushStorage);
+  win.on('blur', flushStorage);
+  win.on('hide', flushStorage);
   win.on('closed', () => {
     mainWindow = null;
   });
@@ -163,10 +172,10 @@ if (!app.requestSingleInstanceLock()) {
   // Nook ist ein einziges Fenster: Zu ist auf allen Systemen gleich Beenden.
   app.on('window-all-closed', () => app.quit());
 
-  // localStorage wird verzögert geschrieben; vor dem Beenden sicher auf die Platte.
-  app.on('before-quit', () => {
-    if (app.isReady()) session.defaultSession.flushStorageData();
-  });
+  // before-quit reicht nicht allein: Die Seite lebt da noch und schreibt in
+  // pagehide weiter (js/pinboard.js), deshalb auch in will-quit.
+  app.on('before-quit', flushStorage);
+  app.on('will-quit', flushStorage);
 
   app.whenReady().then(() => {
     protocol.handle(APP_SCHEME, handleAppRequest);

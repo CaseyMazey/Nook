@@ -9,7 +9,7 @@
     "test": "node --test \"test/*.test.js\"",
     "stage": "node scripts/stage.js",
     "start": "electron .",
-    "pack": "electron-builder --dir"
+    "pack": "npm run stage && electron-builder --dir"
   },
   "devDependencies": {
     "electron": "45.2.1",

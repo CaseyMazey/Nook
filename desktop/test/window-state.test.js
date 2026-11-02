@@ -60,6 +60,56 @@ test('Lage auf einem zweiten Display mit negativen Koordinaten bleibt gültig', 
   assert.deepEqual(loadWindowState(file, displays), lage);
 });
 
+test('Titelleiste muss erreichbar auf einem Display liegen, sonst Standardgröße', () => {
+  const lagen = [
+    { x: 1919, y: 0, width: 900, height: 700 }, // nur 1 px sichtbar
+    { x: 0, y: -500, width: 900, height: 700 }, // Titelleiste oberhalb
+    { x: 1821, y: 0, width: 900, height: 700 }, // 99 px breit sichtbar
+    { x: -801, y: 0, width: 900, height: 700 }, // links nur 99 px sichtbar
+    { x: 0, y: 1041, width: 900, height: 700 }, // nur 39 px hoch sichtbar
+    { x: 0, y: -1, width: 900, height: 700 }, // oben ragt 1 px hinaus
+  ];
+  for (const lage of lagen) {
+    fs.writeFileSync(file, JSON.stringify(lage));
+    assert.deepEqual(loadWindowState(file, DISPLAYS), DEFAULT_STATE, JSON.stringify(lage));
+  }
+});
+
+test('Titelleiste genau an der Grenze bleibt gültig', () => {
+  const lagen = [
+    { x: 1820, y: 0, width: 900, height: 700 }, // genau 100 px breit
+    { x: 0, y: 1040, width: 900, height: 700 }, // genau 40 px hoch
+  ];
+  for (const lage of lagen) {
+    fs.writeFileSync(file, JSON.stringify(lage));
+    assert.deepEqual(loadWindowState(file, DISPLAYS), lage);
+  }
+});
+
+test('unsinnige Größen ergeben die Standardgröße', () => {
+  const lagen = [
+    '{"x":0,"y":0,"width":1e308,"height":700}',
+    '{"x":0,"y":0,"width":900,"height":1e308}',
+    '{"x":0,"y":0,"width":199,"height":700}',
+    '{"x":0,"y":0,"width":900,"height":199}',
+    '{"x":0,"y":0,"width":20001,"height":700}',
+    '{"x":0,"y":0,"width":900,"height":20001}',
+    '{"x":0,"y":0,"width":900.5,"height":700}',
+    '{"x":0.5,"y":0,"width":900,"height":700}',
+  ];
+  for (const lage of lagen) {
+    fs.writeFileSync(file, lage);
+    assert.deepEqual(loadWindowState(file, DISPLAYS), DEFAULT_STATE, lage);
+  }
+});
+
+test('Größen an den Grenzen 200 und 20000 bleiben gültig', () => {
+  for (const lage of [{ x: 0, y: 0, width: 200, height: 200 }, { x: 0, y: 0, width: 20000, height: 20000 }]) {
+    fs.writeFileSync(file, JSON.stringify(lage));
+    assert.deepEqual(loadWindowState(file, DISPLAYS), lage);
+  }
+});
+
 test('saveWindowState lässt sich wieder laden und hinterlässt keine Hilfsdatei', () => {
   const lage = { x: 10, y: 20, width: 1000, height: 800 };
   saveWindowState(file, lage);
