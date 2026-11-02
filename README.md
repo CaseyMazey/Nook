@@ -50,7 +50,7 @@ Kurzüberblick pro Bereich — die vollständige Nutzer-Doku mit allen Optionen 
 Persönliche Startseite: Unterrichtsblöcke, Wochenaufgaben, Gruppenpflichten-Planer, Mini-Kalender, Wetter, Schnellnotiz, National-Day- und Positivity-Widget.
 → [Wiki: Heute](https://github.com/CaseyMazey/Nook/wiki/Heute)
 
-### 📌 Pinnwand
+### 📌 Pinnwand 🔧 *Momentan in Bearbeitung*
 
 Freie Karten (Notizen, Checklisten, Code, Zitate, …) in drei Masonry-Spalten, inklusive eigenem Kachel-Designer.
 → [Wiki: Pinnwand](https://github.com/CaseyMazey/Nook/wiki/Pinnwand)
@@ -106,7 +106,7 @@ Themes & Theme-Editor, Tab-Verwaltung, Backup, optionaler Geräte-Sync, Google-C
 
 ---
 
-# 🎮 Spiele 🔧 *Momentan in Bearbeitung*
+# 🎮 Spiele
 
 Lokaler Cozy-Game-Hub mit modularer Plugin-Architektur und spielübergreifendem virtuellem Haustier-System (Cozy Home).
 → [Wiki: Spiele](https://github.com/CaseyMazey/Nook/wiki/Spiele) für die Übersicht aller Spiele und Cozy-Home-Features.
