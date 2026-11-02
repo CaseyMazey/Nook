@@ -263,11 +263,93 @@ async function runInitialMerge(userId) {
 }
 
 // ── Login-Modal ──────────────────────────────────────────────────────
+// Fehler aus dem Anmelde-Rücksprung (abgelaufener Link, abgebrochener
+// Google-Login) stehen nur kurz in der URL: showView() in main.js ersetzt den
+// Hash beim Start durch die aktuelle View. Deshalb direkt beim Laden dieser
+// Datei auslesen — ohne das bekäme der Nutzer gar keine Rückmeldung.
+const syncAuthCallbackError = (() => {
+  const params = new URLSearchParams(location.hash.replace(/^#/, ""));
+  const query = new URLSearchParams(location.search);
+  const error = params.get("error") || query.get("error");
+  if (!error) return null;
+  const code = params.get("error_code") || query.get("error_code");
+  if (query.has("error")) {
+    ["error", "error_code", "error_description"].forEach((k) => query.delete(k));
+    const search = query.toString();
+    history.replaceState(null, "", location.pathname + (search ? `?${search}` : "") + location.hash);
+  }
+  return { error, code };
+})();
+
+// Der Google-Button erscheint nur, wenn der Provider in Supabase aktiv ist —
+// sonst landete der Klick auf einer rohen JSON-Fehlerseite von Supabase.
+// file:// kann nach dem Login nicht zurückgeleitet werden (siehe CLAUDE.md).
+let syncGoogleAvailable = false;
+
+async function detectSyncGoogleLogin() {
+  if (!location.protocol.startsWith("http")) return;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/settings`, { headers: { apikey: SUPABASE_ANON_KEY } });
+    if (!res.ok) return;
+    const settings = await res.json();
+    syncGoogleAvailable = settings.external?.google === true;
+    document.getElementById("sync-login-google")?.classList.toggle("hidden", !syncGoogleAvailable);
+  } catch (err) {
+    console.warn("Sync: Anmeldearten konnten nicht geprüft werden", err);
+  }
+}
+
+function syncLoginFallbackHint() {
+  return syncGoogleAvailable
+    ? "Melde dich mit Google an oder versuche es später noch einmal."
+    : "Bitte versuche es später noch einmal.";
+}
+
+// Übersetzt Supabase-Fehler in Texte, die Nutzern sagen, was sie tun können.
+// Codes laut https://supabase.com/docs/guides/auth/debugging/error-codes
+function syncLoginErrorText(error) {
+  const waitSeconds = /after (\d+) seconds?/i.exec(error.message || "")?.[1];
+  if (waitSeconds) return `Du hast gerade schon einen Link angefordert. Warte bitte noch ${waitSeconds} Sekunden und schau solange in dein Postfach.`;
+  switch (error.code) {
+    case "over_email_send_rate_limit":
+      return `Gerade können keine Anmelde-Mails verschickt werden, weil das Limit erreicht ist. ${syncLoginFallbackHint()}`;
+    case "over_request_rate_limit":
+      return "Von diesem Gerät kamen gerade zu viele Anmeldeversuche. Warte bitte ein paar Minuten.";
+    case "email_address_not_authorized":
+      return `An diese Adresse können gerade keine Anmelde-Mails verschickt werden. ${syncLoginFallbackHint()}`;
+    case "email_address_invalid":
+    case "validation_failed":
+      return "Diese E-Mail-Adresse sieht nicht gültig aus. Bitte prüfe sie noch einmal.";
+    case "signup_disabled":
+    case "otp_disabled":
+    case "email_provider_disabled":
+      return `Die Anmeldung per E-Mail ist gerade nicht möglich. ${syncLoginFallbackHint()}`;
+  }
+  if (error.status === 429) return `Gerade gibt es zu viele Anmeldeversuche. ${syncLoginFallbackHint()}`;
+  if (!navigator.onLine || !error.status) return "Keine Verbindung zum Sync-Dienst. Prüfe deine Internetverbindung und versuche es noch einmal.";
+  return `Das hat gerade nicht geklappt. ${syncLoginFallbackHint()}`;
+}
+
+function syncAuthCallbackErrorText({ error, code }) {
+  if (code === "otp_expired") return "Dieser Anmelde-Link ist abgelaufen oder wurde schon benutzt. Fordere bitte einen neuen an.";
+  if (error === "access_denied") return "Die Anmeldung wurde abgebrochen. Du kannst es jederzeit noch einmal versuchen.";
+  return `Die Anmeldung hat nicht geklappt. ${syncLoginFallbackHint()}`;
+}
+
+function showSyncLoginError(text) {
+  const errorEl = document.getElementById("sync-login-error");
+  if (errorEl) { errorEl.textContent = text; errorEl.style.display = "block"; }
+}
+
+function hideSyncLoginError() {
+  const errorEl = document.getElementById("sync-login-error");
+  if (errorEl) errorEl.style.display = "none";
+}
+
 function resetSyncLoginSteps() {
   document.getElementById("sync-login-step-email")?.classList.remove("hidden");
   document.getElementById("sync-login-step-sent")?.classList.add("hidden");
-  const err = document.getElementById("sync-login-error");
-  if (err) err.style.display = "none";
+  hideSyncLoginError();
 }
 
 const syncLoginModal = wireModal("sync-login-overlay", {
@@ -275,17 +357,45 @@ const syncLoginModal = wireModal("sync-login-overlay", {
   onClose: resetSyncLoginSteps,
 });
 
-document.getElementById("sync-login-send")?.addEventListener("click", async () => {
+function syncLoginRedirectUrl() {
+  return window.location.origin + window.location.pathname;
+}
+
+document.getElementById("sync-login-google-btn")?.addEventListener("click", async () => {
+  if (!sbClient) return;
+  hideSyncLoginError();
+  // Bei Erfolg leitet das SDK die Seite zu Google um; zurück in Nook meldet
+  // onAuthStateChange in initSync() "SIGNED_IN", wie beim Magic Link.
+  const { error } = await sbClient.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: syncLoginRedirectUrl() },
+  });
+  if (error) {
+    console.error("Sync: Google-Anmeldung fehlgeschlagen", error);
+    showSyncLoginError(syncLoginErrorText(error));
+  }
+});
+
+document.getElementById("sync-login-send")?.addEventListener("click", async (e) => {
   if (!sbClient) return;
   const emailInput = document.getElementById("sync-login-email");
   const email = emailInput.value.trim();
-  const errorEl = document.getElementById("sync-login-error");
-  if (!email) return;
+  hideSyncLoginError();
+  if (!email) {
+    showSyncLoginError("Bitte gib zuerst deine E-Mail-Adresse ein.");
+    emailInput.focus();
+    return;
+  }
 
-  const redirectTo = window.location.origin + window.location.pathname;
-  const { error } = await sbClient.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectTo } });
+  const btn = e.currentTarget;
+  btn.disabled = true;
+  btn.textContent = "Wird gesendet …";
+  const { error } = await sbClient.auth.signInWithOtp({ email, options: { emailRedirectTo: syncLoginRedirectUrl() } });
+  btn.disabled = false;
+  btn.textContent = "Link senden";
   if (error) {
-    if (errorEl) { errorEl.textContent = "Senden fehlgeschlagen: " + error.message; errorEl.style.display = "block"; }
+    console.error("Sync: Anmelde-Link fehlgeschlagen", error);
+    showSyncLoginError(syncLoginErrorText(error));
     return;
   }
   document.getElementById("sync-login-sent-email").textContent = email;
@@ -316,15 +426,24 @@ document.getElementById("sync-update-reload-btn")?.addEventListener("click", () 
 async function initSync() {
   if (!sbClient) {
     console.warn("Sync: Supabase-SDK nicht geladen (offline/blockiert?) — Nook läuft rein lokal weiter.");
+    const sub = document.getElementById("sync-status-sub");
+    if (sub) sub.textContent = "Geräte-Sync ist gerade nicht erreichbar — Daten bleiben nur auf diesem Gerät";
+    document.getElementById("sync-status-btn")?.classList.add("hidden");
     return;
   }
 
+  const googleCheck = detectSyncGoogleLogin();
   const { data: { session } } = await sbClient.auth.getSession();
   currentUserId = session?.user?.id || null;
   updateSyncStatusUI(session);
   if (session) {
     catchUpSync(session.user.id);
     subscribeRealtime(session.user.id);
+  } else if (syncAuthCallbackError) {
+    await googleCheck; // Der Text verweist nur auf Google, wenn es verfügbar ist.
+    resetSyncLoginSteps();
+    showSyncLoginError(syncAuthCallbackErrorText(syncAuthCallbackError));
+    syncLoginModal.open();
   }
 
   sbClient.auth.onAuthStateChange(async (event, newSession) => {

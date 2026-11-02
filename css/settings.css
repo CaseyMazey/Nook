@@ -445,3 +445,29 @@
   #settings-scroll-top { right: 16px; bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 16px); }
 }
 
+
+/* Sync-Login: Google als Hauptweg über dem E-Mail-Formular (js/sync.js) */
+.sync-login-google-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  color: var(--text);
+  font-weight: 500;
+}
+.sync-login-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  font-size: calc(12px * var(--core-font-scale));
+  color: var(--text-3);
+}
+.sync-login-divider::before,
+.sync-login-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: color-mix(in srgb, var(--text) 12%, transparent);
+}

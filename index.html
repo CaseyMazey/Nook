@@ -3497,8 +3497,9 @@
   </div>
 
   <!-- Sync-Login-Modal (js/sync.js) — Geräte-übergreifender Datenabgleich
-       per Supabase Magic Link. "Später"/X lässt Nook wie bisher rein
-       lokal weiterlaufen, ohne zu blockieren. -->
+       per Google (nur sichtbar, wenn der Provider aktiv ist) oder Supabase
+       Magic Link. "Später"/X lässt Nook wie bisher rein lokal weiterlaufen,
+       ohne zu blockieren. -->
   <div id="sync-login-overlay" class="modal-backdrop hidden">
     <div class="modal-box" style="width:400px;">
       <div class="modal-head">
@@ -3506,7 +3507,14 @@
         <button class="modal-x" id="sync-login-close">✕</button>
       </div>
       <div id="sync-login-step-email">
-        <p class="modal-hint">Melde dich an, damit deine Daten automatisch zwischen all deinen Geräten synchronisiert werden. Kein Passwort nötig — du bekommst einen Anmelde-Link per E-Mail.</p>
+        <p class="modal-hint">Melde dich an, damit deine Daten automatisch zwischen all deinen Geräten synchronisiert werden. Kein Passwort nötig.</p>
+        <div id="sync-login-google" class="hidden">
+          <button type="button" class="btn-ghost sync-login-google-btn" id="sync-login-google-btn">
+            <svg viewBox="0 0 48 48" width="18" height="18" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.7 1.2 9.2 3.6l6.9-6.9C35.9 2.4 30.5 0 24 0 14.6 0 6.5 5.4 2.6 13.2l8 6.2C12.5 13.7 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.9 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.9c-.6 3-2.2 5.5-4.8 7.2l7.7 6c4.5-4.2 7.1-10.3 7.1-17.7z"/><path fill="#FBBC05" d="M10.5 28.6c-.5-1.4-.8-3-.8-4.6s.3-3.2.8-4.6l-8-6.2C.9 16.5 0 20.1 0 24s.9 7.5 2.6 10.8l7.9-6.2z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.7-6c-2.2 1.5-4.9 2.3-8.2 2.3-6.2 0-11.5-4.2-13.4-9.9l-8 6.2C6.5 42.6 14.6 48 24 48z"/></svg>
+            Mit Google anmelden
+          </button>
+          <div class="sync-login-divider">oder per E-Mail-Link</div>
+        </div>
         <div class="modal-row"><label>E-Mail</label><input type="email" class="modal-input" id="sync-login-email" placeholder="du@beispiel.de" autocomplete="email"/></div>
         <p class="modal-hint" id="sync-login-error" style="color:var(--prio-1);display:none;"></p>
         <div class="modal-actions">
