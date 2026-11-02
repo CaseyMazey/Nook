@@ -29,8 +29,30 @@ jobs:
           fi
           echo "Tag $GITHUB_REF_NAME passt zu NOOK_VERSION $VERSION"
 
-  build:
+  create-draft:
     needs: check
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Release-Entwurf einmalig anlegen
+        run: |
+          set -euo pipefail
+          ID=$(gh api "repos/$GITHUB_REPOSITORY/releases" --paginate --slurp | node desktop/scripts/release-check.js create)
+          if [ -n "$ID" ]; then
+            echo "Entwurf $ID für $TAG existiert bereits, wird wiederverwendet"
+          else
+            gh release create "$TAG" --draft --verify-tag --repo "$GITHUB_REPOSITORY" --title "Nook $TAG" --generate-notes
+          fi
+
+  build:
+    needs: create-draft
+    timeout-minutes: 60
     strategy:
       fail-fast: true
       matrix:
@@ -104,5 +126,12 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       TAG: ${{ github.ref_name }}
     steps:
-      - name: Release-Entwurf veröffentlichen
-        run: gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Entwurf prüfen und veröffentlichen
+        run: |
+          set -euo pipefail
+          ID=$(gh api "repos/$GITHUB_REPOSITORY/releases" --paginate --slurp | node desktop/scripts/release-check.js publish)
+          gh api -X PATCH "repos/$GITHUB_REPOSITORY/releases/$ID" -F draft=false
