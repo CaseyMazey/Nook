@@ -62,6 +62,7 @@ Keyring in der eigenen Zeile mit dem Key `__nook_sync_keyring__`:
 ```json
 {
   "v": 1,
+  "keyId": "<Base64, nicht geheim>",
   "kdf": { "name": "PBKDF2", "hash": "SHA-256", "iterations": 600000, "salt": "<Base64>" },
   "byPassword": { "iv": "<Base64>", "ct": "<Base64>" },
   "byRecovery": { "iv": "<Base64>", "ct": "<Base64>" },
@@ -70,6 +71,8 @@ Keyring in der eigenen Zeile mit dem Key `__nook_sync_keyring__`:
 ```
 
 Dieser Key zählt zu `isSyncInternalKey()`. Er landet also nie als App-Daten in `localStorage` und nie im Backup.
+
+`keyId` identifiziert den Datenschlüssel und wird auf dem Gerät mit dem Schlüssel gespeichert. Passt er nicht mehr zum Keyring, etwa nach „Cloud-Daten zurücksetzen“ auf einem anderen Gerät, verwirft das Gerät seinen Schlüssel und lädt nichts mehr hoch.
 
 ## Zustände eines Geräts
 
