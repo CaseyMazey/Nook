@@ -35,7 +35,7 @@ All JS files are loaded via plain `<script src="...">` tags in `index.html`, in 
 
 Most tabs are one `js/<tab>.js` + one `css/<tab>.css`. Larger tabs are split into several `js/<tab>-<part>.js` files that share globals and must load in dependency order (documented in a header comment at the top of each file) — Budget is the largest example: `budget.js` (core: overview + Finanzgarten + sub-tab switcher) → `budget-sparziele.js` (savings goals, the single source of truth other budget files read from) → `budget-financing.js` (shared funding/reservation engine) → `budget-analysis.js`, `budget-debts.js`, `budget-sparprognose.js`, `budget-sparplaene.js`.
 
-`js/hub-utils.js` holds cross-tab shared utilities loaded right after `main.js`: the user color system (`HUB_PALETTE_HEX`, `hubUserColors`, `initColorPickerWidget`, `computeUserColorVars`/`applyUserColorVars` — theme-aware derived colors from one base hex) and the shared code-block renderer (`renderCodeBlock`, used by Guides and Pinboard code cards). Reach for these instead of re-implementing color pickers or code blocks in a new tab.
+`js/hub-utils.js` holds cross-tab shared utilities loaded right after `main.js`: the user color system (`HUB_PALETTE_HEX`, `hubUserColors`, `initColorPickerWidget`, `computeUserColorVars`/`applyUserColorVars` — theme-aware derived colors from one base hex) and the shared code-block renderer (`renderCodeBlock`, used by Guides). Reach for these instead of re-implementing color pickers or code blocks in a new tab.
 
 ### Games: self-registering plugin architecture
 

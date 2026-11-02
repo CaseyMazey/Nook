@@ -1,39 +1,42 @@
 /* =============================================================
    PINBOARD.CSS — Tab: Pinnwand
    Ausgelagertes Kartensystem (früher Teil von today.css).
-   Styling unverändert übernommen — nur der Ort hat sich geändert.
 ============================================================= */
- 
- 
- 
+
+
+
 /* ═══════════════════════════════════════════════════════════
    SCHREIBTISCH — 3 feste, unabhängige Spalten (Masonry-Prinzip)
    Jede Spalte ist eine eigene vertikale Liste, keine gemeinsame
    Grid-Zeilenhöhe → unterschiedlich hohe Karten ohne Lücken.
 ═══════════════════════════════════════════════════════════ */
-#today-desk { display: flex; align-items: flex-start; gap: 10px; }
+#pinboard-desk { display: flex; align-items: flex-start; gap: 10px; }
 .desk-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
- 
-#today-add-tile-row { display: flex; justify-content: flex-start; padding-top: 2px; }
- 
+
 @media (max-width: 980px) {
-  #today-desk { flex-wrap: wrap; }
+  #pinboard-desk { flex-wrap: wrap; }
   .desk-col { flex: 1 1 calc(50% - 5px); min-width: 220px; }
 }
 @media (max-width: 640px) {
-  #today-desk { flex-direction: column; }
+  #pinboard-desk { flex-direction: column; }
   .desk-col { flex: 1 1 auto; width: 100%; }
 }
- 
+
+/* Leere Pinnwand */
+#pinboard-empty { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px; padding: 28px 18px; margin-bottom: 10px; color: var(--text-2); font-size: calc(13px * var(--core-font-scale)); text-align: center; }
+
 /* ── Karte — Basis ────────────────────────────────────────── */
 /* Eine einzige berechnete Kontrastfarbe (--card-fg, JS) vererbt sich an alle Kindelemente */
 .desk-card { min-height: 90px; position: relative; display: flex; flex-direction: column; box-sizing: border-box; color: var(--card-fg, var(--text)); }
 .desk-card-header { cursor: default; border-bottom-color: var(--card-border, var(--border)); }
-.desk-card-title { font-size: calc(11px * var(--core-font-scale)); font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; color: inherit; opacity: 0.85; display: flex; align-items: center; gap: 5px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.desk-card-title-wrap { display: flex; align-items: center; gap: 4px; min-width: 0; flex: 1 1 auto; }
+.desk-card-title { font-size: calc(11px * var(--core-font-scale)); font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; color: inherit; opacity: 0.85; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .desk-card-actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+.desk-card-progress { font-size: calc(11px * var(--core-font-scale)); font-variant-numeric: tabular-nums; opacity: 0.65; }
 .desk-card-body { flex: 1 1 auto; overflow-y: auto; min-height: 0; display: flex; flex-direction: column; }
- 
-/* Bearbeiten-Button — ton-in-ton, nur bei Hover sichtbar (ersetzt Hover-X) */
+.desk-card textarea::placeholder, .desk-add-item::placeholder { color: color-mix(in srgb, var(--card-fg, var(--text)) 50%, transparent); opacity: 1; }
+
+/* Bearbeiten-Button — ton-in-ton, nur bei Hover oder Tastaturfokus sichtbar */
 .desk-edit-btn {
   background: none; border: none; box-shadow: none; color: inherit; opacity: 0;
   width: auto; height: auto; border-radius: 0; padding: 0 2px; font-size: calc(13px * var(--core-font-scale));
@@ -41,22 +44,50 @@
 }
 .desk-card:hover .desk-edit-btn { opacity: 0.55; }
 .desk-edit-btn:hover { opacity: 1 !important; background: none; }
- 
+
+/* Griff zum Verschieben von Karten und Einträgen */
+.desk-grip {
+  flex-shrink: 0; margin-left: -8px; padding: 0 2px; color: inherit; opacity: 0; cursor: grab; line-height: 1;
+  font-size: calc(13px * var(--core-font-scale)); touch-action: none; user-select: none; transition: opacity 150ms;
+}
+.desk-card-header:hover > .desk-card-title-wrap > .desk-grip,
+.checklist-item:hover .desk-grip { opacity: 0.5; }
+.desk-grip:hover { opacity: 1 !important; }
+.desk-grip:active { cursor: grabbing; }
+.desk-dragging { opacity: 0.5; }
+.desk-is-dragging .desk-col { min-height: 60px; }
+.desk-drop-marker { height: 3px; flex-shrink: 0; border-radius: 99px; background: var(--sage); list-style: none; }
+
+/* Tastaturfokus sichtbar machen, auch bei sonst ausgeblendeten Knöpfen */
+.desk-edit-btn:focus-visible,
+.desk-grip:focus-visible,
+.note-del:focus-visible,
+.desk-card .icon-btn:focus-visible,
+.paper-cb-wrap:focus-visible,
+.checklist-text:focus-visible,
+.desk-resize-handle:focus-visible {
+  opacity: 1 !important;
+  outline: 2px solid var(--sage);
+  outline-offset: 1px;
+  border-radius: 4px;
+}
+
 /* Freitext-Karten (Standard / Angepinnt / Wichtig / Zitat) */
 .desk-textarea { width: 100%; flex: 1 1 auto; min-height: 0; overflow-y: auto; border: none; outline: none; resize: none; padding: 14px 16px; font-size: calc(13px * var(--core-font-scale)); color: inherit; background: transparent; line-height: 1.75; box-sizing: border-box; font-family: var(--font); }
- 
+/* Karten ohne feste Höhe: Textfeld wächst mit dem Inhalt (pinboard.js: deskAutosize) */
+.desk-card--auto textarea { overflow-y: hidden; flex: 0 0 auto; min-height: 64px; }
+
 /* Angepinnt — kleine Pinnadel steht bereits im Titel (JS), Karte bleibt oben in der Spalte (Sortierung) */
- 
+
 /* Wichtig — größerer Titel, kräftigere Betonung */
 .desk-card--important .desk-card-title { font-size: calc(14.5px * var(--core-font-scale)); font-weight: 700; }
 .desk-card--important { box-shadow: var(--shadow-sm); }
- 
+
 /* Zitat — große, reduzierte Typografie, zentriert */
-.desk-card--quote .desk-textarea { font-family: var(--font); font-size: calc(17px * var(--core-font-scale)); font-style: italic; text-align: center; line-height: 1.55; padding: 22px 20px; display: flex; align-items: center; }
- 
+.desk-card--quote .desk-textarea { font-family: var(--font); font-size: calc(17px * var(--core-font-scale)); font-style: italic; text-align: center; line-height: 1.55; padding: 22px 20px; }
+
 /* Code — Textarea bekommt maximalen Platz, Copy-Button dezent im Codeblock, nur bei Hover sichtbar */
-.desk-card--code .desk-card-body { position: relative; background: var(--surface-2); }
-[data-theme-family="dark"] .desk-card--code .desk-card-body { background: var(--code-bg); }
+.desk-card--code .desk-card-body { position: relative; background: color-mix(in srgb, var(--card-fg, var(--text)) 7%, transparent); }
 .desk-card--code .desk-textarea { font-family: var(--core-code-font); font-size: calc(12.5px * var(--core-font-scale)); line-height: 1.7; padding: 14px 16px; white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere; }
 .desk-code-copy {
   position: absolute; top: 8px; right: 8px; width: 26px; height: 26px;
@@ -69,40 +100,44 @@
 .desk-code-copy:focus-visible { opacity: 1; }
 .desk-code-copy:hover { background: var(--accent-soft); color: var(--text); }
 .desk-code-copy svg { width: 13px; height: 13px; }
- 
+
 /* Berichtsheft — zwei feste Textfelder, bleibt aber Teil des Karten-Systems (Spalte/Höhe/Farbe/Resize) */
 .desk-berichtsheft-grid { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
 .desk-bericht-col { display: flex; flex-direction: column; flex: 1; min-height: 60px; }
-.desk-bericht-col:not(:last-child) { border-bottom: 1px solid color-mix(in srgb, var(--text) 8%, transparent); }
-.desk-bericht-col-label { font-size: calc(10px * var(--core-font-scale)); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); padding: 10px 16px 4px; flex-shrink: 0; }
+.desk-bericht-col:not(:last-child) { border-bottom: 1px solid color-mix(in srgb, var(--card-fg, var(--text)) 8%, transparent); }
+.desk-bericht-col-label { font-size: calc(10px * var(--core-font-scale)); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: color-mix(in srgb, var(--card-fg, var(--text)) 60%, transparent); padding: 10px 16px 4px; flex-shrink: 0; }
 .desk-bericht-col textarea { width: 100%; height: 100%; border: none; outline: none; resize: none; padding: 4px 16px 14px; font-size: calc(13px * var(--core-font-scale)); color: inherit; background: transparent; min-height: 50px; line-height: 1.75; box-sizing: border-box; font-family: var(--font); }
- 
+
 /* Resize-Handle — unten, zieht die Kartenhöhe frei */
 .desk-resize-handle {
   flex-shrink: 0; height: 12px; cursor: ns-resize; display: flex; align-items: center; justify-content: center;
   touch-action: none;
 }
-.desk-resize-handle::after { content: ''; width: 28px; height: 3px; border-radius: 99px; background: color-mix(in srgb, var(--text) 16%, transparent); transition: background 150ms; }
-.desk-resize-handle:hover::after, .desk-resize-handle.resizing::after { background: color-mix(in srgb, var(--text) 32%, transparent); }
- 
+.desk-resize-handle::after { content: ''; width: 28px; height: 3px; border-radius: 99px; background: color-mix(in srgb, var(--card-fg, var(--text)) 16%, transparent); transition: background 150ms; }
+.desk-resize-handle:hover::after, .desk-resize-handle.resizing::after { background: color-mix(in srgb, var(--card-fg, var(--text)) 32%, transparent); }
+
 /* ── Checklisten ──────────────────────────────────────────── */
-.checklist { padding: 6px 0; }
-.checklist-item { display: flex; align-items: flex-start; gap: 8px; padding: 8px 16px; font-size: calc(13px * var(--core-font-scale)); color: var(--text); transition: background var(--transition); }
-.checklist-item:hover { background: var(--surface-3); }
-.checklist-item input[type="checkbox"] { width: 15px; height: 15px; accent-color: var(--sage); cursor: pointer; flex-shrink: 0; }
-.checklist-item .checklist-text { flex: 1; min-width: 0; }
-.checklist-item.done span { color: var(--text-3); text-decoration: line-through; }
-.checklist-item .note-del { opacity: 0; }
+.checklist { padding: 6px 0; flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+.checklist-item { display: flex; align-items: flex-start; gap: 6px; padding: 8px 16px 8px 8px; font-size: calc(13px * var(--core-font-scale)); color: inherit; transition: background var(--transition); }
+.checklist-item:hover { background: color-mix(in srgb, var(--card-fg, var(--text)) 7%, transparent); }
+.checklist-item .checklist-text { flex: 1; min-width: 0; overflow-wrap: anywhere; cursor: text; }
+.checklist-item.done .checklist-text { color: color-mix(in srgb, var(--card-fg, var(--text)) 55%, transparent); text-decoration: line-through; }
+.checklist-item .note-del { opacity: 0; color: inherit; }
 .checklist-item:hover .note-del { opacity: 1; }
- 
+.checklist .empty-state { color: color-mix(in srgb, var(--card-fg, var(--text)) 60%, transparent); }
+.desk-item-edit, .desk-add-item { min-width: 0; font: inherit; color: inherit; box-sizing: border-box; }
+.desk-item-edit { flex: 1; padding: 0 4px; border: none; border-radius: 4px; outline: 1px solid color-mix(in srgb, var(--card-fg, var(--text)) 35%, transparent); background: transparent; }
+.desk-add-item { flex-shrink: 0; width: 100%; padding: 8px 16px; border: none; border-top: 1px dashed color-mix(in srgb, var(--card-fg, var(--text)) 16%, transparent); outline: none; background: transparent; font-size: calc(13px * var(--core-font-scale)); }
+.desk-add-item:focus { background: color-mix(in srgb, var(--card-fg, var(--text)) 5%, transparent); }
+
 /* ── Paper Checkbox — kreisförmig, ton-in-ton ────────────── */
 .paper-cb-wrap { flex-shrink: 0; width: 17px; height: 17px; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; margin-top: 1px; transition: opacity 120ms; }
 .paper-cb-wrap:hover { opacity: 0.7; }
 .paper-cb, .paper-cb--done { display: flex; align-items: center; justify-content: center; line-height: 1; }
- 
+
 /* ── Ton-in-Ton Icon-Buttons im Kartenkopf (+, Auge, ...) ──── */
 /* Kein Kreis, kein Border, kein Hintergrund — nur das Symbol */
-.today-tile .panel-header .icon-btn {
+.desk-card .panel-header .icon-btn {
   background: none;
   border: none;
   box-shadow: none;
@@ -112,22 +147,37 @@
   height: auto;
   border-radius: 0;
   padding: 0 2px;
-  font-size: calc(16px * var(--core-font-scale));
+  font-size: calc(14px * var(--core-font-scale));
   font-weight: 300;
   line-height: 1;
 }
-.today-tile .panel-header .icon-btn:hover {
+.desk-card .panel-header .icon-btn:hover {
   background: none;
   opacity: 1;
 }
- 
+
+/* Titel fehlt im Karten-Dialog */
+.desk-input-missing { outline: 2px solid var(--prio-1); }
+
+/* ── Rückgängig-Leiste nach dem Löschen ─────────────────── */
+#desk-undo {
+  position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 900;
+  display: flex; align-items: center; gap: 14px; max-width: calc(100vw - 32px); box-sizing: border-box; padding: 10px 16px;
+  border-radius: var(--radius-lg); border: 1px solid var(--border-strong); background: var(--surface-solid);
+  color: var(--text); font-size: calc(13px * var(--core-font-scale)); box-shadow: var(--shadow-sm);
+}
+#desk-undo button { color: var(--sage-dark); font-weight: 600; white-space: nowrap; }
+@media (max-width: 480px) {
+  #desk-undo { bottom: calc(76px + env(safe-area-inset-bottom)); width: calc(100vw - 32px); justify-content: space-between; }
+}
+
 /* ═══════════════════════════════════════════════════════════
    COZY SCROLLBARS — für Kartenkörper (gleiches Muster wie today.css)
 ═══════════════════════════════════════════════════════════ */
 /* Scrollbalken: zentral in css/main.css (--scrollbar-*) */
 
 /* ═══════════════════════════════════════════════════════════
-   TOUCH — Bearbeiten-/Löschen-/Kopieren-Buttons sind rein
+   TOUCH — Bearbeiten-/Löschen-/Kopieren-Buttons und Griffe sind rein
    hover-gesteuert (opacity:0, erst bei :hover sichtbar). Auf Geräten
    ohne Hover ist das nicht nur unsichtbar, sondern unbedienbar: Karten
    ließen sich mobil weder bearbeiten noch löschen (einziger Weg dahin
@@ -140,13 +190,18 @@
 ═══════════════════════════════════════════════════════════ */
 @media (hover: none) {
   .desk-edit-btn,
+  .desk-grip,
   .checklist-item .note-del,
   .desk-code-copy {
     opacity: 0.55;
   }
   .desk-edit-btn:active,
+  .desk-grip:active,
   .checklist-item .note-del:active,
   .desk-code-copy:active {
     opacity: 1;
   }
+  /* Griffe auf Touch groß genug zum sicheren Treffen */
+  .desk-grip { padding: 4px 6px; font-size: calc(15px * var(--core-font-scale)); }
+  .desk-resize-handle { height: 24px; }
 }

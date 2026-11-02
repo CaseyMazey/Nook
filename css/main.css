@@ -1138,8 +1138,8 @@ body.bg-frosted .modal-box {
   font-weight: 600;
 }
 
-#tile-type-picker { display: flex; gap: 6px; }
-#tile-type-picker.tile-style-picker { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+#desk-type-picker { display: flex; gap: 6px; }
+#desk-type-picker.tile-style-picker { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .tile-type-btn {
   flex: 1;
   padding: 9px 12px;

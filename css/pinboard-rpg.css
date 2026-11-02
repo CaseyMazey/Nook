@@ -37,7 +37,7 @@
   [data-pinboard-style="rpg"] #view-pinboard .dash-content { padding: 22px 10px 20px; border-width: 6px; }
 }
 
-[data-pinboard-style="rpg"] #today-desk { gap: 16px; }
+[data-pinboard-style="rpg"] #pinboard-desk { gap: 16px; }
 [data-pinboard-style="rpg"] .desk-col { gap: 18px; }
 
 [data-pinboard-style="rpg"] .desk-card {
@@ -49,6 +49,7 @@
   --card-border: color-mix(in srgb, var(--deco-ink) 14%, transparent) !important;
   --accent-soft: color-mix(in srgb, var(--deco-ink) 10%, transparent);
   --surface-2:   color-mix(in srgb, var(--deco-ink) 6%, transparent);
+  --surface-3:   color-mix(in srgb, var(--deco-ink) 4%, transparent);
   /* Code-Karten: dunkle Themes setzen sonst einen dunklen --code-bg, auf
      dem die Tinte unlesbar wäre — auf Papier immer leicht getönt. */
   --code-bg:     color-mix(in srgb, var(--deco-ink) 7%, transparent);

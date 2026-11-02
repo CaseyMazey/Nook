@@ -21,7 +21,7 @@ Mapping (bei Abweichungen gilt die echte Repo-Struktur — kurz mit `ls js css` 
 | Kalender | `calendar.js`, `google-calendar-*.js` | `calendar.css`, `calendar-rpg.css` | `calendar.md` |
 | Heute | `today*.js`, `gruppendienste.js`, `national_day.js`, `positivity.js` | `today.css`, `today-rpg.css`, `national_day.css`, `positivity.css` | `today.md` |
 | Projekte | `projects.js`, `forest.js`, `project-tree.js` | `projects.css`, `project-tree.css` | `projects.md` |
-| Pinnwand | `pinboard.js` | `pinboard.css`, `pinboard-rpg.css` | — |
+| Pinnwand | `pinboard.js` | `pinboard.css`, `pinboard-rpg.css` | `pinboard.md` |
 | Karteikarten | `flashcards.js` | `flashcards.css` | `flashcards.md` |
 | Anleitungen | `guides.js` | `guides.css`, `guides-rpg.css` | `guides.md` |
 | Questboard | `questboard.js` | `questboard.css`, `questboard-rpg.css` | `questboard.md` |

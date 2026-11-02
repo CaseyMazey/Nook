@@ -198,7 +198,7 @@ Folgende Bereiche gehörten ursprünglich zu Today, wurden aber in einen eigenst
 - To-Do
 - Einkaufsliste
 - Wichtiges, Fragen für den Unterricht, Begriffe & Definitionen
-- benutzerdefinierte Kacheln inkl. Kachel-Designer (Hintergrundfarbe, Washi Tape, Büroklammer, abgeknickte Ecke)
+- benutzerdefinierte Kacheln (heute Karten mit frei wählbarer Farbe, siehe `pinboard.md`)
 
 Today besitzt hierfür keine eigene Logik mehr. Neue Kartentypen oder Kachel-artige Funktionen gehören in die Pinnwand, nicht in Today.
 

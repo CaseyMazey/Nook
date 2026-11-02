@@ -98,7 +98,7 @@ Jede `AI documentation/*.md`-Datei (außer `garden.md`, siehe unten) hat zwei re
 
 **Garden** (`garden.md`) — **Sonderfall, andere Struktur als die übrigen Tabs:** hat zwar einen `# Zuständigkeiten`-Abschnitt mit `Nicht verantwortlich für:` (Projektbäume/Wald in `project-tree.js`/`forest.js` — eigenständiges System, Garden darf die Optik aufgreifen aber kein eigenes Baum-System auf deren Kosten bauen; Budget/Münzen-Ökonomie außerhalb von Garden; Cozy-Home-Haustiersystem — Beau ist ein eigenständiger Garten-Bewohner, keine Cozy-Home-Integration), **aber KEINEN** `# Erweiterungsregeln`-Abschnitt mit ✔/✖-Liste wie die anderen Tabs. Stattdessen gibt es lockerere Prosa-Leitplanken unter `# Entwicklungsrichtlinien`: „Jedes neue Feature muss den „wichtigsten Design-Test" oben bestehen, bevor es gebaut wird." und „Keine großen Änderungen an bestehenden Nook-Komponenten/Tabs nur um ein Garden-Feature umzusetzen." Bei Garden-Erweiterungen also `garden.md` von vorne lesen (den „Design-Test"-Abschnitt), nicht nur nach einer ✖-Liste suchen.
 
-**Kein `AI documentation/*.md` vorhanden für:** Pinboard (Pinnwand), Tools, Settings. Bei Änderungen an diesen drei Tabs gibt es keinen dokumentierten Design-Vertrag zum Gegenlesen — im Zweifel den bestehenden Code als Vorlage nehmen und bei größeren Erweiterungen kurz nachfragen statt eine Zuständigkeitsgrenze zu erfinden.
+**Kein `AI documentation/*.md` vorhanden für:** Tools, Settings. Bei Änderungen an diesen beiden Tabs gibt es keinen dokumentierten Design-Vertrag zum Gegenlesen — im Zweifel den bestehenden Code als Vorlage nehmen und bei größeren Erweiterungen kurz nachfragen statt eine Zuständigkeitsgrenze zu erfinden.
 
 Bei einer Anfrage, die eine Tab-Grenze berührt: kurz auf das Spannungsfeld hinweisen, bevor implementiert wird, statt stillschweigend die Zuständigkeit auszuweiten.
 
@@ -129,5 +129,5 @@ Dasselbe Prinzip nutzt `js/main.js` (`placeSidebarWidgets()`) tab-übergreifend,
 
 1. Vor UI-/Styling-Änderungen: betroffene bestehende Tabs als Stilvorlage lesen.
 2. Bei neuen Namen: kurz gegen Punkt 2 prüfen.
-3. Bei Feature-Erweiterungen: kurz gegen Punkt 3 prüfen, ob eine Tab-Grenze berührt wird — bei Pinboard/Tools/Settings gibt es keine Doku zum Gegenlesen, dort im Zweifel nachfragen.
+3. Bei Feature-Erweiterungen: kurz gegen Punkt 3 prüfen, ob eine Tab-Grenze berührt wird — bei Tools/Settings gibt es keine Doku zum Gegenlesen, dort im Zweifel nachfragen.
 4. Bei neuen UI-Elementen: Punkt 4 nicht vergessen, auch wenn nicht explizit danach gefragt wurde — insbesondere bei Elementen, die auf Desktop hover-abhängig sind oder strukturell zwischen Layout-Bereichen wechseln müssen.

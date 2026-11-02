@@ -102,8 +102,10 @@ document.getElementById('qn-send-save')?.addEventListener('click', () => {
 
   if (qnSendTarget === 'pinboard' && typeof addDeskCardFromText === 'function') {
     const all = text.trim().split('\n');
-    const title = all[0].trim().slice(0, 80);
-    const content = all.slice(1).join('\n').trim();
+    const firstLine = all[0].trim();
+    const title = firstLine.slice(0, 80);
+    // Was über den Titel hinausgeht, bleibt als Anfang des Kartentexts erhalten
+    const content = [firstLine.slice(80).trim(), ...all.slice(1)].join('\n').trim();
     addDeskCardFromText(title, content);
     done = ['In „Pinnwand“ abgelegt', 'pinboard'];
   } else if (qnSendTarget === 'project' && typeof addProjectTasksFromLines === 'function') {

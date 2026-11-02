@@ -888,7 +888,7 @@ const NOOK_DATA_GROUPS = [
            'gdDuties', 'gdGroups', 'gdPeople', 'gdSchedule', 'gdScheduleAlgoV2'] },
   { id: 'positivity', label: 'Positivity',   resettable: true, prefixes: ['positivity'] },
   { id: 'pinboard',   label: 'Pinnwand',     resettable: true,
-    keys: ['deskCards', 'tileDesigns', 'customTiles', 'generalTodos', 'shoppingList'] },
+    keys: ['deskCards', 'deskLegacyCleaned', 'tileDesigns', 'customTiles', 'generalTodos', 'shoppingList'] },
   { id: 'calendar',   label: 'Kalender',     resettable: true,
     keys: ['events', 'eventSeries', 'birthdays', 'calendarSettings', 'countdownVisible', 'monthlyGoals'],
     prefixes: ['googleCal'] },
