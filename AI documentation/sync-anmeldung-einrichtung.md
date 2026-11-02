@@ -8,7 +8,7 @@ Der Code ist vorbereitet: Der Button „Mit Google anmelden“ erscheint von sel
 
 Dieser Weg braucht weder Google noch eigene Domain oder Mailanbieter. Teil 1 und Teil 2 weiter unten kannst du dann auslassen.
 
-1. Öffne in Supabase [Authentication → Providers → Email](https://supabase.com/dashboard/project/iaatlbaawjjfthtxrfls/auth/providers?provider=Email) und schalte **Confirm email** aus. Danach verschickt die Registrierung keine Mail mehr.
+1. Öffne in Supabase die Seite [Authentication → Sign In / Providers](https://supabase.com/dashboard/project/iaatlbaawjjfthtxrfls/auth/providers) und schalte im oberen Abschnitt **User Signups** den Punkt **Confirm email** aus. Er steht nicht im Fenster, das sich beim Klick auf den Provider „Email“ öffnet. Danach verschickt die Registrierung keine Mail mehr.
 2. Melde dich in Nook per **Anmelde-Link senden** an. Das klappt nur mit der Adresse, mit der du Mitglied deiner Supabase-Organisation bist.
 3. Öffne **Einstellungen → Geräte-Sync → Passwort** und lege dein Passwort fest.
 
