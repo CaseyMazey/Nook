@@ -4,13 +4,27 @@ Anleitung für Casey. Diese Einstellungen liegen in Google Cloud und Supabase un
 
 Der Code ist vorbereitet: Der Button „Mit Google anmelden“ erscheint von selbst, sobald der Google-Provider in Supabase aktiv ist. Nook fragt das beim Start über `/auth/v1/settings` ab. Vorher bleibt er unsichtbar.
 
+## Welchen Teil du brauchst
+
+Nook hat zwei Anmeldewege, die unabhängig voneinander funktionieren:
+
+| | Mit Google anmelden | E-Mail-Link |
+|---|---|---|
+| **Einrichtung** | Teil 1 | Teil 2 |
+| **Verschickt Mails** | Nein | Ja, bei jeder Anmeldung |
+| **Mail-Limit** | Gilt hier nicht | Gilt hier |
+| **Wer sich anmelden kann** | Alle mit Google-Konto | Ohne Teil 2 nur Mitglieder deiner Supabase-Organisation |
+
+**Mit Teil 1 können sich mehrere Leute gleichzeitig anmelden.** Teil 2 brauchst du nur für Leute, die sich nicht mit Google anmelden können oder wollen.
+
 ## Was du wissen solltest
 
-- **Der eingebaute Mailversand ist nur zum Ausprobieren gedacht.** Laut Supabase schickt er ausschließlich an Mitglieder deiner Supabase-Organisation, alle anderen Adressen scheitern mit `email_address_not_authorized`. Außerdem sind es projektweit nur 2 Mails pro Stunde.
+- **Das Limit von 2 Mails pro Stunde betrifft nur den E-Mail-Link.** Der eingebaute Mailversand von Supabase ist nur zum Ausprobieren gedacht: Er schickt projektweit höchstens 2 Mails pro Stunde und nur an Mitglieder deiner Supabase-Organisation. Alle anderen Adressen scheitern mit `email_address_not_authorized`.
+- **Die Daten sind pro Konto getrennt, aber nicht Ende-zu-Ende-verschlüsselt.** Jedes Konto kann nur die eigenen Daten lesen und ändern (Row Level Security auf `kv_store`). Wer Zugriff auf dein Supabase-Projekt hat, kann die Daten aber lesen. Sage das auch den Leuten, die Nook nutzen, und sichere dein Supabase-Konto gut ab.
 - **Bestehende Konten bleiben erhalten.** Supabase verknüpft eine Google-Anmeldung automatisch mit dem Konto, das dieselbe E-Mail-Adresse hat. Dabei entfernt Supabase unbestätigte Identitäten dieses Kontos. Ein Konto, das schon einmal per Magic Link angemeldet war, ist bestätigt.
 - **Andere Google-Adresse = neues Konto.** Wer sich mit einer anderen Adresse als bisher anmeldet, bekommt ein neues, leeres Cloud-Konto. Die Daten im alten Konto bleiben dort liegen.
 
-## Teil 1: Google einrichten (etwa 20 Minuten)
+## Teil 1: Google einrichten (etwa 20 Minuten, ohne Mailversand)
 
 ### 1. Projekt und Zustimmungsbildschirm
 
@@ -59,9 +73,9 @@ Ohne weitere Schritte zeigt Google dort die Adresse `iaatlbaawjjfthtxrfls.supaba
 3. Melde dich mit der Adresse deines bestehenden Kontos an. Danach muss Nook einmal neu laden und „Angemeldet als …“ anzeigen, und deine Daten müssen da sein.
 4. Prüfe unter [Authentication → Users](https://supabase.com/dashboard/project/iaatlbaawjjfthtxrfls/auth/users), dass es **keinen zweiten Eintrag** mit derselben Adresse gibt und der vorhandene nun auch Google als Anbieter nennt.
 
-## Teil 2: Eigene Mails (optional, aber nötig für Magic Links an andere)
+## Teil 2: Eigene Mails (optional, nur für den E-Mail-Link)
 
-Ohne diesen Teil funktioniert der E-Mail-Link nur für Mitglieder deiner Supabase-Organisation. Mit Google als Hauptweg kann er warten.
+Die Google-Anmeldung funktioniert auch ohne diesen Teil. Ohne ihn können nur Mitglieder deiner Supabase-Organisation den E-Mail-Link nutzen, alle anderen sehen beim Anfordern eine Fehlermeldung.
 
 Du brauchst dafür eine eigene Domain, denn von `pages.dev` kannst du keine Mails verschicken.
 
