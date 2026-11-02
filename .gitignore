@@ -22,3 +22,7 @@ Nook Garten.docx
 # Rohdateien + Prompt-Log von scripts/gen-image.py (Bild-KI) — nur das
 # fertige, verkleinerte Asset unter assets/<bereich>/ gehoert ins Repo.
 assets/_raw/
+
+# Desktop-App (Electron): Staging-Kopie und Build-Ausgabe
+desktop/.stage/
+desktop/dist/
