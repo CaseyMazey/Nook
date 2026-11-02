@@ -10,9 +10,18 @@
 // hinten wegfallen, angezeigt werden ohnehin nur die neuesten.
 // =========================
 
-window.NOOK_VERSION = '2026.11.1';
+window.NOOK_VERSION = '2026.11.2';
 
 window.NOOK_CHANGELOG = [
+  {
+    version: '2026.11.2',
+    date: '2026-11-02',
+    items: [
+      'Desktop-App: Nook gibt es jetzt als Programm für Windows, macOS und Linux – ohne Browser, mit eigenem Fenster und eigenem Speicher',
+      'Desktop-App: Updates werden unter Windows und Linux automatisch geladen, unter macOS erscheint ein Hinweis mit Link zum Herunterladen',
+      'Desktop-App: Google-Kalender und Geräte-Sync sind dort noch nicht verfügbar; Daten aus der Web-Version übernimmst du per Backup (Einstellungen › Daten › Backup)',
+    ],
+  },
   {
     version: '2026.11.1',
     date: '2026-11-02',

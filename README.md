@@ -15,6 +15,25 @@ Anschließend einfach `index.html` öffnen — oder den Ordner mit einem beliebi
 
 Für Funktionen, die einen sicheren Browser-Kontext brauchen (Google-Calendar-Anmeldung, Installierbarkeit/Offline-Zugriff als PWA), muss Nook über `https://` oder `http://localhost` laufen, nicht per direktem Öffnen der Datei — dafür gibt es eine laufende Deploy-Version.
 
+## 💻 Desktop-App herunterladen
+
+Nook gibt es auch als Desktop-App, die ohne Browser läuft. Die aktuelle Version findest du unter [Releases](https://github.com/CaseyMazey/Nook/releases/latest):
+
+- **Windows:** die `.exe`-Datei
+- **macOS:** die `.dmg`-Datei (Apple Silicon: mit `arm64` im Namen, Intel: ohne)
+- **Linux:** die `.AppImage`-Datei (vor dem Start ausführbar machen)
+
+**Updates:** Unter Windows und Linux lädt die App neue Versionen automatisch. Unter macOS zeigt sie einen Hinweis mit einem Link, die neue Version von Hand herunterzuladen.
+
+**Warnungen beim ersten Start:** Die App ist nicht code-signiert, deshalb warnen Windows und macOS davor.
+
+- **Windows (SmartScreen):** *Weitere Informationen* → *Trotzdem ausführen*
+- **macOS (Gatekeeper):** Systemeinstellungen → *Datenschutz & Sicherheit* → *Trotzdem öffnen*
+
+**Daten übernehmen:** Website und App speichern ihre Daten getrennt voneinander. Um deine Daten mitzunehmen, öffne die Web-Version und wähle unter *Einstellungen → Daten → Backup* den Eintrag *Backup exportieren*. In der App wählst du an derselben Stelle *Backup importieren*.
+
+**Noch nicht in der Desktop-App:** Google-Kalender und Geräte-Sync. Ohne Internetverbindung werden Ersatzschriften verwendet, und der PDF-Export funktioniert nicht.
+
 📖 **Eine ausführliche, nutzerfreundliche Beschreibung jedes Bereichs findest du im [Nook-Wiki](https://github.com/CaseyMazey/Nook/wiki).** Dieses README konzentriert sich auf Setup, Architektur und Weiterentwicklung.
 
 ---
