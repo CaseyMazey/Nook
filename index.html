@@ -1617,6 +1617,10 @@
                 <div><div class="settings-row-title">Geräte-Sync</div><div class="settings-row-sub" id="sync-status-sub">Nicht angemeldet — Daten bleiben nur auf diesem Gerät</div></div>
                 <button class="btn-ghost settings-small-btn" id="sync-status-btn">Anmelden</button>
               </div>
+              <div class="settings-row hidden" id="sync-password-row">
+                <div><div class="settings-row-title">Passwort</div><div class="settings-row-sub">Damit meldest du dich auf deinen anderen Geräten an</div></div>
+                <button class="btn-ghost settings-small-btn" id="sync-password-btn">Festlegen oder ändern</button>
+              </div>
             </div>
 
             <div class="panel settings-panel">
@@ -3495,8 +3499,8 @@
   </div>
 
   <!-- Sync-Login-Modal (js/sync.js) — Geräte-übergreifender Datenabgleich
-       per Google (nur sichtbar, wenn der Provider aktiv ist) oder Supabase
-       Magic Link. "Später"/X lässt Nook wie bisher rein lokal weiterlaufen,
+       per E-Mail und Passwort, Magic Link oder Google (nur sichtbar, wenn der
+       Provider aktiv ist). "Später"/X lässt Nook wie bisher rein lokal weiterlaufen,
        ohne zu blockieren. -->
   <div id="sync-login-overlay" class="modal-backdrop hidden">
     <div class="modal-box" style="width:400px;">
@@ -3505,27 +3509,48 @@
         <button class="modal-x" id="sync-login-close">✕</button>
       </div>
       <div id="sync-login-step-email">
-        <p class="modal-hint">Melde dich an, damit deine Daten automatisch zwischen all deinen Geräten synchronisiert werden. Kein Passwort nötig.</p>
+        <p class="modal-hint">Melde dich an, damit deine Daten automatisch zwischen all deinen Geräten synchronisiert werden.</p>
         <div id="sync-login-google" class="hidden">
           <button type="button" class="btn-ghost sync-login-google-btn" id="sync-login-google-btn">
             <svg viewBox="0 0 48 48" width="18" height="18" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.7 1.2 9.2 3.6l6.9-6.9C35.9 2.4 30.5 0 24 0 14.6 0 6.5 5.4 2.6 13.2l8 6.2C12.5 13.7 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.9 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.9c-.6 3-2.2 5.5-4.8 7.2l7.7 6c4.5-4.2 7.1-10.3 7.1-17.7z"/><path fill="#FBBC05" d="M10.5 28.6c-.5-1.4-.8-3-.8-4.6s.3-3.2.8-4.6l-8-6.2C.9 16.5 0 20.1 0 24s.9 7.5 2.6 10.8l7.9-6.2z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.7-6c-2.2 1.5-4.9 2.3-8.2 2.3-6.2 0-11.5-4.2-13.4-9.9l-8 6.2C6.5 42.6 14.6 48 24 48z"/></svg>
             Mit Google anmelden
           </button>
-          <div class="sync-login-divider">oder per E-Mail-Link</div>
+          <div class="sync-login-divider">oder per E-Mail</div>
         </div>
         <div class="modal-row"><label>E-Mail</label><input type="email" class="modal-input" id="sync-login-email" placeholder="du@beispiel.de" autocomplete="email"/></div>
+        <div class="modal-row"><label>Passwort</label><input type="password" class="modal-input" id="sync-login-password" placeholder="Mindestens 8 Zeichen" autocomplete="current-password"/></div>
         <p class="modal-hint" id="sync-login-error" style="color:var(--prio-1);display:none;"></p>
-        <p class="modal-hint"><a href="datenschutz.html" target="_blank" rel="noopener">Datenschutzerklärung</a></p>
         <div class="modal-actions">
           <button class="btn-ghost" id="sync-login-skip">Später</button>
-          <button class="btn-primary" id="sync-login-send">Link senden</button>
+          <button class="btn-ghost" id="sync-login-signup">Konto erstellen</button>
+          <button class="btn-primary" id="sync-login-submit">Anmelden</button>
         </div>
+        <p class="modal-hint">Passwort vergessen? Schreib an <a href="mailto:noook.info@gmail.com">noook.info@gmail.com</a>. Noch kein Passwort? <button type="button" class="btn-ghost settings-small-btn" id="sync-login-send">Anmelde-Link senden</button></p>
+        <p class="modal-hint"><a href="datenschutz.html" target="_blank" rel="noopener">Datenschutzerklärung</a></p>
       </div>
       <div id="sync-login-step-sent" class="hidden">
         <p class="modal-hint">Wir haben dir einen Anmelde-Link an <strong id="sync-login-sent-email"></strong> geschickt. Öffne ihn auf diesem Gerät, um dich anzumelden.</p>
         <div class="modal-actions">
           <button class="btn-ghost" id="sync-login-sent-close">Schließen</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sync-Passwort-Modal (js/sync.js) — legt für das angemeldete Konto ein
+       Passwort fest oder ändert es. -->
+  <div id="sync-password-overlay" class="modal-backdrop hidden">
+    <div class="modal-box" style="width:400px;">
+      <div class="modal-head">
+        <span>🔑 Passwort festlegen</span>
+        <button class="modal-x" id="sync-password-close">✕</button>
+      </div>
+      <div class="modal-row"><label>Neues Passwort</label><input type="password" class="modal-input" id="sync-password-new" placeholder="Mindestens 8 Zeichen" autocomplete="new-password"/></div>
+      <div class="modal-row"><label>Wiederholen</label><input type="password" class="modal-input" id="sync-password-repeat" autocomplete="new-password"/></div>
+      <p class="modal-hint" id="sync-password-error" style="color:var(--prio-1);display:none;"></p>
+      <div class="modal-actions">
+        <button class="btn-ghost" id="sync-password-cancel">Abbrechen</button>
+        <button class="btn-primary" id="sync-password-save">Speichern</button>
       </div>
     </div>
   </div>

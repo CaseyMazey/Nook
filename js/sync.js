@@ -143,6 +143,7 @@ function updateSyncStatusUI(session) {
     sub.textContent = "Nicht angemeldet — Daten bleiben nur auf diesem Gerät";
     btn.textContent = "Anmelden";
   }
+  document.getElementById("sync-password-row")?.classList.toggle("hidden", !session);
 }
 
 function showUpdateBanner() {
@@ -305,12 +306,27 @@ function syncLoginFallbackHint() {
     : "Bitte versuche es später noch einmal.";
 }
 
+const SYNC_PASSWORD_MIN_LENGTH = 8;
+
 // Übersetzt Supabase-Fehler in Texte, die Nutzern sagen, was sie tun können.
 // Codes laut https://supabase.com/docs/guides/auth/debugging/error-codes
 function syncLoginErrorText(error) {
   const waitSeconds = /after (\d+) seconds?/i.exec(error.message || "")?.[1];
   if (waitSeconds) return `Du hast gerade schon einen Link angefordert. Warte bitte noch ${waitSeconds} Sekunden und schau solange in dein Postfach.`;
   switch (error.code) {
+    case "invalid_credentials":
+      return "E-Mail oder Passwort stimmen nicht. Noch kein Konto? Dann klicke auf „Konto erstellen“.";
+    case "user_already_exists":
+    case "email_exists":
+      return "Zu dieser E-Mail-Adresse gibt es schon ein Konto. Klicke auf „Anmelden“.";
+    case "email_not_confirmed":
+      return "Dieses Konto ist noch nicht per E-Mail bestätigt.";
+    case "weak_password":
+      return `Dieses Passwort ist zu unsicher. Bitte nimm mindestens ${SYNC_PASSWORD_MIN_LENGTH} Zeichen und vermeide leicht zu erratende Wörter.`;
+    case "same_password":
+      return "Das ist schon dein aktuelles Passwort. Bitte wähle ein anderes.";
+    case "reauthentication_needed":
+      return "Melde dich bitte einmal ab und neu an, bevor du das Passwort änderst.";
     case "over_email_send_rate_limit":
       return `Gerade können keine Anmelde-Mails verschickt werden, weil das Limit erreicht ist. ${syncLoginFallbackHint()}`;
     case "over_request_rate_limit":
@@ -349,6 +365,8 @@ function hideSyncLoginError() {
 function resetSyncLoginSteps() {
   document.getElementById("sync-login-step-email")?.classList.remove("hidden");
   document.getElementById("sync-login-step-sent")?.classList.add("hidden");
+  const passwordInput = document.getElementById("sync-login-password");
+  if (passwordInput) passwordInput.value = "";
   hideSyncLoginError();
 }
 
@@ -376,6 +394,85 @@ document.getElementById("sync-login-google-btn")?.addEventListener("click", asyn
   }
 });
 
+// E-Mail und Passwort aus dem Formular; zeigt bei fehlenden Angaben einen Hinweis.
+function readSyncLoginCredentials() {
+  const emailInput = document.getElementById("sync-login-email");
+  const passwordInput = document.getElementById("sync-login-password");
+  const email = emailInput.value.trim();
+  const password = passwordInput.value;
+  hideSyncLoginError();
+  if (!email) {
+    showSyncLoginError("Bitte gib zuerst deine E-Mail-Adresse ein.");
+    emailInput.focus();
+    return null;
+  }
+  if (!password) {
+    showSyncLoginError("Bitte gib dein Passwort ein.");
+    passwordInput.focus();
+    return null;
+  }
+  return { email, password };
+}
+
+function setSyncLoginBusy(busy) {
+  ["sync-login-submit", "sync-login-signup", "sync-login-send"].forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) btn.disabled = busy;
+  });
+}
+
+// Bei Erfolg meldet onAuthStateChange in initSync() "SIGNED_IN" und startet
+// den Erstabgleich, wie beim Magic Link.
+async function submitSyncPasswordLogin() {
+  if (!sbClient) return;
+  const credentials = readSyncLoginCredentials();
+  if (!credentials) return;
+  setSyncLoginBusy(true);
+  const { error } = await sbClient.auth.signInWithPassword(credentials);
+  setSyncLoginBusy(false);
+  if (error) {
+    console.error("Sync: Anmeldung fehlgeschlagen", error);
+    showSyncLoginError(syncLoginErrorText(error));
+    return;
+  }
+  syncLoginModal.close();
+}
+
+document.getElementById("sync-login-submit")?.addEventListener("click", submitSyncPasswordLogin);
+
+["sync-login-email", "sync-login-password"].forEach(id => {
+  document.getElementById(id)?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") submitSyncPasswordLogin();
+  });
+});
+
+document.getElementById("sync-login-signup")?.addEventListener("click", async () => {
+  if (!sbClient) return;
+  const credentials = readSyncLoginCredentials();
+  if (!credentials) return;
+  if (credentials.password.length < SYNC_PASSWORD_MIN_LENGTH) {
+    showSyncLoginError(`Bitte nimm ein Passwort mit mindestens ${SYNC_PASSWORD_MIN_LENGTH} Zeichen.`);
+    return;
+  }
+  setSyncLoginBusy(true);
+  const { data, error } = await sbClient.auth.signUp(credentials);
+  setSyncLoginBusy(false);
+  if (error) {
+    console.error("Sync: Registrierung fehlgeschlagen", error);
+    showSyncLoginError(syncLoginErrorText(error));
+    return;
+  }
+  // Ohne Session verlangt Supabase eine Bestätigung per Mail. Eine leere
+  // identities-Liste heißt dabei: Die Adresse hat schon ein Konto.
+  if (!data.session) {
+    showSyncLoginError(data.user?.identities?.length === 0
+      ? "Zu dieser E-Mail-Adresse gibt es schon ein Konto. Klicke auf „Anmelden“."
+      : "Dein Konto ist angelegt, muss aber erst per E-Mail bestätigt werden. Schau bitte in dein Postfach.");
+    return;
+  }
+  syncLoginModal.close();
+});
+
 document.getElementById("sync-login-send")?.addEventListener("click", async (e) => {
   if (!sbClient) return;
   const emailInput = document.getElementById("sync-login-email");
@@ -389,10 +486,11 @@ document.getElementById("sync-login-send")?.addEventListener("click", async (e) 
 
   const btn = e.currentTarget;
   btn.disabled = true;
+  const idleLabel = btn.textContent;
   btn.textContent = "Wird gesendet …";
   const { error } = await sbClient.auth.signInWithOtp({ email, options: { emailRedirectTo: syncLoginRedirectUrl() } });
   btn.disabled = false;
-  btn.textContent = "Link senden";
+  btn.textContent = idleLabel;
   if (error) {
     console.error("Sync: Anmelde-Link fehlgeschlagen", error);
     showSyncLoginError(syncLoginErrorText(error));
@@ -418,6 +516,53 @@ document.getElementById("sync-status-btn")?.addEventListener("click", async () =
     resetSyncLoginSteps();
     syncLoginModal.open();
   }
+});
+
+// ── Passwort festlegen oder ändern (angemeldet) ──────────────────────
+function showSyncPasswordError(text) {
+  const errorEl = document.getElementById("sync-password-error");
+  if (errorEl) { errorEl.textContent = text; errorEl.style.display = text ? "block" : "none"; }
+}
+
+function resetSyncPasswordForm() {
+  document.getElementById("sync-password-new").value = "";
+  document.getElementById("sync-password-repeat").value = "";
+  showSyncPasswordError("");
+}
+
+const syncPasswordModal = wireModal("sync-password-overlay", {
+  closeIds: ["sync-password-close", "sync-password-cancel"],
+  onClose: resetSyncPasswordForm,
+});
+
+document.getElementById("sync-password-btn")?.addEventListener("click", () => {
+  resetSyncPasswordForm();
+  syncPasswordModal.open();
+});
+
+document.getElementById("sync-password-save")?.addEventListener("click", async (e) => {
+  if (!sbClient) return;
+  const password = document.getElementById("sync-password-new").value;
+  showSyncPasswordError("");
+  if (password.length < SYNC_PASSWORD_MIN_LENGTH) {
+    showSyncPasswordError(`Bitte nimm ein Passwort mit mindestens ${SYNC_PASSWORD_MIN_LENGTH} Zeichen.`);
+    return;
+  }
+  if (password !== document.getElementById("sync-password-repeat").value) {
+    showSyncPasswordError("Die beiden Eingaben stimmen nicht überein.");
+    return;
+  }
+  const btn = e.currentTarget;
+  btn.disabled = true;
+  const { error } = await sbClient.auth.updateUser({ password });
+  btn.disabled = false;
+  if (error) {
+    console.error("Sync: Passwort konnte nicht gespeichert werden", error);
+    showSyncPasswordError(syncLoginErrorText(error));
+    return;
+  }
+  syncPasswordModal.close();
+  document.getElementById("sync-status-sub").textContent += " · Passwort gespeichert";
 });
 
 document.getElementById("sync-update-reload-btn")?.addEventListener("click", () => location.reload());

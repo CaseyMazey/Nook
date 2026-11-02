@@ -4,9 +4,19 @@ Anleitung für Casey. Diese Einstellungen liegen in Google Cloud und Supabase un
 
 Der Code ist vorbereitet: Der Button „Mit Google anmelden“ erscheint von selbst, sobald der Google-Provider in Supabase aktiv ist. Nook fragt das beim Start über `/auth/v1/settings` ab. Vorher bleibt er unsichtbar.
 
-## Welchen Teil du brauchst
+## Empfohlen: E-Mail und Passwort (5 Minuten)
 
-Nook hat zwei Anmeldewege, die unabhängig voneinander funktionieren:
+Dieser Weg braucht weder Google noch eigene Domain oder Mailanbieter. Teil 1 und Teil 2 weiter unten kannst du dann auslassen.
+
+1. Öffne in Supabase [Authentication → Providers → Email](https://supabase.com/dashboard/project/iaatlbaawjjfthtxrfls/auth/providers?provider=Email) und schalte **Confirm email** aus. Danach verschickt die Registrierung keine Mail mehr.
+2. Melde dich in Nook per **Anmelde-Link senden** an. Das klappt nur mit der Adresse, mit der du Mitglied deiner Supabase-Organisation bist.
+3. Öffne **Einstellungen → Geräte-Sync → Passwort** und lege dein Passwort fest.
+
+Wer sein Passwort vergisst, schreibt dir. Das Konto findest du unter [Authentication → Users](https://supabase.com/dashboard/project/iaatlbaawjjfthtxrfls/auth/users).
+
+## Die anderen Wege
+
+Google und der E-Mail-Link funktionieren unabhängig vom Passwort:
 
 | | Mit Google anmelden | E-Mail-Link |
 |---|---|---|
