@@ -33,7 +33,7 @@ Die Google-Schritte nennen die Begriffe der deutschen Oberfläche. Einzelne Besc
 1. Öffne die [Google Cloud Console](https://console.cloud.google.com/) und lege ein Projekt an, zum Beispiel `Nook`. Du kannst auch das Projekt nehmen, das du schon für den Google Kalender nutzt.
 2. Öffne die [Google Auth Platform](https://console.cloud.google.com/auth/overview) und klicke auf **Erste Schritte**.
 3. Trage als App-Namen `Nook` und deine Support-Mail ein, wähle als Zielgruppe **Extern** und schließe den Assistenten ab.
-4. Füge links unter **Datenzugriff** den Bereich (Scope) `openid` hinzu. `.../auth/userinfo.email` und `.../auth/userinfo.profile` sind schon voreingestellt. Weitere Bereiche brauchst du nicht.
+4. Klicke links unter **Datenzugriff** auf **Bereiche hinzufügen oder entfernen**, setze Häkchen bei `openid`, `.../auth/userinfo.email` und `.../auth/userinfo.profile`, übernimm die Auswahl und klicke unten auf **Save**. Weitere Bereiche brauchst du nicht.
 5. Klicke links unter **Zielgruppe** auf **App veröffentlichen**. Im Status „Test“ können sich nur eingetragene Testnutzer anmelden.
 
 ### 2. OAuth-Client anlegen
