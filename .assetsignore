@@ -16,6 +16,9 @@
 .superpowers/
 scripts/
 AI documentation/
+docs/
+desktop/
+.github/
 mockups/
 assets/_raw/
 

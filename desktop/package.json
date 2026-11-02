@@ -1,0 +1,68 @@
+{
+  "name": "nook-desktop",
+  "productName": "Nook",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Nook als Desktop-App (Electron-Hülle um die build-freie Web-App)",
+  "main": "main.js",
+  "scripts": {
+    "test": "node --test \"test/*.test.js\"",
+    "stage": "node scripts/stage.js",
+    "start": "electron .",
+    "pack": "npm run stage && electron-builder --dir"
+  },
+  "devDependencies": {
+    "electron": "45.2.1",
+    "electron-builder": "26.18.0"
+  },
+  "build": {
+    "appId": "io.github.caseymazey.nook",
+    "productName": "Nook",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "lib/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": ".stage",
+        "to": "nook"
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.png"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "build/icon.png"
+    },
+    "mac": {
+      "target": {
+        "target": "dmg",
+        "arch": [
+          "x64",
+          "arm64"
+        ]
+      },
+      "identity": "-",
+      "hardenedRuntime": false,
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "deleteAppDataOnUninstall": false
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "CaseyMazey",
+      "repo": "Nook",
+      "releaseType": "draft"
+    }
+  },
+  "dependencies": {
+    "electron-updater": "6.8.11"
+  }
+}

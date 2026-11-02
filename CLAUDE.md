@@ -4,13 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Nook is a personal organization hub (dashboard, calendar, budget, flashcards, wiki, projects, tools, games) that runs entirely client-side. There is no backend, no build step, and no package.json. It is opened directly as `index.html` (`file://`), which is why several architectural choices (script-tag loading, no `fetch()` for local files, no ES modules/bundler) are load-bearing, not accidental.
+Nook is a personal organization hub (dashboard, calendar, budget, flashcards, wiki, projects, tools, games) that runs entirely client-side. There is no backend, no build step, and no `package.json` in the root folder (the Electron desktop app in `desktop/` has its own, see below). It is opened directly as `index.html` (`file://`), which is why several architectural choices (script-tag loading, no `fetch()` for local files, no ES modules/bundler) are load-bearing, not accidental.
 
 The UI language is German; keep new UI strings, comments, and variable names in the existing style (German UI text, German or mixed German/English code comments — follow whatever the surrounding file already does).
 
 ## Running / testing
 
-No install, build, lint, or test commands exist. To work on the app, open `index.html` in a browser (or serve the folder with any static file server). Verify changes by opening the relevant tab in a browser and exercising it manually — there is no automated test suite.
+No install, build, or lint commands exist for the web app, and no automated tests for it (the desktop app has its own tests, see "Desktop app"). To work on the app, open `index.html` in a browser (or serve the folder with any static file server). Verify changes by opening the relevant tab in a browser and exercising it manually — there is no automated test suite for the web app.
 
 ## Architecture
 
@@ -51,6 +51,14 @@ Each game lives in `games/<id>/` and provides:
 To add a game: create `games/<id>/` with the three files above, then add `<id>` to `window.GAMES_LIST` in `games/games-list.js`. Nothing in `games.js` or `index.html` needs to change. A work-in-progress game can ship as a manifest-only stub with `comingSoon: true` (no `.js`/`.css` needed yet).
 
 Cozy Home (`games/cozy-home/`) additionally acts as a cross-game virtual pet system: other games can declare pets in their own `manifest.js`; Cozy Home scans `window.GameHub.registry` and merges them in without knowing their IDs in advance. Preferences/food/toys are registry-driven (`FOOD_REGISTRY`, `TOY_REGISTRY`, `PREFERENCE_LEVELS`) — adding a new food/toy/pet is data-only, no code changes.
+
+### Desktop app (`desktop/`)
+
+Electron shell around the unchanged web app, with its own `desktop/package.json` (the only `package.json` in the repo) and `node_modules`. It serves the app via the `app://nook` protocol. `desktop/` and `.github/` are listed in `.assetsignore` so they are not deployed; deployment honours `.assetsignore` only through `scripts/deploy.ps1`.
+
+- Tests: `cd desktop && npm test`.
+- Release: raise `NOOK_VERSION` in `js/nook-version.js` (plus a changelog entry), then push the tag `v<NOOK_VERSION>`. The workflow `.github/workflows/release.yml` builds for Windows, macOS and Linux and publishes via GitHub Releases (also the source of the in-app update check).
+- **Never change** `appId` (`io.github.caseymazey.nook`), `productName` (`Nook`) or the origin `app://nook`: they determine where user data lives, so changing any of them makes users lose access to their data.
 
 ### `AI documentation/`
 
