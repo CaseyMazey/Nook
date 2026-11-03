@@ -45,7 +45,9 @@ function makeStorage({ data = {}, meta = {}, last = {}, mig = {}, broken = [] } 
   return s;
 }
 
-async function setup({ userId = A, migrationDone = false, withKeyring = true, storageOpts, state = "unlocked" } = {}) {
+// migrationDone ist hier standardmäßig wahr: sonst setzt start() die Migration fort (Task 4).
+// Tests für den Zustand "Migration noch nicht abgeschlossen" nutzen pendingMigration().
+async function setup({ userId = A, migrationDone = true, withKeyring = true, storageOpts, state = "unlocked" } = {}) {
   const m = await material();
   const backend = createFakeBackend();
   if (withKeyring) {
@@ -61,6 +63,12 @@ async function setup({ userId = A, migrationDone = false, withKeyring = true, st
     onStateChange() {}, onNotice: (code, info) => notices.push([code, info])
   });
   return { engine, backend, storage, ks, notices, m, userId };
+}
+
+// Lässt die automatische Fortsetzung beim nächsten start() am letzten Schritt scheitern,
+// damit das Gerät unlocked bleibt, während migrationDone noch falsch ist.
+function pendingMigration(ctx) {
+  ctx.backend.failNext("update");
 }
 
 async function putEnc(ctx, key, value, ts) {
@@ -437,6 +445,7 @@ test("initialMerge: Klartext nach Migration wird nicht übernommen", async () =>
 
 test("Klartext vor Abschluss der Migration wird angenommen", async () => {
   const ctx = await setup({ migrationDone: false, storageOpts: { data: {}, meta: {} } });
+  pendingMigration(ctx);
   await ctx.engine.start(A);
   await putRaw(ctx, "nook_a", { alt: true }, 2000);
   const res = await ctx.engine.catchUp();
@@ -583,6 +592,7 @@ test("unconfigured, aber Keyring im eigenen Lesen: neu bestimmen, bevor Zeilen v
 
 test("Umschlag-Eigenschaft ohne gültigen v1-Umschlag gilt als unlesbar, nie als Klartext", async () => {
   const ctx = await setup({ migrationDone: false, storageOpts: { data: { nook_a: "l", nook_b: "l" }, meta: { nook_a: 1, nook_b: 1 } } });
+  pendingMigration(ctx);
   await ctx.engine.start(A);
   await putRaw(ctx, "nook_a", { __nook_enc: 2, iv: "x", ct: "y" }, 2000);
   await putRaw(ctx, "nook_b", { __nook_enc: 1 }, 2000);
@@ -595,7 +605,8 @@ test("Umschlag-Eigenschaft ohne gültigen v1-Umschlag gilt als unlesbar, nie als
 });
 
 test("Re-Resolve in catchUp: nach Erfolg läuft catchUp noch einmal (einmal, ohne Schleife)", async () => {
-  const ctx = await setup({ storageOpts: { data: {}, meta: {} } });
+  const ctx = await setup({ migrationDone: false, storageOpts: { data: {}, meta: {} } });
+  pendingMigration(ctx);
   await ctx.engine.start(A);
   await ctx.backend.client("x").from("kv_store").delete().eq("user_id", A).eq("key", KEYRING_KEY);
   await putRaw(ctx, "nook_p", { p: 1 }, 2000);

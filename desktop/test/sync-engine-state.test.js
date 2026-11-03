@@ -28,9 +28,14 @@ function makeKeyStore(initial = {}) {
 function makeStorage() {
   return {
     getRaw: () => null, setRaw: () => true, getMeta: () => ({}), setMeta() {},
-    getLastCatchUp: () => 0, setLastCatchUp() {}, keys: () => []
+    getLastCatchUp: () => 0, setLastCatchUp() {}, keys: () => [],
+    getConfirmed: () => ({}), setConfirmed() {}, getMigrationDone: () => false, setMigrationDone() {}
   };
 }
+
+// Diese Tests prüfen Zustände und Upload, nicht die Migration: der Keyring gilt als fertig migriert,
+// sonst setzt start() die Migration fort (Task 4).
+const migratedKeyring = (m) => ({ ...m.keyring, migrationDone: true });
 
 // stored: "match" = Schlüssel mit passendem keyId, "other" = anderer keyId, "none" = kein Schlüssel
 async function setup({ withKeyring = true, userId = A, stored = "match", keyStore } = {}) {
@@ -39,7 +44,7 @@ async function setup({ withKeyring = true, userId = A, stored = "match", keyStor
   if (withKeyring) {
     // direkt in den Fake schreiben, wie ein anderes Gerät
     await backend.client("anderes").from("kv_store").insert(
-      { user_id: userId, key: KEYRING_KEY, value: m.keyring, updated_at: new Date(1).toISOString() });
+      { user_id: userId, key: KEYRING_KEY, value: migratedKeyring(m), updated_at: new Date(1).toISOString() });
   }
   const ks = keyStore || makeKeyStore(
     stored === "match" ? { [userId]: { key: m.dataKey, keyId: m.keyring.keyId } }
@@ -207,7 +212,7 @@ test("Kontowechsel während gehaltenem Upload: spätere Werte von A landen nicht
   const { engine, backend, ks, m } = await setup();
   await engine.start(A);
   await backend.client("anderes").from("kv_store").insert(
-    { user_id: B, key: KEYRING_KEY, value: m.keyring, updated_at: new Date(1).toISOString() });
+    { user_id: B, key: KEYRING_KEY, value: migratedKeyring(m), updated_at: new Date(1).toISOString() });
   await ks.save(B, m.dataKey, m.keyring.keyId);
   const gate = backend.holdNext("upsert");
   engine.notifyLocalWrite("nook_x", "1", 1);
