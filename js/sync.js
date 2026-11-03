@@ -216,7 +216,7 @@ const syncKeyStore = (typeof indexedDB !== "undefined" && indexedDB) ? {
   },
 } : null; // ohne IndexedDB: Engine meldet "unavailable"
 
-// ── Status-Texte (Task 7 baut die eigentliche Oberfläche) ───────────────
+// ── Status-Texte der Verschlüsselung (Statuszeile und Zeile "Verschlüsselung") ──
 const SYNC_STATE_TEXTS = {
   unconfigured: "Sync pausiert: Verschlüsselung einrichten",
   locked: "Sync pausiert: Passwort eingeben",
@@ -224,6 +224,16 @@ const SYNC_STATE_TEXTS = {
   unknown: "Verschlüsselung gerade nicht prüfbar. Sync pausiert.",
   unavailable: "In dieser Umgebung nicht verfügbar. Sync pausiert.",
 };
+const SYNC_CHECKING_TEXT = "Verschlüsselung wird geprüft …";
+// true, solange syncEngine.start() läuft: "unknown" heißt dann noch "wird geprüft".
+let syncCryptoChecking = false;
+// Kurzer Zusatz nach einer Aktion (z.B. "Passwort geändert"), bis sich der Zustand ändert.
+let syncCryptoSubExtra = "";
+// true, solange im Verschlüsselungs-Modal eine Aktion läuft (Modal nicht schließbar).
+let syncCryptoBusy = false;
+// Hinweise der Engine, nur als Anzahl betroffener Keys angezeigt (die Key-Namen
+// bleiben im Speicher dieser Seite, nie ein Wert). Bis zum Ausblenden/Abmelden.
+const syncCryptoNotices = { decrypt_failed: new Set(), plaintext_row: new Set() };
 
 // ── Sync-Engine ─────────────────────────────────────────────────────────
 // Nur mit Supabase-Client; ohne bleibt alles exakt wie bisher (rein lokal).
@@ -234,9 +244,12 @@ const syncEngine = (sbClient && typeof createSyncEngine === "function")
       storage: syncStorage,
       keyStore: syncKeyStore,
       isSyncableKey,
-      onStateChange: () => renderSyncStatusSub(),
+      onStateChange: () => { syncCryptoSubExtra = ""; renderSyncStatusSub(); },
       // Nur Code und Key, nie ein Wert.
-      onNotice: (code, info) => console.warn("Sync: Hinweis", code, typeof info === "string" ? info : ""),
+      onNotice: (code, info) => {
+        console.warn("Sync: Hinweis", code, typeof info === "string" ? info : "");
+        addSyncCryptoNotice(code, info);
+      },
     })
   : null;
 
@@ -308,12 +321,81 @@ let syncSessionEmail = null;
 // verhindert doppelte Starts durch getSession() + wiederholte SIGNED_IN.
 let syncStartedFor = null;
 
-// Statuszeile: "Angemeldet als x" plus Zustand der Verschlüsselung.
+// Text zum aktuellen Zustand der Verschlüsselung; null ohne Engine.
+function syncCryptoStateText() {
+  if (!syncEngine) return null;
+  const state = syncEngine.state;
+  if (state === "signedOut" || (state === "unknown" && syncCryptoChecking)) return SYNC_CHECKING_TEXT;
+  return SYNC_STATE_TEXTS[state] || null;
+}
+
+// Statuszeile: "Angemeldet als x" plus Zustand der Verschlüsselung. Hält auch
+// die Zeile "Verschlüsselung" aktuell (läuft bei jeder Zustandsänderung).
 function renderSyncStatusSub() {
+  renderSyncCryptoRow();
   const sub = document.getElementById("sync-status-sub");
   if (!sub || !syncSessionEmail) return;
-  const stateText = syncEngine ? SYNC_STATE_TEXTS[syncEngine.state] : null;
+  const stateText = syncCryptoStateText();
   sub.textContent = `Angemeldet als ${syncSessionEmail}` + (stateText ? ` · ${stateText}` : "");
+}
+
+// ── Zeile "Verschlüsselung" in den Einstellungen ────────────────────
+const SYNC_CRYPTO_BUTTON_LABELS = { unconfigured: "Einrichten", locked: "Entsperren", unlocked: "Passwort ändern" };
+
+function renderSyncCryptoRow() {
+  const row = document.getElementById("sync-crypto-row");
+  if (!row) return;
+  const visible = !!(syncEngine && syncSessionEmail);
+  row.classList.toggle("hidden", !visible);
+  if (!visible) return;
+  const state = syncEngine.state;
+  const stateText = syncCryptoStateText();
+  const sub = document.getElementById("sync-crypto-sub");
+  if (sub) sub.textContent = (stateText || "") + (syncCryptoSubExtra ? ` · ${syncCryptoSubExtra}` : "");
+  const btn = document.getElementById("sync-crypto-btn");
+  if (btn) {
+    const label = SYNC_CRYPTO_BUTTON_LABELS[state];
+    btn.classList.toggle("hidden", !label);
+    if (label) btn.textContent = label;
+  }
+  renderSyncCryptoNotice();
+}
+
+function addSyncCryptoNotice(code, info) {
+  const set = syncCryptoNotices[code];
+  if (!set) return;
+  set.add(typeof info === "string" ? info : `#${set.size}`);
+  renderSyncCryptoNotice();
+}
+
+function clearSyncCryptoNotices() {
+  Object.values(syncCryptoNotices).forEach((set) => set.clear());
+  renderSyncCryptoNotice();
+}
+
+// Nur Anzahlen, keine Key-Namen oder Werte.
+function syncCryptoNoticeText() {
+  const parts = [];
+  const bad = syncCryptoNotices.decrypt_failed.size;
+  if (bad) {
+    parts.push((bad === 1 ? "1 Eintrag aus der Cloud ließ" : `${bad} Einträge aus der Cloud ließen`)
+      + " sich nicht entschlüsseln. Auf diesem Gerät bleibt der bisherige Stand erhalten.");
+  }
+  const plain = syncCryptoNotices.plaintext_row.size;
+  if (plain) {
+    parts.push((plain === 1 ? "1 unverschlüsselter Eintrag" : `${plain} unverschlüsselte Einträge`)
+      + " von einer älteren Nook-Version wurde" + (plain === 1 ? "" : "n")
+      + " nicht übernommen. Bring bitte alle Geräte auf die neueste Version.");
+  }
+  return parts.join(" ");
+}
+
+function renderSyncCryptoNotice() {
+  const box = document.getElementById("sync-crypto-notice");
+  if (!box) return;
+  const text = syncCryptoNoticeText();
+  document.getElementById("sync-crypto-notice-text").textContent = text;
+  box.classList.toggle("hidden", !text || !syncSessionEmail);
 }
 
 function updateSyncStatusUI(session) {
@@ -328,8 +410,14 @@ function updateSyncStatusUI(session) {
     syncSessionEmail = null;
     sub.textContent = "Nicht angemeldet — Daten bleiben nur auf diesem Gerät";
     btn.textContent = "Anmelden";
+    syncCryptoSubExtra = "";
+    clearSyncCryptoNotices();
+    // Abgemeldet: das Verschlüsselungs-Modal passt nicht mehr (läuft gerade
+    // eine Aktion, meldet sie selbst den Fehler).
+    if (!syncCryptoBusy) syncCryptoModal.close();
   }
   document.getElementById("sync-password-row")?.classList.toggle("hidden", !session);
+  renderSyncCryptoRow();
 }
 
 function showUpdateBanner() {
@@ -414,7 +502,13 @@ async function syncAfterStart(userId) {
 
 async function syncStartAndCatchUp(userId) {
   if (!syncEngine || currentUserId !== userId) return; // inzwischen abgemeldet
-  await syncEngine.start(userId);
+  syncCryptoChecking = true;
+  try {
+    await syncEngine.start(userId);
+  } finally {
+    syncCryptoChecking = false;
+    renderSyncStatusSub();
+  }
   await syncAfterStart(userId);
 }
 
@@ -841,6 +935,412 @@ document.getElementById("sync-password-save")?.addEventListener("click", async (
   syncPasswordModal.close();
   document.getElementById("sync-status-sub").textContent += " · Passwort gespeichert";
 });
+
+// ── Verschlüsselungs-Modal: Einrichten, Entsperren, Wiederherstellen,
+// Passwort ändern, Cloud-Daten zurücksetzen ─────────────────────────
+// Alle Engine-Aufrufe, die Zustand oder Cloud ändern, laufen über
+// syncSerial(...) (siehe Kommentar dort); syncAfterUnlock() erst danach.
+// Das Setup-Objekt (enthält Datenschlüssel und Wiederherstellungsschlüssel)
+// lebt nur in syncCryptoSetup und wird beim Schließen verworfen.
+const SYNC_CRYPTO_MIN_LENGTH = 12; // wie MIN_PASSWORD_LENGTH in sync-engine.js
+const SYNC_CRYPTO_STEPS = ["setup", "key", "progress", "unlock", "recover", "change"];
+const SYNC_CRYPTO_TITLES = {
+  setup: "🔒 Verschlüsselung einrichten",
+  key: "🔑 Wiederherstellungsschlüssel",
+  progress: "🔒 Verschlüsselung einrichten",
+  unlock: "🔓 Gerät entsperren",
+  recover: "🔑 Passwort vergessen",
+  change: "🔑 Passwort ändern",
+};
+let syncCryptoSetup = null;
+// Nach dem Schließen syncAfterUnlock() anstoßen (Einrichtung teilweise
+// gescheitert, Gerät aber schon entsperrt) — nicht sofort, weil der
+// Erstabgleich neu lädt und die Fehlermeldung sonst nicht lesbar wäre.
+let syncCryptoAfterClose = false;
+
+function syncCryptoEl(id) { return document.getElementById(id); }
+
+function showSyncCryptoError(step, text) {
+  const el = syncCryptoEl(`sync-crypto-${step}-error`);
+  if (!el) return;
+  el.textContent = text || "";
+  el.classList.toggle("hidden", !text);
+}
+
+function hideSyncCryptoErrors() {
+  SYNC_CRYPTO_STEPS.forEach((s) => showSyncCryptoError(s, ""));
+}
+
+function syncCryptoCurrentStep() {
+  return SYNC_CRYPTO_STEPS.find((s) => !syncCryptoEl(`sync-crypto-step-${s}`)?.classList.contains("hidden")) || null;
+}
+
+function showSyncCryptoStep(step) {
+  SYNC_CRYPTO_STEPS.forEach((s) => syncCryptoEl(`sync-crypto-step-${s}`)?.classList.toggle("hidden", s !== step));
+  const title = syncCryptoEl("sync-crypto-title");
+  if (title) title.textContent = SYNC_CRYPTO_TITLES[step] || "🔒 Verschlüsselung";
+  hideSyncCryptoErrors();
+  focusSyncCryptoStep(step);
+}
+
+// Fokus ins Modal: erstes leeres Eingabefeld, sonst erstes Feld, sonst der Hauptknopf.
+function focusSyncCryptoStep(step) {
+  const box = syncCryptoEl(`sync-crypto-step-${step}`);
+  if (!box) return;
+  const inputs = Array.from(box.querySelectorAll("input:not([type=checkbox])"));
+  const target = inputs.find((i) => !i.value) || inputs[0]
+    || syncCryptoEl(box.dataset.primary || "") || box.querySelector("button:not([disabled])");
+  if (target) target.focus();
+}
+
+function setSyncCryptoBusy(busy) {
+  syncCryptoBusy = busy;
+  const overlay = syncCryptoEl("sync-crypto-overlay");
+  if (!overlay) return;
+  overlay.querySelectorAll("button, input").forEach((el) => { el.disabled = busy; });
+  overlay.querySelector(".modal-box")?.setAttribute("aria-busy", busy ? "true" : "false");
+  if (!busy) syncCryptoEl("sync-crypto-key-next").disabled = !syncCryptoEl("sync-crypto-saved").checked;
+}
+
+// Leert alle Felder und verwirft das Setup-Objekt.
+function resetSyncCryptoModal() {
+  syncCryptoSetup = null;
+  const overlay = syncCryptoEl("sync-crypto-overlay");
+  if (!overlay) return;
+  overlay.querySelectorAll("input").forEach((el) => {
+    if (el.type === "checkbox") el.checked = false; else el.value = "";
+  });
+  syncCryptoEl("sync-crypto-recovery-key").textContent = "";
+  syncCryptoEl("sync-crypto-copy-status").textContent = "";
+  syncCryptoEl("sync-crypto-progress-text").textContent = "";
+  syncCryptoEl("sync-crypto-progress-actions").classList.add("hidden");
+  syncCryptoEl("sync-crypto-progress-retry").classList.add("hidden");
+  syncCryptoEl("sync-crypto-key-next").disabled = true;
+  hideSyncCryptoErrors();
+}
+
+function onSyncCryptoModalClose() {
+  resetSyncCryptoModal();
+  if (syncCryptoAfterClose) {
+    syncCryptoAfterClose = false;
+    syncAfterUnlock();
+  }
+}
+
+const syncCryptoModal = wireModal("sync-crypto-overlay", {
+  closeIds: ["sync-crypto-close", "sync-crypto-setup-cancel", "sync-crypto-key-cancel", "sync-crypto-progress-close",
+    "sync-crypto-unlock-cancel", "sync-crypto-recover-cancel", "sync-crypto-change-cancel"],
+  onClose: onSyncCryptoModalClose,
+  beforeClose: () => !syncCryptoBusy, // während einer Aktion nicht schließbar
+});
+
+function openSyncCryptoModal(step) {
+  resetSyncCryptoModal();
+  syncCryptoModal.open();
+  showSyncCryptoStep(step);
+}
+
+// Enter löst den Hauptknopf des sichtbaren Schritts aus, Escape schließt.
+syncCryptoEl("sync-crypto-overlay")?.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    if (!syncCryptoBusy) { e.preventDefault(); syncCryptoModal.close(); }
+    return;
+  }
+  if (e.key !== "Enter" || e.target.tagName !== "INPUT") return;
+  const step = e.target.closest(".sync-crypto-step");
+  const primary = step && syncCryptoEl(step.dataset.primary || "");
+  if (!primary || primary.disabled) return;
+  e.preventDefault();
+  primary.click();
+});
+
+// Fehler als Ergebnis statt Rejection: ein falsches Passwort ist kein
+// Programmfehler und soll nicht als "Abgleich fehlgeschlagen" geloggt werden.
+async function syncCryptoRun(task) {
+  return syncSerial(async () => {
+    try { return { value: await task() }; }
+    catch (error) { return { error }; }
+  });
+}
+
+// SyncCryptoError-Codes → Text, der sagt, was man tun kann.
+// ctx: "setup" | "unlock" | "recover" | "change" | "reset"
+function syncCryptoErrorText(error, ctx) {
+  const code = error && error.code;
+  const state = syncEngine ? syncEngine.state : null;
+  switch (code) {
+    case "password_too_short":
+      return `Das Passwort braucht mindestens ${SYNC_CRYPTO_MIN_LENGTH} Zeichen.`;
+    case "wrong_secret":
+      if (ctx === "recover") return "Dieser Wiederherstellungsschlüssel passt nicht. Prüfe ihn bitte Zeichen für Zeichen, Bindestriche und Leerzeichen sind egal.";
+      if (ctx === "change") return "Das aktuelle Passwort stimmt nicht. Versuche es noch einmal oder nutze „Aktuelles Passwort vergessen?“.";
+      return "Das Passwort stimmt nicht. Versuche es noch einmal oder nutze „Passwort vergessen?“.";
+    case "bad_keyring":
+      return "Die Schlüsseldaten in der Cloud sind beschädigt und lassen sich nicht öffnen. Bleibt das so, kannst du über „Passwort vergessen?“ die Cloud-Daten zurücksetzen und mit den Daten dieses Geräts neu einrichten.";
+    case "key_mismatch":
+      return "Die Verschlüsselung wurde auf einem anderen Gerät neu eingerichtet. Schließe das Fenster und entsperre dieses Gerät mit dem neuen Passwort.";
+    case "keyring_changed":
+      if (state === "unconfigured") return "In der Cloud ist keine Verschlüsselung mehr eingerichtet, vermutlich wurde sie auf einem anderen Gerät zurückgesetzt. Schließe das Fenster und richte sie neu ein.";
+      return "Die Verschlüsselung wurde gerade auf einem anderen Gerät geändert. Schließe das Fenster und versuche es noch einmal.";
+    case "bad_state":
+      return "Das geht gerade nicht, weil sich der Zustand der Verschlüsselung geändert hat. Schließe das Fenster und schau in den Einstellungen nach dem aktuellen Stand.";
+    case "read_failed":
+      return "Die Cloud ist gerade nicht erreichbar. Prüfe deine Internetverbindung und versuche es noch einmal.";
+    case "write_failed":
+      if (ctx === "reset") {
+        if (state === "unconfigured") return "Die Cloud-Daten sind gelöscht, aber einige Merker auf diesem Gerät ließen sich nicht entfernen, vermutlich ist der Browser-Speicher voll. Gib Speicher frei, bevor du die Verschlüsselung neu einrichtest.";
+        return "Die Cloud-Daten konnten nicht gelöscht werden. Prüfe deine Internetverbindung und versuche es noch einmal.";
+      }
+      return "Die Änderung konnte nicht in der Cloud gespeichert werden. Prüfe deine Internetverbindung und versuche es noch einmal.";
+    case "key_store":
+      return "Der Schlüssel konnte auf diesem Gerät nicht gespeichert werden. Im privaten Modus oder bei vollem Speicher geht das nicht. Prüfe das und versuche es noch einmal.";
+    case "bad_setup":
+      return "Diese Einrichtung ist abgelaufen. Schließe das Fenster und starte sie noch einmal.";
+  }
+  return "Das hat gerade nicht geklappt. Versuche es bitte noch einmal.";
+}
+
+// finishSetup-Schritte → Text. Ob die Cloud unverändert ist, hängt am Zustand
+// danach: "unlocked" heißt, der Keyring liegt schon in der Cloud und die
+// Umstellung läuft beim nächsten Start bzw. Entsperren automatisch weiter.
+const SYNC_SETUP_STEP_TEXTS = {
+  backup: "Die Backup-Datei konnte nicht gespeichert werden. Erlaube den Download im Browser.",
+  keyring_exists: "Auf einem anderen Gerät wurde die Verschlüsselung schon eingerichtet. Entsperre dieses Gerät mit dem Passwort von dort.",
+  keyring: "Die Schlüsseldaten konnten nicht angelegt werden.",
+  read: "Die Daten in der Cloud konnten nicht gelesen werden.",
+  probe: "Die Probe-Entschlüsselung hat nicht gestimmt, deshalb wurde nichts hochgeladen.",
+  upload: "Das Hochladen der verschlüsselten Daten hat nicht geklappt.",
+  verify: "Die Kontrolle nach dem Hochladen ist noch nicht abgeschlossen.",
+  done_flag: "Der Abschluss der Umstellung konnte noch nicht gespeichert werden.",
+};
+
+function syncSetupFailText(step, state) {
+  const reason = SYNC_SETUP_STEP_TEXTS[step] || "Die Einrichtung hat nicht geklappt.";
+  if (step === "verify" || step === "done_flag") {
+    return `${reason} Die Verschlüsselung ist eingerichtet; die Umstellung läuft beim nächsten Start automatisch weiter. Du musst nichts tun.`;
+  }
+  if (state === "unlocked") {
+    return `${reason} Deine Daten in der Cloud sind unverändert. Die Verschlüsselung ist eingerichtet; die Umstellung wird beim nächsten Start automatisch fortgesetzt.`;
+  }
+  if (step === "keyring_exists") return `${reason} Deine Daten in der Cloud sind unverändert.`;
+  if (state === "locked") {
+    return `${reason} Deine Daten in der Cloud sind unverändert. Entsperre dieses Gerät mit dem eben gewählten Passwort, dann geht es weiter.`;
+  }
+  if (state === "unconfigured") return `${reason} Deine Cloud-Daten sind unverändert. Du kannst es noch einmal versuchen.`;
+  return `${reason} Deine Cloud-Daten sind unverändert. Prüfe deine Internetverbindung und versuche es später noch einmal.`;
+}
+
+function readSyncCryptoNewPassword(step, pwId, repeatId) {
+  const pw = syncCryptoEl(pwId).value;
+  if (Array.from(pw).length < SYNC_CRYPTO_MIN_LENGTH) {
+    showSyncCryptoError(step, `Bitte nimm ein Passwort mit mindestens ${SYNC_CRYPTO_MIN_LENGTH} Zeichen.`);
+    syncCryptoEl(pwId).focus();
+    return null;
+  }
+  if (pw !== syncCryptoEl(repeatId).value) {
+    showSyncCryptoError(step, "Die beiden Eingaben stimmen nicht überein.");
+    syncCryptoEl(repeatId).focus();
+    return null;
+  }
+  return pw;
+}
+
+// Schritt 1: Passwort prüfen, Keyring und Wiederherstellungsschlüssel erzeugen
+// (beginSetup speichert nichts und ändert keinen Zustand).
+async function submitSyncCryptoSetupPassword() {
+  if (!syncEngine) return;
+  showSyncCryptoError("setup", "");
+  const pw = readSyncCryptoNewPassword("setup", "sync-crypto-setup-pw", "sync-crypto-setup-pw2");
+  if (pw === null) return;
+  setSyncCryptoBusy(true);
+  let setup = null;
+  try {
+    setup = await syncEngine.beginSetup(pw);
+  } catch (e) {
+    setSyncCryptoBusy(false);
+    showSyncCryptoError("setup", syncCryptoErrorText(e, "setup"));
+    return;
+  }
+  setSyncCryptoBusy(false);
+  syncCryptoSetup = setup;
+  syncCryptoEl("sync-crypto-setup-pw").value = "";
+  syncCryptoEl("sync-crypto-setup-pw2").value = "";
+  syncCryptoEl("sync-crypto-recovery-key").textContent = setup.recoveryKey;
+  showSyncCryptoStep("key");
+}
+
+async function copySyncRecoveryKey() {
+  const el = syncCryptoEl("sync-crypto-recovery-key");
+  const status = syncCryptoEl("sync-crypto-copy-status");
+  try {
+    await navigator.clipboard.writeText(el.textContent);
+    status.textContent = "Kopiert.";
+  } catch {
+    // Ohne Zwischenablage-Zugriff: Text markieren, damit man selbst kopieren kann.
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    status.textContent = "Markiert. Kopiere ihn jetzt mit Strg+C (⌘+C).";
+  }
+}
+
+function setSyncCryptoProgress(text) {
+  syncCryptoEl("sync-crypto-progress-text").textContent = text;
+}
+
+// Backup vor der Migration über den bestehenden Export aus settings.js
+// (lädt nach sync.js, deshalb erst beim Klick und mit typeof-Prüfung).
+function syncCryptoDownloadBackup() {
+  if (typeof buildBackupData !== "function" || typeof downloadBackupFile !== "function") {
+    throw new Error("Backup-Export nicht geladen");
+  }
+  setSyncCryptoProgress("Backup-Datei wird gespeichert …");
+  const d = new Date();
+  const stamp = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  downloadBackupFile(buildBackupData(), `nook-backup-vor-verschluesselung-${stamp}.json`);
+  setSyncCryptoProgress("Deine Daten werden verschlüsselt und hochgeladen. Bitte lass Nook so lange geöffnet.");
+}
+
+// Schritt 3: Abgleich, Backup, Keyring, Migration (finishSetup).
+async function runSyncCryptoFinishSetup() {
+  const setup = syncCryptoSetup;
+  if (!syncEngine || !setup) { showSyncCryptoStep("setup"); return; }
+  showSyncCryptoStep("progress");
+  syncCryptoEl("sync-crypto-progress-actions").classList.add("hidden");
+  setSyncCryptoProgress("Deine Daten werden mit der Cloud abgeglichen …");
+  setSyncCryptoBusy(true);
+  const { value: res, error } = await syncCryptoRun(() => syncEngine.finishSetup(setup, { backup: syncCryptoDownloadBackup }));
+  setSyncCryptoBusy(false);
+  const state = syncEngine.state;
+  if (!error && res && res.ok) {
+    syncCryptoModal.close();
+    syncAfterUnlock();
+    return;
+  }
+  setSyncCryptoProgress("");
+  showSyncCryptoError("progress", error ? syncCryptoErrorText(error, "setup") : syncSetupFailText(res && res.step, state));
+  syncCryptoEl("sync-crypto-progress-actions").classList.remove("hidden");
+  // Noch nichts in der Cloud: mit demselben (gespeicherten) Wiederherstellungsschlüssel erneut versuchen.
+  syncCryptoEl("sync-crypto-progress-retry").classList.toggle("hidden", !!error || state !== "unconfigured");
+  if (state === "unlocked") syncCryptoAfterClose = true;
+  syncCryptoEl("sync-crypto-progress-close").focus();
+}
+
+async function submitSyncCryptoUnlock() {
+  if (!syncEngine) return;
+  showSyncCryptoError("unlock", "");
+  const input = syncCryptoEl("sync-crypto-unlock-pw");
+  const pw = input.value;
+  if (!pw) { showSyncCryptoError("unlock", "Bitte gib dein Verschlüsselungs-Passwort ein."); input.focus(); return; }
+  setSyncCryptoBusy(true);
+  const { error } = await syncCryptoRun(() => syncEngine.unlock(pw));
+  setSyncCryptoBusy(false);
+  if (error) {
+    showSyncCryptoError("unlock", syncCryptoErrorText(error, "unlock"));
+    input.select();
+    input.focus();
+    return;
+  }
+  syncCryptoModal.close();
+  syncAfterUnlock();
+}
+
+async function submitSyncCryptoRecover() {
+  if (!syncEngine) return;
+  showSyncCryptoError("recover", "");
+  const keyInput = syncCryptoEl("sync-crypto-recover-key");
+  const recoveryKey = keyInput.value.trim();
+  if (!recoveryKey) { showSyncCryptoError("recover", "Bitte gib deinen Wiederherstellungsschlüssel ein."); keyInput.focus(); return; }
+  const pw = readSyncCryptoNewPassword("recover", "sync-crypto-recover-pw", "sync-crypto-recover-pw2");
+  if (pw === null) return;
+  setSyncCryptoBusy(true);
+  const { error } = await syncCryptoRun(() => syncEngine.recover(recoveryKey, pw));
+  setSyncCryptoBusy(false);
+  if (error) {
+    showSyncCryptoError("recover", syncCryptoErrorText(error, "recover"));
+    if (error.code === "wrong_secret") keyInput.focus();
+    return;
+  }
+  syncCryptoModal.close();
+  syncCryptoSubExtra = "Neues Passwort festgelegt";
+  renderSyncCryptoRow();
+  if (syncEngine.state === "unlocked") syncAfterUnlock();
+}
+
+async function submitSyncCryptoChange() {
+  if (!syncEngine) return;
+  showSyncCryptoError("change", "");
+  const currentInput = syncCryptoEl("sync-crypto-change-current");
+  const current = currentInput.value;
+  if (!current) { showSyncCryptoError("change", "Bitte gib dein aktuelles Passwort ein."); currentInput.focus(); return; }
+  const pw = readSyncCryptoNewPassword("change", "sync-crypto-change-pw", "sync-crypto-change-pw2");
+  if (pw === null) return;
+  if (pw === current) { showSyncCryptoError("change", "Das neue Passwort ist dasselbe wie das aktuelle. Bitte wähle ein anderes."); return; }
+  setSyncCryptoBusy(true);
+  const { error } = await syncCryptoRun(() => syncEngine.changePassword(current, pw));
+  setSyncCryptoBusy(false);
+  if (error) {
+    showSyncCryptoError("change", syncCryptoErrorText(error, "change"));
+    if (error.code === "wrong_secret") { currentInput.select(); currentInput.focus(); }
+    return;
+  }
+  syncCryptoModal.close();
+  syncCryptoSubExtra = "Passwort geändert";
+  renderSyncCryptoRow();
+}
+
+// Spec "Beides verloren": löscht alle Zeilen des Kontos inklusive Keyring.
+async function submitSyncCryptoReset() {
+  if (!syncEngine) return;
+  showSyncCryptoError("recover", "");
+  const confirmed = await hubConfirm({
+    title: "Cloud-Daten zurücksetzen",
+    message: "Alle synchronisierten Daten in der Cloud werden gelöscht, auch die Schlüsseldaten. Das lässt sich nicht rückgängig machen. "
+      + "Die Daten auf diesem Gerät bleiben erhalten, und du kannst die Verschlüsselung damit neu einrichten. "
+      + "Deine anderen Geräte behalten ihre lokalen Daten.",
+    confirmText: "Cloud-Daten löschen",
+    danger: true,
+  });
+  if (!confirmed) { syncCryptoEl("sync-crypto-reset")?.focus(); return; }
+  setSyncCryptoBusy(true);
+  const { error } = await syncCryptoRun(() => syncEngine.resetCloud());
+  setSyncCryptoBusy(false);
+  if (error) {
+    showSyncCryptoError("recover", syncCryptoErrorText(error, "reset"));
+    return;
+  }
+  syncCryptoModal.close();
+  syncCryptoSubExtra = "Cloud-Daten zurückgesetzt";
+  renderSyncCryptoRow();
+}
+
+syncCryptoEl("sync-crypto-btn")?.addEventListener("click", () => {
+  if (!syncEngine) return;
+  const step = { unconfigured: "setup", locked: "unlock", unlocked: "change" }[syncEngine.state];
+  if (step) openSyncCryptoModal(step);
+});
+syncCryptoEl("sync-crypto-setup-next")?.addEventListener("click", submitSyncCryptoSetupPassword);
+syncCryptoEl("sync-crypto-copy")?.addEventListener("click", copySyncRecoveryKey);
+syncCryptoEl("sync-crypto-saved")?.addEventListener("change", (e) => {
+  syncCryptoEl("sync-crypto-key-next").disabled = !e.currentTarget.checked;
+});
+syncCryptoEl("sync-crypto-key-next")?.addEventListener("click", runSyncCryptoFinishSetup);
+syncCryptoEl("sync-crypto-progress-retry")?.addEventListener("click", runSyncCryptoFinishSetup);
+syncCryptoEl("sync-crypto-unlock-submit")?.addEventListener("click", submitSyncCryptoUnlock);
+syncCryptoEl("sync-crypto-unlock-forgot")?.addEventListener("click", () => {
+  syncCryptoEl("sync-crypto-unlock-pw").value = "";
+  showSyncCryptoStep("recover");
+});
+syncCryptoEl("sync-crypto-change-forgot")?.addEventListener("click", () => {
+  ["sync-crypto-change-current", "sync-crypto-change-pw", "sync-crypto-change-pw2"].forEach((id) => { syncCryptoEl(id).value = ""; });
+  showSyncCryptoStep("recover");
+});
+syncCryptoEl("sync-crypto-recover-submit")?.addEventListener("click", submitSyncCryptoRecover);
+syncCryptoEl("sync-crypto-change-submit")?.addEventListener("click", submitSyncCryptoChange);
+syncCryptoEl("sync-crypto-reset")?.addEventListener("click", submitSyncCryptoReset);
+syncCryptoEl("sync-crypto-notice-dismiss")?.addEventListener("click", clearSyncCryptoNotices);
 
 document.getElementById("sync-update-reload-btn")?.addEventListener("click", () => location.reload());
 
