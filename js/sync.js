@@ -261,15 +261,25 @@ async function syncRemoveKeys(keys) {
   const meta = getSyncMeta();
   keys.forEach((k) => { localStorage.removeItem(k); delete meta[k]; });
   setSyncMeta(meta);
-  if (syncEngine) {
-    // Wartende Uploads verwerfen und laufende abwarten: ein Upload, der schon
-    // unterwegs ist, darf den Key nach dem Löschen nicht wiederbeleben.
-    syncEngine.dropPending(keys);
-    await syncEngine.flush();
-  }
-  if (!sbClient || !currentUserId || !keys.length) return;
-  const { error } = await sbClient.from(SYNC_TABLE).delete().eq("user_id", currentUserId).in("key", keys);
-  if (error) console.error("Sync: Löschen fehlgeschlagen", error);
+  const userId = currentUserId;
+  const removeRemote = async () => {
+    if (syncEngine) {
+      // Wartende Uploads verwerfen und laufende abwarten: ein Upload, der schon
+      // unterwegs ist, darf den Key nach dem Löschen nicht wiederbeleben.
+      syncEngine.dropPending(keys);
+      await syncEngine.flush();
+    }
+    if (!sbClient || !userId || !keys.length) return;
+    const { error } = await sbClient.from(SYNC_TABLE).delete().eq("user_id", userId).in("key", keys);
+    if (error) console.error("Sync: Löschen fehlgeschlagen", error);
+  };
+  if (!syncEngine) return removeRemote();
+  // Sofort verwerfen (kein wartender Upload startet mehr), das Löschen selbst
+  // aber in die Kette einreihen: eine gerade laufende Migration bzw. ein
+  // Erstabgleich hat die Keys evtl. schon eingesammelt und lädt sie sonst
+  // NACH dem Löschen wieder hoch.
+  syncEngine.dropPending(keys);
+  return syncSerial(removeRemote).catch(() => {});
 }
 
 // ── DB.set() additiv erweitern ──────────────────────────────────────────
@@ -330,9 +340,13 @@ function showUpdateBanner() {
 // Alle Starts, Erstabgleiche und Abgleiche laufen nacheinander über eine
 // einzige Promise-Kette: initialMerge läuft so nie, während start() (das
 // eine abgebrochene Migration fortsetzt und abwartet) noch läuft. Die
-// Oberfläche (Task 7) reiht Einrichten, Entsperren, Wiederherstellen und
-// Zurücksetzen ebenfalls hier ein — sonst könnte z.B. das Realtime-Echo der
-// eigenen Keyring-Zeile mitten in finishSetup() ein start() auslösen.
+// Oberfläche (Task 7) führt finishSetup, unlock, recover, resetCloud und
+// changePassword ebenfalls über syncSerial(...) aus — sonst könnte z.B. das
+// Realtime-Echo der eigenen Keyring-Zeile mitten in finishSetup() ein start()
+// auslösen. syncAfterUnlock() (reiht selbst eine Aufgabe ein) wird NACH einer
+// solchen syncSerial-Aufgabe aufgerufen, nie innerhalb einer awaited —
+// die innere Aufgabe wartete sonst auf das Ende der äußeren: Deadlock.
+// Ebenso nie syncRemoveKeys() innerhalb einer Aufgabe awaiten.
 // Liefert das Ergebnis der Aufgabe; Fehler werden geloggt, die Kette läuft weiter.
 let syncChain = Promise.resolve();
 function syncSerial(task) {
@@ -347,21 +361,52 @@ function syncSerial(task) {
 // in main.js) werden nur beim Skript-Load aus DB.get() befüllt (gleiches
 // Muster wie beim Backup-Import in settings.js). Der Merker wird erst nach
 // einem erfolgreichen Erstabgleich gesetzt, sonst ginge er verloren.
+// Scheitert der Erstabgleich, kann er trotzdem schon Cloud-Werte nach
+// localStorage geschrieben haben — die Tabs hielten dann veraltete Stände im
+// Speicher und überschrieben die Cloud-Werte beim nächsten Speichern mit
+// neuerem Zeitstempel. Deshalb auch dann einmal neu laden; ein Merker in
+// sessionStorage (pro Konto) verhindert eine Reload-Schleife: ist er gesetzt,
+// läuft in dieser Sitzung statt des Erstabgleichs der normale Abgleich, damit
+// ein Gerät, dessen Erstabgleich immer wieder scheitert (z.B. an einer nicht
+// entschlüsselbaren Zeile), trotzdem Änderungen herunterlädt.
 // Sonst laufender Abgleich: neuere Cloud-Werte übernehmen, NICHT automatisch
 // neu laden (könnte mitten in einer Eingabe stören), sondern den Hinweis-
 // Banner mit Klick-zum-Neuladen zeigen.
+const SYNC_MERGE_RELOADED_KEY = "__nook_sync_merge_reloaded__"; // sessionStorage, Map { userId: true }
+
+function syncMergeReloaded(userId) {
+  try { return (JSON.parse(sessionStorage.getItem(SYNC_MERGE_RELOADED_KEY)) || {})[userId] === true; }
+  catch { return false; }
+}
+// true, wenn der Merker sicher gespeichert ist (sonst kein Reload: Schleifengefahr).
+function setSyncMergeReloaded(userId, on) {
+  try {
+    const map = JSON.parse(sessionStorage.getItem(SYNC_MERGE_RELOADED_KEY)) || {};
+    if (on) map[userId] = true; else delete map[userId];
+    sessionStorage.setItem(SYNC_MERGE_RELOADED_KEY, JSON.stringify(map));
+    return true;
+  } catch { return false; }
+}
+
 async function syncAfterStart(userId) {
   if (!syncEngine || syncEngine.userId !== userId || currentUserId !== userId) return;
   const state = syncEngine.state;
-  if (state === "unlocked" && localStorage.getItem(INITIAL_MERGE_DONE_KEY) !== userId) {
+  if (state === "unlocked" && localStorage.getItem(INITIAL_MERGE_DONE_KEY) !== userId && !syncMergeReloaded(userId)) {
     const res = await syncEngine.initialMerge();
-    if (res && res.ok && syncEngine.userId === userId && currentUserId === userId) {
+    if (syncEngine.userId !== userId || currentUserId !== userId) return;
+    if (res && res.ok) {
       localStorage.setItem(INITIAL_MERGE_DONE_KEY, userId);
+      setSyncMergeReloaded(userId, false);
       location.reload();
+      return;
     }
-    return;
+    console.error("Sync: Erstabgleich fehlgeschlagen");
+    if (setSyncMergeReloaded(userId, true)) { location.reload(); return; }
+    // Merker nicht speicherbar: nicht neu laden, sondern normal abgleichen und
+    // den Banner zeigen (evtl. schon geschriebene Cloud-Werte).
+    showUpdateBanner();
   }
-  if (state === "unlocked" || state === "unconfigured") {
+  if (syncEngine.state === "unlocked" || syncEngine.state === "unconfigured") {
     const { changed } = await syncEngine.catchUp();
     if (changed) showUpdateBanner();
   }
@@ -385,8 +430,23 @@ function syncHandleSession(session) {
   const userId = session.user.id;
   subscribeRealtime(userId);
   if (!syncEngine || syncStartedFor === userId) return;
+  if (syncStartedFor) syncSignOutAccount(syncStartedFor); // Kontowechsel ohne SIGNED_OUT
   syncStartedFor = userId;
   syncSerial(() => syncStartAndCatchUp(userId)).catch(() => {});
+}
+
+// Verschlüsselung für ein Konto abmelden: Engine anhalten (sofort, alle
+// laufenden Aufgaben veralten) und den Schlüssel des Kontos aus IndexedDB
+// löschen. Lokale Daten bleiben liegen.
+function syncSignOutAccount(oldUserId) {
+  localStorage.removeItem(INITIAL_MERGE_DONE_KEY);
+  setSyncMergeReloaded(oldUserId, false);
+  const engineUserId = syncEngine.userId;
+  syncEngine.signOut().catch((e) => console.error("Sync: Abmelden der Verschlüsselung fehlgeschlagen", e && e.code));
+  // Lief start() für dieses Konto noch gar nicht, kennt die Engine es nicht.
+  if (engineUserId !== oldUserId && syncKeyStore) {
+    syncKeyStore.remove(oldUserId).catch((e) => console.error("Sync: Schlüssel konnte nicht entfernt werden", e && e.name));
+  }
 }
 
 // Keyring-Zeile geändert oder gelöscht: Zustand neu bestimmen, danach wie
@@ -400,10 +460,45 @@ function syncKeyringChanged(userId, row) {
     if (keyId && syncKeyStore && syncEngine.state === "unlocked" && syncEngine.userId === userId) {
       let stored = null;
       try { stored = await syncKeyStore.load(userId); } catch { stored = null; }
-      if (stored && stored.keyId === keyId) return;
+      if (stored && stored.keyId === keyId) {
+        // Kein Neustart nötig; der Abgleich frischt Keyring und
+        // Migrationsmerker der Engine im Speicher auf.
+        const { changed } = await syncEngine.catchUp();
+        if (changed) showUpdateBanner();
+        return;
+      }
     }
     await syncStartAndCatchUp(userId);
   }).catch(() => {});
+}
+
+// Fehlende Realtime-Ereignisse nachholen (DELETE-Ereignisse kommen mit Filter
+// u.U. gar nicht an; offline verpasste Änderungen sowieso nicht): beim
+// Zurückkehren in den Tab und beim Wiederverbinden abgleichen, höchstens
+// alle 30 Sekunden. "unknown" (Keyring beim Start nicht lesbar, z.B. offline)
+// bestimmt den Zustand neu; catchUp erkennt einen verschwundenen oder
+// ausgetauschten Keyring selbst und startet dann neu.
+const SYNC_RESUME_THROTTLE_MS = 30000;
+let syncLastResumeCatchUp = 0;
+function syncResumeCatchUp() {
+  const userId = currentUserId;
+  if (!syncEngine || !userId || syncStartedFor !== userId) return;
+  const now = Date.now();
+  if (now - syncLastResumeCatchUp < SYNC_RESUME_THROTTLE_MS) return;
+  syncLastResumeCatchUp = now;
+  syncSerial(async () => {
+    if (currentUserId !== userId || syncEngine.userId !== userId) return;
+    if (syncEngine.state === "unknown") { await syncStartAndCatchUp(userId); return; }
+    if (syncEngine.state !== "unlocked" && syncEngine.state !== "unconfigured") return;
+    const { changed } = await syncEngine.catchUp();
+    if (changed) showUpdateBanner();
+  }).catch(() => {});
+}
+if (syncEngine) {
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") syncResumeCatchUp();
+  });
+  window.addEventListener("online", syncResumeCatchUp);
 }
 
 // ── Realtime: Änderungen von anderen Geräten, während diese Seite offen
@@ -792,13 +887,15 @@ async function initSync() {
         if (currentUserId === newSession.user.id) syncHandleSession(newSession);
       }, 0);
     } else if (event === "SIGNED_OUT") {
+      const oldUserId = syncStartedFor;
       localStorage.removeItem(INITIAL_MERGE_DONE_KEY);
       syncStartedFor = null;
       unsubscribeRealtime();
       // Hält Uploads, Abgleich und Migration an und löscht den Schlüssel des
       // Kontos aus IndexedDB. Lokale Daten bleiben wie bisher liegen.
       if (syncEngine) {
-        syncEngine.signOut().catch((e) => console.error("Sync: Abmelden der Verschlüsselung fehlgeschlagen", e && e.code));
+        if (oldUserId) syncSignOutAccount(oldUserId);
+        else syncEngine.signOut().catch((e) => console.error("Sync: Abmelden der Verschlüsselung fehlgeschlagen", e && e.code));
       }
     }
   });
