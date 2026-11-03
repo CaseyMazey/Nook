@@ -66,12 +66,12 @@ async function cloud({ migrationDone = true, opts } = {}) {
 }
 
 // Ein Gerät; unlocked: true legt den passenden Schlüssel in die Ablage.
-function device(backend, m, { unlocked = false, storageOpts, name = "dieses" } = {}) {
+function device(backend, m, { unlocked = false, storageOpts, name = "dieses", client } = {}) {
   const ks = makeKeyStore(unlocked ? { [A]: { key: m.dataKey, keyId: m.keyring.keyId } } : {});
   const storage = makeStorage(storageOpts);
   const notices = [];
   const engine = createSyncEngine({
-    client: backend.client(name), table: "kv_store", storage, keyStore: ks,
+    client: client || backend.client(name), table: "kv_store", storage, keyStore: ks,
     isSyncableKey: (k) => k.startsWith("nook_"), onNotice: (c, i) => notices.push([c, i])
   });
   return { engine, ks, storage, notices };
@@ -196,6 +196,9 @@ test("changePassword: anderer Keyring in der Cloud ergibt key_mismatch, Zeile bl
   const before = keyringRow(backend);
   await assert.rejects(d.engine.changePassword(PW, PW2), code("key_mismatch"));
   assert.deepEqual(keyringRow(backend), before);
+  // Zustand neu bestimmt: der Schlüssel passt zu keinem Keyring mehr, also locked und verworfen.
+  assert.equal(d.engine.state, "locked");
+  assert.equal(d.ks.m.has(A), false);
 });
 
 test("changePassword: nur im Zustand unlocked", async () => {
@@ -471,4 +474,127 @@ test("readAllRows: liest in Seiten, mehr als 1000 Zeilen gehen nicht verloren", 
   await d.engine.catchUp();
   assert.equal(Object.keys(d.storage.data).length, 1200);
   assert.equal(d.storage.data.nook_k1199, 1199);
+});
+
+// --- Nachbesserung Runde 1 ---
+
+test("Einrichtung nach Reset anderswo: zweites Gerät mit klebrigem Merker migriert seine lokalen Daten", async () => {
+  const { m, backend } = await cloud();
+  const d1 = device(backend, m, { unlocked: true, name: "eins" });
+  const d2 = device(backend, m, {
+    unlocked: true, name: "zwei",
+    storageOpts: { data: { nook_a: "zwei-a", nook_b: { b: 2 } }, meta: { nook_a: 5000, nook_b: 5000 } }
+  });
+  await d1.engine.start(A);
+  await d2.engine.start(A);
+  await d2.engine.catchUp(); // lädt hoch: Bestätigungsstand und letzter Abgleich decken die Keys
+  assert.equal(d2.storage.mig[A], true);
+  assert.ok(d2.storage.last[A] > 0);
+  assert.ok(d2.storage.conf[A].nook_a);
+
+  await d1.engine.resetCloud();
+  assert.equal(await d2.engine.start(A), "unconfigured");
+  assert.equal(d2.storage.mig[A], true); // klebrig: das Gerät hat den Reset nicht selbst ausgelöst
+
+  const setup = await d2.engine.beginSetup(PW2);
+  assert.deepEqual(await d2.engine.finishSetup(setup, { backup: async () => {} }), { ok: true });
+  for (const [key, value] of [["nook_a", "zwei-a"], ["nook_b", { b: 2 }]]) {
+    const row = backend.rows().find((r) => r.user_id === A && r.key === key);
+    assert.ok(row, "fehlt in der Cloud: " + key);
+    assert.equal(crypto.isEncryptedEnvelope(row.value), true);
+    assert.deepEqual(await crypto.decryptValue(setup.dataKey, A, key, row.value), value);
+  }
+  assert.equal(keyringRow(backend).value.migrationDone, true);
+});
+
+test("finishSetup: Merker des Kontos nicht löschbar, Abbruch mit keyring und neu bestimmt", async () => {
+  const backend = createFakeBackend();
+  const d = device(backend, await material(), { storageOpts: { data: { nook_a: "a" }, meta: { nook_a: 10 }, mig: { [A]: true } } });
+  await d.engine.start(A);
+  d.storage.clearAccount = () => { throw new Error("Speicher kaputt"); };
+  const setup = await d.engine.beginSetup(PW);
+  const res = await quiet(() => d.engine.finishSetup(setup, { backup: async () => {} }));
+  assert.deepEqual(res, { ok: false, step: "keyring" });
+  assert.equal(d.engine.state, "locked"); // Keyring liegt in der Cloud, Schlüssel nicht übernommen
+  assert.equal(d.ks.m.has(A), false);
+  assert.equal(backend.rows().some((r) => r.key === "nook_a"), false);
+});
+
+test("finishSetup: Merker bleibt trotz clearAccount gesetzt, Abbruch mit keyring", async () => {
+  const backend = createFakeBackend();
+  const d = device(backend, await material(), { storageOpts: { mig: { [A]: true } } });
+  await d.engine.start(A);
+  d.storage.clearAccount = () => {}; // tut nichts
+  const setup = await d.engine.beginSetup(PW);
+  const res = await quiet(() => d.engine.finishSetup(setup, { backup: async () => {} }));
+  assert.deepEqual(res, { ok: false, step: "keyring" });
+  assert.equal(d.engine.state, "locked");
+});
+
+test("resetCloud: clearAccount scheitert, kein Erfolg gemeldet", async () => {
+  const { m, backend } = await cloud();
+  const d = device(backend, m, { unlocked: true, storageOpts: { mig: { [A]: true } } });
+  await d.engine.start(A);
+  d.storage.clearAccount = () => { throw new Error("Speicher kaputt"); };
+  await quiet(() => assert.rejects(d.engine.resetCloud(), code("write_failed")));
+  assert.equal(d.engine.state, "unconfigured"); // die Cloud ist leer
+});
+
+test("unlock: Keyring-Zeile mit leerem Wert ist bad_keyring, nie der Keyring vom Start", async () => {
+  const { m, backend } = await cloud();
+  const d = device(backend, m);
+  assert.equal(await d.engine.start(A), "locked");
+  await backend.client("anderes").from("kv_store").update({ value: null }).eq("user_id", A).eq("key", KEYRING_KEY);
+  await assert.rejects(d.engine.unlock(PW), code("bad_keyring"));
+  assert.equal(d.engine.state, "locked");
+  assert.equal(d.ks.m.has(A), false);
+});
+
+test("resetCloud: Löschen ohne Wirkung (0 Zeilen, kein Fehler) ist write_failed, Schlüssel bleibt", async () => {
+  const { m, backend } = await cloud();
+  const d = device(backend, m, { unlocked: true, storageOpts: { mig: { [A]: true } } });
+  await d.engine.start(A);
+  backend.skipNext("delete");
+  await quiet(() => assert.rejects(d.engine.resetCloud(), code("write_failed")));
+  assert.ok(keyringRow(backend));
+  assert.equal(d.ks.m.has(A), true);
+  assert.equal(d.storage.mig[A], true);
+  assert.equal(d.engine.state, "unlocked");
+});
+
+// Client-Hülle: ruft onSelect nach jedem gelungenen Lesen (nicht nach Schreibvorgängen).
+function hookClient(backend, onSelect) {
+  const inner = backend.client("dieses");
+  const writes = ["upsert", "insert", "update", "delete"];
+  return {
+    from(table) {
+      const b = inner.from(table);
+      let write = false;
+      const w = {};
+      for (const name of ["select", "eq", "in", "gt", "order", "range", "limit", "maybeSingle", "single", ...writes]) {
+        w[name] = (...a) => { if (writes.includes(name)) write = true; b[name](...a); return w; };
+      }
+      w.then = (res, rej) => b.then(async (r) => { if (!write && !r.error) await onSelect(r); return r; }).then(res, rej);
+      return w;
+    }
+  };
+}
+
+test("readAllRows: gelöschte Zeile mit kleinerem Key zwischen zwei Seiten lässt keine andere aus", async () => {
+  const backend = createFakeBackend({ maxRows: 1000 });
+  const rows = [];
+  const key = (i) => "nook_k" + String(i).padStart(4, "0");
+  for (let i = 0; i < 1200; i++) rows.push({ user_id: A, key: key(i), value: i, updated_at: iso(1000 + i) });
+  await backend.client("alt").from("kv_store").upsert(rows);
+  let deleted = false;
+  const client = hookClient(backend, async (r) => {
+    if (deleted || !Array.isArray(r.data) || r.data.length !== 500) return;
+    deleted = true; // nach der ersten vollen Seite löscht ein anderes Gerät den kleinsten Key
+    await backend.client("anderes").from("kv_store").delete().eq("user_id", A).eq("key", key(0));
+  });
+  const d = device(backend, await material(), { client });
+  assert.equal(await d.engine.start(A), "unconfigured");
+  await d.engine.catchUp();
+  assert.equal(deleted, true);
+  for (let i = 1; i < 1200; i++) assert.equal(d.storage.data[key(i)], i, "ausgelassen: " + key(i));
 });

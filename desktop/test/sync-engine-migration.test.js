@@ -52,7 +52,7 @@ function wrapClient(backend, device, ctl) {
       const b = inner.from(table);
       let op = "select";
       const w = {};
-      for (const name of ["select", "eq", "in", "order", "range", "maybeSingle", "single", "delete"]) {
+      for (const name of ["select", "eq", "in", "gt", "order", "range", "limit", "maybeSingle", "single", "delete"]) {
         w[name] = (...a) => { if (name === "delete") op = "delete"; b[name](...a); return w; };
       }
       for (const name of ["upsert", "insert", "update"]) {

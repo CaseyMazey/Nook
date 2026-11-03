@@ -317,18 +317,22 @@
       return gen !== generation || state !== st;
     }
 
-    // Liest in Seiten (nach Key sortiert), bis eine Seite kurz bleibt: die Zeilengrenze pro Anfrage
-    // schneidet sonst still ab. null bei einem Lesefehler.
+    // Liest in Seiten nach Key (Keyset: jede Seite beginnt hinter dem letzten gelesenen Key), bis eine
+    // Seite leer oder kurz bleibt. Die Zeilengrenze pro Anfrage schneidet so nie still ab, und Löschungen
+    // zwischen zwei Seiten verschieben keine anderen Zeilen. null bei einem Lesefehler.
     async function readAllRows(uid) {
       const all = [];
+      let last = null;
       try {
-        for (let from = 0; ; from += PAGE_SIZE) {
-          const res = await client.from(table).select("*").eq("user_id", uid)
-            .order("key", { ascending: true }).range(from, from + PAGE_SIZE - 1);
+        for (;;) {
+          let q = client.from(table).select("*").eq("user_id", uid);
+          if (last !== null) q = q.gt("key", last);
+          const res = await q.order("key", { ascending: true }).limit(PAGE_SIZE);
           if (res.error) return null;
           const page = res.data || [];
           for (const row of page) all.push(row);
           if (page.length < PAGE_SIZE) return all;
+          last = page[page.length - 1].key;
         }
       } catch (e) {
         return null;
@@ -562,6 +566,20 @@
         return stepFail(res.error.code === "23505" ? "keyring_exists" : "keyring");
       }
       if (!current()) return stepFail("keyring");
+      // Neuer Keyring: Merker eines früheren Keyrings (klebriger Migrationsmerker, Bestätigungsstand,
+      // letzter Abgleich) gelten nicht mehr. Sonst übersprängen Migration und catchUp die lokalen Daten,
+      // etwa wenn ein anderes Gerät die Cloud zurückgesetzt hat.
+      let cleared = false;
+      try {
+        storage.clearAccount(uid);
+        cleared = storage.getMigrationDone(uid) !== true;
+      } catch (e) {
+        console.error("Sync: Merker des Kontos nicht gelöscht", e);
+      }
+      if (!cleared) {
+        if (gen === generation) await start(uid); // Keyring liegt in der Cloud, ohne Schlüssel: locked
+        return stepFail("keyring");
+      }
       try {
         await keyStore.save(uid, setup.dataKey, kr.keyId);
       } catch (e) {
@@ -812,7 +830,10 @@
       try { row = await readKeyringRow(uid); } catch (e) { row = undefined; }
       if (!current()) throw badState();
       if (row === null) throw await keyringGone(gen, uid);
-      if (row && row.value) kr = row.value;
+      if (row !== undefined) {
+        if (!row.value) throw fail("bad_keyring", "Keyring ist ungültig"); // nie auf den Start-Keyring ausweichen
+        kr = row.value;
+      }
 
       const key = await C.unlockWithPassword(kr, password, false); // wrong_secret / bad_keyring
       if (!current()) throw badState();
@@ -833,6 +854,7 @@
       const row = await readKeyringRow(uid);
       if (!live()) throw badState();
       if (!row || !row.value || !stored || row.value.keyId !== stored.keyId) {
+        await start(uid); // wie keyringGone: ein Schlüssel ohne passenden Keyring bleibt nicht entsperrt
         throw fail("key_mismatch", "Der Keyring in der Cloud passt nicht zum Schlüssel dieses Geräts");
       }
       const ext = await C.unlockWithPassword(row.value, current, true); // wrong_secret: nichts geändert
@@ -890,9 +912,26 @@
         if (gen === generation && userId === uid) await start(uid); // Schlüssel liegt noch, Zustand neu bestimmen
         throw fail("write_failed", "Cloud-Daten konnten nicht gelöscht werden");
       }
+      // Ein delete ohne Fehler kann trotzdem nichts gelöscht haben (zum Beispiel durch RLS): erst wenn
+      // sicher kein Keyring mehr da ist, verwirft das Gerät Schlüssel und Merker.
+      let gone = false;
+      try { gone = (await readKeyringRow(uid)) === null; } catch (e) { gone = false; }
+      if (!gone) {
+        console.error("Sync: Cloud-Daten nach dem Löschen noch vorhanden oder nicht prüfbar");
+        if (gen === generation && userId === uid) await start(uid);
+        throw fail("write_failed", "Cloud-Daten konnten nicht gelöscht werden");
+      }
       await removeStoredKey(uid);
-      try { storage.clearAccount(uid); } catch (e) { console.error("Sync: Merker des Kontos nicht gelöscht", e); }
+      let cleared = false;
+      try {
+        storage.clearAccount(uid);
+        cleared = storage.getMigrationDone(uid) !== true;
+      } catch (e) {
+        console.error("Sync: Merker des Kontos nicht gelöscht", e);
+      }
       if (gen === generation && userId === uid) setState("unconfigured");
+      // Die Cloud ist leer, aber die alten Merker liegen noch: nicht als Erfolg melden.
+      if (!cleared) throw fail("write_failed", "Merker des Kontos konnten nicht gelöscht werden");
       return { ok: true };
     }
 
