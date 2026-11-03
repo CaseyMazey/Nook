@@ -4026,6 +4026,12 @@
        einem frischen Fork ohne eigenes Supabase-Projekt), läuft Nook
        bewusst fehlerfrei rein lokal weiter (siehe sync.js). -->
   <script src="js/sync-config.js"></script>
+  <!-- Ende-zu-Ende-Verschlüsselung des Syncs: reine Krypto (sync-crypto.js)
+       und Zustände/Abgleich (sync-engine.js), beide ohne DOM und ohne
+       Supabase-Import — sync.js reicht Client, Speicher und Schlüsselablage
+       hinein. Müssen direkt vor sync.js laden. -->
+  <script src="js/sync-crypto.js"></script>
+  <script src="js/sync-engine.js"></script>
   <script src="js/sync.js"></script>
   <script src="js/calendar.js"></script>
   <!-- Google Identity Services (GIS) wird NICHT hier statisch eingebunden,
