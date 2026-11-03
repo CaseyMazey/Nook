@@ -7,6 +7,10 @@ const { createSyncEngine, SYNC_KEYRING_KEY: KEYRING_KEY } = require("../../js/sy
 
 const A = "user-a";
 const B = "user-b";
+const quiet = async (fn) => {
+  const orig = console.error; console.error = () => {};
+  try { return await fn(); } finally { console.error = orig; }
+};
 let shared; // Keyring + Schlüssel einmal erzeugen (PBKDF2 ist langsam)
 async function material() {
   if (!shared) shared = await crypto.createKeyring("passwort-1234");
@@ -40,6 +44,7 @@ function makeStorage({ data = {}, meta = {}, last = {}, mig = {}, broken = [] } 
     conf: {}, migCalls: 0,
     getConfirmed(u) { return { ...(s.conf[u] || {}) }; },
     setConfirmed(u, m) { s.conf[u] = { ...m }; },
+    clearAccount(u) { delete s.mig[u]; delete s.conf[u]; delete s.last[u]; },
     keys() { return Object.keys(s.data); }
   };
   return s;
@@ -446,7 +451,7 @@ test("initialMerge: Klartext nach Migration wird nicht übernommen", async () =>
 test("Klartext vor Abschluss der Migration wird angenommen", async () => {
   const ctx = await setup({ migrationDone: false, storageOpts: { data: {}, meta: {} } });
   pendingMigration(ctx);
-  await ctx.engine.start(A);
+  await quiet(() => ctx.engine.start(A)); // die gewollt scheiternde Fortsetzung loggt
   await putRaw(ctx, "nook_a", { alt: true }, 2000);
   const res = await ctx.engine.catchUp();
   assert.equal(res.changed, true);
@@ -593,7 +598,7 @@ test("unconfigured, aber Keyring im eigenen Lesen: neu bestimmen, bevor Zeilen v
 test("Umschlag-Eigenschaft ohne gültigen v1-Umschlag gilt als unlesbar, nie als Klartext", async () => {
   const ctx = await setup({ migrationDone: false, storageOpts: { data: { nook_a: "l", nook_b: "l" }, meta: { nook_a: 1, nook_b: 1 } } });
   pendingMigration(ctx);
-  await ctx.engine.start(A);
+  await quiet(() => ctx.engine.start(A)); // die gewollt scheiternde Fortsetzung loggt
   await putRaw(ctx, "nook_a", { __nook_enc: 2, iv: "x", ct: "y" }, 2000);
   await putRaw(ctx, "nook_b", { __nook_enc: 1 }, 2000);
   const res = await ctx.engine.catchUp();
@@ -607,7 +612,7 @@ test("Umschlag-Eigenschaft ohne gültigen v1-Umschlag gilt als unlesbar, nie als
 test("Re-Resolve in catchUp: nach Erfolg läuft catchUp noch einmal (einmal, ohne Schleife)", async () => {
   const ctx = await setup({ migrationDone: false, storageOpts: { data: {}, meta: {} } });
   pendingMigration(ctx);
-  await ctx.engine.start(A);
+  await quiet(() => ctx.engine.start(A)); // die gewollt scheiternde Fortsetzung loggt
   await ctx.backend.client("x").from("kv_store").delete().eq("user_id", A).eq("key", KEYRING_KEY);
   await putRaw(ctx, "nook_p", { p: 1 }, 2000);
   const res = await ctx.engine.catchUp();

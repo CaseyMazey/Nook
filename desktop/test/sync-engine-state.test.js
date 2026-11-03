@@ -29,7 +29,7 @@ function makeStorage() {
   return {
     getRaw: () => null, setRaw: () => true, getMeta: () => ({}), setMeta() {},
     getLastCatchUp: () => 0, setLastCatchUp() {}, keys: () => [],
-    getConfirmed: () => ({}), setConfirmed() {}, getMigrationDone: () => false, setMigrationDone() {}
+    getConfirmed: () => ({}), setConfirmed() {}, getMigrationDone: () => false, setMigrationDone() {}, clearAccount() {}
   };
 }
 

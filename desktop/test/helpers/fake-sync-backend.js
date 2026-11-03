@@ -1,9 +1,12 @@
 // Fake-Backend für Sync-Tests: bildet den kleinen Teil der Supabase-API nach,
-// den die Sync-Engine nutzt (from().select/eq/in/upsert/insert/update/delete),
+// den die Sync-Engine nutzt (from().select/eq/in/order/range/upsert/insert/update/delete),
 // im Rückgabeformat { data, error }. Greift nie auf ein echtes Supabase zu.
+// opts.maxRows bildet die Zeilengrenze pro Anfrage nach (Supabase: "max-rows", Standard 1000).
+// .select() nach einem Schreibvorgang liefert wie PostgREST die betroffenen Zeilen.
 "use strict";
 
-function createFakeBackend() {
+function createFakeBackend(opts = {}) {
+  const maxRows = opts.maxRows || Infinity;
   const store = new Map(); // "userId|key" -> Zeile
   const events = [];       // Realtime-Ereignisse: { type, row, device }
   const failures = [];     // einmalige Fehler pro Operation
@@ -46,10 +49,16 @@ function createFakeBackend() {
   function run(q, device) {
     const fail = takeFailure(q.op);
     if (fail) return { data: null, error: fail };
-    const match = (r) => q.filters.every((f) => (f.type === "eq" ? r[f.col] === f.val : f.val.includes(r[f.col])));
+    // Zeitstempel vergleicht Postgres als Zeitpunkt, nicht als Text.
+    const same = (col, a, b) => (col === "updated_at" ? Date.parse(a) === Date.parse(b) : a === b);
+    const match = (r) => q.filters.every((f) => (f.type === "eq" ? same(f.col, r[f.col], f.val) : f.val.includes(r[f.col])));
+    const out = (rows) => ({ data: q.returning ? rows.map(clone) : null, error: null });
     const hit = () => Array.from(store.values()).filter(match);
     if (q.op === "select") {
-      const rows = hit().map(clone);
+      let rows = hit().map(clone);
+      if (q.order) rows.sort((a, b) => (a[q.order] < b[q.order] ? -1 : a[q.order] > b[q.order] ? 1 : 0));
+      if (q.range) rows = rows.slice(q.range[0], q.range[1] + 1);
+      rows = rows.slice(0, maxRows);
       if (q.mode === "maybeSingle") {
         if (rows.length > 1) return { data: null, error: { message: "mehrere Zeilen", code: "PGRST116" } };
         return { data: rows[0] || null, error: null };
@@ -61,36 +70,42 @@ function createFakeBackend() {
       return { data: rows, error: null };
     }
     if (q.op === "upsert") {
+      const done = [];
       for (const r of [].concat(q.payload)) {
         const row = clone(r);
         store.set(id(row), row);
+        done.push(row);
         events.push({ type: "upsert", row: clone(row), device });
       }
-      return { data: null, error: null };
+      return out(done);
     }
     if (q.op === "insert") {
       const list = [].concat(q.payload);
       if (list.some((r) => store.has(id(r)))) return { data: null, error: { message: "duplicate key", code: "23505" } };
+      const done = [];
       for (const r of list) {
         const row = clone(r);
         store.set(id(row), row);
+        done.push(row);
         events.push({ type: "insert", row: clone(row), device });
       }
-      return { data: null, error: null };
+      return out(done);
     }
     if (q.op === "update") {
-      for (const r of hit()) {
+      const done = hit();
+      for (const r of done) {
         Object.assign(r, clone(q.payload));
         events.push({ type: "update", row: clone(r), device });
       }
-      return { data: null, error: null };
+      return out(done);
     }
     if (q.op === "delete") {
-      for (const r of hit()) {
+      const done = hit();
+      for (const r of done) {
         store.delete(id(r));
         events.push({ type: "delete", row: clone(r), device });
       }
-      return { data: null, error: null };
+      return out(done);
     }
     return { data: null, error: { message: "unbekannte Operation " + q.op } };
   }
@@ -98,9 +113,11 @@ function createFakeBackend() {
   function client(deviceName) {
     return {
       from(table) {
-        const q = { table, op: "select", filters: [], mode: null, payload: null };
+        const q = { table, op: "select", filters: [], mode: null, payload: null, order: null, range: null, returning: false };
         const b = {
-          select() { return b; },
+          select() { if (q.op !== "select") q.returning = true; return b; },
+          order(col) { q.order = col; return b; },
+          range(from, to) { q.range = [from, to]; return b; },
           eq(col, val) { q.filters.push({ type: "eq", col, val }); return b; },
           in(col, val) { q.filters.push({ type: "in", col, val }); return b; },
           maybeSingle() { q.mode = "maybeSingle"; return b; },

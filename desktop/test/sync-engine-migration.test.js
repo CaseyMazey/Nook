@@ -37,6 +37,7 @@ function makeStorage({ data = {}, meta = {}, last = {}, mig = {}, broken = [] } 
     setMigrationDone(u) { s.mig[u] = true; },
     getConfirmed(u) { return { ...(s.conf[u] || {}) }; },
     setConfirmed(u, m) { s.conf[u] = { ...m }; },
+    clearAccount(u) { delete s.mig[u]; delete s.conf[u]; delete s.last[u]; },
     keys() { return Object.keys(s.data); }
   };
   return s;
@@ -51,7 +52,7 @@ function wrapClient(backend, device, ctl) {
       const b = inner.from(table);
       let op = "select";
       const w = {};
-      for (const name of ["select", "eq", "in", "maybeSingle", "single", "delete"]) {
+      for (const name of ["select", "eq", "in", "order", "range", "maybeSingle", "single", "delete"]) {
         w[name] = (...a) => { if (name === "delete") op = "delete"; b[name](...a); return w; };
       }
       for (const name of ["upsert", "insert", "update"]) {
@@ -158,7 +159,7 @@ test("beginSetup: unter 12 Zeichen abgelehnt, nur in unconfigured, speichert nic
 
 test("createSyncEngine: Speicher ohne Pflichtmethode wirft", () => {
   const required = ["getRaw", "setRaw", "getMeta", "setMeta", "getLastCatchUp", "setLastCatchUp",
-    "getConfirmed", "setConfirmed", "getMigrationDone", "setMigrationDone", "keys"];
+    "getConfirmed", "setConfirmed", "getMigrationDone", "setMigrationDone", "keys", "clearAccount"];
   const backend = createFakeBackend();
   for (const name of required) {
     const storage = makeStorage();
@@ -303,9 +304,9 @@ test("Backup zuerst: scheitert backup, gibt es weder Keyring noch geänderte Zei
   const before = sortRows(backend.rows());
   const setup = await getSetup();
   let sawLatest = null;
-  const res = await engine.finishSetup(setup, {
+  const res = await quiet(() => engine.finishSetup(setup, {
     backup: async () => { sawLatest = storage.data.nook_a; throw new Error("Download abgebrochen"); }
-  });
+  }));
   assert.deepEqual(res, { ok: false, step: "backup" });
   assert.equal(sawLatest, "cloud-neu", "Abgleich vor dem Backup");
   assert.deepEqual(sortRows(backend.rows()), before);
@@ -493,7 +494,7 @@ test("Prüfung: ein nicht entschlüsselbarer Umschlag nach dem Upload zählt als
     r.value.ct = r.value.ct.slice(0, -4) + "AAAA";
     await ctx.backend.client("x").from("kv_store").upsert(r);
   };
-  assert.deepEqual(await ctx.engine.resumeMigration(), { ok: false, step: "verify" });
+  assert.deepEqual(await quiet(() => ctx.engine.resumeMigration()), { ok: false, step: "verify" });
   assert.equal(rowOf(ctx.backend, KEYRING_KEY).value.migrationDone, false);
 });
 
@@ -680,7 +681,7 @@ test("Keyring nach dem Upload ersetzt: Prüfung scheitert, fremder Keyring bekom
     ctl.after = null;
     await ctx.backend.client("x").from("kv_store").update({ value: other.keyring }).eq("user_id", A).eq("key", KEYRING_KEY);
   };
-  assert.deepEqual(await ctx.engine.resumeMigration(), { ok: false, step: "verify" });
+  assert.deepEqual(await quiet(() => ctx.engine.resumeMigration()), { ok: false, step: "verify" });
   assert.equal(rowOf(ctx.backend, KEYRING_KEY).value.migrationDone, false);
   assert.equal(ctx.storage.mig[A], undefined);
 });

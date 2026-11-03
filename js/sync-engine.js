@@ -3,20 +3,25 @@
 // per createSyncEngine() hineingereicht, damit Node-Tests die Engine ohne Browser fahren.
 // Lädt nach sync-crypto.js (dessen Funktionen sind im Browser globale Funktionen).
 // Spec: docs/superpowers/specs/2026-11-02-sync-e2ee-design.md ("Zustände eines Geräts", "Hochladen",
-// "Einrichtung und Migration")
+// "Einrichtung und Migration", "Weiteres Gerät", "Passwort ändern", "Passwort vergessen",
+// "Beides verloren", "Abmelden")
 //
 // Grundregel: Der Client lädt in KEINEM Zustand Klartext hoch. Hochgeladen wird nur
 // im Zustand "unlocked", und dann ausschließlich als Chiffretext (__nook_enc).
-//
-// Task 5 erweitert diese Datei (Entsperren, Passwortwechsel); der Bereich dafür ist unten markiert.
 (function () {
   "use strict";
 
   const KEYRING_KEY = "__nook_sync_keyring__";
   const MIN_PASSWORD_LENGTH = 12;
+  const PAGE_SIZE = 500; // unter der Zeilengrenze pro Anfrage von Supabase (max-rows, Standard 1000)
   // Ohne eine dieser Methoden wären Löschschutz (confirmed) oder Migrationsmerker still abgeschaltet.
+  // clearAccount(userId) löscht Migrationsmerker, Bestätigungsstand und Abgleich-Merker eines Kontos.
   const STORAGE_METHODS = ["getRaw", "setRaw", "getMeta", "setMeta", "getLastCatchUp", "setLastCatchUp",
-    "getConfirmed", "setConfirmed", "getMigrationDone", "setMigrationDone", "keys"];
+    "getConfirmed", "setConfirmed", "getMigrationDone", "setMigrationDone", "keys", "clearAccount"];
+
+  // Nur Objekte, die beginSetup() erzeugt hat, nimmt finishSetup() an (eingefroren, also unverändert).
+  // Modulweit, weil ein Setup an kein Konto gebunden ist.
+  const issuedSetups = new WeakSet();
 
   // Im Browser sind die Krypto-Funktionen Globals, in Node kommen sie per require.
   const C = (typeof module !== "undefined" && module.exports && typeof require === "function")
@@ -31,7 +36,7 @@
     let state = "signedOut";
     let userId = null;
     let dataKey = null;
-    let keyring = null;   // zuletzt gelesener Keyring (für Entsperren/Passwortwechsel in späteren Tasks)
+    let keyring = null;   // zuletzt gelesener Keyring
     let generation = 0;   // wird bei start()/stop() erhöht; alte Läufe erkennen daran, dass sie veraltet sind
     let migrationRun = null; // { gen, promise } der laufenden Migration (höchstens eine pro Engine)
 
@@ -312,11 +317,19 @@
       return gen !== generation || state !== st;
     }
 
+    // Liest in Seiten (nach Key sortiert), bis eine Seite kurz bleibt: die Zeilengrenze pro Anfrage
+    // schneidet sonst still ab. null bei einem Lesefehler.
     async function readAllRows(uid) {
+      const all = [];
       try {
-        const res = await client.from(table).select("*").eq("user_id", uid);
-        if (res.error) return null;
-        return res.data || [];
+        for (let from = 0; ; from += PAGE_SIZE) {
+          const res = await client.from(table).select("*").eq("user_id", uid)
+            .order("key", { ascending: true }).range(from, from + PAGE_SIZE - 1);
+          if (res.error) return null;
+          const page = res.data || [];
+          for (const row of page) all.push(row);
+          if (page.length < PAGE_SIZE) return all;
+        }
       } catch (e) {
         return null;
       }
@@ -482,7 +495,7 @@
     // Schritte 1 und 2 (Passwort, Wiederherstellungsschlüssel anzeigen) gehören der Oberfläche.
     // Grundregel auch hier: nie Klartext in die Cloud; die Keyring-Zeile enthält nur gewickelte Schlüssel.
 
-    // Gleiche Prüfung für Einrichtung und Passwortwechsel (Task 5). Zählt Zeichen, nicht UTF-16-Einheiten.
+    // Gleiche Prüfung für Einrichtung, Passwortwechsel und Wiederherstellung. Zählt Zeichen, nicht UTF-16-Einheiten.
     function assertPasswordLength(password) {
       if (typeof password !== "string" || Array.from(password).length < MIN_PASSWORD_LENGTH) {
         throw new C.SyncCryptoError("password_too_short", "Das Passwort braucht mindestens " + MIN_PASSWORD_LENGTH + " Zeichen");
@@ -494,7 +507,15 @@
       assertPasswordLength(password);
       if (state !== "unconfigured") throw new C.SyncCryptoError("bad_state", "Einrichtung ist nur ohne Keyring möglich");
       const r = await C.createKeyring(password);
-      return { recoveryKey: r.recoveryKey, keyring: r.keyring, dataKey: r.dataKey };
+      const kr = r.keyring;
+      const frozenKeyring = Object.freeze({
+        v: kr.v, keyId: kr.keyId, kdf: Object.freeze({ ...kr.kdf }),
+        byPassword: Object.freeze({ ...kr.byPassword }), byRecovery: Object.freeze({ ...kr.byRecovery }),
+        migrationDone: kr.migrationDone
+      });
+      const setup = Object.freeze({ recoveryKey: r.recoveryKey, keyring: frozenKeyring, dataKey: r.dataKey });
+      issuedSetups.add(setup);
+      return setup;
     }
 
     const stepFail = (step) => ({ ok: false, step });
@@ -502,6 +523,7 @@
     // Spec-Schritte 3 bis 9. Bis einschließlich zum Keyring-Schritt ändert ein Abbruch in der Cloud nichts.
     async function finishSetup(setup, opts) {
       const backup = opts && opts.backup;
+      if (!issuedSetups.has(setup)) throw new C.SyncCryptoError("bad_setup", "Unbekanntes Setup-Objekt");
       if (state !== "unconfigured") return stepFail(state === "locked" || state === "unlocked" ? "keyring_exists" : "keyring");
       if (!setup || !setup.dataKey || !setup.keyring || typeof setup.keyring.keyId !== "string") return stepFail("keyring");
       if (typeof backup !== "function") return stepFail("backup");
@@ -687,9 +709,10 @@
 
         // (9) migrationDone setzen, auf dem frisch gelesenen Keyring (ein Passwortwechsel bleibt so erhalten).
         step = "done_flag";
-        const nextKr = Object.assign({}, kr2.value, { migrationDone: true });
-        const { error } = await client.from(table).update({ value: nextKr }).eq("user_id", uid).eq("key", KEYRING_KEY);
-        if (error) { console.error("Sync: Migration, Merker nicht gesetzt", error); return stepFail("done_flag"); }
+        // Compare-and-swap auf das eben gelesene updated_at: ein Passwortwechsel dazwischen bleibt erhalten.
+        const nextKr = keyringFields(Object.assign({}, kr2.value, { migrationDone: true }));
+        const cas = await writeKeyring(uid, kr2.updated_at, nextKr);
+        if (cas !== "ok") { console.error("Sync: Migration, Merker nicht gesetzt (" + cas + ")"); return stepFail("done_flag"); }
         try { storage.setMigrationDone(uid); } catch (e) { console.error("Sync: Migrationsmerker nicht speicherbar", e); }
         confirm(uid, seen);
         if (stale()) return stepFail("done_flag");
@@ -702,13 +725,197 @@
       }
     }
 
-    // --- Erweiterungen folgen in Task 5 (Entsperren, Passwortwechsel) ---
+    // --- Schlüssel: Entsperren, Passwort ändern, Wiederherstellen, Zurücksetzen, Abmelden ---
+    // Fehler kommen als SyncCryptoError mit code: bad_state, wrong_secret, bad_keyring, password_too_short,
+    // key_mismatch, keyring_changed, read_failed, write_failed, key_store.
+    // Jede Änderung der Keyring-Zeile ist ein Compare-and-swap auf updated_at (writeKeyring).
+
+    const fail = (c, msg) => new C.SyncCryptoError(c, msg);
+    const badState = (msg) => fail("bad_state", msg || "Im aktuellen Zustand nicht möglich");
+
+    // Keyring-Zeile frisch lesen: Zeile, null (sicher keine) oder Fehler read_failed.
+    async function readKeyringRow(uid) {
+      let res;
+      try {
+        res = await client.from(table).select("*").eq("user_id", uid).eq("key", KEYRING_KEY).maybeSingle();
+      } catch (e) {
+        res = { data: null, error: e || new Error("Lesefehler") };
+      }
+      if (res.error) throw fail("read_failed", "Keyring konnte nicht gelesen werden");
+      return res.data || null;
+    }
+
+    // Nur die bekannten Felder schreiben (gewickelte Schlüssel und Parameter), nie etwas anderes.
+    function keyringFields(k) {
+      return { v: k.v, keyId: k.keyId, kdf: k.kdf, byPassword: k.byPassword, byRecovery: k.byRecovery, migrationDone: k.migrationDone === true };
+    }
+
+    // Trifft nur, wenn updated_at noch dem gelesenen Stand entspricht, und muss genau eine Zeile
+    // zurückliefern. Ergebnis: "ok" | "changed" (inzwischen geändert oder weg) | "error" (Schreibfehler).
+    async function writeKeyring(uid, prevUpdatedAt, value) {
+      const prev = typeof prevUpdatedAt === "string" ? Date.parse(prevUpdatedAt) : NaN;
+      if (!Number.isFinite(prev)) return "changed";
+      const next = new Date(Math.max(Date.now(), prev + 1)).toISOString(); // immer neuer als der gelesene Stand
+      let res;
+      try {
+        res = await client.from(table).update({ value, updated_at: next })
+          .eq("user_id", uid).eq("key", KEYRING_KEY).eq("updated_at", prevUpdatedAt).select();
+      } catch (e) {
+        res = { data: null, error: e || new Error("Schreibfehler") };
+      }
+      if (res.error) { console.error("Sync: Keyring nicht geschrieben", res.error); return "error"; }
+      return Array.isArray(res.data) && res.data.length === 1 ? "ok" : "changed";
+    }
+
+    function writeError(cas) {
+      return cas === "changed"
+        ? fail("keyring_changed", "Der Keyring wurde inzwischen auf einem anderen Gerät geändert")
+        : fail("write_failed", "Keyring konnte nicht gespeichert werden");
+    }
+
+    // Keyring verschwunden: Zustand neu bestimmen (ergibt unconfigured) und melden.
+    async function keyringGone(gen, uid) {
+      if (gen === generation && userId === uid) await start(uid);
+      return fail("keyring_changed", "In der Cloud liegt kein Keyring mehr");
+    }
+
+    async function saveKey(uid, key, keyId) {
+      try {
+        await keyStore.save(uid, key, keyId);
+      } catch (e) {
+        console.error("Sync: Schlüssel konnte nicht gespeichert werden", e);
+        throw fail("key_store", "Schlüssel konnte auf dem Gerät nicht gespeichert werden");
+      }
+    }
+
+    // Nach dem Speichern veraltet (zum Beispiel abgemeldet): der Schlüssel darf nicht liegen bleiben.
+    async function discardIfSignedOut(uid) {
+      if (state === "signedOut") await removeStoredKey(uid);
+    }
+
+    // Wie start(): nach dem Entsperren eine abgebrochene Migration fortsetzen.
+    async function becomeUnlocked(key, kr) {
+      dataKey = key;
+      keyring = kr;
+      setState("unlocked");
+      if (!migrationDone()) await resumeMigration();
+    }
+
+    // Spec "Weiteres Gerät": das Passwort entpackt den Schlüssel nicht exportierbar, er kommt in die Ablage.
+    async function unlock(password) {
+      if (state !== "locked" || !userId) throw badState("Entsperren ist nur im Zustand locked möglich");
+      const gen = generation, uid = userId;
+      const current = () => gen === generation && state === "locked" && userId === uid;
+      // Frisch lesen, damit ein Passwortwechsel anderswo sofort gilt; offline reicht der Keyring vom Start.
+      let kr = keyring;
+      let row;
+      try { row = await readKeyringRow(uid); } catch (e) { row = undefined; }
+      if (!current()) throw badState();
+      if (row === null) throw await keyringGone(gen, uid);
+      if (row && row.value) kr = row.value;
+
+      const key = await C.unlockWithPassword(kr, password, false); // wrong_secret / bad_keyring
+      if (!current()) throw badState();
+      await saveKey(uid, key, kr.keyId);
+      if (!current()) { await discardIfSignedOut(uid); throw badState(); }
+      await becomeUnlocked(key, kr);
+      return { ok: true };
+    }
+
+    // Spec "Passwort ändern": nur entsperrt, mit dem aktuellen Passwort (der Geräteschlüssel ist nicht exportierbar).
+    async function changePassword(current, next) {
+      assertPasswordLength(next);
+      if (state !== "unlocked" || !userId) throw badState("Passwort ändern ist nur entsperrt möglich");
+      const gen = generation, uid = userId;
+      const live = () => gen === generation && state === "unlocked" && userId === uid;
+      let stored;
+      try { stored = await keyStore.load(uid); } catch (e) { throw fail("key_store", "Schlüsselablage nicht lesbar"); }
+      const row = await readKeyringRow(uid);
+      if (!live()) throw badState();
+      if (!row || !row.value || !stored || row.value.keyId !== stored.keyId) {
+        throw fail("key_mismatch", "Der Keyring in der Cloud passt nicht zum Schlüssel dieses Geräts");
+      }
+      const ext = await C.unlockWithPassword(row.value, current, true); // wrong_secret: nichts geändert
+      const nextKr = keyringFields(await C.rewrapKeyring(row.value, ext, next));
+      if (!live()) throw badState();
+      const cas = await writeKeyring(uid, row.updated_at, nextKr);
+      if (cas !== "ok") throw writeError(cas);
+      if (live()) keyring = nextKr;
+      return { ok: true };
+    }
+
+    // Spec "Passwort vergessen": der Wiederherstellungsschlüssel entpackt den Datenschlüssel, neues Passwort.
+    async function recover(recoveryKey, newPassword) {
+      assertPasswordLength(newPassword);
+      if ((state !== "locked" && state !== "unlocked") || !userId) throw badState("Wiederherstellung braucht einen Keyring");
+      const gen = generation, uid = userId, st = state;
+      const live = () => gen === generation && state === st && userId === uid;
+      const row = await readKeyringRow(uid);
+      if (!live()) throw badState();
+      if (!row || !row.value) throw await keyringGone(gen, uid);
+      const ext = await C.unlockWithRecoveryKey(row.value, recoveryKey, true); // nur zum Neuwickeln
+      const key = await C.unlockWithRecoveryKey(row.value, recoveryKey, false); // diese Kopie kommt in die Ablage
+      const nextKr = keyringFields(await C.rewrapKeyring(row.value, ext, newPassword));
+      if (!live()) throw badState();
+      const cas = await writeKeyring(uid, row.updated_at, nextKr);
+      if (cas !== "ok") throw writeError(cas);
+      if (!live()) return { ok: true }; // Passwort ist geändert; den Zustand bestimmt der neue Lauf
+      await saveKey(uid, key, nextKr.keyId);
+      if (!live()) { await discardIfSignedOut(uid); return { ok: true }; }
+      await becomeUnlocked(key, nextKr);
+      return { ok: true };
+    }
+
+    // Spec "Beides verloren": löscht alle Zeilen des Kontos einschließlich Keyring. Lokale Daten bleiben.
+    async function resetCloud() {
+      if ((state !== "locked" && state !== "unlocked") || !userId) throw badState("Zurücksetzen braucht einen Keyring");
+      const uid = userId;
+      // Erst alles anhalten: kein wartender oder laufender Upload und keine Migration darf nach dem Löschen landen.
+      const gen = ++generation;
+      clearPending();
+      dataKey = null;
+      keyring = null;
+      setState("unknown");
+      await Promise.all(Array.from(inflight.values()));
+      if (migrationRun) await migrationRun.promise.catch(() => {});
+
+      let res;
+      try {
+        res = await client.from(table).delete().eq("user_id", uid);
+      } catch (e) {
+        res = { error: e || new Error("Löschfehler") };
+      }
+      if (res.error) {
+        console.error("Sync: Cloud-Daten nicht gelöscht", res.error);
+        if (gen === generation && userId === uid) await start(uid); // Schlüssel liegt noch, Zustand neu bestimmen
+        throw fail("write_failed", "Cloud-Daten konnten nicht gelöscht werden");
+      }
+      await removeStoredKey(uid);
+      try { storage.clearAccount(uid); } catch (e) { console.error("Sync: Merker des Kontos nicht gelöscht", e); }
+      if (gen === generation && userId === uid) setState("unconfigured");
+      return { ok: true };
+    }
+
+    // Spec "Abmelden": Schlüssel des Kontos löschen; lokale Daten, Migrationsmerker und Bestätigungsstand bleiben.
+    async function signOut() {
+      const uid = userId;
+      stop();
+      if (!uid || !keyStore) return { ok: true };
+      try {
+        await keyStore.remove(uid);
+      } catch (e) {
+        console.error("Sync: Schlüssel konnte nicht entfernt werden", e);
+        throw fail("key_store", "Schlüssel konnte nicht vom Gerät entfernt werden");
+      }
+      return { ok: true };
+    }
 
     return {
       get state() { return state; },
       get userId() { return userId; },
       start, stop, notifyLocalWrite, flush, dropPending, catchUp, initialMerge, applyRemoteRow,
-      beginSetup, finishSetup, resumeMigration
+      beginSetup, finishSetup, resumeMigration,
+      unlock, changePassword, recover, resetCloud, signOut
     };
   }
 
