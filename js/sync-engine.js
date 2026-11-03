@@ -178,6 +178,7 @@
           { user_id: uid, key, value: envelope, updated_at: new Date(item.ts).toISOString() },
           { onConflict: "user_id,key" });
         if (error) { console.error("Sync: Upload fehlgeschlagen (" + key + ")", error); return false; }
+        confirm(uid, { [key]: item.ts });
         return true;
       } catch (e) {
         console.error("Sync: Upload fehlgeschlagen (" + key + ")", e);
@@ -209,14 +210,43 @@
     // Klebriger Merker: ein einmal gesehenes migrationDone: true gilt auf diesem Gerät für immer,
     // auch wenn der Server den Keyring später zurücksetzt (sonst könnte er Klartext einschleusen).
     function migrationDone() {
+      let local = false;
+      if (typeof storage.getMigrationDone === "function") {
+        try { local = storage.getMigrationDone(userId) === true; } catch (e) { local = false; }
+      }
+      if (local) return true;
       if (keyring && keyring.migrationDone === true) {
         if (typeof storage.setMigrationDone === "function") {
           try { storage.setMigrationDone(userId); } catch (e) { console.error("Sync: Migrationsmerker nicht speicherbar", e); }
         }
         return true;
       }
-      if (typeof storage.getMigrationDone !== "function") return false;
-      try { return storage.getMigrationDone(userId) === true; } catch (e) { return false; }
+      return false;
+    }
+
+    // Pro Konto und Key der letzte Zeitstempel, der auf dem Server bestätigt ist (Upload gelang,
+    // Zeile gesehen oder übernommen). Verhindert, dass ein anderswo gelöschter Key wieder hochgeladen wird.
+    function readConfirmed(uid) {
+      if (typeof storage.getConfirmed !== "function") return {};
+      try { return storage.getConfirmed(uid) || {}; } catch (e) { return {}; }
+    }
+    function confirm(uid, entries) {
+      if (typeof storage.setConfirmed !== "function") return;
+      try {
+        const map = readConfirmed(uid);
+        let dirty = false;
+        for (const key of Object.keys(entries)) {
+          if (!(entries[key] <= (map[key] || 0))) { map[key] = entries[key]; dirty = true; }
+        }
+        if (dirty) storage.setConfirmed(uid, map);
+      } catch (e) { console.error("Sync: Bestätigungsstand nicht speicherbar", e); }
+    }
+
+    // "envelope" | "malformed" (hat __nook_enc, ist aber kein gültiger v1-Umschlag) | "plain"
+    function rowKind(v) {
+      if (C.isEncryptedEnvelope(v)) return "envelope";
+      if (v && typeof v === "object" && Object.prototype.hasOwnProperty.call(v, "__nook_enc")) return "malformed";
+      return "plain";
     }
 
     function parseTs(row) {
@@ -248,7 +278,9 @@
     // Ergebnis: { kind: "value", value } | { kind: "bad" } | { kind: "skip" } | { kind: "plaintext_blocked" }
     async function decodeRow(row, k, uid) {
       const v = row.value;
-      if (C.isEncryptedEnvelope(v)) {
+      const kind = rowKind(v);
+      if (kind === "malformed") return state === "unlocked" ? { kind: "bad" } : { kind: "skip" };
+      if (kind === "envelope") {
         if (state !== "unlocked" || !k) return { kind: "skip" }; // ohne Schlüssel unlesbar, aber nicht "kaputt"
         try {
           return { kind: "value", value: await C.decryptValue(k, uid, row.key, v) };
@@ -256,13 +288,14 @@
           return { kind: "bad" };
         }
       }
-      if (state === "unlocked" && migrationDone()) return { kind: "plaintext_blocked" };
+      if (migrationDone()) return { kind: "plaintext_blocked" };
       return { kind: "value", value: v };
     }
 
     // Klartext-Zeile eines alten Clients nach der Migration: mit lokalem Wert verschlüsselt ersetzen
     // (neuer Zeitstempel), sonst liegen lassen und melden. Liefert ein Promise<boolean> oder null.
     function handlePlaintextRow(key) {
+      if (state !== "unlocked") { notice("plaintext_row", key); return null; } // ohne Schlüssel nichts zu ersetzen
       const local = readLocal(key);
       if (!local.has) { notice("plaintext_row", key); return null; }
       const ts = Date.now();
@@ -284,7 +317,9 @@
       }
     }
 
-    async function catchUp() {
+    function catchUp() { return runCatchUp(true); }
+
+    async function runCatchUp(canRetry) {
       const st = state;
       if (st !== "unlocked" && st !== "unconfigured") return { changed: false };
       const gen = generation, uid = userId, k = dataKey;
@@ -292,27 +327,28 @@
       const rows = await readAllRows(uid);
       if (rows === null || isStale(gen, st)) return { changed: false };
 
-      if (st === "unlocked") {
-        const kr = rows.find((r) => r.key === KEYRING_KEY);
-        if (!kr || !kr.value || !keyring || kr.value.keyId !== keyring.keyId) {
-          await start(uid); // gleiche Zustandsbestimmung wie beim Start; entfernt den Schlüssel, wenn er überholt ist
-          return { changed: false };
-        }
-        keyring = kr.value;
+      const kr = rows.find((r) => r.key === KEYRING_KEY);
+      if (st === "unconfigured" ? !!kr : (!kr || !kr.value || !keyring || kr.value.keyId !== keyring.keyId)) {
+        await start(uid); // gleiche Zustandsbestimmung wie beim Start; entfernt den Schlüssel, wenn er überholt ist
+        if (canRetry && (state === "unlocked" || state === "unconfigured")) return runCatchUp(false);
+        return { changed: false };
       }
+      if (st === "unlocked") keyring = kr.value;
 
       let changed = false;
       let complete = true;
       const uploads = [];
       const byKey = new Map();
+      const seen = {};
 
       for (const row of rows) {
         if (row.key === KEYRING_KEY || !isSyncableKey(row.key)) continue;
         byKey.set(row.key, row);
         const remoteTs = parseTs(row);
         if (remoteTs === null) { notice("decrypt_failed", row.key); continue; }
+        seen[row.key] = remoteTs;
 
-        if (st === "unlocked" && !C.isEncryptedEnvelope(row.value) && migrationDone()) {
+        if (rowKind(row.value) === "plain" && migrationDone()) {
           const p = handlePlaintextRow(row.key);
           if (p) uploads.push(p);
           continue;
@@ -327,13 +363,17 @@
         if (remoteTs <= localTs(row.key)) continue;
         if (storage.setRaw(row.key, dec.value) === true) {
           setLocalTs(row.key, remoteTs);
+          confirm(uid, { [row.key]: remoteTs });
           changed = true;
         } else {
           complete = false; // Speicher voll: Zeitstempel bleibt stehen, der nächste Lauf versucht es erneut
         }
       }
 
+      confirm(uid, seen);
+
       if (st === "unlocked") {
+        const confirmed = readConfirmed(uid);
         for (const key of storage.keys()) {
           if (key === KEYRING_KEY || !isSyncableKey(key)) continue;
           const lts = localTs(key);
@@ -341,9 +381,9 @@
           if (remote) {
             const rts = parseTs(remote);
             if (rts === null) continue; // unlesbare Zeile nie überschreiben
-            if (!C.isEncryptedEnvelope(remote.value) && migrationDone()) continue; // oben behandelt
+            if (rowKind(remote.value) === "plain" && migrationDone()) continue; // oben behandelt
             if (!(lts > rts)) continue;
-          } else if (!(lts > storage.getLastCatchUp(uid))) {
+          } else if (!(lts > Math.max(storage.getLastCatchUp(uid), confirmed[key] || 0))) {
             continue;
           }
           const local = readLocal(key);
@@ -385,7 +425,7 @@
       const handled = new Set([...decoded.map((d) => d.key), ...plain]);
       const uploads = [];
       for (const d of decoded) {
-        if (storage.setRaw(d.key, d.value) === true) setLocalTs(d.key, d.ts);
+        if (storage.setRaw(d.key, d.value) === true) { setLocalTs(d.key, d.ts); confirm(uid, { [d.key]: d.ts }); }
         else ok = false;
       }
       for (const key of plain) {
@@ -414,7 +454,7 @@
       const gen = generation, uid = userId, k = dataKey;
       const remoteTs = parseTs(row);
       if (remoteTs === null) { notice("decrypt_failed", row.key); return false; }
-      if (st === "unlocked" && !C.isEncryptedEnvelope(row.value) && migrationDone()) {
+      if (rowKind(row.value) === "plain" && migrationDone()) {
         const p = handlePlaintextRow(row.key);
         if (p) await p;
         return false;
@@ -427,6 +467,7 @@
       if (remoteTs <= localTs(row.key)) return false;
       if (storage.setRaw(row.key, dec.value) !== true) return false;
       setLocalTs(row.key, remoteTs);
+      confirm(uid, { [row.key]: remoteTs });
       return true;
     }
 

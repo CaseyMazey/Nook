@@ -36,7 +36,10 @@ function makeStorage({ data = {}, meta = {}, last = {}, mig = {}, broken = [] } 
     getLastCatchUp(u) { return s.last[u] || 0; },
     setLastCatchUp(u, ts) { s.last[u] = ts; },
     getMigrationDone(u) { return !!s.mig[u]; },
-    setMigrationDone(u) { s.mig[u] = true; },
+    setMigrationDone(u) { s.migCalls++; s.mig[u] = true; },
+    conf: {}, migCalls: 0,
+    getConfirmed(u) { return { ...(s.conf[u] || {}) }; },
+    setConfirmed(u, m) { s.conf[u] = { ...m }; },
     keys() { return Object.keys(s.data); }
   };
   return s;
@@ -516,4 +519,109 @@ test("applyRemoteRow: Abmelden während des Entschlüsselns schreibt nichts", as
     assert.equal(await p, false);
     assert.deepEqual(ctx.storage.setRawCalls, []);
   } finally { g.restore(); }
+});
+
+// --- Fix-Runde 1 ---
+
+test("Live-Upload, anderswo gelöscht: catchUp lädt den Key nicht wieder hoch, auch nicht nach Neustart", async () => {
+  const ctx = await setup({ storageOpts: { data: { nook_a: 1 }, meta: { nook_a: 5000 } } });
+  await ctx.engine.start(A);
+  ctx.engine.notifyLocalWrite("nook_a", "1", 5000);
+  await ctx.engine.flush();
+  assert.ok(row(ctx, "nook_a"));
+  await ctx.backend.client("x").from("kv_store").delete().eq("user_id", A).eq("key", "nook_a");
+  await ctx.engine.catchUp();
+  assert.equal(row(ctx, "nook_a"), undefined);
+
+  // Neustart: neue Engine, gleicher Speicher; der Merker hilft hier nicht
+  ctx.storage.last = {};
+  const engine2 = createSyncEngine({
+    client: ctx.backend.client("dieses"), table: "kv_store", storage: ctx.storage, keyStore: ctx.ks,
+    isSyncableKey: (k) => k.startsWith("nook_"), onStateChange() {}, onNotice() {}
+  });
+  await engine2.start(A);
+  await engine2.catchUp();
+  assert.equal(row(ctx, "nook_a"), undefined);
+
+  // Nach dem Löschen lokal neu geschrieben: wird wieder hochgeladen
+  ctx.storage.meta.nook_a = 9000;
+  ctx.storage.data.nook_a = 2;
+  ctx.storage.last = {};
+  await engine2.catchUp();
+  assert.ok(row(ctx, "nook_a"));
+  assert.equal(await decryptRow(ctx, "nook_a"), 2);
+});
+
+test("Klartext trotz klebrigem Merker: auch in unconfigured nicht übernommen (catchUp und Realtime)", async () => {
+  const ctx = await setup({
+    withKeyring: false, state: "none",
+    storageOpts: { data: { nook_a: "lokal" }, meta: { nook_a: 1000 }, mig: { [A]: true } }
+  });
+  assert.equal(await ctx.engine.start(A), "unconfigured");
+  await putRaw(ctx, "nook_a", "INJECTED", 2000);
+  const res = await ctx.engine.catchUp();
+  assert.equal(res.changed, false);
+  assert.equal(ctx.storage.data.nook_a, "lokal");
+  assert.equal(await ctx.engine.applyRemoteRow(row(ctx, "nook_a")), false);
+  assert.deepEqual(ctx.storage.setRawCalls, []);
+  assert.deepEqual(ctx.notices, [["plaintext_row", "nook_a"], ["plaintext_row", "nook_a"]]);
+  assert.equal(row(ctx, "nook_a").value, "INJECTED"); // nichts hochgeladen
+  assert.equal(ctx.storage.meta.nook_a, 1000);
+});
+
+test("unconfigured, aber Keyring im eigenen Lesen: neu bestimmen, bevor Zeilen verarbeitet werden", async () => {
+  const ctx = await setup({ withKeyring: false, state: "none", storageOpts: { data: {}, meta: {} } });
+  assert.equal(await ctx.engine.start(A), "unconfigured");
+  await ctx.backend.client("anderes").from("kv_store").insert(
+    { user_id: A, key: KEYRING_KEY, value: ctx.m.keyring, updated_at: new Date(1).toISOString() });
+  await putRaw(ctx, "nook_p", "klartext", 2000);
+  const res = await ctx.engine.catchUp();
+  assert.equal(res.changed, false);
+  assert.equal(ctx.engine.state, "locked");
+  assert.deepEqual(ctx.storage.setRawCalls, []);
+});
+
+test("Umschlag-Eigenschaft ohne gültigen v1-Umschlag gilt als unlesbar, nie als Klartext", async () => {
+  const ctx = await setup({ migrationDone: false, storageOpts: { data: { nook_a: "l", nook_b: "l" }, meta: { nook_a: 1, nook_b: 1 } } });
+  await ctx.engine.start(A);
+  await putRaw(ctx, "nook_a", { __nook_enc: 2, iv: "x", ct: "y" }, 2000);
+  await putRaw(ctx, "nook_b", { __nook_enc: 1 }, 2000);
+  const res = await ctx.engine.catchUp();
+  assert.equal(res.changed, false);
+  assert.deepEqual(ctx.storage.setRawCalls, []);
+  assert.deepEqual(ctx.notices.map((n) => n[0]), ["decrypt_failed", "decrypt_failed"]);
+  assert.equal(await ctx.engine.applyRemoteRow(row(ctx, "nook_a")), false);
+  assert.deepEqual(ctx.storage.setRawCalls, []);
+});
+
+test("Re-Resolve in catchUp: nach Erfolg läuft catchUp noch einmal (einmal, ohne Schleife)", async () => {
+  const ctx = await setup({ storageOpts: { data: {}, meta: {} } });
+  await ctx.engine.start(A);
+  await ctx.backend.client("x").from("kv_store").delete().eq("user_id", A).eq("key", KEYRING_KEY);
+  await putRaw(ctx, "nook_p", { p: 1 }, 2000);
+  const res = await ctx.engine.catchUp();
+  assert.equal(ctx.engine.state, "unconfigured");
+  assert.equal(res.changed, true);
+  assert.deepEqual(ctx.storage.data.nook_p, { p: 1 });
+});
+
+test("migrationDone schreibt den lokalen Merker nur einmal", async () => {
+  const ctx = await setup({ migrationDone: true, storageOpts: { data: {}, meta: {} } });
+  await ctx.engine.start(A);
+  await putRaw(ctx, "nook_a", "k", 2000);
+  await ctx.engine.catchUp();
+  await ctx.engine.catchUp();
+  await ctx.engine.applyRemoteRow(row(ctx, "nook_a"));
+  assert.equal(ctx.storage.migCalls, 1);
+});
+
+test("in catchUp gesehene Zeile zählt als bestätigt: danach anderswo gelöscht, bleibt weg", async () => {
+  const ctx = await setup({ storageOpts: { data: { nook_a: 1 }, meta: { nook_a: 2000 } } });
+  await ctx.engine.start(A);
+  await putEnc(ctx, "nook_a", 1, 2000);
+  await ctx.engine.catchUp();
+  await ctx.backend.client("x").from("kv_store").delete().eq("user_id", A).eq("key", "nook_a");
+  ctx.storage.last = {};
+  await ctx.engine.catchUp();
+  assert.equal(row(ctx, "nook_a"), undefined);
 });
