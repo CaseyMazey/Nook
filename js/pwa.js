@@ -10,7 +10,7 @@
 // erwartungsgemäß fehl — daher der stille catch, kein Fehlerzustand.
 // =========================
 
-if ("serviceWorker" in navigator) {
+if ("serviceWorker" in navigator && !window.NOOK_THEME_LAB && !window.NOOK_THEME_LAB_FAILED) { // Theme-Lab: kein SW
   window.addEventListener("load", () => {
     navigator.serviceWorker
       .register("/sw.js")

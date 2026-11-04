@@ -800,6 +800,7 @@ function hideBackupReminder() {
   document.getElementById('backup-reminder-banner')?.classList.add('hidden');
 }
 function checkBackupReminder() {
+  if (window.NOOK_THEME_LAB || window.NOOK_THEME_LAB_FAILED) return; // Theme-Lab: keine Erinnerung
   const days = DB.get('backupReminderDays', 30);
   if (!days) { hideBackupReminder(); return; }
   let since = DB.get('backupReminderSince', null);

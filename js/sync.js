@@ -1448,6 +1448,7 @@ document.getElementById("sync-locked-later-btn")?.addEventListener("click", hide
 
 // ── Start ────────────────────────────────────────────────────────────
 async function initSync() {
+  if (window.NOOK_THEME_LAB || window.NOOK_THEME_LAB_FAILED) return; // Theme-Lab: nie syncen
   if (!sbClient) {
     console.warn("Sync: Supabase-SDK nicht geladen (offline/blockiert?) — Nook läuft rein lokal weiter.");
     const statusBtn = document.getElementById("sync-status-btn");
