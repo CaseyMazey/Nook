@@ -1775,6 +1775,11 @@
                 <div><div class="settings-row-title">Version</div><div class="settings-row-sub">deine kleine digitale ecke.</div></div>
                 <span class="settings-value" id="about-version">—</span>
               </div>
+              <!-- Nur in der Desktop-App sichtbar (js/settings.js: initAboutUpdates) -->
+              <div class="settings-row hidden" id="about-updates-row">
+                <div><div class="settings-row-title">Updates</div><div class="settings-row-sub" id="about-updates-status" aria-live="polite">Prüfe, ob es eine neuere Version gibt.</div></div>
+                <button type="button" class="btn-ghost settings-small-btn" id="about-updates-btn">Nach Updates suchen</button>
+              </div>
               <div class="settings-row settings-row-stack">
                 <div class="settings-row-title">Neu in Nook</div>
                 <div id="about-changelog" class="about-changelog"></div>

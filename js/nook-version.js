@@ -10,9 +10,16 @@
 // hinten wegfallen, angezeigt werden ohnehin nur die neuesten.
 // =========================
 
-window.NOOK_VERSION = '2026.11.4';
+window.NOOK_VERSION = '2026.11.5';
 
 window.NOOK_CHANGELOG = [
+  {
+    version: '2026.11.5',
+    date: '2026-11-04',
+    items: [
+      'Desktop-App: Unter Einstellungen › Über Nook gibt es jetzt „Nach Updates suchen“ – ist eine neue Version da, kannst du sie direkt installieren',
+    ],
+  },
   {
     version: '2026.11.4',
     date: '2026-11-04',

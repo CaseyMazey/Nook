@@ -1325,6 +1325,56 @@ function renderAboutSettings() {
     </div>`).join('') || '<div class="settings-row-sub">Keine Einträge.</div>';
 }
 
+// Update-Knopf, nur in der Desktop-App: window.nookDesktop kommt aus
+// desktop/preload.js, die Logik liegt in desktop/lib/updates.js. Im Browser
+// gibt es das Objekt nicht, dort bleibt die Zeile versteckt.
+function initAboutUpdates() {
+  const updates = window.nookDesktop && window.nookDesktop.updates;
+  const row = document.getElementById('about-updates-row');
+  const status = document.getElementById('about-updates-status');
+  const btn = document.getElementById('about-updates-btn');
+  if (!updates || !row || !status || !btn) return;
+  row.classList.remove('hidden');
+
+  // Was der Knopf beim nächsten Klick tut, hängt vom Zustand ab.
+  let action = 'check';
+  function show(state) {
+    const s = state || {};
+    btn.disabled = false;
+    if (s.status === 'checking') {
+      status.textContent = 'Suche nach Updates …'; btn.textContent = 'Nach Updates suchen'; btn.disabled = true; action = 'check';
+    } else if (s.status === 'current') {
+      status.textContent = `App ist auf dem neuesten Stand (${s.version || window.NOOK_VERSION}).`; btn.textContent = 'Nach Updates suchen'; action = 'check';
+    } else if (s.status === 'available' && s.canInstall) {
+      status.textContent = `Nook ${s.version} ist verfügbar.`; btn.textContent = `Nook ${s.version} installieren`; action = 'download';
+    } else if (s.status === 'available') {
+      status.textContent = `Nook ${s.version} ist verfügbar. Lade es von der Release-Seite herunter.`; btn.textContent = 'Release-Seite öffnen'; action = 'page';
+    } else if (s.status === 'downloading') {
+      status.textContent = `Nook ${s.version} wird heruntergeladen … ${s.percent || 0} %`; btn.textContent = 'Wird heruntergeladen …'; btn.disabled = true; action = 'none';
+    } else if (s.status === 'downloaded') {
+      status.textContent = `Nook ${s.version} ist bereit. Nook startet zum Installieren kurz neu.`; btn.textContent = 'Jetzt neu starten und installieren'; action = 'install';
+    } else if (s.status === 'unsupported') {
+      status.textContent = 'Updates gibt es nur in der installierten App.'; btn.textContent = 'Nach Updates suchen'; btn.disabled = true; action = 'none';
+    } else if (s.status === 'error') {
+      status.textContent = 'Update-Prüfung nicht möglich. Prüfe deine Internetverbindung und versuche es noch einmal.'; btn.textContent = 'Erneut versuchen'; action = 'check';
+    }
+  }
+
+  updates.onProgress(show);
+  btn.addEventListener('click', async () => {
+    try {
+      if (action === 'check') { show({ status: 'checking' }); show(await updates.check()); }
+      else if (action === 'download') show(await updates.download());
+      else if (action === 'page') await updates.openReleasePage();
+      else if (action === 'install') { btn.disabled = true; if (!(await updates.install())) show({ status: 'error' }); }
+    } catch (err) {
+      console.warn('Update-Knopf:', err);
+      show({ status: 'error' });
+    }
+  });
+}
+initAboutUpdates();
+
 
 // =========================
 // UTIL

@@ -92,7 +92,12 @@ function createWindow() {
     ...state,
     show: false,
     title: 'Nook',
-    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true },
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+      preload: path.join(__dirname, 'preload.js'),
+    },
   });
 
   win.webContents.setWindowOpenHandler(({ url }) => {
