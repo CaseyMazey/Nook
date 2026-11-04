@@ -411,6 +411,15 @@
 [data-cal-image-theme="blockwelt"] .cal-hero-summer { --cal-hero-img: url('../assets/themes/blockwelt/summer.webp'); }
 [data-cal-image-theme="blockwelt"] .cal-hero-autumn { --cal-hero-img: url('../assets/themes/blockwelt/fall.webp'); }
 [data-cal-image-theme="blockwelt"] .cal-hero-winter { --cal-hero-img: url('../assets/themes/blockwelt/winter.webp'); }
+[data-cal-image-theme="muster"] .cal-hero-spring { --cal-hero-img: url('../assets/themes/muster/spring.png'); }
+[data-cal-image-theme="muster"] .cal-hero-summer { --cal-hero-img: url('../assets/themes/muster/summer.png'); }
+[data-cal-image-theme="muster"] .cal-hero-autumn { --cal-hero-img: url('../assets/themes/muster/fall.png'); }
+[data-cal-image-theme="muster"] .cal-hero-winter { --cal-hero-img: url('../assets/themes/muster/winter.png'); }
+/* Eigene Bilder eines Themes: applyCalendarImageTheme() setzt die Variablen auf <html> */
+[data-cal-image-theme="custom"] .cal-hero-spring { --cal-hero-img: var(--custom-cal-spring, none); }
+[data-cal-image-theme="custom"] .cal-hero-summer { --cal-hero-img: var(--custom-cal-summer, none); }
+[data-cal-image-theme="custom"] .cal-hero-autumn { --cal-hero-img: var(--custom-cal-autumn, none); }
+[data-cal-image-theme="custom"] .cal-hero-winter { --cal-hero-img: var(--custom-cal-winter, none); }
 [data-cal-image-theme="none"] .cal-hero { --cal-hero-img: none; }
 [data-theme-family="dark"] .cal-hero { box-shadow: var(--shadow-md); }
 

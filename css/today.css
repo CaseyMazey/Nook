@@ -55,6 +55,11 @@
 [data-start-header-theme="zombie"][data-start-header-daynight="night"] #today-main-header { --today-header-img: url('../assets/themes/zombie/banner-night.webp'); }
 [data-start-header-theme="bluetenmarmor"][data-start-header-daynight="night"] #today-main-header { --today-header-img: url('../assets/themes/bluetenmarmor/banner-night.webp'); }
 [data-start-header-theme="blockwelt"][data-start-header-daynight="night"] #today-main-header { --today-header-img: url('../assets/themes/blockwelt/banner-night.webp'); }
+[data-start-header-theme="muster"] #today-main-header { --today-header-img: url('../assets/themes/muster/banner-day.png'); }
+[data-start-header-theme="muster"][data-start-header-daynight="night"] #today-main-header { --today-header-img: url('../assets/themes/muster/banner-night.png'); }
+/* Eigene Bilder eines Themes: applyStartHeaderTheme() setzt die Variablen auf <html> */
+[data-start-header-theme="custom"] #today-main-header { --today-header-img: var(--custom-banner-day, none); }
+[data-start-header-theme="custom"][data-start-header-daynight="night"] #today-main-header { --today-header-img: var(--custom-banner-night, none); }
 [data-start-header-theme]:not([data-start-header-theme="none"]) #today-main-header::before {
   content: '';
   position: absolute;

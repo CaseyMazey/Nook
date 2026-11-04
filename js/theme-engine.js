@@ -348,6 +348,14 @@ const PRESET_THEMES = [
     coreColors: { bg: '#0e1211', surface: '#181d1b', nav: '#121715', modal: '#1c2220', text: '#d8dbd5', border: '#53635c', accent: '#477867', font: DEFAULT_FONT_STACK },
     cardOpacity: 85, fontSize: 100, bg: { source: 'lab', size: 'cover', dim: 40 },
     calendar: { imageTheme: 'lab' }, startHeader: { banner: 'lab' }, branding: { theme: 'lab' }, graphics: { mode: 'theme', theme: 'lab' } },
+  // Muster: zeigt an jeder Bildstelle (Hintergrund, Kalender, Start-Banner,
+  // Icon) ein Platzhalterbild mit Maßen und sicheren Bereichen. Vorlage für
+  // eigene Bilder: ✎ → „Einzeln anpassen“ → „Eigene Bilder“, dort lässt sich
+  // jedes Muster auch herunterladen.
+  { id: 'preset_muster', name: 'Muster', family: 'light',
+    coreColors: { bg: '#eceae4', surface: '#fbfaf7', nav: '#e6e3dc', modal: '#fbfaf7', text: '#34302a', border: '#b9b2a5', accent: '#c6782a', font: DEFAULT_FONT_STACK },
+    cardOpacity: 90, fontSize: 100, bg: { source: 'muster', size: 'cover', dim: 20 },
+    calendar: { imageTheme: 'muster' }, startHeader: { banner: 'muster' }, branding: { theme: 'muster' }, graphics: { mode: 'theme', theme: 'muster' } },
 ];
 
 // Eigene Themes, die einem Preset exakt entsprechen (gleicher Name, gleiche
@@ -427,11 +435,73 @@ const GRAPHICS_THEMES = [
   { id: 'bluetenmarmor', label: 'Blütenmarmor', icon: { src: 'assets/themes/bluetenmarmor/icon.png', type: 'image/png' } },
   { id: 'blockwelt', label: 'Blockwelt', icon: { src: 'assets/themes/blockwelt/icon.png', type: 'image/png' } },
   { id: 'rpg',       label: 'RPG',     icon: { src: 'assets/themes/rpg/icon.png',       type: 'image/png' }, questboard: 'rpg', pinboard: 'rpg', guides: 'rpg', calendarStyle: 'rpg', todayStyle: 'rpg', pagesStyle: 'rpg' },
+  // Muster: Platzhalter in genau den Größen, die eigene Bilder haben sollten
+  // (scripts/gen-muster-assets.py) — Vorlage zum Herunterladen und Übermalen.
+  { id: 'muster',    label: 'Muster (Bildgrößen)', icon: { src: 'assets/themes/muster/icon.png', type: 'image/png' }, bgFile: 'background.png' },
 ];
 const DEFAULT_GRAPHICS_THEME = 'cozy';
 
 function findGraphicsTheme(id) { return GRAPHICS_THEMES.find(g => g.id === id) || null; }
-function graphicsBackgroundUrl(id) { return findGraphicsTheme(id) ? `assets/themes/${id}/background.webp` : null; }
+function graphicsBackgroundUrl(id) {
+  const g = findGraphicsTheme(id);
+  return g ? `assets/themes/${id}/${g.bgFile || 'background.webp'}` : null;
+}
+
+// ── Eigene Bilder für Kalender, Start-Banner und Icon ────────────────────
+// Ein eigenes Theme kann statt eines Grafik-Sets eigene Bilder nutzen
+// (Auswahl „Eigene Bilder“ = Wert 'custom'). Gespeichert am Theme als
+// ct.images = { calendar: {spring, summer, autumn, winter}, banner: {day,
+// night}, icon: {icon} } — data-URLs, beim Hochladen auf genau das Format
+// unten zugeschnitten (mittig, wie background-size: cover), damit sie
+// klein bleiben und so aussehen wie im Muster-Set. Seitenverhältnis 5:1
+// wie die Muster (2000 × 400); gespeichert etwas kleiner, das reicht für
+// die 215 bzw. 190 px hohen Flächen.
+const THEME_IMAGE_SLOTS = {
+  calendar: { w: 1600, h: 320, mime: 'image/jpeg', hint: 'Empfohlen 2000 × 400 px (5 : 1)', slots: [
+    { key: 'spring', label: 'Frühling', muster: 'spring.png' },
+    { key: 'summer', label: 'Sommer',   muster: 'summer.png' },
+    { key: 'autumn', label: 'Herbst',   muster: 'fall.png' },
+    { key: 'winter', label: 'Winter',   muster: 'winter.png' },
+  ]},
+  banner: { w: 1600, h: 320, mime: 'image/jpeg', hint: 'Empfohlen 2000 × 400 px (5 : 1)', slots: [
+    { key: 'day',   label: 'Tag',   muster: 'banner-day.png' },
+    { key: 'night', label: 'Nacht', muster: 'banner-night.png' },
+  ]},
+  icon: { w: 256, h: 256, mime: 'image/png', hint: 'Empfohlen 256 × 256 px, quadratisch', slots: [
+    { key: 'icon', label: 'Icon', muster: 'icon.png' },
+  ]},
+};
+const CUSTOM_IMAGES_VALUE = 'custom';
+
+// Bild einlesen und mittig auf w × h zuschneiden (cover)
+function cropImageFileToSlot(file, w, h, mime) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(reader.error);
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = reject;
+      img.onload = () => {
+        const scale = Math.max(w / img.width, h / img.height);
+        const sw = w / scale, sh = h / scale;
+        const sx = (img.width - sw) / 2, sy = (img.height - sh) / 2;
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, sx, sy, sw, sh, 0, 0, w, h);
+        resolve(canvas.toDataURL(mime, mime === 'image/jpeg' ? BG_IMAGE_JPEG_QUALITY : undefined));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+const cssUrl = data => data ? `url("${data}")` : 'none';
+function themeImages(id, imagesOverride) {
+  if (imagesOverride) return imagesOverride;
+  const ct = id ? getCustomTheme(id) : null;
+  return (ct && ct.images) || {};
+}
 
 // Füllt ein <select> mit den Grafik-Themes, optional mit einem
 // vorangestellten "Kein …"-Eintrag (value "none").
@@ -445,19 +515,33 @@ function renderGraphicsOptions(selectId, noneLabel) {
 // Kalender-Hero: welches saisonale Bilder-Set (css/calendar.css,
 // [data-cal-image-theme]). Eingebaute Themes → 'cozy' (bisheriges Verhalten).
 // override: noch ungespeicherter Editor-Wert für die Live-Vorschau.
-function applyCalendarImageTheme(id, override) {
+// imagesOverride: noch ungespeicherte eigene Bilder aus dem Editor.
+function applyCalendarImageTheme(id, override, imagesOverride) {
   const ct = getCustomTheme(id);
   const v = override !== undefined ? override : ((ct && ct.calendar && ct.calendar.imageTheme) || 'cozy');
-  document.documentElement.setAttribute('data-cal-image-theme', v);
+  const root = document.documentElement;
+  root.setAttribute('data-cal-image-theme', v);
+  const seasons = ['spring', 'summer', 'autumn', 'winter'];
+  if (v !== CUSTOM_IMAGES_VALUE) { seasons.forEach(s => root.style.removeProperty('--custom-cal-' + s)); return; }
+  // Fehlende Jahreszeiten nehmen das erste vorhandene eigene Bild
+  const imgs = themeImages(id, imagesOverride).calendar || {};
+  const fallback = seasons.map(s => imgs[s]).find(Boolean) || null;
+  seasons.forEach(s => root.style.setProperty('--custom-cal-' + s, cssUrl(imgs[s] || fallback)));
 }
 
 // Start-Banner auf der Heute-Seite (css/today.css, [data-start-header-
 // theme]). Eingebaute Themes → 'none' (bisheriges Nook-Layout ohne Banner).
 // Tag/Nacht wählt today.js separat über [data-start-header-daynight].
-function applyStartHeaderTheme(id, override) {
+function applyStartHeaderTheme(id, override, imagesOverride) {
   const ct = getCustomTheme(id);
   const v = override !== undefined ? override : ((ct && ct.startHeader && ct.startHeader.banner) || 'none');
-  document.documentElement.setAttribute('data-start-header-theme', v);
+  const root = document.documentElement;
+  root.setAttribute('data-start-header-theme', v);
+  if (v !== CUSTOM_IMAGES_VALUE) { ['day', 'night'].forEach(k => root.style.removeProperty('--custom-banner-' + k)); return; }
+  // Ohne eigenes Nachtbild bleibt nachts das Tagbild stehen
+  const imgs = themeImages(id, imagesOverride).banner || {};
+  root.style.setProperty('--custom-banner-day', cssUrl(imgs.day || imgs.night));
+  root.style.setProperty('--custom-banner-night', cssUrl(imgs.night || imgs.day));
 }
 
 // Questboard-Stil (css/questboard-rpg.css, [data-questboard-style]).
@@ -547,11 +631,15 @@ function applyForestStyle(id) {
 }
 
 // Sidebar-Icon + Favicon. 'none' bzw. eingebaute Themes → Nook-Icon.
-function applyBranding(id, override) {
+function applyBranding(id, override, imagesOverride) {
   const ct = getCustomTheme(id);
   const brandingId = override !== undefined ? override : ((ct && ct.branding && ct.branding.theme) || 'none');
   const gt = findGraphicsTheme(brandingId);
-  const icon = gt ? gt.icon : NOOK_ICON;
+  let icon = gt ? gt.icon : NOOK_ICON;
+  if (brandingId === CUSTOM_IMAGES_VALUE) {
+    const own = (themeImages(id, imagesOverride).icon || {}).icon;
+    if (own) icon = { src: own, type: own.slice(5, own.indexOf(';')) };
+  }
   const brandIconEl = document.getElementById('brand-icon');
   const faviconEl = document.querySelector('link[rel="icon"]');
   if (faviconEl) { faviconEl.href = icon.src; faviconEl.type = icon.type; }
@@ -826,8 +914,95 @@ let _teBuilderGraphicsMode = 'theme';  // 'theme' | 'custom'
 // erst beim Speichern ins Theme übernommen.
 let _teBuilderBgData = null;
 let _teBuilderBgName = null;
+// Eigene Bilder im Editor (Format wie ct.images), erst beim Speichern übernommen
+let _teBuilderImages = {};
+let _teBuilderImageTarget = null; // { group, key } des gerade gewählten Platzes
 
 function tbEl(id) { return document.getElementById('theme-builder-' + id); }
+
+// ── Eigene Bilder: Plätze unter Kalenderbilder / Start-Banner / Icon ─────
+const THEME_IMAGE_SELECT = { calendar: 'calendar-image', banner: 'start-header', icon: 'branding-theme' };
+
+function renderThemeImageSlots(group) {
+  const box = tbEl('images-' + group);
+  const def = THEME_IMAGE_SLOTS[group];
+  if (!box || !def) return;
+  const imgs = _teBuilderImages[group] || {};
+  box.innerHTML = '';
+  const hint = document.createElement('div');
+  hint.className = 'tb-image-hint';
+  hint.textContent = def.hint + ' · wird mittig zugeschnitten';
+  box.appendChild(hint);
+  def.slots.forEach(slot => {
+    const row = document.createElement('div');
+    row.className = 'tb-image-slot' + (group === 'icon' ? ' tb-image-slot--square' : '');
+    const thumb = document.createElement('div');
+    thumb.className = 'tb-image-thumb';
+    if (imgs[slot.key]) thumb.style.backgroundImage = cssUrl(imgs[slot.key]);
+    else thumb.textContent = 'leer';
+    const label = document.createElement('span');
+    label.className = 'tb-image-label';
+    label.textContent = slot.label;
+    const actions = document.createElement('div');
+    actions.className = 'tb-image-actions';
+    const up = document.createElement('button');
+    up.type = 'button'; up.className = 'clock-type-btn';
+    up.textContent = imgs[slot.key] ? 'Ersetzen' : 'Hochladen';
+    up.addEventListener('click', () => { _teBuilderImageTarget = { group, key: slot.key }; tbEl('image-file-input').click(); });
+    actions.appendChild(up);
+    if (imgs[slot.key]) {
+      const del = document.createElement('button');
+      del.type = 'button'; del.className = 'clock-type-btn'; del.title = 'Bild entfernen'; del.textContent = '✕';
+      del.addEventListener('click', () => {
+        delete imgs[slot.key];
+        if (!Object.keys(imgs).length) delete _teBuilderImages[group];
+        renderThemeImageSlots(group); previewThemeBuilderLive();
+      });
+      actions.appendChild(del);
+    }
+    const muster = document.createElement('a');
+    muster.className = 'tb-image-muster';
+    muster.href = `assets/themes/muster/${slot.muster}`;
+    muster.download = `nook-muster-${slot.muster}`;
+    muster.title = 'Musterbild mit Maßen herunterladen';
+    muster.textContent = 'Muster ↓';
+    actions.appendChild(muster);
+    row.append(thumb, label, actions);
+    box.appendChild(row);
+  });
+}
+
+function syncThemeImageSlotsUI() {
+  Object.keys(THEME_IMAGE_SELECT).forEach(group => {
+    const on = tbEl(THEME_IMAGE_SELECT[group]).value === CUSTOM_IMAGES_VALUE;
+    tbEl('images-' + group).classList.toggle('hidden', !on);
+    if (on) renderThemeImageSlots(group);
+  });
+}
+
+async function onThemeImageFileChosen(file) {
+  const target = _teBuilderImageTarget;
+  _teBuilderImageTarget = null;
+  if (!file || !target) return;
+  const def = THEME_IMAGE_SLOTS[target.group];
+  let data;
+  try { data = await cropImageFileToSlot(file, def.w, def.h, def.mime); }
+  catch { hubAlert('Bild nicht lesbar', 'Dieses Bild konnte nicht geladen werden.'); return; }
+  (_teBuilderImages[target.group] ||= {})[target.key] = data;
+  renderThemeImageSlots(target.group);
+  previewThemeBuilderLive();
+}
+
+// Nur die Bilder der Bereiche speichern, die auch auf „Eigene Bilder“ stehen
+function collectThemeBuilderImages() {
+  const out = {};
+  Object.keys(THEME_IMAGE_SELECT).forEach(group => {
+    if (tbEl(THEME_IMAGE_SELECT[group]).value !== CUSTOM_IMAGES_VALUE) return;
+    const imgs = _teBuilderImages[group];
+    if (imgs && Object.keys(imgs).length) out[group] = Object.assign({}, imgs);
+  });
+  return Object.keys(out).length ? out : null;
+}
 
 // ── "Grafische Elemente": ein Set für alles oder einzeln ─────────────────
 // Bestehende Themes ohne gespeicherten Modus: stimmen Kalender, Start-
@@ -850,6 +1025,7 @@ function applyGraphicsThemeToControls(themeId) {
   tbEl('calendar-style').value = (gt && gt.calendarStyle) || 'cozy';
   tbEl('today-style').value = (gt && gt.todayStyle) || 'cozy';
   tbEl('pages-style').value = (gt && gt.pagesStyle) || 'cozy';
+  syncThemeImageSlotsUI();
   previewThemeBuilderLive();
 }
 
@@ -937,6 +1113,7 @@ function fillThemeBuilderVariant(t) {
 // Version (Tag oder Nacht).
 function fillThemeBuilderForm(t) {
   fillThemeBuilderVariant(t);
+  _teBuilderImages = JSON.parse(JSON.stringify(t.images || {}));
 
   const calendar = (t.calendar && t.calendar.imageTheme) || 'cozy';
   const startHeader = (t.startHeader && t.startHeader.banner) || 'none';
@@ -954,6 +1131,7 @@ function fillThemeBuilderForm(t) {
   tbEl('graphics-theme').value = graphics.theme || DEFAULT_GRAPHICS_THEME;
   setGraphicsModeUI(graphics.mode);
   if (graphics.mode === 'theme') applyGraphicsThemeToControls(graphics.theme || DEFAULT_GRAPHICS_THEME);
+  syncThemeImageSlotsUI();
 
   syncThemeBuilderBgUI();
   previewThemeBuilderLive();
@@ -971,6 +1149,9 @@ function openThemeBuilder(editId) {
   renderGraphicsOptions('theme-builder-start-header', 'Kein Banner');
   renderGraphicsOptions('theme-builder-branding-theme', 'Nook (Standard)');
   renderGraphicsOptions('theme-builder-graphics-theme', null);
+  tbEl('calendar-image').insertAdjacentHTML('beforeend', `<option value="${CUSTOM_IMAGES_VALUE}">Eigene Bilder</option>`);
+  tbEl('start-header').insertAdjacentHTML('beforeend', `<option value="${CUSTOM_IMAGES_VALUE}">Eigene Bilder</option>`);
+  tbEl('branding-theme').insertAdjacentHTML('beforeend', `<option value="${CUSTOM_IMAGES_VALUE}">Eigenes Icon</option>`);
   tbEl('questboard-style').innerHTML = QUESTBOARD_STYLES.map(q => `<option value="${q.id}">${q.label}</option>`).join('');
   tbEl('pinboard-style').innerHTML = PINBOARD_STYLES.map(q => `<option value="${q.id}">${q.label}</option>`).join('');
   tbEl('guides-style').innerHTML = GUIDES_STYLES.map(q => `<option value="${q.id}">${q.label}</option>`).join('');
@@ -1019,6 +1200,8 @@ function closeThemeBuilder() {
   _teBuilderBgName = null;
   _teBuilderVariants = { day: null, night: null };
   _teBuilderVariant = 'day';
+  _teBuilderImages = {};
+  _teBuilderImageTarget = null;
   document.documentElement.setAttribute('data-theme-family', themeFamily);
   applyThemeEngine(theme);
 }
@@ -1042,9 +1225,9 @@ function previewThemeBuilderLive() {
   applyVarsToRoot(deriveThemeVars(core, opacity, fontSize), teLuminance(core.bg) < 128 ? 'dark' : 'light');
   const bgMeta = readThemeBuilderBgMeta();
   applyBgToDom(resolveBgUrl(bgMeta), bgMeta, true);
-  applyCalendarImageTheme(null, tbEl('calendar-image').value);
-  applyStartHeaderTheme(null, tbEl('start-header').value);
-  applyBranding(null, tbEl('branding-theme').value);
+  applyCalendarImageTheme(null, tbEl('calendar-image').value, _teBuilderImages);
+  applyStartHeaderTheme(null, tbEl('start-header').value, _teBuilderImages);
+  applyBranding(null, tbEl('branding-theme').value, _teBuilderImages);
   applyQuestboardStyle(null, tbEl('questboard-style').value);
   applyPinboardStyle(null, tbEl('pinboard-style').value);
   applyGuidesStyle(null, tbEl('guides-style').value);
@@ -1131,12 +1314,19 @@ function saveThemeBuilder() {
     today: { style: tbEl('today-style').value },
     pages: { style: tbEl('pages-style').value },
     graphics: { mode: _teBuilderGraphicsMode, theme: tbEl('graphics-theme').value },
+    images: collectThemeBuilderImages(),
   };
 
   let id = _teBuilderEditId;
   const ct = id ? customThemes.find(t => t.id === id) : null;
-  if (ct) { Object.assign(ct, data); if (!night) delete ct.night; }
-  else { id = 'custom_' + Date.now(); const neu = Object.assign({ id }, data); if (!night) delete neu.night; customThemes.push(neu); }
+  if (ct) { Object.assign(ct, data); if (!night) delete ct.night; if (!data.images) delete ct.images; }
+  else {
+    id = 'custom_' + Date.now();
+    const neu = Object.assign({ id }, data);
+    if (!night) delete neu.night;
+    if (!data.images) delete neu.images;
+    customThemes.push(neu);
+  }
   // Danach die Version aktivieren, die gerade im Editor offen war.
   const showNight = !!night && _teBuilderVariant === 'night';
   try { saveCustomThemes(); }
@@ -1230,7 +1420,12 @@ function renderCustomThemeButtons() {
 // =========================================================================
 
 const THEME_FILE_VERSION = 1;
-const THEME_IMPORT_MAX_IMAGE = 4 * 1024 * 1024; // Zeichen der data-URL
+const THEME_IMPORT_MAX_IMAGE = 4 * 1024 * 1024; // Zeichen je data-URL
+const THEME_IMPORT_MAX_FILE = 16 * 1024 * 1024; // ganze Datei (Hintergrund + eigene Bilder)
+function isImageDataUrl(v) {
+  return typeof v === 'string' && v.length <= THEME_IMPORT_MAX_IMAGE
+    && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(v);
+}
 
 function exportCustomTheme(id) {
   const ct = customThemes.find(t => t.id === id);
@@ -1291,9 +1486,7 @@ function sanitizeImportedTheme(file, notes) {
       dim: Math.round(clampNum(raw.dim, 0, 90, 40)),
     };
     if (raw.source === 'custom') {
-      const ok = typeof raw.data === 'string' && raw.data.length <= THEME_IMPORT_MAX_IMAGE
-        && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(raw.data);
-      if (ok) {
+      if (isImageDataUrl(raw.data)) {
         out.source = 'custom'; out.data = raw.data;
         if (typeof raw.name === 'string') out.name = raw.name.slice(0, 120);
       } else notes.add('Das Hintergrundbild konnte nicht übernommen werden.');
@@ -1322,12 +1515,32 @@ function sanitizeImportedTheme(file, notes) {
     if (nf) t.night.forest = nf;
   }
   const g = (obj, key) => obj && typeof obj === 'object' ? obj[key] : undefined;
+  const imageChoices = new Set([...graphicsIds, 'none', CUSTOM_IMAGES_VALUE]);
   t.calendar = {
-    imageTheme: pick(g(src.calendar, 'imageTheme'), new Set([...graphicsIds, 'none']), 'cozy'),
+    imageTheme: pick(g(src.calendar, 'imageTheme'), imageChoices, 'cozy'),
     style: pick(g(src.calendar, 'style'), styleSet(CALENDAR_STYLES), 'cozy'),
   };
-  t.startHeader = { banner: pick(g(src.startHeader, 'banner'), new Set([...graphicsIds, 'none']), 'none') };
-  t.branding = { theme: pick(g(src.branding, 'theme'), new Set([...graphicsIds, 'none']), 'none') };
+  t.startHeader = { banner: pick(g(src.startHeader, 'banner'), imageChoices, 'none') };
+  t.branding = { theme: pick(g(src.branding, 'theme'), imageChoices, 'none') };
+  // Eigene Bilder: nur bekannte Plätze, nur echte Bild-data-URLs
+  if (src.images && typeof src.images === 'object') {
+    const images = {};
+    Object.entries(THEME_IMAGE_SLOTS).forEach(([group, def]) => {
+      const raw = src.images[group];
+      if (!raw || typeof raw !== 'object') return;
+      def.slots.forEach(slot => {
+        const v = raw[slot.key];
+        if (v === undefined) return;
+        if (isImageDataUrl(v)) (images[group] ||= {})[slot.key] = v;
+        else notes.add('Ein eigenes Bild konnte nicht übernommen werden.');
+      });
+    });
+    if (Object.keys(images).length) t.images = images;
+  }
+  // „Eigene Bilder“ ohne mitgelieferte Bilder → zurück auf den Standard
+  if (t.calendar.imageTheme === CUSTOM_IMAGES_VALUE && !(t.images && t.images.calendar)) t.calendar.imageTheme = 'cozy';
+  if (t.startHeader.banner === CUSTOM_IMAGES_VALUE && !(t.images && t.images.banner)) t.startHeader.banner = 'none';
+  if (t.branding.theme === CUSTOM_IMAGES_VALUE && !(t.images && t.images.icon)) t.branding.theme = 'none';
   t.questboard = { style: pick(g(src.questboard, 'style'), styleSet(QUESTBOARD_STYLES), 'cozy') };
   t.pinboard = { style: pick(g(src.pinboard, 'style'), styleSet(PINBOARD_STYLES), 'cozy') };
   t.guides = { style: pick(g(src.guides, 'style'), styleSet(GUIDES_STYLES), 'cozy') };
@@ -1345,7 +1558,7 @@ function sanitizeImportedTheme(file, notes) {
 async function importThemeFile(file) {
   const fail = message => hubAlert('Import fehlgeschlagen', message);
   if (!file) return;
-  if (file.size > THEME_IMPORT_MAX_IMAGE + 200 * 1024) return fail('Die Datei ist zu groß für ein Theme.');
+  if (file.size > THEME_IMPORT_MAX_FILE) return fail('Die Datei ist zu groß für ein Theme.');
   let parsed;
   try { parsed = JSON.parse(await file.text()); }
   catch { return fail('Diese Datei ist kein Nook-Theme.'); }
@@ -1486,6 +1699,12 @@ function initThemeBuilder() {
   }));
   ['bg-size', 'calendar-image', 'start-header', 'branding-theme', 'questboard-style', 'pinboard-style', 'guides-style', 'calendar-style', 'today-style', 'pages-style']
     .forEach(k => tbEl(k).addEventListener('change', previewThemeBuilderLive));
+  Object.values(THEME_IMAGE_SELECT).forEach(k => tbEl(k).addEventListener('change', syncThemeImageSlotsUI));
+  tbEl('image-file-input').addEventListener('change', e => {
+    const file = e.target.files[0];
+    e.target.value = '';
+    onThemeImageFileChosen(file);
+  });
 
   // Schriftart-Dropdowns (Fließtext + Überschriften): Trigger togglet,
   // Klick außerhalb schließt.

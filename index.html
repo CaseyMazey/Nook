@@ -3886,6 +3886,7 @@
           <div style="display:flex;gap:6px;">
             <button type="button" class="clock-type-btn" id="theme-builder-bg-pick-btn">Durchsuchen</button>
             <button type="button" class="clock-type-btn" id="theme-builder-bg-clear-btn" title="Bild entfernen">✕</button>
+            <a class="tb-image-muster" style="align-self:center;" href="assets/themes/muster/background.png" download="nook-muster-background.png" title="Musterbild mit Maßen herunterladen (1920 × 1080 px)">Muster ↓</a>
           </div>
           <input type="file" id="theme-builder-bg-file-input" accept="image/*" style="display:none;"/>
         </div>
@@ -3928,14 +3929,19 @@
             <span>Kalenderbilder</span>
             <select class="modal-select" id="theme-builder-calendar-image" style="width:auto;"></select>
           </div>
+          <!-- Eigene Bilder je Bereich (Auswahl „Eigene Bilder“) — renderThemeImageSlots() in js/theme-engine.js -->
+          <div class="tb-image-slots hidden" id="theme-builder-images-calendar"></div>
           <div class="tb-bg-opt-row">
             <span>Start-Banner</span>
             <select class="modal-select" id="theme-builder-start-header" style="width:auto;"></select>
           </div>
+          <div class="tb-image-slots hidden" id="theme-builder-images-banner"></div>
           <div class="tb-bg-opt-row">
             <span>Icon</span>
             <select class="modal-select" id="theme-builder-branding-theme" style="width:auto;"></select>
           </div>
+          <div class="tb-image-slots hidden" id="theme-builder-images-icon"></div>
+          <input type="file" id="theme-builder-image-file-input" accept="image/*" hidden />
           <div class="tb-bg-opt-row">
             <span>Questboard</span>
             <select class="modal-select" id="theme-builder-questboard-style" style="width:auto;"></select>
@@ -3962,6 +3968,7 @@
           </div>
         </div>
         <p class="modal-hint">Das Start-Banner wechselt automatisch bei Sonnenauf- und -untergang (Standort aus dem Wetter-Widget).</p>
+        <p class="modal-hint">Eigene Bilder: unter „Einzeln anpassen“ bei Kalenderbilder, Start-Banner oder Icon „Eigene Bilder“ wählen. Das Theme „Muster“ zeigt an jeder Stelle, welche Größe passt — die Musterbilder lassen sich dort herunterladen und übermalen.</p>
       </div>
 
       <div class="modal-actions">
