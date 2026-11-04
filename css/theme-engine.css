@@ -31,7 +31,8 @@
 }
 .theme-picker-icon:hover { opacity: 1; }
 .theme-picker-icon-del:hover { color: var(--prio-1); }
-.theme-picker-icon-edit:hover { color: var(--sage); }
+.theme-picker-icon-edit:hover,
+.theme-picker-icon-export:hover { color: var(--sage); }
 
 /* ── Theme-Editor ────────────────────────────────────────────────────── */
 .tb-modal-box {

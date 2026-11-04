@@ -1200,10 +1200,15 @@ function renderCustomThemeButtons() {
       <span class="theme-swatch-dot" style="background:${core.surface};border-color:${core.accent};"></span>
       <span>${escHtml(ct.name)}</span>
       <span class="theme-picker-icon theme-picker-icon-edit" title="${isPreset ? 'Als eigenes Theme anpassen' : 'Bearbeiten'}">✎</span>
+      ${isPreset ? '' : '<span class="theme-picker-icon theme-picker-icon-export" title="Als Datei exportieren (zum Teilen)">⤓</span>'}
       ${isPreset ? '' : '<span class="theme-picker-icon theme-picker-icon-del" title="Löschen">✕</span>'}`;
     btn.querySelector('.theme-picker-icon-edit').addEventListener('click', e => {
       e.stopPropagation();
       openThemeBuilder(ct.id);
+    });
+    btn.querySelector('.theme-picker-icon-export')?.addEventListener('click', e => {
+      e.stopPropagation();
+      exportCustomTheme(ct.id);
     });
     btn.querySelector('.theme-picker-icon-del')?.addEventListener('click', async e => {
       e.stopPropagation();
@@ -1211,6 +1216,174 @@ function renderCustomThemeButtons() {
       if (ok) deleteCustomTheme(ct.id);
     });
     picker.insertBefore(btn, addBtn);
+  });
+}
+
+// =========================================================================
+// EXPORT / IMPORT — eigene Themes als Datei teilen
+// Format: { nookTheme: 1, exported, theme: {…Theme ohne id…} }. Ein eigenes
+// Hintergrundbild (data-URL) reist mit. Beim Import wird JEDES Feld gegen
+// die bekannten Werte geprüft (Farben = Hex, Schriften/Stile/Grafik-Sets
+// nur aus den Listen oben, Zahlen begrenzt) — eine fremde Datei kann so
+// weder kaputte Werte noch beliebiges CSS ins Theme schreiben. Unbekanntes
+// fällt auf den Standard zurück, statt den Import abzubrechen.
+// =========================================================================
+
+const THEME_FILE_VERSION = 1;
+const THEME_IMPORT_MAX_IMAGE = 4 * 1024 * 1024; // Zeichen der data-URL
+
+function exportCustomTheme(id) {
+  const ct = customThemes.find(t => t.id === id);
+  if (!ct) return;
+  const theme = JSON.parse(JSON.stringify(ct));
+  delete theme.id;
+  const file = { nookTheme: THEME_FILE_VERSION, exported: new Date().toISOString(), theme };
+  const slug = (ct.name || 'theme').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'theme';
+  const url = URL.createObjectURL(new Blob([JSON.stringify(file, null, 2)], { type: 'application/json' }));
+  const a = document.createElement('a');
+  a.href = url; a.download = `nook-theme-${slug}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// Prüft eine importierte Theme-Beschreibung und baut daraus ein sauberes
+// Theme-Objekt (ohne id). Wirft einen Error mit Nutzertext, wenn die Datei
+// gar kein Nook-Theme ist. notes sammelt, was unterwegs verworfen wurde.
+function sanitizeImportedTheme(file, notes) {
+  if (!file || typeof file !== 'object' || !file.theme || typeof file.theme !== 'object' || !('nookTheme' in file)) {
+    throw new Error('Diese Datei ist kein Nook-Theme.');
+  }
+  if (file.nookTheme > THEME_FILE_VERSION) {
+    throw new Error('Dieses Theme stammt aus einer neueren Nook-Version. Aktualisiere Nook und versuch es dann noch einmal.');
+  }
+  const src = file.theme;
+  const isHex = v => typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v);
+  const clampNum = (v, min, max, def) => (typeof v === 'number' && isFinite(v)) ? Math.min(max, Math.max(min, v)) : def;
+  const knownFonts = new Set(FONT_CATEGORIES.flatMap(c => c.fonts.map(f => f.stack))
+    .concat(CUSTOM_FONT_FILES.map(f => `"${f.family}"`)));
+  const graphicsIds = new Set(GRAPHICS_THEMES.map(g => g.id));
+  const pick = (v, allowed, def) => allowed.has(v) ? v : def;
+  const styleSet = list => new Set(list.map(s => s.id));
+
+  const core = raw => {
+    raw = raw && typeof raw === 'object' ? raw : {};
+    const out = {};
+    ['bg', 'surface', 'nav', 'modal', 'text', 'border', 'accent'].forEach(k => {
+      out[k] = isHex(raw[k]) ? raw[k].toLowerCase() : DEFAULT_BUILDER_CORE[k];
+    });
+    ['quicknote', 'highlight'].forEach(k => { if (isHex(raw[k])) out[k] = raw[k].toLowerCase(); });
+    out.font = knownFonts.has(raw.font) ? raw.font : DEFAULT_FONT_STACK;
+    if (raw.font && raw.font !== out.font) notes.add('Eine unbekannte Schrift wurde durch die Nook-Standardschrift ersetzt.');
+    if (raw.headingFont) {
+      if (knownFonts.has(raw.headingFont)) out.headingFont = raw.headingFont;
+      else notes.add('Eine unbekannte Schrift wurde durch die Nook-Standardschrift ersetzt.');
+    }
+    if (raw.navScale !== undefined) out.navScale = clampNum(raw.navScale, 0.5, 1.5, 1);
+    if (raw.headingScale !== undefined) out.headingScale = clampNum(raw.headingScale, 0.5, 1.5, 1);
+    return out;
+  };
+  const bg = raw => {
+    raw = normalizeBgMeta(raw && typeof raw === 'object' ? raw : null) || { source: 'none' };
+    const out = {
+      source: 'none',
+      size: ['cover', 'contain', 'center'].includes(raw.size) ? raw.size : 'cover',
+      dim: Math.round(clampNum(raw.dim, 0, 90, 40)),
+    };
+    if (raw.source === 'custom') {
+      const ok = typeof raw.data === 'string' && raw.data.length <= THEME_IMPORT_MAX_IMAGE
+        && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(raw.data);
+      if (ok) {
+        out.source = 'custom'; out.data = raw.data;
+        if (typeof raw.name === 'string') out.name = raw.name.slice(0, 120);
+      } else notes.add('Das Hintergrundbild konnte nicht übernommen werden.');
+    } else if (graphicsIds.has(raw.source)) out.source = raw.source;
+    return out;
+  };
+  const forest = raw => {
+    const s = raw && raw.style;
+    return ['default', 'map', 'pastel'].includes(s) ? { style: s } : undefined;
+  };
+  const variant = raw => ({
+    coreColors: core(raw.coreColors),
+    cardOpacity: Math.round(clampNum(raw.cardOpacity, 20, 100, 100)),
+    fontSize: Math.round(clampNum(raw.fontSize, 70, 150, 100)),
+    bg: bg(raw.bg),
+  });
+
+  const name = (typeof src.name === 'string' ? src.name : '').replace(/[\u0000-\u001f]/g, '').trim().slice(0, 40) || 'Importiertes Theme';
+  const day = variant(src);
+  const t = Object.assign({ name }, day);
+  t.family = teLuminance(day.coreColors.bg) < 128 ? 'dark' : 'light';
+  if (src.night && typeof src.night === 'object') {
+    const n = variant(src.night);
+    t.night = Object.assign(n, { family: teLuminance(n.coreColors.bg) < 128 ? 'dark' : 'light' });
+    const nf = forest(src.night.forest);
+    if (nf) t.night.forest = nf;
+  }
+  const g = (obj, key) => obj && typeof obj === 'object' ? obj[key] : undefined;
+  t.calendar = {
+    imageTheme: pick(g(src.calendar, 'imageTheme'), new Set([...graphicsIds, 'none']), 'cozy'),
+    style: pick(g(src.calendar, 'style'), styleSet(CALENDAR_STYLES), 'cozy'),
+  };
+  t.startHeader = { banner: pick(g(src.startHeader, 'banner'), new Set([...graphicsIds, 'none']), 'none') };
+  t.branding = { theme: pick(g(src.branding, 'theme'), new Set([...graphicsIds, 'none']), 'none') };
+  t.questboard = { style: pick(g(src.questboard, 'style'), styleSet(QUESTBOARD_STYLES), 'cozy') };
+  t.pinboard = { style: pick(g(src.pinboard, 'style'), styleSet(PINBOARD_STYLES), 'cozy') };
+  t.guides = { style: pick(g(src.guides, 'style'), styleSet(GUIDES_STYLES), 'cozy') };
+  t.today = { style: pick(g(src.today, 'style'), styleSet(TODAY_STYLES), 'cozy') };
+  t.pages = { style: pick(g(src.pages, 'style'), styleSet(PAGES_STYLES), 'cozy') };
+  const f = forest(src.forest);
+  if (f) t.forest = f;
+  const gMode = g(src.graphics, 'mode') === 'theme' ? 'theme' : 'custom';
+  t.graphics = gMode === 'theme'
+    ? { mode: 'theme', theme: pick(g(src.graphics, 'theme'), graphicsIds, DEFAULT_GRAPHICS_THEME) }
+    : { mode: 'custom' };
+  return t;
+}
+
+async function importThemeFile(file) {
+  const fail = message => hubAlert('Import fehlgeschlagen', message);
+  if (!file) return;
+  if (file.size > THEME_IMPORT_MAX_IMAGE + 200 * 1024) return fail('Die Datei ist zu groß für ein Theme.');
+  let parsed;
+  try { parsed = JSON.parse(await file.text()); }
+  catch { return fail('Diese Datei ist kein Nook-Theme.'); }
+  const notes = new Set();
+  let data;
+  try { data = sanitizeImportedTheme(parsed, notes); }
+  catch (err) { return fail(err.message); }
+
+  // Gleicher Name schon vorhanden → „(2)“, „(3)“ … anhängen
+  const taken = new Set(PRESET_THEMES.concat(customThemes).map(t => t.name));
+  if (taken.has(data.name)) {
+    let n = 2;
+    while (taken.has(`${data.name} (${n})`)) n++;
+    data.name = `${data.name} (${n})`;
+  }
+  const id = 'custom_' + Date.now();
+  customThemes.push(Object.assign({ id }, data));
+  try { saveCustomThemes(); }
+  catch {
+    customThemes = customThemes.filter(t => t.id !== id);
+    return fail('Das Theme passt nicht mehr in den Speicher. Lösche ein anderes eigenes Theme oder ein großes Hintergrundbild und versuch es noch einmal.');
+  }
+  setTheme(id);
+  if (typeof renderThemeSettings === 'function') renderThemeSettings();
+  const extra = notes.size ? ' ' + [...notes].join(' ') : '';
+  hubAlert('Theme importiert', `„${data.name}" ist jetzt aktiv. Über ✎ kannst du es weiter anpassen.${extra}`);
+}
+
+function initThemeImport() {
+  const btn = document.getElementById('theme-import-btn');
+  const input = document.getElementById('theme-import-input');
+  if (!btn || !input || btn._bound) return;
+  btn._bound = true;
+  btn.addEventListener('click', () => input.click());
+  input.addEventListener('change', e => {
+    const file = e.target.files[0];
+    e.target.value = '';
+    importThemeFile(file);
   });
 }
 
@@ -1287,6 +1460,7 @@ function initThemeBuilder() {
   if (!overlay) return;
 
   document.getElementById('theme-builder-open-btn')?.addEventListener('click', () => openThemeBuilder(null));
+  initThemeImport();
   tbEl('close').addEventListener('click', closeThemeBuilder);
   tbEl('cancel').addEventListener('click', closeThemeBuilder);
   tbEl('save').addEventListener('click', saveThemeBuilder);
