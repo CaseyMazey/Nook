@@ -166,3 +166,19 @@ test('sanitizeSkins: Extras nur angemeldete Keys, leer -> null', () => {
   assert.strictEqual(san({}), null);
   assert.strictEqual(san({ 'today.menu': {} }), null);
 });
+
+test('buildSkinCss: feindliche, ungepruefte Eingaben erzeugen keine Injektion', () => {
+  const css = S.buildSkinCss({ 'today.menu': {
+    shape: { tilt: '1deg);}body{display:none', radius: '4px;}x{', padding: '1}', opacity: 'a', shadow: 'constructor' },
+    colors: { text: 'red;}x{', surface: 'url(x)', heading: '#12345' },
+    font: { text: "a}body{x:y", heading: 'b;c', size: '9}' },
+    image: { mode: 'frame', src: 'tpl:chalkboard', slice: ['1}x{', 2, 3, 4], width: [1, 2, 3, '4;'] },
+    fastener: { kind: 'seal', position: 'constructor', color: '__proto__' } } }, reg());
+  assert.ok(!css.includes('}x{'));
+  assert.ok(!css.includes('body{'));
+  assert.ok(!css.includes('display:none !important}body'));
+  assert.ok(!/rotate|border-radius:[0-9-]|[^-]padding:|color:red|font-family|zoom|box-shadow/.test(css));
+  // Ungueltige slice/width fallen auf die Werte der Vorlage zurueck
+  assert.ok(css.includes('48 48 78 48 fill / 16px 16px 26px 16px'));
+  assert.ok(css.includes('left:50%'));
+});

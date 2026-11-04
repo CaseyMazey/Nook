@@ -96,17 +96,28 @@
   }
   const wrap = sel => (hasTopLevelComma(sel) ? ":is(" + sel + ")" : sel);
 
+  const isObj = v => v && typeof v === "object" && !Array.isArray(v);
   const imp = (prop, val) => prop + ":" + val + " !important";
   const rule = (sel, decls) => (decls.length ? PREFIX + sel + "{" + decls.join(";") + "}" : "");
   const px4 = a => a.map(n => n + "px").join(" ");
   const has = v => v !== null && v !== undefined;
 
+  // Defensive Pruefung im Builder: ins CSS gelangen nur Werte, die diese Guards bestehen
+  const own = (o, k) => typeof k === "string" && Object.prototype.hasOwnProperty.call(o, k);
+  const okColor = v => (typeof v === "string" && COLOR_RE.test(v) ? v : null);
+  const okFont = v => (typeof v === "string" && v.length < 300 && !/[{}<>;\\\n\r]/.test(v) ? v : null);
+  const okNum = v => (typeof v === "number" && isFinite(v) ? v : null);
+  const okEdges = a => (Array.isArray(a) && a.length === 4 && a.every(n => typeof n === "number" && isFinite(n)) ? a.map(Math.round) : null);
+
   function buildTarget(def, skin) {
     const sel = wrap(def.selector);
-    const colors = skin.colors || {};
-    const font = skin.font || {};
-    const shape = skin.shape || {};
-    const fast = skin.fastener || null;
+    const rc = isObj(skin.colors) ? skin.colors : {};
+    const rf = isObj(skin.font) ? skin.font : {};
+    const rs = isObj(skin.shape) ? skin.shape : {};
+    const colors = { text: okColor(rc.text), surface: okColor(rc.surface), accent: okColor(rc.accent), border: okColor(rc.border), heading: okColor(rc.heading) };
+    const font = { text: okFont(rf.text), heading: okFont(rf.heading), size: okNum(rf.size) };
+    const shape = { radius: okNum(rs.radius), padding: okNum(rs.padding), tilt: okNum(rs.tilt), opacity: okNum(rs.opacity), shadow: own(SHADOWS, rs.shadow) ? rs.shadow : null };
+    const fast = isObj(skin.fastener) ? skin.fastener : null;
     const out = [];
 
     // Bild aufloesen
@@ -117,10 +128,10 @@
       if (url) {
         const tpl = SKIN_TEMPLATES.find(t => "tpl:" + t.id === im.src) || null;
         let mode = im.mode;
-        const slice = im.slice || (tpl && tpl.slice) || null;
+        const slice = okEdges(im.slice) || (tpl && tpl.slice) || null;
         if (mode === "frame" && !slice) mode = "fill";
         if (!IMAGE_MODES.includes(mode)) mode = "fill";
-        const width = im.width || (tpl && tpl.width) || (slice ? slice.map(() => 16) : null);
+        const width = okEdges(im.width) || (tpl && tpl.width) || (slice ? slice.map(() => 16) : null);
         img = { url, mode, slice, width };
       }
     }
@@ -133,10 +144,10 @@
       if (fast.kind === "custom") {
         const u = resolveSkinSrc(fast.src);
         if (u && !u.startsWith("assets/")) spec = { src: u, w: 28, h: 28 };
-      } else spec = SKIN_FASTENERS[fast.kind] || null;
+      } else spec = own(SKIN_FASTENERS, fast.kind) ? SKIN_FASTENERS[fast.kind] : null;
       if (spec) {
-        const left = POS_LEFT[fast.position] || POS_LEFT.center;
-        const filter = fast.kind === "seal" ? (SEAL_FILTERS[fast.color || "red"] || "none") : "none";
+        const left = own(POS_LEFT, fast.position) ? POS_LEFT[fast.position] : POS_LEFT.center;
+        const filter = fast.kind === "seal" ? (own(SEAL_FILTERS, fast.color || "red") ? SEAL_FILTERS[fast.color || "red"] : "none") : "none";
         fastenerCss = [
           "content:''", "display:block", "position:absolute", "top:-10px", "left:" + left, "right:auto",
           "width:" + spec.w + "px", "height:" + spec.h + "px", "margin-left:" + (-spec.w / 2) + "px",
@@ -161,7 +172,7 @@
     if (has(font.text)) el.push(imp("font-family", font.text));
     if (has(font.size) && font.size !== 100) el.push(imp("zoom", font.size + "%"));
     if (has(shape.radius)) el.push(imp("border-radius", shape.radius + "px"));
-    if (has(shape.shadow) && SHADOWS[shape.shadow]) el.push(imp("box-shadow", SHADOWS[shape.shadow]));
+    if (has(shape.shadow)) el.push(imp("box-shadow", SHADOWS[shape.shadow]));
     if (has(shape.padding)) el.push(imp("padding", shape.padding + "px"));
     if (!img && has(shape.tilt) && shape.tilt !== 0) el.push(imp("transform", "rotate(" + shape.tilt + "deg)"));
     if (img) { el.push(imp("position", "relative")); el.push(imp("isolation", "isolate")); }
@@ -230,7 +241,6 @@
 
   // ---------- Pruefung ----------
 
-  const isObj = v => v && typeof v === "object" && !Array.isArray(v);
   const clampInt = (v, lo, hi) => (typeof v === "number" && isFinite(v) ? Math.min(hi, Math.max(lo, Math.round(v))) : null);
 
   function sanitizeSrc(src, max) {
@@ -293,7 +303,7 @@
       const s = raw.shape, o = {};
       const radius = clampInt(s.radius, 0, 40);
       if (radius !== null) o.radius = radius;
-      if (typeof s.shadow === "string" && SHADOWS[s.shadow]) o.shadow = s.shadow;
+      if (own(SHADOWS, s.shadow)) o.shadow = s.shadow;
       else if (has(s.shadow)) notes.add(label + ": Schatten entfernt");
       if (typeof s.tilt === "number" && isFinite(s.tilt)) o.tilt = Math.min(3, Math.max(-3, s.tilt));
       const padding = clampInt(s.padding, 0, 60);
@@ -309,8 +319,8 @@
       else {
         const o = { kind: f.kind };
         let ok = true;
-        if (has(f.position)) { if (POS_LEFT[f.position]) o.position = f.position; }
-        if (f.kind === "seal" && has(f.color)) { if (SEAL_FILTERS[f.color]) o.color = f.color; }
+        if (has(f.position)) { if (own(POS_LEFT, f.position)) o.position = f.position; }
+        if (f.kind === "seal" && has(f.color)) { if (own(SEAL_FILTERS, f.color)) o.color = f.color; }
         if (f.kind === "custom") {
           const src = sanitizeSrc(f.src, MAX_SMALL);
           if (src && !src.startsWith("tpl:")) o.src = src;
