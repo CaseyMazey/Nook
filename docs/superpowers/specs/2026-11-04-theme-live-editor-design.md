@@ -97,18 +97,19 @@ Läuft nur im Musterfenster.
 ```js
 ct.skins = {
   'today.menu': {
-    image: { mode: 'frame', data: 'data:image/webp;base64,…', slice: [48, 48, 78, 48], width: [16, 16, 26, 16] },
+    // src: eigenes Bild als data-URL oder Vorlage als 'tpl:<id>' (kostet keinen Speicher)
+    image: { mode: 'frame', src: 'tpl:chalkboard', slice: [48, 48, 78, 48], width: [16, 16, 26, 16] },
     colors: { surface: '#1f2a24', text: '#f2efe6', heading: null, accent: null, border: null },
     font: { heading: "'Alegreya', Georgia, serif", text: null, size: 100 },
     shape: { radius: 6, shadow: 'soft', tilt: 0, padding: null, opacity: 100 },
-    fastener: { kind: 'nail', position: 'center', color: null, data: null },
+    fastener: { kind: 'nail', position: 'center', color: null, src: null },
     extras: { },
   },
   'today.cards': { … },   // „Alle Karten dieser Seite“
 }
 ```
 
-`null` heißt jeweils „vom Seitenstil bzw. Theme“. Fehlende Felder gelten als `null`.
+`null` heißt jeweils „vom Seitenstil bzw. Theme“. Fehlende Felder gelten als `null`. Bei der Befestigung heißt `kind: 'none'` ausdrücklich „keine“ (entfernt auch die des Seitenstils), `null` heißt „wie der Seitenstil“.
 
 ## Elemente in Etappe 1
 
