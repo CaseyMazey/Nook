@@ -489,6 +489,8 @@
 }
 .sync-crypto-notice .settings-small-btn { font-size: calc(12px * var(--core-font-scale)); padding: 3px 8px; }
 .sync-crypto-box { width: 440px; }
+/* Fokus-Ersatzziel, wenn kein Bedienelement aktiv ist (js/sync.js) */
+.sync-crypto-box:focus { outline: none; }
 .sync-crypto-step { display: flex; flex-direction: column; gap: 14px; }
 .sync-crypto-error { color: var(--prio-1); }
 .sync-crypto-key {
