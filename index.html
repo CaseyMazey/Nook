@@ -1780,6 +1780,11 @@
                 <div><div class="settings-row-title">Updates</div><div class="settings-row-sub" id="about-updates-status" aria-live="polite">Prüfe, ob es eine neuere Version gibt.</div></div>
                 <button type="button" class="btn-ghost settings-small-btn" id="about-updates-btn">Nach Updates suchen</button>
               </div>
+              <!-- Nur im Browser, nicht in einer installierten App (js/settings.js: initAboutInstall) -->
+              <div class="settings-row hidden" id="about-install-row">
+                <div><div class="settings-row-title">Auf dem Handy installieren</div><div class="settings-row-sub">Nook als App auf dem Startbildschirm, im eigenen Fenster und auch offline.</div></div>
+                <button type="button" class="btn-ghost settings-small-btn" id="about-install-btn">Anleitung</button>
+              </div>
               <div class="settings-row settings-row-stack">
                 <div class="settings-row-title">Neu in Nook</div>
                 <div id="about-changelog" class="about-changelog"></div>
@@ -3573,6 +3578,43 @@
       <div class="modal-actions">
         <button class="btn-ghost" id="sync-password-cancel">Abbrechen</button>
         <button class="btn-primary" id="sync-password-save">Speichern</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Installations-Hinweis (js/settings.js: initAboutInstall) — erklärt das
+       Hinzufügen zum Startbildschirm; bietet, wo der Browser es kann, direkt
+       "Jetzt installieren" an. -->
+  <div id="install-help-overlay" class="modal-backdrop hidden">
+    <div class="modal-box" style="width:440px;">
+      <div class="modal-head">
+        <span>📱 Nook auf dem Handy installieren</span>
+        <button class="modal-x" id="install-help-close">✕</button>
+      </div>
+      <div class="install-help-native hidden" id="install-help-native">
+        <p class="modal-hint">Dein Browser kann Nook direkt installieren.</p>
+        <button type="button" class="btn-primary" id="install-help-prompt">Jetzt installieren</button>
+      </div>
+      <div class="install-help-section" id="install-help-ios">
+        <h3 class="install-help-title">iPhone und iPad (Safari)</h3>
+        <ol class="install-help-steps">
+          <li>Öffne <strong class="install-help-url">nook-ci7.pages.dev</strong> in Safari.</li>
+          <li>Tippe auf das Teilen-Symbol (Quadrat mit Pfeil nach oben).</li>
+          <li>Wähle „Zum Home-Bildschirm“ und tippe auf „Hinzufügen“.</li>
+        </ol>
+        <p class="modal-hint">Die App auf dem Home-Bildschirm hat einen eigenen Speicher. Melde dich dort einmal unter Einstellungen → Geräte-Sync an, dann kommen deine Daten über den Sync.</p>
+      </div>
+      <div class="install-help-section" id="install-help-android">
+        <h3 class="install-help-title">Android (Chrome)</h3>
+        <ol class="install-help-steps">
+          <li>Öffne <strong class="install-help-url">nook-ci7.pages.dev</strong> in Chrome.</li>
+          <li>Tippe oben rechts auf das Menü (⋮).</li>
+          <li>Wähle „App installieren“ oder „Zum Startbildschirm hinzufügen“.</li>
+        </ol>
+      </div>
+      <p class="modal-hint">Updates kommen von selbst: Die App lädt beim Öffnen immer die neueste Version.</p>
+      <div class="modal-actions">
+        <button class="btn-ghost" id="install-help-done">Schließen</button>
       </div>
     </div>
   </div>

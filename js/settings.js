@@ -1375,6 +1375,63 @@ function initAboutUpdates() {
 }
 initAboutUpdates();
 
+// Hinweis "Auf dem Handy installieren": nur im Browser, nicht in der
+// Desktop-App und nicht in einer bereits installierten Startbildschirm-App.
+// Bietet der Browser selbst eine Installation an (beforeinstallprompt, z.B.
+// Chrome auf Android), gibt es zusätzlich "Jetzt installieren".
+let installPromptEvent = null;
+function isInstalledApp() {
+  return !!window.nookDesktop
+    || window.matchMedia('(display-mode: standalone)').matches
+    || window.navigator.standalone === true;
+}
+
+function initAboutInstall() {
+  const row = document.getElementById('about-install-row');
+  if (!row || isInstalledApp()) return;
+  row.classList.remove('hidden');
+
+  const modal = wireModal('install-help-overlay', { closeIds: ['install-help-close', 'install-help-done'] });
+  const native = document.getElementById('install-help-native');
+  const ios = document.getElementById('install-help-ios');
+  const android = document.getElementById('install-help-android');
+
+  // Die Anleitung nennt die Adresse, unter der Nook gerade läuft.
+  if (location.protocol.startsWith('http')) {
+    document.querySelectorAll('.install-help-url').forEach(el => { el.textContent = location.host; });
+  }
+
+  document.getElementById('about-install-btn')?.addEventListener('click', () => {
+    // Auf dem Handy nur die passende Anleitung, am Rechner beide.
+    const ua = navigator.userAgent;
+    const isIos = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isAndroid = /Android/.test(ua);
+    ios.classList.toggle('hidden', isAndroid);
+    android.classList.toggle('hidden', isIos);
+    native.classList.toggle('hidden', !installPromptEvent);
+    modal.open();
+  });
+
+  document.getElementById('install-help-prompt')?.addEventListener('click', async () => {
+    if (!installPromptEvent) return;
+    const event = installPromptEvent;
+    installPromptEvent = null;
+    native.classList.add('hidden');
+    event.prompt();
+    try { await event.userChoice; } catch { /* abgebrochen */ }
+  });
+}
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  installPromptEvent = e;
+});
+window.addEventListener('appinstalled', () => {
+  installPromptEvent = null;
+  document.getElementById('about-install-row')?.classList.add('hidden');
+});
+initAboutInstall();
+
 
 // =========================
 // UTIL
