@@ -471,3 +471,75 @@
   height: 1px;
   background: color-mix(in srgb, var(--text) 12%, transparent);
 }
+
+/* Sync-Verschlüsselung: Zeile in den Einstellungen und Modal (js/sync.js) */
+.sync-crypto-info { min-width: 0; }
+.sync-crypto-notice {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin-top: 6px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  font-size: calc(12px * var(--core-font-scale));
+  color: var(--text-2);
+  background: color-mix(in srgb, var(--prio-1) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--prio-1) 30%, var(--border));
+}
+.sync-crypto-notice .settings-small-btn { font-size: calc(12px * var(--core-font-scale)); padding: 3px 8px; }
+.sync-crypto-box { width: 440px; }
+/* Fokus-Ersatzziel, wenn kein Bedienelement aktiv ist (js/sync.js) */
+.sync-crypto-box:focus { outline: none; }
+.sync-crypto-step { display: flex; flex-direction: column; gap: 14px; }
+.sync-crypto-error { color: var(--prio-1); }
+.sync-crypto-key {
+  display: block;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: calc(14px * var(--core-font-scale));
+  line-height: 1.7;
+  letter-spacing: 0.04em;
+  word-break: break-all;
+  user-select: all;
+}
+.sync-crypto-key-input { font-family: var(--mono); letter-spacing: 0.04em; }
+.sync-crypto-key-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.sync-crypto-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: calc(13px * var(--core-font-scale));
+  color: var(--text-2);
+  cursor: pointer;
+}
+.sync-crypto-check input { margin-top: 3px; accent-color: var(--sage); }
+.sync-crypto-progress { color: var(--text-2); }
+.sync-crypto-link {
+  padding: 0;
+  background: none;
+  border: none;
+  font: inherit;
+  color: var(--text-2);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.sync-crypto-link:hover { color: var(--text); }
+.sync-crypto-danger {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid color-mix(in srgb, var(--prio-1) 35%, var(--border));
+}
+.sync-crypto-box .modal-actions { flex-wrap: wrap; }
+/* Kein globaler Disabled-Stil: "Weiter" vor dem Häkchen und Knöpfe während einer Aktion sichtbar sperren */
+.sync-crypto-box button:disabled { opacity: 0.5; cursor: not-allowed; }
+@media (max-width: 480px) {
+  .sync-crypto-box { padding: 20px; }
+}

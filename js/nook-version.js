@@ -10,9 +10,18 @@
 // hinten wegfallen, angezeigt werden ohnehin nur die neuesten.
 // =========================
 
-window.NOOK_VERSION = '2026.11.2';
+window.NOOK_VERSION = '2026.11.3';
 
 window.NOOK_CHANGELOG = [
+  {
+    version: '2026.11.3',
+    date: '2026-11-04',
+    items: [
+      'Geräte-Sync: Deine Daten werden jetzt Ende-zu-Ende verschlüsselt, bevor sie dein Gerät verlassen – nicht einmal der Server kann sie lesen',
+      'Wichtig: Der Sync bleibt pausiert, bis du die Verschlüsselung einmalig unter Einstellungen › Geräte-Sync eingerichtet bzw. auf weiteren Geräten mit dem Passwort entsperrt hast; danach läuft er wie gewohnt weiter',
+      'Das Verschlüsselungs-Passwort und der Wiederherstellungsschlüssel lassen sich nicht wiederherstellen – bewahre beides sicher auf, sonst sind die synchronisierten Daten nicht mehr lesbar (lokale Daten auf deinen Geräten bleiben erhalten)',
+    ],
+  },
   {
     version: '2026.11.2',
     date: '2026-11-02',

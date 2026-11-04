@@ -1621,6 +1621,19 @@
                 <div><div class="settings-row-title">Passwort</div><div class="settings-row-sub">Damit meldest du dich auf deinen anderen Geräten an</div></div>
                 <button class="btn-ghost settings-small-btn" id="sync-password-btn">Festlegen oder ändern</button>
               </div>
+              <!-- Ende-zu-Ende-Verschlüsselung (js/sync.js): Zustand + passender Knopf;
+                   Hinweise der Engine (nicht entschlüsselbar, Klartext) nur als Anzahl. -->
+              <div class="settings-row hidden" id="sync-crypto-row">
+                <div class="sync-crypto-info">
+                  <div class="settings-row-title">Verschlüsselung</div>
+                  <div class="settings-row-sub" id="sync-crypto-sub"></div>
+                  <div class="sync-crypto-notice hidden" id="sync-crypto-notice" role="status">
+                    <span id="sync-crypto-notice-text"></span>
+                    <button type="button" class="btn-ghost settings-small-btn" id="sync-crypto-notice-dismiss">Ausblenden</button>
+                  </div>
+                </div>
+                <button class="btn-ghost settings-small-btn" id="sync-crypto-btn">Einrichten</button>
+              </div>
               <div class="settings-row">
                 <div><div class="settings-row-title">Rechtliches</div></div>
                 <a class="btn-ghost settings-small-btn" href="datenschutz.html" target="_blank" rel="noopener">Impressum und Datenschutz</a>
@@ -3529,7 +3542,7 @@
           <button class="btn-ghost" id="sync-login-signup">Konto erstellen</button>
           <button class="btn-primary" id="sync-login-submit">Anmelden</button>
         </div>
-        <p class="modal-hint">Passwort vergessen? Schreib an <a href="mailto:noook.info@gmail.com">noook.info@gmail.com</a>. Noch kein Passwort? <button type="button" class="btn-ghost settings-small-btn" id="sync-login-send">Anmelde-Link senden</button></p>
+        <p class="modal-hint">Login-Passwort vergessen? Schreib an <a href="mailto:noook.info@gmail.com">noook.info@gmail.com</a>. Ein neues Login-Passwort macht deine verschlüsselten Daten nicht lesbar, dafür brauchst du dein Verschlüsselungs-Passwort oder deinen Wiederherstellungsschlüssel. Noch kein Passwort? <button type="button" class="btn-ghost settings-small-btn" id="sync-login-send">Anmelde-Link senden</button></p>
         <p class="modal-hint"><a href="datenschutz.html" target="_blank" rel="noopener">Impressum und Datenschutz</a></p>
       </div>
       <div id="sync-login-step-sent" class="hidden">
@@ -3559,12 +3572,110 @@
     </div>
   </div>
 
+  <!-- Verschlüsselungs-Modal (js/sync.js) — Einrichten (Passwort, Wieder-
+       herstellungsschlüssel, Migration mit Backup), Entsperren, Wiederherstellen,
+       Passwort ändern und Cloud-Daten zurücksetzen. Immer nur ein Schritt
+       (.sync-crypto-step) sichtbar; data-primary nennt den Knopf, den Enter auslöst. -->
+  <div id="sync-crypto-overlay" class="modal-backdrop hidden">
+    <div class="modal-box sync-crypto-box" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="sync-crypto-title">
+      <div class="modal-head">
+        <span id="sync-crypto-title">🔒 Verschlüsselung</span>
+        <button class="modal-x" id="sync-crypto-close" aria-label="Schließen">✕</button>
+      </div>
+
+      <div class="sync-crypto-step hidden" id="sync-crypto-step-setup" data-primary="sync-crypto-setup-next">
+        <p class="modal-hint">Deine Daten werden auf diesem Gerät verschlüsselt, bevor sie in die Cloud gehen. Nur wer dieses Passwort kennt, kann sie lesen, auch der Sync-Dienst nicht.</p>
+        <div class="modal-row"><label for="sync-crypto-setup-pw">Verschlüsselungs-Passwort</label><input type="password" class="modal-input" id="sync-crypto-setup-pw" placeholder="Mindestens 12 Zeichen" autocomplete="new-password"/></div>
+        <div class="modal-row"><label for="sync-crypto-setup-pw2">Wiederholen</label><input type="password" class="modal-input" id="sync-crypto-setup-pw2" autocomplete="new-password"/></div>
+        <p class="modal-hint">Nimm ein anderes Passwort als für den Login. Verlierst du dieses Passwort und den Wiederherstellungsschlüssel, sind die Daten in der Cloud verloren. Die Daten auf deinen Geräten bleiben erhalten.</p>
+        <p class="modal-hint sync-crypto-error hidden" id="sync-crypto-setup-error" role="alert"></p>
+        <div class="modal-actions">
+          <button class="btn-ghost" id="sync-crypto-setup-cancel">Abbrechen</button>
+          <button class="btn-primary" id="sync-crypto-setup-next">Weiter</button>
+        </div>
+      </div>
+
+      <div class="sync-crypto-step hidden" id="sync-crypto-step-key" data-primary="sync-crypto-key-next">
+        <p class="modal-hint">Das ist dein Wiederherstellungsschlüssel. Damit kommst du an deine Cloud-Daten, wenn du das Passwort vergisst. Speichere ihn an einem sicheren Ort, zum Beispiel in einem Passwort-Manager. Er wird nur jetzt angezeigt.</p>
+        <code class="sync-crypto-key" id="sync-crypto-recovery-key" tabindex="0" aria-label="Wiederherstellungsschlüssel"></code>
+        <div class="sync-crypto-key-actions">
+          <button type="button" class="btn-ghost settings-small-btn" id="sync-crypto-copy">Kopieren</button>
+          <span class="modal-hint" id="sync-crypto-copy-status" role="status"></span>
+        </div>
+        <label class="sync-crypto-check"><input type="checkbox" id="sync-crypto-saved"/> Ich habe ihn sicher gespeichert</label>
+        <p class="modal-hint">Mit „Weiter“ lädt Nook zuerst eine Backup-Datei deiner Daten herunter und verschlüsselt dann alles in der Cloud.</p>
+        <div class="modal-actions">
+          <button class="btn-ghost" id="sync-crypto-key-cancel">Abbrechen</button>
+          <button class="btn-primary" id="sync-crypto-key-next" disabled>Weiter</button>
+        </div>
+      </div>
+
+      <div class="sync-crypto-step hidden" id="sync-crypto-step-progress">
+        <p class="modal-hint sync-crypto-progress" id="sync-crypto-progress-text" role="status" aria-live="polite"></p>
+        <p class="modal-hint sync-crypto-error hidden" id="sync-crypto-progress-error" role="alert"></p>
+        <div class="modal-actions hidden" id="sync-crypto-progress-actions">
+          <button class="btn-ghost" id="sync-crypto-progress-close">Schließen</button>
+          <button class="btn-primary hidden" id="sync-crypto-progress-retry">Noch einmal versuchen</button>
+        </div>
+      </div>
+
+      <div class="sync-crypto-step hidden" id="sync-crypto-step-unlock" data-primary="sync-crypto-unlock-submit">
+        <p class="modal-hint">Deine Cloud-Daten sind verschlüsselt. Gib das Verschlüsselungs-Passwort ein, das du beim Einrichten gewählt hast, damit dieses Gerät wieder synchronisiert.</p>
+        <div class="modal-row"><label for="sync-crypto-unlock-pw">Verschlüsselungs-Passwort</label><input type="password" class="modal-input" id="sync-crypto-unlock-pw" autocomplete="current-password"/></div>
+        <p class="modal-hint sync-crypto-error hidden" id="sync-crypto-unlock-error" role="alert"></p>
+        <p class="modal-hint"><button type="button" class="sync-crypto-link" id="sync-crypto-unlock-forgot">Passwort vergessen?</button></p>
+        <div class="modal-actions">
+          <button class="btn-ghost" id="sync-crypto-unlock-cancel">Abbrechen</button>
+          <button class="btn-primary" id="sync-crypto-unlock-submit">Entsperren</button>
+        </div>
+      </div>
+
+      <div class="sync-crypto-step hidden" id="sync-crypto-step-recover" data-primary="sync-crypto-recover-submit">
+        <p class="modal-hint">Mit deinem Wiederherstellungsschlüssel legst du ein neues Verschlüsselungs-Passwort fest. Deine Daten bleiben dabei erhalten.</p>
+        <div class="modal-row"><label for="sync-crypto-recover-key">Wiederherstellungsschlüssel</label><input type="text" class="modal-input sync-crypto-key-input" id="sync-crypto-recover-key" autocomplete="off" autocapitalize="characters" spellcheck="false"/></div>
+        <div class="modal-row"><label for="sync-crypto-recover-pw">Neues Passwort</label><input type="password" class="modal-input" id="sync-crypto-recover-pw" placeholder="Mindestens 12 Zeichen" autocomplete="new-password"/></div>
+        <div class="modal-row"><label for="sync-crypto-recover-pw2">Wiederholen</label><input type="password" class="modal-input" id="sync-crypto-recover-pw2" autocomplete="new-password"/></div>
+        <p class="modal-hint sync-crypto-error hidden" id="sync-crypto-recover-error" role="alert"></p>
+        <div class="modal-actions">
+          <button class="btn-ghost" id="sync-crypto-recover-cancel">Abbrechen</button>
+          <button class="btn-primary" id="sync-crypto-recover-submit">Passwort festlegen</button>
+        </div>
+        <div class="sync-crypto-danger">
+          <p class="modal-hint"><strong>Passwort und Wiederherstellungsschlüssel verloren?</strong> Dann lassen sich die Cloud-Daten nicht mehr öffnen. Du kannst sie löschen und die Verschlüsselung mit den Daten dieses Geräts neu einrichten.</p>
+          <button type="button" class="btn-ghost settings-small-btn settings-danger-btn" id="sync-crypto-reset">Cloud-Daten zurücksetzen</button>
+        </div>
+      </div>
+
+      <div class="sync-crypto-step hidden" id="sync-crypto-step-change" data-primary="sync-crypto-change-submit">
+        <div class="modal-row"><label for="sync-crypto-change-current">Aktuelles Passwort</label><input type="password" class="modal-input" id="sync-crypto-change-current" autocomplete="current-password"/></div>
+        <div class="modal-row"><label for="sync-crypto-change-pw">Neues Passwort</label><input type="password" class="modal-input" id="sync-crypto-change-pw" placeholder="Mindestens 12 Zeichen" autocomplete="new-password"/></div>
+        <div class="modal-row"><label for="sync-crypto-change-pw2">Wiederholen</label><input type="password" class="modal-input" id="sync-crypto-change-pw2" autocomplete="new-password"/></div>
+        <p class="modal-hint">Dein Wiederherstellungsschlüssel bleibt gültig. Bereits entsperrte Geräte synchronisieren weiter, ohne dass du dort etwas tun musst.</p>
+        <p class="modal-hint sync-crypto-error hidden" id="sync-crypto-change-error" role="alert"></p>
+        <p class="modal-hint"><button type="button" class="sync-crypto-link" id="sync-crypto-change-forgot">Aktuelles Passwort vergessen?</button></p>
+        <div class="modal-actions">
+          <button class="btn-ghost" id="sync-crypto-change-cancel">Abbrechen</button>
+          <button class="btn-primary" id="sync-crypto-change-submit">Passwort ändern</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Sync-Update-Hinweis (js/sync.js) — erscheint, wenn ein anderes Gerät
        Daten geändert hat, während diese Seite offen war. Bewusst kein
        Auto-Reload während aktiver Nutzung (siehe Kommentar in sync.js). -->
   <div id="sync-update-banner" class="floating-update-banner hidden">
     <span>Auf einem anderen Gerät aktualisiert</span>
     <button id="sync-update-reload-btn">Neu laden</button>
+  </div>
+
+  <!-- Sync-gesperrt-Hinweis (js/sync.js: syncLockedHintOnState) — erscheint
+       einmal pro Browser-Sitzung, wenn dieses Gerät nach dem Start gesperrt
+       ist (Verschlüsselung eingerichtet, Passwort hier noch nicht eingegeben). -->
+  <div id="sync-locked-banner" class="floating-update-banner hidden" role="status">
+    <span>Sync pausiert: Gib dein Verschlüsselungs-Passwort ein, damit dieses Gerät wieder abgleicht.</span>
+    <button id="sync-locked-unlock-btn">Entsperren</button>
+    <button id="sync-locked-later-btn" class="floating-banner-ghost">Ausblenden</button>
   </div>
 
   <!-- App-Update-Hinweis (js/pwa.js) — erscheint, wenn der Service Worker
@@ -4026,6 +4137,12 @@
        einem frischen Fork ohne eigenes Supabase-Projekt), läuft Nook
        bewusst fehlerfrei rein lokal weiter (siehe sync.js). -->
   <script src="js/sync-config.js"></script>
+  <!-- Ende-zu-Ende-Verschlüsselung des Syncs: reine Krypto (sync-crypto.js)
+       und Zustände/Abgleich (sync-engine.js), beide ohne DOM und ohne
+       Supabase-Import — sync.js reicht Client, Speicher und Schlüsselablage
+       hinein. Müssen direkt vor sync.js laden. -->
+  <script src="js/sync-crypto.js"></script>
+  <script src="js/sync-engine.js"></script>
   <script src="js/sync.js"></script>
   <script src="js/calendar.js"></script>
   <!-- Google Identity Services (GIS) wird NICHT hier statisch eingebunden,

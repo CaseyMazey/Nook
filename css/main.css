@@ -850,6 +850,14 @@ body.bg-frosted .modal-box {
 #sw-update-banner { bottom: 88px; }
 /* Backup-Erinnerung (js/settings.js: checkBackupReminder) darüber. */
 #backup-reminder-banner { bottom: 152px; }
+/* Sync-gesperrt-Hinweis (js/sync.js) ganz oben; längerer Text, darum schmal gehalten. */
+#sync-locked-banner { bottom: 216px; max-width: min(460px, calc(100vw - 48px)); }
+/* Phone: über der Bottom-Nav und volle Breite. Steht bewusst nach der Regel oben,
+   sonst überschriebe die spätere Regel die Phone-Werte. */
+@media (max-width: 480px) {
+  #sync-locked-banner { left: 12px; right: 12px; max-width: none; flex-wrap: wrap; bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 204px); }
+  #sync-locked-banner span { flex-basis: 100%; }
+}
 .floating-update-banner button.floating-banner-ghost {
   background: none;
   color: var(--text-2);
