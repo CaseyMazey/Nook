@@ -1,0 +1,147 @@
+/* =========================
+   NOOK-FARBWÄHLER (js/hub-color-picker.js)
+   Popover über allem (auch über Modals). Nur Theme-Variablen — die Farben
+   in Fläche/Leiste/Feldern sind Farbdaten und kommen aus dem JS.
+   ========================= */
+.hub-cp {
+  position: fixed;
+  z-index: 10050;
+  width: 264px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--surface-solid);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 14px 40px color-mix(in srgb, var(--shadow-tint) 45%, transparent);
+  font-family: var(--font);
+}
+.hub-cp.hidden { display: none; }
+
+.hub-cp-sv {
+  position: relative;
+  height: 156px;
+  border-radius: var(--radius);
+  cursor: crosshair;
+  touch-action: none;
+  outline: none;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 12%, transparent);
+}
+.hub-cp-sv:focus-visible { box-shadow: 0 0 0 2px var(--sage); }
+.hub-cp-sv-knob {
+  position: absolute;
+  width: 16px; height: 16px;
+  margin: -8px 0 0 -8px;
+  border-radius: 50%;
+  border: 2px solid var(--surface-solid);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 55%, transparent), 0 2px 6px color-mix(in srgb, var(--shadow-tint) 50%, transparent);
+  pointer-events: none;
+}
+
+.hub-cp-hue {
+  position: relative;
+  height: 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  touch-action: none;
+  outline: none;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 12%, transparent);
+}
+.hub-cp-hue:focus-visible { box-shadow: 0 0 0 2px var(--sage); }
+.hub-cp-hue-knob {
+  position: absolute;
+  top: 50%;
+  width: 18px; height: 18px;
+  margin: -9px 0 0 -9px;
+  border-radius: 50%;
+  background: var(--surface-solid);
+  border: 2px solid var(--surface-solid);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 55%, transparent), 0 2px 6px color-mix(in srgb, var(--shadow-tint) 50%, transparent);
+  pointer-events: none;
+}
+
+.hub-cp-row { display: flex; align-items: center; gap: 8px; }
+.hub-cp-preview {
+  display: flex;
+  width: 52px; height: 32px;
+  flex-shrink: 0;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 15%, transparent);
+}
+.hub-cp-old, .hub-cp-new { flex: 1; }
+.hub-cp-old { cursor: pointer; }
+.hub-cp-hex {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+  padding: 0 10px;
+  font-family: var(--mono);
+  font-size: calc(13px * var(--core-font-scale));
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-transform: lowercase;
+}
+.hub-cp-hex:focus { outline: none; border-color: var(--sage); }
+.hub-cp-eyedrop {
+  width: 32px; height: 32px;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0;
+  color: var(--text-2);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.hub-cp-eyedrop:hover { color: var(--text); border-color: var(--sage); }
+
+.hub-cp-swatch-label {
+  font-size: calc(10px * var(--core-font-scale));
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: -4px;
+}
+.hub-cp-swatch-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: -4px; }
+.hub-cp-swatch-head .hub-cp-swatch-label { margin-bottom: 0; }
+.hub-cp-save-color {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: calc(11px * var(--core-font-scale));
+  color: var(--sage-dark, var(--sage));
+  cursor: pointer;
+}
+.hub-cp-save-color:hover { text-decoration: underline; }
+.hub-cp-swatches { display: flex; flex-wrap: wrap; gap: 6px; }
+.hub-cp-swatches.hidden { display: none; }
+.hub-cp-swatch {
+  width: 22px; height: 22px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 15%, transparent);
+  transition: transform 100ms;
+}
+.hub-cp-swatch:hover { transform: scale(1.12); }
+.hub-cp-swatch.active { box-shadow: 0 0 0 2px var(--surface-solid), 0 0 0 4px var(--sage); }
+
+.hub-cp-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 2px; }
+.hub-cp-actions button { padding: 7px 12px; min-width: 0; font-size: calc(12.5px * var(--core-font-scale)); white-space: nowrap; }
+
+/* Handy: als Blatt am unteren Rand statt am Feld */
+.hub-cp.hub-cp-sheet {
+  left: 0; right: 0; bottom: 0; top: auto;
+  width: auto;
+  padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+.hub-cp.hub-cp-sheet .hub-cp-sv { height: 180px; }
+.hub-cp.hub-cp-sheet .hub-cp-swatch { width: 28px; height: 28px; }
