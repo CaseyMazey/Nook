@@ -207,6 +207,7 @@ async function syncGoogleCalendar(calendarId, { fullResync = false } = {}) {
 // =========================
 
 async function syncAllSelectedGoogleCalendars() {
+  if (window.NOOK_THEME_LAB || window.NOOK_THEME_LAB_FAILED) return; // Theme-Lab: nie Google kontaktieren
   if (!isGoogleCalendarConnected() || googleCalSyncing) return;
   if (!googleCalSettings.selectedCalendarIds.length) return;
 
@@ -244,6 +245,7 @@ function calInfoLabel(calendarId) {
 // ── Auto-Sync-Timer ──────────────────────────────────────────────────
 function startGoogleCalAutoSync() {
   stopGoogleCalAutoSync();
+  if (window.NOOK_THEME_LAB || window.NOOK_THEME_LAB_FAILED) return; // Theme-Lab: kein Auto-Sync
   if (!isGoogleCalendarConnected() || !googleCalSettings.autoSyncMinutes) return;
   _googleCalAutoSyncTimer = setInterval(syncAllSelectedGoogleCalendars, googleCalSettings.autoSyncMinutes * 60000);
 }
@@ -384,7 +386,7 @@ function deleteGoogleEventIfSynced(ev) {
 // STILLEN Token — ohne aktive Google-Sitzung bleibt das folgenlos (siehe
 // ensureGoogleAccessToken() in google-calendar-auth.js), kein Popup beim
 // bloßen Öffnen von Nook. ───────────────────────────────────────────────
-if (isGoogleCalendarConnected()) {
+if (isGoogleCalendarConnected() && !window.NOOK_THEME_LAB && !window.NOOK_THEME_LAB_FAILED) { // Theme-Lab: nie Google kontaktieren
   syncAllSelectedGoogleCalendars();
   startGoogleCalAutoSync();
 }

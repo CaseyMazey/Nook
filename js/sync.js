@@ -56,7 +56,8 @@ const SYNC_MIGRATION_DONE_KEY = "__nook_sync_migration_done__";
 // ist SUPABASE_URL schlicht nicht definiert — Nook läuft dann bewusst
 // fehlerfrei rein lokal weiter, statt mit einer kaputten Konfiguration
 // zu crashen.
-const sbClient = (typeof window.supabase !== "undefined" && typeof SUPABASE_URL !== "undefined")
+// Theme-Lab: kein Client (sonst BroadcastChannel/Auth-Lock mit der echten App).
+const sbClient = (!window.NOOK_THEME_LAB && !window.NOOK_THEME_LAB_FAILED && typeof window.supabase !== "undefined" && typeof SUPABASE_URL !== "undefined")
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   : null;
 
