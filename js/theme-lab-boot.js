@@ -9,7 +9,7 @@
 
   // Nur diese Schluessel werden (lesend) aus dem echten Speicher uebernommen
   const COPY_KEYS = ["customThemes", "theme", "themeFamily", "themeBackgrounds", "themeAutoMode",
-    "dayNightToggle", "uiFontScale", "hubUserColors", "tabOrder", "hiddenTabs", "userName"];
+    "dayNightToggle", "uiFontScale", "hubUserColors", "tabOrder", "hiddenTabs"];
 
   function createMemoryStorage(initial) {
     const m = new Map();

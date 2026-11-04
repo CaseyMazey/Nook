@@ -35,6 +35,7 @@
   const ym = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
 
   const data = {};
+  data.userName = "Alex"; // Lab zeigt nie den echten Namen
 
   // ---- Heute: Zeitbloecke, Aufgaben, Schnellnotiz, Fortschritts-Tracker ----
   data.blocks = [
@@ -127,8 +128,19 @@
   data.mealPlanWeeks = {};
   data.mealPlanWeeks[key(thisMonday)] = mealWeek(thisMonday);
   data.mealPlanWeeks[key(plusDays(7, thisMonday))] = mealWeek(plusDays(7, thisMonday));
-  // Wetter bewusst NICHT vorbelegt: Standard ist manuell "Cologne" (Open-Meteo, braucht keine
-  // Geolocation); das Lab hat Netz, das Banner fuellt sich selbst. Ein Fake-Cache wuerde nach 30 min ablaufen.
+  // Wetter: frischer Cache (ts = jetzt), damit die Wetterkarte im Start-Banner auch ohne Netz gefuellt ist.
+  // Form wie renderWeather() in today.js sie schreibt; locKey passt zur Standard-Einstellung (manuell Cologne).
+  // Jeder Lab-Start laedt diese Datei neu, ts ist also immer frisch (30-Minuten-Cache).
+  const wTime = (d, h, m) => `${key(d)}T${pad(h)}:${pad(m)}`;
+  data.weatherData = {
+    svgCode: '<svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+      '<circle cx="11" cy="11" r="4" stroke="var(--sage)" stroke-width="1.8"/>' +
+      '<path d="M9 22h11a4 4 0 0 0 0-8 5.5 5.5 0 0 0-10.6 1.5A3.4 3.4 0 0 0 9 22z" stroke="var(--sage)" stroke-width="1.8" stroke-linejoin="round"/></svg>',
+    temp: "12°C", desc: "Leicht bewölkt",
+    sunrise: wTime(plusDays(0), 7, 0), sunset: wTime(plusDays(0), 17, 0), sunriseTomorrow: wTime(plusDays(1), 7, 0),
+    utcOffsetSeconds: -new Date().getTimezoneOffset() * 60, ts: now, locKey: "city:cologne",
+  };
+  data.weatherSettings = { mode: "manual", city: "Cologne" };
 
   // ---- Karteikarten: 2 Fächer x 2 Themen x 6 Karten ----
   const cards = (prefix, pairs) => pairs.map((p, i) => ({
@@ -171,7 +183,7 @@
           ["Wer war Karl der Große?", "Frankenkönig, 800 zum Kaiser gekrönt"],
           ["Was war die Hanse?", "Städtebund von Kaufleuten im Nord- und Ostseeraum"],
           ["Wann begann die Reformation?", "1517 mit Luthers Thesen"],
-          ["Was war ein Kloster?", "Gemeinschaft von Moenchen oder Nonnen"],
+          ["Was war ein Kloster?", "Gemeinschaft von Mönchen oder Nonnen"],
           ["Was waren die Kreuzzüge?", "Religiös motivierte Kriegszüge nach Jerusalem"],
         ]) },
       ] },

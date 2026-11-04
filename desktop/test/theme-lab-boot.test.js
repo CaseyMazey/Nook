@@ -33,10 +33,12 @@ test('customThemes lesbar, Schreiben aendert echten Speicher nicht', () => {
 });
 
 test('Musterdaten da, kopierte Schluessel gewinnen, theme aus Parameter', () => {
-  const real = realStorage({ userName: '"Echt"', theme: '"alt"' }); const w = fakeWin(real);
-  B.installThemeLab(w, { sample: { blocks: '[1]', userName: '"Muster"' }, copyKeys: B.COPY_KEYS, themeId: 'neu' });
+  const real = realStorage({ userName: '"Echt"', hubUserColors: '"echt"', theme: '"alt"' }); const w = fakeWin(real);
+  B.installThemeLab(w, { sample: { blocks: '[1]', userName: '"Muster"', hubUserColors: '"muster"' }, copyKeys: B.COPY_KEYS, themeId: 'neu' });
   assert.strictEqual(w.localStorage.getItem('blocks'), '[1]');
-  assert.strictEqual(w.localStorage.getItem('userName'), '"Echt"');
+  assert.strictEqual(w.localStorage.getItem('hubUserColors'), '"echt"');
+  assert.strictEqual(w.localStorage.getItem('userName'), '"Muster"'); // Name wird nie aus dem echten Speicher kopiert
+  assert.ok(!B.COPY_KEYS.includes('userName'));
   assert.strictEqual(w.localStorage.getItem('theme'), '"neu"');
   assert.strictEqual(real.m.get('theme'), '"alt"');
 });
