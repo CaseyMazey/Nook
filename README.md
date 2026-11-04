@@ -71,7 +71,7 @@ Kurzüberblick pro Bereich — die vollständige Nutzer-Doku mit allen Optionen 
 Persönliche Startseite: Unterrichtsblöcke, Wochenaufgaben, Gruppenpflichten-Planer, Mini-Kalender, Wetter, Schnellnotiz, National-Day- und Positivity-Widget.
 → [Wiki: Heute](https://github.com/CaseyMazey/Nook/wiki/Heute)
 
-### 📌 Pinnwand 🔧 *Momentan in Bearbeitung*
+### 📌 Pinnwand
 
 Freie Karten (Notizen, Checklisten, Code, Zitate, …) in drei Masonry-Spalten, inklusive eigenem Kachel-Designer.
 → [Wiki: Pinnwand](https://github.com/CaseyMazey/Nook/wiki/Pinnwand)
@@ -120,7 +120,7 @@ Gamifiziertes Planungsbrett im Tavernen-Look: Daily, Weekly/Check, Time und Side
 Taschenrechner, Focus Timer, Converter, Datenübertragungsraten-Rechner mit Lernmodus, Notenmanager.
 → [Wiki: Tools](https://github.com/CaseyMazey/Nook/wiki/Tools)
 
-### ⚙️ Einstellungen
+### ⚙️ Einstellungen 🔧 *Momentan in Bearbeitung*
 
 Themes & Theme-Editor, Tab-Verwaltung, Backup, optionaler Geräte-Sync, Google-Calendar-Verbindung.
 → [Wiki: Einstellungen](https://github.com/CaseyMazey/Nook/wiki/Einstellungen)
