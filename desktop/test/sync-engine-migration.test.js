@@ -402,7 +402,8 @@ test("Abbruch an jedem Schritt: alle Werte bleiben erhalten, Fortsetzung beendet
     assert.equal(rowOf(ctx.backend, KEYRING_KEY).value.migrationDone, true);
     assert.equal(ctx.storage.mig[A], true);
   }
-  assert.deepEqual(steps, ["read", "keyring", "read", "upload", "verify", "done_flag"]);
+  // Jedes Lesen endet mit einer leeren Seite: Abgleich, Lesen und Prüfen sind je zwei Abfragen.
+  assert.deepEqual(steps, ["read", "read", "keyring", "read", "read", "upload", "verify", "verify", "done_flag"]);
 });
 
 test("Abbruch nach dem Keyring: neue Engine auf gleichem Speicher setzt beim Start fort", async () => {

@@ -598,3 +598,18 @@ test("readAllRows: gelöschte Zeile mit kleinerem Key zwischen zwei Seiten läss
   assert.equal(deleted, true);
   for (let i = 1; i < 1200; i++) assert.equal(d.storage.data[key(i)], i, "ausgelassen: " + key(i));
 });
+
+test("readAllRows: Zeilengrenze des Servers unter der Seitengröße (100) schneidet nicht ab", async () => {
+  const backend = createFakeBackend({ maxRows: 100 });
+  const rows = [];
+  const key = (i) => "nook_k" + String(i).padStart(4, "0");
+  for (let i = 0; i < 1200; i++) rows.push({ user_id: A, key: key(i), value: i, updated_at: iso(1000 + i) });
+  await backend.client("alt").from("kv_store").upsert(rows);
+  const capped = await backend.client("x").from("kv_store").select("*").eq("user_id", A);
+  assert.equal(capped.data.length, 100); // die Grenze des Fakes greift
+  const d = device(backend, await material());
+  assert.equal(await d.engine.start(A), "unconfigured");
+  await d.engine.catchUp();
+  assert.equal(Object.keys(d.storage.data).length, 1200);
+  for (let i = 0; i < 1200; i++) assert.equal(d.storage.data[key(i)], i, "ausgelassen: " + key(i));
+});

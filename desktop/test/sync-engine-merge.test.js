@@ -641,3 +641,97 @@ test("in catchUp gesehene Zeile zählt als bestätigt: danach anderswo gelöscht
   await ctx.engine.catchUp();
   assert.equal(row(ctx, "nook_a"), undefined);
 });
+
+// --- Nachbesserung nach Gesamt-Review: Realtime-Zeilen ohne Wert ---
+// Realtime lässt bei zu großen Zeilen die Feldwerte weg. So eine Zeile ist nie Klartext:
+// nicht übernommen, nicht neu hochgeladen, Speicher und Cloud bleiben unverändert.
+function valueless(key, ts) {
+  return [
+    { user_id: A, key, updated_at: new Date(ts).toISOString() },                  // Feld fehlt ganz
+    { user_id: A, key, value: undefined, updated_at: new Date(ts).toISOString() } // Feld da, aber ohne Wert
+  ];
+}
+async function assertValuelessIgnored(ctx) {
+  const cloudBefore = ctx.backend.rows();
+  const metaBefore = { ...ctx.storage.meta };
+  const dataBefore = JSON.stringify(ctx.storage.data);
+  for (const r of valueless("nook_a", 5000)) {
+    assert.equal(await ctx.engine.applyRemoteRow(r), false);
+  }
+  await ctx.engine.flush();
+  assert.deepEqual(ctx.storage.setRawCalls, []);
+  assert.equal(JSON.stringify(ctx.storage.data), dataBefore);
+  assert.deepEqual(ctx.storage.meta, metaBefore);
+  assert.deepEqual(ctx.backend.rows(), cloudBefore);
+  assert.deepEqual(ctx.notices, []);
+}
+
+test("Realtime-Zeile ohne Wert nach der Migration: ignoriert, kein neuer Upload", async () => {
+  const ctx = await setup({ migrationDone: true, storageOpts: { data: { nook_a: "lokal" }, meta: { nook_a: 1000 } } });
+  await ctx.engine.start(A);
+  await putEnc(ctx, "nook_a", "lokal", 1000);
+  await assertValuelessIgnored(ctx);
+});
+
+test("Realtime-Zeile ohne Wert vor der Migration: ignoriert, nie als Klartext übernommen", async () => {
+  const ctx = await setup({ migrationDone: false, storageOpts: { data: { nook_a: "lokal" }, meta: { nook_a: 1000 } } });
+  pendingMigration(ctx);
+  await quiet(() => ctx.engine.start(A)); // die gewollt scheiternde Fortsetzung loggt
+  assert.equal(ctx.engine.state, "unlocked");
+  await assertValuelessIgnored(ctx);
+});
+
+test("Realtime-Zeile ohne Wert in unconfigured: ignoriert", async () => {
+  const ctx = await setup({ withKeyring: false, state: "none", storageOpts: { data: { nook_a: "lokal" }, meta: { nook_a: 1000 } } });
+  assert.equal(await ctx.engine.start(A), "unconfigured");
+  await assertValuelessIgnored(ctx);
+});
+
+// Liefert eine gelesene Zeile ohne Wert (wie eine gekürzte Zeile), damit auch catchUp sie sieht.
+function stripValueClient(backend, key) {
+  const inner = backend.client("dieses");
+  return {
+    from(table) {
+      const b = inner.from(table);
+      const w = {};
+      for (const name of ["select", "eq", "in", "gt", "order", "range", "limit", "maybeSingle", "single", "upsert", "insert", "update", "delete"]) {
+        w[name] = (...a) => { b[name](...a); return w; };
+      }
+      w.then = (res, rej) => b.then((r) => {
+        if (Array.isArray(r.data)) for (const row of r.data) if (row.key === key) delete row.value;
+        return r;
+      }).then(res, rej);
+      return w;
+    }
+  };
+}
+
+test("catchUp: Zeile ohne Wert gilt als unlesbar, nie als Klartext (vor und nach der Migration)", async () => {
+  for (const migrationDone of [false, true]) {
+    const m = await material();
+    const backend = createFakeBackend();
+    await backend.client("anderes").from("kv_store").insert(
+      { user_id: A, key: KEYRING_KEY, value: { ...m.keyring, migrationDone }, updated_at: new Date(1).toISOString() });
+    const env = await crypto.encryptValue(m.dataKey, A, "nook_a", "neu");
+    await backend.client("anderes").from("kv_store").upsert(
+      { user_id: A, key: "nook_a", value: env, updated_at: new Date(5000).toISOString() });
+    if (!migrationDone) backend.failNext("update");
+    const storage = makeStorage({ data: { nook_a: "lokal" }, meta: { nook_a: 1000 } });
+    const notices = [];
+    const engine = createSyncEngine({
+      client: stripValueClient(backend, "nook_a"), table: "kv_store", storage,
+      keyStore: makeKeyStore({ [A]: { key: m.dataKey, keyId: m.keyring.keyId } }),
+      isSyncableKey: (k) => k.startsWith("nook_"), onNotice: (c, i) => notices.push([c, i])
+    });
+    await quiet(() => engine.start(A));
+    assert.equal(engine.state, "unlocked");
+    const cloudBefore = backend.rows();
+    await engine.catchUp();
+    await engine.flush();
+    assert.deepEqual(storage.setRawCalls, [], "migrationDone=" + migrationDone);
+    assert.equal(storage.data.nook_a, "lokal");
+    assert.equal(storage.meta.nook_a, 1000);
+    assert.deepEqual(backend.rows(), cloudBefore);
+    assert.ok(!notices.some((n) => n[0] === "plaintext_row"));
+  }
+});

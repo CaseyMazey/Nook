@@ -244,7 +244,7 @@ const syncEngine = (sbClient && typeof createSyncEngine === "function")
       storage: syncStorage,
       keyStore: syncKeyStore,
       isSyncableKey,
-      onStateChange: () => { syncCryptoSubExtra = ""; renderSyncStatusSub(); },
+      onStateChange: (next) => { syncCryptoSubExtra = ""; renderSyncStatusSub(); syncLockedHintOnState(next); },
       // Nur Code und Key, nie ein Wert.
       onNotice: (code, info) => {
         console.warn("Sync: Hinweis", code, typeof info === "string" ? info : "");
@@ -422,6 +422,30 @@ function updateSyncStatusUI(session) {
 
 function showUpdateBanner() {
   document.getElementById("sync-update-banner")?.classList.remove("hidden");
+}
+
+// ── Einmaliger Hinweis auf einem gesperrten Gerät ───────────────────────
+// Spec "Weiteres Gerät", Schritt 1: wird das Gerät nach dem Start gesperrt
+// (Keyring in der Cloud, kein Schlüssel hier), erscheint einmal pro
+// Browser-Sitzung ein schwebender Hinweis mit "Entsperren". Verlässt das
+// Gerät den Zustand, verschwindet er wieder.
+const SYNC_LOCKED_HINT_KEY = "__nook_sync_locked_hint_shown__"; // sessionStorage
+function syncLockedHintShown() {
+  try { return sessionStorage.getItem(SYNC_LOCKED_HINT_KEY) === "1"; } catch { return false; }
+}
+function markSyncLockedHintShown() {
+  try { sessionStorage.setItem(SYNC_LOCKED_HINT_KEY, "1"); } catch { /* ohne Speicher: nur für diese Seite */ }
+}
+function hideSyncLockedHint() {
+  document.getElementById("sync-locked-banner")?.classList.add("hidden");
+}
+function syncLockedHintOnState(state) {
+  if (state !== "locked") { hideSyncLockedHint(); return; }
+  if (syncLockedHintShown()) return;
+  const banner = document.getElementById("sync-locked-banner");
+  if (!banner) return;
+  markSyncLockedHintShown();
+  banner.classList.remove("hidden");
 }
 
 // ── Ablauf nach Start/Entsperren ────────────────────────────────────────
@@ -621,12 +645,32 @@ function subscribeRealtime(userId) {
           return;
         }
         if (isDelete) return;
+        // Zu große Zeilen liefert Realtime ohne Feldwerte (payload.errors):
+        // nie als Wert behandeln, sondern den Stand per Abgleich lesen.
+        if (payload.errors || !Object.prototype.hasOwnProperty.call(row, "value")) {
+          syncIncompleteRowCatchUp(userId);
+          return;
+        }
         syncEngine.applyRemoteRow(row)
           .then((changed) => { if (changed) showUpdateBanner(); })
           .catch((e) => console.error("Sync: Realtime-Zeile nicht übernommen", row.key, e));
       }
     )
     .subscribe();
+}
+// Realtime-Zeile ohne Wert: einen Abgleich über syncSerial einreihen. Mehrere
+// solche Ereignisse kurz hintereinander teilen sich einen wartenden Abgleich.
+let syncIncompleteCatchUpQueued = false;
+function syncIncompleteRowCatchUp(userId) {
+  if (!syncEngine || syncIncompleteCatchUpQueued) return;
+  syncIncompleteCatchUpQueued = true;
+  syncSerial(async () => {
+    syncIncompleteCatchUpQueued = false;
+    if (currentUserId !== userId || syncEngine.userId !== userId) return;
+    if (syncEngine.state !== "unlocked" && syncEngine.state !== "unconfigured") return;
+    const { changed } = await syncEngine.catchUp();
+    if (changed) showUpdateBanner();
+  }).catch(() => {});
 }
 function unsubscribeRealtime() {
   if (realtimeChannel) { sbClient.removeChannel(realtimeChannel); realtimeChannel = null; }
@@ -1331,7 +1375,7 @@ async function submitSyncCryptoReset() {
     title: "Cloud-Daten zurücksetzen",
     message: "Alle synchronisierten Daten in der Cloud werden gelöscht, auch die Schlüsseldaten. Das lässt sich nicht rückgängig machen. "
       + "Die Daten auf diesem Gerät bleiben erhalten, und du kannst die Verschlüsselung damit neu einrichten. "
-      + "Deine anderen Geräte behalten ihre lokalen Daten.",
+      + "Deine anderen Geräte behalten ihre lokalen Daten. Schließe Nook vorher auf allen anderen Geräten.",
     confirmText: "Cloud-Daten löschen",
     danger: true,
   });
@@ -1375,6 +1419,11 @@ syncCryptoEl("sync-crypto-reset")?.addEventListener("click", submitSyncCryptoRes
 syncCryptoEl("sync-crypto-notice-dismiss")?.addEventListener("click", clearSyncCryptoNotices);
 
 document.getElementById("sync-update-reload-btn")?.addEventListener("click", () => location.reload());
+document.getElementById("sync-locked-unlock-btn")?.addEventListener("click", () => {
+  hideSyncLockedHint();
+  if (syncEngine && syncEngine.state === "locked") openSyncCryptoModal("unlock");
+});
+document.getElementById("sync-locked-later-btn")?.addEventListener("click", hideSyncLockedHint);
 
 // ── Start ────────────────────────────────────────────────────────────
 async function initSync() {

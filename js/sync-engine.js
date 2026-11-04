@@ -252,11 +252,19 @@
       } catch (e) { console.error("Sync: Bestätigungsstand nicht speicherbar", e); }
     }
 
-    // "envelope" | "malformed" (hat __nook_enc, ist aber kein gültiger v1-Umschlag) | "plain"
+    // "envelope" | "malformed" (hat __nook_enc, ist aber kein gültiger v1-Umschlag, oder es fehlt
+    // überhaupt ein Wert) | "plain". Ein fehlender Wert (undefined) ist nie Klartext.
     function rowKind(v) {
+      if (v === undefined) return "malformed";
       if (C.isEncryptedEnvelope(v)) return "envelope";
       if (v && typeof v === "object" && Object.prototype.hasOwnProperty.call(v, "__nook_enc")) return "malformed";
       return "plain";
+    }
+
+    // Realtime kann bei zu großen Zeilen die Feldwerte weglassen: eine Zeile ohne eigenen Wert
+    // ist unvollständig, nicht leer.
+    function hasValue(row) {
+      return Object.prototype.hasOwnProperty.call(row, "value") && row.value !== undefined;
     }
 
     function parseTs(row) {
@@ -318,8 +326,9 @@
     }
 
     // Liest in Seiten nach Key (Keyset: jede Seite beginnt hinter dem letzten gelesenen Key), bis eine
-    // Seite leer oder kurz bleibt. Die Zeilengrenze pro Anfrage schneidet so nie still ab, und Löschungen
-    // zwischen zwei Seiten verschieben keine anderen Zeilen. null bei einem Lesefehler.
+    // Seite leer bleibt. Erst die leere Seite beendet das Lesen: liegt die Zeilengrenze des Servers
+    // (max-rows) unter PAGE_SIZE, ist schon eine volle Seite kurz und darf nicht als Ende gelten.
+    // Löschungen zwischen zwei Seiten verschieben keine anderen Zeilen. null bei einem Lesefehler.
     async function readAllRows(uid) {
       const all = [];
       let last = null;
@@ -330,9 +339,11 @@
           const res = await q.order("key", { ascending: true }).limit(PAGE_SIZE);
           if (res.error) return null;
           const page = res.data || [];
+          if (!page.length) return all;
           for (const row of page) all.push(row);
-          if (page.length < PAGE_SIZE) return all;
-          last = page[page.length - 1].key;
+          const next = page[page.length - 1].key;
+          if (typeof next !== "string" || next === last) return null; // kein Fortschritt: nie endlos lesen
+          last = next;
         }
       } catch (e) {
         return null;
@@ -471,10 +482,13 @@
     }
 
     // Realtime: liefert true, wenn die Zeile in den Speicher übernommen wurde.
+    // Eine Zeile ohne Wert (von Realtime gekürzt) wird weder übernommen noch neu hochgeladen;
+    // sync.js holt den Stand dann per catchUp.
     async function applyRemoteRow(row) {
       const st = state;
       if (st !== "unlocked" && st !== "unconfigured") return false;
       if (!row || typeof row.key !== "string" || row.key === KEYRING_KEY || !isSyncableKey(row.key)) return false;
+      if (!hasValue(row)) return false;
       const gen = generation, uid = userId, k = dataKey;
       const remoteTs = parseTs(row);
       if (remoteTs === null) { notice("decrypt_failed", row.key); return false; }

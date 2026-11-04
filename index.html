@@ -3669,6 +3669,15 @@
     <button id="sync-update-reload-btn">Neu laden</button>
   </div>
 
+  <!-- Sync-gesperrt-Hinweis (js/sync.js: syncLockedHintOnState) — erscheint
+       einmal pro Browser-Sitzung, wenn dieses Gerät nach dem Start gesperrt
+       ist (Verschlüsselung eingerichtet, Passwort hier noch nicht eingegeben). -->
+  <div id="sync-locked-banner" class="floating-update-banner hidden" role="status">
+    <span>Sync pausiert: Gib dein Verschlüsselungs-Passwort ein, damit dieses Gerät wieder abgleicht.</span>
+    <button id="sync-locked-unlock-btn">Entsperren</button>
+    <button id="sync-locked-later-btn" class="floating-banner-ghost">Ausblenden</button>
+  </div>
+
   <!-- App-Update-Hinweis (js/pwa.js) — erscheint, wenn der Service Worker
        im Hintergrund eine neue Version von Nook geladen und aktiviert hat
        (CSS/JS wurden neu deployed). Ohne diesen Hinweis liefert der
