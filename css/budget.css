@@ -1356,6 +1356,26 @@
 
 .b-main-row-day    { font-family: var(--mono); font-size: calc(9.5px * var(--core-font-scale)); color: var(--b-card-ink-5); }
 .b-main-row-name   { color: var(--b-card-neutral-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Textmarker: Einnahme und die Ausgaben, die sie bezahlt, in derselben
+   Farbe (Vergabe der Reihe nach in renderMainCards). Leicht auslaufend
+   wie ein echter Marker; Text behält seine normale Farbe. */
+.b-link-mark {
+  --mark: var(--b-blue);
+  color: inherit;
+  padding: 0 4px; margin: 0 -2px;
+  border-radius: 3px 6px 4px 7px;
+  background: linear-gradient(100deg,
+    color-mix(in srgb, var(--mark) 14%, transparent),
+    color-mix(in srgb, var(--mark) 34%, transparent) 8%,
+    color-mix(in srgb, var(--mark) 28%, transparent) 92%,
+    color-mix(in srgb, var(--mark) 10%, transparent));
+  -webkit-box-decoration-break: clone; box-decoration-break: clone;
+}
+.b-link-mark.b-link-c1 { --mark: var(--b-blue); }
+.b-link-mark.b-link-c2 { --mark: var(--amber); }
+.b-link-mark.b-link-c3 { --mark: var(--b-purple); }
+.b-link-mark.b-link-c4 { --mark: var(--b-red); }
+.b-link-mark.b-link-c5 { --mark: var(--b-green); }
 .b-main-row-check  { font-size: calc(10px * var(--core-font-scale)); color: var(--b-card-ink-3); text-align: center; }
 .b-main-row-amount { font-family: var(--mono); font-size: calc(11.5px * var(--core-font-scale)); font-weight: 600; white-space: nowrap; }
 .b-main-row-amount.income  { color: var(--b-card-income-text); }

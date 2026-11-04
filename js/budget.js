@@ -665,13 +665,41 @@ function renderMainCards(month, mk) {
   const recExpenses = recItems.filter(i => i.type === 'expense');
   const otExpenses  = budgetOnetime.filter(e => e.monthKey === mk && e.type === 'expense');
 
-  function makeClickableRow(day, monthNum, name, amount, sign, paid, onToggle) {
+  // ── Verknüpfung Einnahme ↔ Ausgabe sichtbar machen ("Jedem Euro einen Job"):
+  // Ausgaben mit Finanzierung (funding) und die bezahlende Einnahme bekommen
+  // denselben Textmarker. Die Farben werden der Reihe nach an die
+  // verknüpften Einnahmen vergeben (nicht an alle), damit gleichzeitig
+  // sichtbare Paare möglichst unterschiedlich aussehen. Nur Paare, deren
+  // Einnahme in diesem Monat tatsächlich in der Liste steht; reine Anzeige.
+  const visibleIncomeIds = new Set(recIncomes.map(i => i.id));
+  const linkedSources = funding => [...new Set((funding || [])
+    .filter(f => f.amount > 0 && visibleIncomeIds.has(f.sourceId))
+    .map(f => f.sourceId))];
+  const fundedByIncome = new Map(); // Einnahme-ID → Namen der bezahlten Ausgaben
+  [...recExpenses, ...otExpenses].forEach(x => {
+    linkedSources(x.funding).forEach(id => {
+      if (!fundedByIncome.has(id)) fundedByIncome.set(id, []);
+      fundedByIncome.get(id).push(x.name);
+    });
+  });
+  const LINK_COLORS = 5; // .b-link-c1 … .b-link-c5 in budget.css
+  const linkColorIdx = new Map();
+  [...recIncomes].sort((a, b) => (a.day || 1) - (b.day || 1))
+    .filter(i => fundedByIncome.has(i.id))
+    .forEach((i, n) => linkColorIdx.set(i.id, n % LINK_COLORS + 1));
+  const incomeNameById = id => (recIncomes.find(i => i.id === id) || {}).name || '';
+  const linkMarkHtml = (text, sourceIds, tip) => {
+    if (!sourceIds.length) return escHtml(text);
+    return `<mark class="b-link-mark b-link-c${linkColorIdx.get(sourceIds[0]) || 1}" title="${escHtml(tip)}">${escHtml(text)}</mark>`;
+  };
+
+  function makeClickableRow(day, monthNum, name, amount, sign, paid, onToggle, nameHtml) {
     const el = document.createElement('div');
     el.className = 'b-main-row b-main-row-clickable' + (paid ? ' b-main-row-paid' : '');
     el.title = paid ? 'Als offen markieren' : 'Als erledigt markieren';
     el.innerHTML = `
       <span class="b-main-row-day">${String(day).padStart(2,'0')}.${String(monthNum).padStart(2,'0')}</span>
-      <span class="b-main-row-name">${escHtml(name)}</span>
+      <span class="b-main-row-name">${nameHtml || escHtml(name)}</span>
       <span class="b-main-row-check">${paid ? '✓' : ''}</span>
       <span class="b-main-row-amount ${sign === '+' ? 'income' : 'expense'}">${sign}${fmtEuro(amount)}</span>`;
     el.addEventListener('click', onToggle);
@@ -689,6 +717,8 @@ function renderMainCards(month, mk) {
     day: i.day||1, name: i.isAverage ? `⌀ ${i.name}` : i.name, amount: i.amount,
     paid: isRecurringPaid(i.id, mk),
     taschengeld: !!i.taschengeld,
+    linkIds: fundedByIncome.has(i.id) ? [i.id] : [],
+    linkTip: fundedByIncome.has(i.id) ? 'Bezahlt: ' + fundedByIncome.get(i.id).join(', ') : '',
     onToggle: () => {
       const nowPaid = !isRecurringPaid(i.id, mk);
       setRecurringPaid(i.id, mk, nowPaid);
@@ -722,7 +752,8 @@ function renderMainCards(month, mk) {
   } else {
     allIncomeRows.forEach(row => {
       if (!row.paid) openIncome += row.amount;
-      const rowEl = makeClickableRow(row.day, month.getMonth()+1, row.name, row.amount, '+', row.paid, row.onToggle);
+      const nameHtml = row.linkIds && row.linkIds.length ? linkMarkHtml(row.name, row.linkIds, row.linkTip) : '';
+      const rowEl = makeClickableRow(row.day, month.getMonth()+1, row.name, row.amount, '+', row.paid, row.onToggle, nameHtml);
       if (row.taschengeld && typeof addTaschengeldBreakdownButton === 'function') {
         addTaschengeldBreakdownButton(rowEl, month.getFullYear(), month.getMonth()+1);
       }
@@ -750,6 +781,7 @@ function renderMainCards(month, mk) {
     recExpenses.filter(i=>(i.priority||'need')===pk).forEach(i=>rows.push({
       day:i.day||1, name: i.isAverage ? `⌀ ${i.name}` : i.name, amount:i.amount,
       paid: isRecurringPaid(i.id, mk),
+      linkIds: linkedSources(i.funding),
       onToggle: () => {
         const nowPaid = !isRecurringPaid(i.id, mk);
         setRecurringPaid(i.id, mk, nowPaid);
@@ -761,6 +793,7 @@ function renderMainCards(month, mk) {
     otExpenses.filter(e=>(e.priority||'need')===pk).forEach(e=>rows.push({
       day:e.day||1, name:e.name, amount:e.amount,
       paid: e.paid||false,
+      linkIds: linkedSources(e.funding),
       onToggle: () => {
         e.paid = !e.paid;
         kontostand = (kontostand || 0) + (e.paid ? -e.amount : e.amount);
@@ -780,7 +813,8 @@ function renderMainCards(month, mk) {
     expenseList.appendChild(gh);
     rows.forEach(row=>{
       if (!row.paid) openExpTotal += row.amount;
-      expenseList.appendChild(makeClickableRow(row.day, month.getMonth()+1, row.name, row.amount, '-', row.paid, row.onToggle));
+      const nameHtml = row.linkIds.length ? linkMarkHtml(row.name, row.linkIds, 'Bezahlt mit ' + row.linkIds.map(incomeNameById).join(', ')) : '';
+      expenseList.appendChild(makeClickableRow(row.day, month.getMonth()+1, row.name, row.amount, '-', row.paid, row.onToggle, nameHtml));
     });
   });
 
