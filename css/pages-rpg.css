@@ -1148,6 +1148,70 @@
 }
 
 /* =============================================================
+   TOOLS: BLÄTTER ABWECHSLUNGSREICH
+   Gleiches Prinzip wie die Themengruppen der Karteikarten: drei Papiere
+   (Zyklus 3) und sieben Befestigungen (Zyklus 7), dazu wechselnde
+   Schräglage — dieselbe Kombination erst nach 21 Blättern wieder.
+   ::after = erste Befestigung, .tool-card-header::after = zweite.
+============================================================= */
+[data-pages-style="rpg"] #tools-grid > .tool-card:nth-child(3n+2)::before {
+  border-image: url('../assets/questboard/note-rag.webp') 40 fill / 22px / 0 stretch;
+}
+[data-pages-style="rpg"] #tools-grid > .tool-card:nth-child(3n) { --paper-dim: sepia(.5) saturate(1.45) brightness(.94) hue-rotate(-6deg); }
+[data-pages-style="rpg"][data-theme-family="dark"] #tools-grid > .tool-card:nth-child(3n) { --paper-dim: sepia(.5) saturate(1.2) brightness(.78) hue-rotate(-6deg); }
+[data-pages-style="rpg"] #tools-grid > .tool-card:nth-child(4n+1) { --tilt: -0.4deg; --flip: 1; }
+[data-pages-style="rpg"] #tools-grid > .tool-card:nth-child(4n+2) { --tilt: 0.35deg; --flip: -1; }
+[data-pages-style="rpg"] #tools-grid > .tool-card:nth-child(4n+3) { --tilt: 0.5deg; --flip: 1; }
+[data-pages-style="rpg"] #tools-grid > .tool-card:nth-child(4n)   { --tilt: -0.25deg; --flip: -1; }
+
+[data-pages-style="rpg"] #tools-grid > .tool-card .tool-card-header::after {
+  content: none;
+  position: absolute; top: -7px;
+  background: center / contain no-repeat;
+  pointer-events: none; z-index: 2;
+}
+/* 2: Eisen-Reißzwecke links */
+[data-pages-style="rpg"] #tools-grid > .tool-card:nth-child(7n+2)::after {
+  background-image: url('../assets/questboard/tack-iron.webp');
+  left: 16%; width: 28px; height: 28px; margin-left: 0; top: -10px;
+}
+/* 3: zwei Kupfernägel in den oberen Ecken */
+[data-pages-style="rpg"] #tools-grid > .tool-card:nth-child(7n+3)::after {
+  background-image: url('../assets/questboard/nail-copper.webp');
+  left: 20px; width: 24px; height: 24px; margin-left: 0; top: -7px;
+}
+[data-pages-style="rpg"] #tools-grid > .tool-card:nth-child(7n+3) .tool-card-header::after {
+  content: ''; background-image: url('../assets/questboard/nail-copper.webp');
+  right: 20px; width: 24px; height: 24px;
+}
+/* 4: rotes Wachssiegel links */
+[data-pages-style="rpg"] #tools-grid > .tool-card:nth-child(7n+4)::after {
+  background-image: url('../assets/questboard/seal.webp');
+  left: 34px; width: 38px; height: 38px; margin-left: 0; top: -22px;
+}
+/* 5: rostiger Schmiedenagel rechts */
+[data-pages-style="rpg"] #tools-grid > .tool-card:nth-child(7n+5)::after {
+  background-image: url('../assets/questboard/pin-nail.webp');
+  left: auto; right: 22%; width: 22px; height: 29px; margin-left: 0; top: -12px;
+}
+/* 6: grünes Wachssiegel mittig */
+[data-pages-style="rpg"] #tools-grid > .tool-card:nth-child(7n+6)::after {
+  background-image: url('../assets/questboard/seal.webp');
+  width: 36px; height: 36px; margin-left: -18px; top: -21px;
+  filter: hue-rotate(115deg) saturate(.75) brightness(.95);
+}
+/* 7: schwarzes Siegel + Eisen-Reißzwecke links */
+[data-pages-style="rpg"] #tools-grid > .tool-card:nth-child(7n)::after {
+  background-image: url('../assets/questboard/seal.webp');
+  left: 44%; width: 36px; height: 36px; margin-left: 0; top: -21px;
+  filter: grayscale(1) brightness(.5) contrast(1.2);
+}
+[data-pages-style="rpg"] #tools-grid > .tool-card:nth-child(7n) .tool-card-header::after {
+  content: ''; background-image: url('../assets/questboard/tack-iron.webp');
+  left: 22px; width: 26px; height: 26px; top: -9px;
+}
+
+/* =============================================================
    KARTEIKARTEN: PRÜFUNGEN — ledergebundene Tafel mit Goldnaht und
    Messingnieten statt Papier, damit sie sich von den Themen abhebt
 ============================================================= */
