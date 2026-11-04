@@ -886,6 +886,8 @@ function applyThemeEngine(id) {
   applyTodayStyle(id);
   applyPagesStyle(id);
   applyForestStyle(id);
+  // Skins (js/theme-skins.js lädt nach dieser Datei; holt den ersten Aufruf selbst nach)
+  if (typeof applyThemeSkins === 'function') applyThemeSkins(id);
   // Browser-/PWA-Leiste in der Hintergrundfarbe des aktiven Themes
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.content = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();

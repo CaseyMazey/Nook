@@ -365,6 +365,68 @@
     createSkinRegistry, SKIN_TEMPLATES, SKIN_FASTENERS, SEAL_FILTERS,
     resolveSkinSrc, buildSkinCss, sanitizeSkins
   };
-  if (typeof module !== "undefined" && module.exports) module.exports = api;
-  else Object.assign(globalThis, api);
+  if (typeof module !== "undefined" && module.exports) { module.exports = api; return; }
+  Object.assign(globalThis, api);
+
+  // ── Browser-Teil (läuft nicht in Node) ──────────────────────────────────
+  // Globale Registry; andere Dateien (z.B. today.js, das VOR dieser Datei lädt)
+  // reihen ihre Elemente in window.__pendingSkinTargets ein, das hier geleert wird.
+  const nookSkinRegistry = createSkinRegistry();
+  globalThis.nookSkinRegistry = nookSkinRegistry;
+
+  function registerSkinTarget(def) { nookSkinRegistry.register(def); }
+  globalThis.registerSkinTarget = registerSkinTarget;
+
+  // Kontext für sanitizeSkins: Registry + erlaubte Schrift-Stacks (lazy, zur Aufrufzeit)
+  globalThis.skinSanitizeContext = function () {
+    const fonts = new Set();
+    if (typeof FONT_CATEGORIES !== "undefined") {
+      for (const c of FONT_CATEGORIES) for (const f of c.fonts) fonts.add(f.stack);
+    }
+    if (typeof CUSTOM_FONT_FILES !== "undefined") {
+      for (const f of CUSTOM_FONT_FILES) fonts.add('"' + f.family + '"');
+    }
+    return { registry: nookSkinRegistry, fonts };
+  };
+
+  // Setzt/entfernt data-theme-skins und schreibt <style id="theme-skins">
+  // (ans Ende von <head>, damit es nach allen Stylesheets kommt).
+  globalThis.applyThemeSkins = function (themeId, skinsOverride) {
+    let skins = skinsOverride;
+    if (skins === undefined) {
+      const ct = typeof getCustomTheme === "function" ? getCustomTheme(themeId) : null;
+      skins = ct && ct.skins;
+    }
+    const css = skins ? buildSkinCss(skins, nookSkinRegistry) : "";
+    let el = document.getElementById("theme-skins");
+    if (!css) {
+      if (el) el.textContent = "";
+      document.documentElement.removeAttribute("data-theme-skins");
+      return;
+    }
+    if (!el) {
+      el = document.createElement("style");
+      el.id = "theme-skins";
+    }
+    document.head.appendChild(el); // immer ganz ans Ende (auch bei bestehendem Element)
+    el.textContent = css;
+    document.documentElement.setAttribute("data-theme-skins", "");
+  };
+
+  // ── Globale Elemente ──
+  [
+    { id: "global.sidebar", label: "Seitenleiste", view: "*", selector: "#sidebar" },
+    { id: "global.nav", label: "Menü-Knöpfe", view: "*", selector: "#sidebar .nav-btn" },
+    { id: "global.nav-active", label: "Aktiver Menü-Knopf", view: "*", selector: "#sidebar .nav-btn.active" },
+    { id: "global.button", label: "Hauptknöpfe", view: "*", selector: ".btn-primary" },
+  ].forEach(registerSkinTarget);
+
+  // Von früher geladenen Dateien eingereihte Elemente nachtragen
+  if (Array.isArray(globalThis.__pendingSkinTargets)) {
+    globalThis.__pendingSkinTargets.forEach(registerSkinTarget);
+  }
+  globalThis.__pendingSkinTargets = { push: registerSkinTarget }; // spätere Aufrufe direkt
+
+  // applyThemeEngine lief evtl. schon vor dem Laden dieser Datei → nachholen
+  if (typeof theme !== "undefined") globalThis.applyThemeSkins(theme);
 })();

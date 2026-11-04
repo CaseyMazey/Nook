@@ -1347,3 +1347,26 @@ registerSearchProvider({
     open: () => { showView('today'); openTaskModal(t); },
   })),
 });
+
+// ── Theme-Skins: Heute-Elemente anmelden ────────────────────────────────
+// theme-skins.js lädt NACH dieser Datei → Einträge in die Warteschlange
+// (theme-skins.js leert sie beim Laden und nimmt danach direkt an).
+(window.__pendingSkinTargets = window.__pendingSkinTargets || []).push(...[
+  { id: 'today.cards', label: 'Alle Karten', view: 'today', group: true,
+    selector: '#view-today :is(.block-slot, #panel-tasks, #gd-widget, #clock-sidebar-panel, #panel-quicknote, #mealplan-widget, #today-mini-cal, #national-day-widget)' },
+  { id: 'today.board', label: 'Tafel', view: 'today', selector: '#today-main, #today-right' },
+  { id: 'today.banner', label: 'Banner', view: 'today', selector: '#today-main-header' },
+  { id: 'today.blocks', label: 'Zeitblöcke', view: 'today', selector: '#blocks-row .block-slot' },
+  { id: 'today.tasks', label: 'Aufgaben', view: 'today', selector: '#panel-tasks',
+    extras: [{ key: 'ribbon', label: 'Lesezeichen', selector: '> .panel-header::after', kind: 'background' }] },
+  { id: 'today.duties', label: 'Pflichten', view: 'today', selector: '#gd-widget' },
+  { id: 'today.clock', label: 'Uhr', view: 'today', selector: '#clock-sidebar-panel',
+    extras: [
+      { key: 'case', label: 'Uhr-Gehäuse', selector: '.rpg-clock-img', kind: 'content' },
+      { key: 'face', label: 'Zifferblatt', selector: '.clock-analog', kind: 'background' },
+    ] },
+  { id: 'today.quicknote', label: 'Schnellnotiz', view: 'today', selector: '#panel-quicknote' },
+  { id: 'today.minical', label: 'Mini-Kalender', view: 'today', selector: '#today-mini-cal' },
+  { id: 'today.menu', label: 'Speiseplan', view: 'today', selector: '#mealplan-widget' },
+  { id: 'today.dayinfo', label: 'Tag-Info', view: 'today', selector: '#national-day-widget' },
+]);
