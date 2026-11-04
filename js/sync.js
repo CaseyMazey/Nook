@@ -1083,11 +1083,26 @@ function onSyncCryptoModalClose() {
   }
 }
 
+// Schließt nur über ✕ oder Abbrechen, nie per Klick daneben oder Escape:
+// sonst wäre ein schon angezeigter Wiederherstellungsschlüssel aus Versehen
+// verworfen. Im Schlüssel-Schritt fragt das Schließen deshalb noch einmal nach.
+async function confirmSyncCryptoClose() {
+  if (syncCryptoBusy) return false; // während einer Aktion nicht schließbar
+  if (syncCryptoCurrentStep() !== "key") return true;
+  return hubConfirm({
+    title: "Einrichtung abbrechen?",
+    message: "Der angezeigte Wiederherstellungsschlüssel wird dann ungültig. Beim nächsten Einrichten bekommst du einen neuen.",
+    confirmText: "Abbrechen",
+    danger: true,
+  });
+}
+
 const syncCryptoModal = wireModal("sync-crypto-overlay", {
   closeIds: ["sync-crypto-close", "sync-crypto-setup-cancel", "sync-crypto-key-cancel", "sync-crypto-progress-close",
     "sync-crypto-unlock-cancel", "sync-crypto-recover-cancel", "sync-crypto-change-cancel"],
   onClose: onSyncCryptoModalClose,
-  beforeClose: () => !syncCryptoBusy, // während einer Aktion nicht schließbar
+  backdropCloses: false,
+  beforeClose: confirmSyncCryptoClose,
 });
 
 function openSyncCryptoModal(step) {
@@ -1096,15 +1111,11 @@ function openSyncCryptoModal(step) {
   showSyncCryptoStep(step);
 }
 
-// Enter löst den Hauptknopf des sichtbaren Schritts aus, Escape schließt.
-// Liegt hubConfirm (Zurücksetzen) darüber, gehören Escape/Enter ihm: dessen
-// eigener Escape-Handler am document schließt nur die Rückfrage.
+// Enter löst den Hauptknopf des sichtbaren Schritts aus. Escape schließt
+// bewusst nicht (siehe confirmSyncCryptoClose). Liegt hubConfirm darüber,
+// gehört Enter ihm.
 syncCryptoEl("sync-crypto-overlay")?.addEventListener("keydown", (e) => {
   if (!syncCryptoEl("hub-confirm-overlay")?.classList.contains("hidden")) return;
-  if (e.key === "Escape") {
-    if (!syncCryptoBusy) { e.preventDefault(); syncCryptoModal.close(); }
-    return;
-  }
   if (e.key !== "Enter" || e.target.tagName !== "INPUT") return;
   const step = e.target.closest(".sync-crypto-step");
   const primary = step && syncCryptoEl(step.dataset.primary || "");

@@ -472,12 +472,13 @@ window.copyCode = function(btn) {
 //   inputId   {string}   Eingabefeld, in dem Enter das Speichern auslöst
 //   saveId    {string}   Button, der bei Enter im inputId-Feld geklickt wird
 //   escCloses {boolean}  Escape im inputId-Feld schließt das Modal (default: true)
+//   backdropCloses {boolean} Klick neben die Box schließt das Modal (default: true)
 //   beforeClose {function} optional, vor nutzer-ausgelöstem Schließen gefragt;
 //                        false (oder Promise<false>) bricht das Schließen ab
 //                        (z.B. Rückfrage bei ungespeicherten Änderungen)
 // @returns {{open: function, close: function}}
 function wireModal(overlayId, opts = {}) {
-  const { closeIds = [], onClose, inputId, saveId, escCloses = true, beforeClose } = opts;
+  const { closeIds = [], onClose, inputId, saveId, escCloses = true, backdropCloses = true, beforeClose } = opts;
   const overlay = document.getElementById(overlayId);
   if (!overlay) return { open() {}, close() {} };
 
@@ -506,7 +507,9 @@ function wireModal(overlayId, opts = {}) {
     const btn = document.getElementById(id);
     if (btn) btn.addEventListener('click', requestClose);
   });
-  overlay.addEventListener('click', e => { if (e.target === overlay) requestClose(); });
+  // backdropCloses: false für Dialoge, bei denen ein versehentlicher Klick
+  // daneben Arbeit verwerfen würde (z.B. Einrichtung der Sync-Verschlüsselung).
+  if (backdropCloses) overlay.addEventListener('click', e => { if (e.target === overlay) requestClose(); });
 
   if (inputId) {
     const input = document.getElementById(inputId);
