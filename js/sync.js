@@ -888,6 +888,13 @@ document.getElementById("sync-login-signup")?.addEventListener("click", async ()
   syncLoginModal.close();
 });
 
+// Der Anmelde-Link springt nach dem Klick in der Mail zu einer Web-Adresse
+// zurück. In der Desktop-App (app://nook) und unter file:// käme er nie an,
+// dort bleibt nur E-Mail und Passwort.
+if (!location.protocol.startsWith("http")) {
+  document.getElementById("sync-login-link-hint")?.classList.add("hidden");
+}
+
 document.getElementById("sync-login-send")?.addEventListener("click", async (e) => {
   if (!sbClient) return;
   const emailInput = document.getElementById("sync-login-email");

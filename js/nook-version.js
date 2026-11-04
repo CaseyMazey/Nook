@@ -10,9 +10,17 @@
 // hinten wegfallen, angezeigt werden ohnehin nur die neuesten.
 // =========================
 
-window.NOOK_VERSION = '2026.11.3';
+window.NOOK_VERSION = '2026.11.4';
 
 window.NOOK_CHANGELOG = [
+  {
+    version: '2026.11.4',
+    date: '2026-11-04',
+    items: [
+      'Desktop-App: Geräte-Sync ist jetzt auch hier verfügbar – melde dich unter Einstellungen › Geräte-Sync mit E-Mail und Passwort an',
+      'Der Verschlüsselungs-Dialog schließt sich nicht mehr durch einen Klick daneben, sondern nur noch über ✕ oder Abbrechen',
+    ],
+  },
   {
     version: '2026.11.3',
     date: '2026-11-04',

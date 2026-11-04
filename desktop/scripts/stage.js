@@ -98,7 +98,30 @@ function findForbidden(dir) {
   return hits;
 }
 
-module.exports = { parseIgnore, isIgnored, stageApp, findForbidden };
+// Erzeugt js/sync-config.js im Paket aus SUPABASE_URL/SUPABASE_ANON_KEY
+// (im Release-Build aus den GitHub-Variablen). Die Datei aus dem Arbeitsordner
+// kommt nie ins Paket (ALWAYS_EXCLUDED); ohne beide Werte bleibt der Sync in
+// der App aus, wie in Forks ohne eigenes Supabase. Läuft nach findForbidden.
+// Gibt true zurück, wenn eine Konfiguration geschrieben wurde.
+function writeSyncConfig(destDir, env) {
+  const url = (env.SUPABASE_URL || '').trim();
+  const key = (env.SUPABASE_ANON_KEY || '').trim();
+  if (!url && !key) return false;
+  if (!url || !key) throw new Error('SUPABASE_URL und SUPABASE_ANON_KEY müssen beide gesetzt sein');
+  if (!/^https:\/\/[a-z0-9.-]+$/i.test(url)) throw new Error('SUPABASE_URL muss eine https-Adresse ohne Pfad sein');
+  if (!/^[A-Za-z0-9._-]+$/.test(key)) throw new Error('SUPABASE_ANON_KEY enthält unerwartete Zeichen');
+  const content = [
+    '// Beim Paketbau erzeugt (desktop/scripts/stage.js) — nicht von Hand ändern.',
+    `const SUPABASE_URL = ${JSON.stringify(url)};`,
+    `const SUPABASE_ANON_KEY = ${JSON.stringify(key)};`,
+    'const GOOGLE_CLIENT_ID = "";',
+    '',
+  ].join('\n');
+  fs.writeFileSync(path.join(destDir, 'js', 'sync-config.js'), content);
+  return true;
+}
+
+module.exports = { parseIgnore, isIgnored, stageApp, findForbidden, writeSyncConfig };
 
 if (require.main === module) {
   const root = path.resolve(__dirname, '..', '..');
@@ -110,4 +133,7 @@ if (require.main === module) {
     process.exit(1);
   }
   console.log('Paketinhalt nach ' + dest + ' geschrieben, keine verbotenen Dateien.');
+  console.log(writeSyncConfig(dest, process.env)
+    ? 'Sync-Konfiguration aus SUPABASE_URL/SUPABASE_ANON_KEY erzeugt.'
+    : 'Keine Sync-Konfiguration gesetzt, Sync bleibt in der App aus.');
 }

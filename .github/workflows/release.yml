@@ -76,7 +76,12 @@ jobs:
       - name: Paketversion aus dem Tag setzen
         shell: bash
         run: npm version --no-git-tag-version --allow-same-version "${GITHUB_REF_NAME#v}"
+      # Sync-Konfiguration aus den Repo-Variablen (Settings → Variables);
+      # ohne sie baut die App ohne Sync wie bisher.
       - run: npm run stage
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
       - run: npx electron-builder --dir
       - name: Smoke-Test der entpackten App
         shell: bash

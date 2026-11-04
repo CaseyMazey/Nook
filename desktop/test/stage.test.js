@@ -4,7 +4,7 @@ const assert = require('node:assert');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { parseIgnore, isIgnored, stageApp, findForbidden } = require('../scripts/stage.js');
+const { parseIgnore, isIgnored, stageApp, findForbidden, writeSyncConfig } = require('../scripts/stage.js');
 
 function tmp() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'nook-stage-'));
@@ -91,6 +91,33 @@ test('findForbidden ist von .assetsignore unabhängig', () => {
   write(root, '.assetsignore', '');
   write(root, 'Backups/a.json');
   assert.strictEqual(findForbidden(root).length, 1);
+});
+
+test('writeSyncConfig erzeugt die Konfiguration aus den Umgebungswerten', () => {
+  const d = tmp();
+  write(d, 'js/main.js');
+  const env = { SUPABASE_URL: 'https://abc.supabase.co', SUPABASE_ANON_KEY: 'eyJ.abc-_1' };
+  assert.strictEqual(writeSyncConfig(d, env), true);
+  const text = fs.readFileSync(path.join(d, 'js/sync-config.js'), 'utf8');
+  assert.match(text, /const SUPABASE_URL = "https:\/\/abc\.supabase\.co";/);
+  assert.match(text, /const SUPABASE_ANON_KEY = "eyJ\.abc-_1";/);
+  assert.match(text, /const GOOGLE_CLIENT_ID = "";/);
+});
+
+test('writeSyncConfig ohne Werte schreibt nichts', () => {
+  const d = tmp();
+  write(d, 'js/main.js');
+  assert.strictEqual(writeSyncConfig(d, {}), false);
+  assert.ok(!fs.existsSync(path.join(d, 'js/sync-config.js')));
+});
+
+test('writeSyncConfig lehnt unvollständige oder unsichere Werte ab', () => {
+  const d = tmp();
+  write(d, 'js/main.js');
+  assert.throws(() => writeSyncConfig(d, { SUPABASE_URL: 'https://abc.supabase.co' }));
+  assert.throws(() => writeSyncConfig(d, { SUPABASE_URL: 'http://abc.supabase.co', SUPABASE_ANON_KEY: 'k' }));
+  assert.throws(() => writeSyncConfig(d, { SUPABASE_URL: 'https://abc.supabase.co', SUPABASE_ANON_KEY: 'k";alert(1)//' }));
+  assert.ok(!fs.existsSync(path.join(d, 'js/sync-config.js')));
 });
 
 test('stageApp: verschachtelte Ordner mit Ignore-Namen bleiben, Wurzel-Ordner nicht', () => {
