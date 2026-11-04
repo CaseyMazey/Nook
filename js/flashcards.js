@@ -1089,13 +1089,19 @@ function renderResumeBanner(){
 }
 
 // Nach einem Neuladen mitten in der Session: beim ersten Öffnen des Tabs
-// direkt weitermachen (bewusst pausierte Sessions warten auf „Fortsetzen“)
+// direkt weitermachen (bewusst pausierte Sessions warten auf „Fortsetzen“).
+// Nur, wenn der Stand frisch ist — eine Session, die man vor Tagen über die
+// Seitenleiste verlassen hat (statt ✕/Pausieren), sprang sonst bei JEDEM
+// Öffnen des Tabs wieder auf und wurde dabei neu gespeichert, kam also nie
+// weg. Ältere Stände erscheinen als „Pausierte Session“ (Fortsetzen/Verwerfen).
+const FC_AUTO_RESUME_MAX_AGE_MS = 30 * 60 * 1000;
 let fcAutoResumeChecked = false;
 function maybeAutoResumeLearnSession(){
   if(fcAutoResumeChecked) return;
   fcAutoResumeChecked = true;
   const saved = getSavedLearnSession();
-  if(saved && !saved.paused && !learnSession.active) setTimeout(() => resumeLearnSession(), 0);
+  const age = saved && saved.savedAt ? Date.now() - Date.parse(saved.savedAt) : Infinity;
+  if(saved && !saved.paused && !learnSession.active && age < FC_AUTO_RESUME_MAX_AGE_MS) setTimeout(() => resumeLearnSession(), 0);
 }
 
 function renderTodayProgress(){
