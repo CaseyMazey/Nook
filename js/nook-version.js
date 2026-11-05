@@ -10,9 +10,18 @@
 // hinten wegfallen, angezeigt werden ohnehin nur die neuesten.
 // =========================
 
-window.NOOK_VERSION = '2026.11.8';
+window.NOOK_VERSION = '2026.11.9';
 
 window.NOOK_CHANGELOG = [
+  {
+    version: '2026.11.9',
+    date: '2026-11-05',
+    items: [
+      'Themes: „Theme live bearbeiten“ (✦ am eigenen Theme oder im Theme-Editor) öffnet Nook mit Musterdaten – ein Stift auf jedem Element von „Heute“, der Seitenleiste und den Knöpfen legt Bild, Farben, Schrift, Form und Befestigung fest',
+      'Themes: Rahmenbilder als Vorlage (Tafel, Holzschild, Pergament …) oder als eigenes Bild, mit Rückgängig; deine echten Daten bleiben dabei unberührt',
+      'Themes: Element-Designs reisen beim Export und Import eines Themes mit',
+    ],
+  },
   {
     version: '2026.11.8',
     date: '2026-11-05',
