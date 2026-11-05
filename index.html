@@ -414,6 +414,8 @@
             <span>Noch keine Karten auf der Pinnwand.</span>
             <button type="button" class="btn-ghost" id="pinboard-empty-add">Erste Karte anlegen</button>
           </div>
+          <!-- Handy: wichtige Karten aller Spalten ganz oben (pinboard.js renderDesk) -->
+          <div id="pinboard-important" class="desk-col desk-important hidden"></div>
           <div id="pinboard-desk">
             <div class="desk-col" id="desk-col-0"></div>
             <div class="desk-col" id="desk-col-1"></div>
@@ -2173,6 +2175,14 @@
           <button type="button" class="toggle-select-btn" data-col="2">Rechts</button>
         </div>
       </div>
+      <div class="modal-row" id="desk-modal-order-row">
+        <label>Position in der Spalte</label>
+        <div style="display:flex;gap:6px;">
+          <button type="button" class="toggle-select-btn" id="desk-modal-move-up" aria-label="Karte nach oben">▲ Nach oben</button>
+          <button type="button" class="toggle-select-btn" id="desk-modal-move-down" aria-label="Karte nach unten">▼ Nach unten</button>
+        </div>
+        <div class="tile-type-desc">Wirkt sofort. Wichtige und angepinnte Karten bleiben dabei oben.</div>
+      </div>
       <div class="modal-actions">
         <button id="desk-modal-delete-btn" class="btn-ghost" style="color:var(--prio-1);border-color:var(--prio-1);margin-right:auto;display:none;">Karte löschen</button>
         <button id="desk-modal-cancel" class="btn-ghost">Abbrechen</button>
@@ -2459,15 +2469,15 @@
   <!-- Archiv-Modal (flashcards.js: openArchiveModal) -->
   <div id="fc-archive-modal-overlay" class="modal-backdrop hidden">
     <div class="modal-box" style="width:420px;">
-      <div class="modal-head"><span id="fc-archive-modal-title">Ins Archiv verschieben</span><button class="modal-x" id="fc-archive-modal-close">✕</button></div>
+      <div class="modal-head"><span id="fc-archive-modal-title">In Gruppe verschieben</span><button class="modal-x" id="fc-archive-modal-close">✕</button></div>
       <div class="modal-row" id="fc-archive-select-row">
-        <label for="fc-archive-group-select">Archiv-Gruppe</label>
+        <label for="fc-archive-group-select">Gruppe</label>
         <select class="modal-select" id="fc-archive-group-select"></select>
         <div class="modal-hint">Archivierte Fächer bleiben lernbar, zählen aber nicht mehr in der Statistik oben.</div>
       </div>
       <div class="modal-row" id="fc-archive-name-row">
         <label id="fc-archive-name-label" for="fc-archive-name-input">Name der neuen Gruppe</label>
-        <input type="text" class="modal-input" id="fc-archive-name-input" placeholder="z.B. 1. Schuljahr" autocomplete="off">
+        <input type="text" class="modal-input" id="fc-archive-name-input" placeholder="z.B. Lernfelder oder 1. Schuljahr" autocomplete="off">
       </div>
       <div class="modal-actions">
         <button id="fc-archive-modal-cancel" class="btn-ghost">Abbrechen</button>

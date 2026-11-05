@@ -22,6 +22,11 @@
   .desk-col { flex: 1 1 auto; width: 100%; }
 }
 
+/* Handy: Sammelzeile für wichtige Karten über den Spalten */
+#pinboard-important { margin-bottom: 10px; }
+#pinboard-important.hidden { display: none; }
+.toggle-select-btn:disabled { opacity: .4; cursor: default; pointer-events: none; }
+
 /* Leere Pinnwand */
 #pinboard-empty { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px; padding: 28px 18px; margin-bottom: 10px; color: var(--text-2); font-size: calc(13px * var(--core-font-scale)); text-align: center; }
 

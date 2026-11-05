@@ -207,16 +207,23 @@ function deskCardIsImportant(card) {
   if (changed) saveDeskCards();
 })();
 
-// ---- Sortierung: Angepinnt zuerst, sonst nach gespeicherter Reihenfolge ----
+// ---- Sortierung in Ebenen: Wichtig ganz oben, dann Angepinnt, dann der
+// Rest — innerhalb jeder Ebene die gespeicherte Reihenfolge. Verschieben
+// (Griff, Pfeiltasten, ▲▼ im Dialog) bleibt immer in der eigenen Ebene.
+// 0 = wichtig + angepinnt, 1 = wichtig, 2 = angepinnt, 3 = übrige
+function deskCardTier(card) {
+  return (deskCardIsImportant(card) ? 0 : 2) + (card.style === 'pinned' ? 0 : 1);
+}
 function sortedDeskCards(col) {
   return deskCards
     .filter(c => c.column === col)
-    .sort((a, b) => {
-      const pa = a.style === 'pinned' ? 0 : 1, pb = b.style === 'pinned' ? 0 : 1;
-      if (pa !== pb) return pa - pb;
-      return (a.order || 0) - (b.order || 0);
-    });
+    .sort((a, b) => (deskCardTier(a) - deskCardTier(b)) || ((a.order || 0) - (b.order || 0)));
 }
+
+// Handy: Spalten stehen untereinander — wichtige Karten aller Spalten
+// sammeln sich dann ganz oben über den Spalten (#pinboard-important).
+const deskPhoneQuery = window.matchMedia('(max-width: 640px)');
+deskPhoneQuery.addEventListener('change', () => renderDesk());
 
 // Baut alle Karten neu auf, behält aber Scrollstände, Fokus und Cursor
 function renderDesk() {
@@ -234,12 +241,19 @@ function renderDesk() {
     start: active.selectionStart, end: active.selectionEnd,
   } : null;
 
+  const topEl = document.getElementById('pinboard-important');
+  const gatherImportant = deskPhoneQuery.matches && !!topEl;
+  if (topEl) topEl.innerHTML = '';
   for (let i = 0; i < 3; i++) {
     const colEl = document.getElementById('desk-col-' + i);
     if (!colEl) continue;
     colEl.innerHTML = '';
-    sortedDeskCards(i).forEach(card => colEl.appendChild(buildDeskCardEl(card)));
+    sortedDeskCards(i).forEach(card => {
+      const target = gatherImportant && deskCardIsImportant(card) ? topEl : colEl;
+      target.appendChild(buildDeskCardEl(card));
+    });
   }
+  if (topEl) topEl.classList.toggle('hidden', !topEl.children.length);
   document.getElementById('pinboard-empty').classList.toggle('hidden', deskCards.length > 0);
 
   view.querySelectorAll('.desk-card--auto textarea').forEach(deskAutosize);
@@ -276,6 +290,7 @@ function buildDeskCardEl(card) {
   const important = deskCardIsImportant(card);
   el.className = `panel desk-card desk-card--${card.style}` + (important ? ' desk-card--important' : '') + (card.height ? '' : ' desk-card--auto');
   el.dataset.id = card.id;
+  el.dataset.tier = deskCardTier(card);
   if (card.color) {
     applyUserColorVars(el, card.color);
     el.style.background = 'var(--user-color-bg)';
@@ -587,11 +602,13 @@ function wireDeskItemDrag(grip, card, item, li, ul) {
 }
 
 // ---- Karten verschieben: Griff ziehen oder Pfeiltasten ----
-// index zählt innerhalb der sortierten Spalte; Angepinnte bleiben oben.
+// index zählt innerhalb der sortierten Spalte; die Karte bleibt in ihrer
+// Ebene (wichtig / angepinnt / übrige, siehe deskCardTier).
 function deskPlaceCard(card, col, index) {
   const rest = sortedDeskCards(col).filter(c => c !== card);
-  const pinnedCount = rest.filter(c => c.style === 'pinned').length;
-  const [min, max] = card.style === 'pinned' ? [0, pinnedCount] : [pinnedCount, rest.length];
+  const tier = deskCardTier(card);
+  const min = rest.filter(c => deskCardTier(c) < tier).length;
+  const max = rest.filter(c => deskCardTier(c) <= tier).length;
   rest.splice(Math.max(min, Math.min(index, max)), 0, card);
   card.column = col;
   rest.forEach((c, i) => { c.order = i; });
@@ -641,7 +658,7 @@ function buildDeskCardGrip(card, cardEl) {
     marker.className = 'desk-drop-marker';
     desk.classList.add('desk-is-dragging');
     cardEl.classList.add('desk-dragging');
-    let targetCol = null, targetIndex = 0;
+    let targetCol = null, beforeId = null;
 
     const onMove = ev => {
       deskAutoScroll(desk, ev.clientY);
@@ -655,14 +672,17 @@ function buildDeskCardGrip(card, cardEl) {
       });
       const colEl = document.getElementById('desk-col-' + targetCol);
       const others = [...colEl.querySelectorAll('.desk-card')].filter(c => c !== cardEl);
-      const pinnedCount = others.filter(c => c.classList.contains('desk-card--pinned')).length;
+      const tier = deskCardTier(card);
+      const min = others.filter(c => Number(c.dataset.tier) < tier).length;
+      const max = others.filter(c => Number(c.dataset.tier) <= tier).length;
       let index = others.findIndex(c => {
         const r = c.getBoundingClientRect();
         return ev.clientY < r.top + r.height / 2;
       });
       if (index < 0) index = others.length;
-      targetIndex = card.style === 'pinned' ? Math.min(index, pinnedCount) : Math.max(index, pinnedCount);
-      colEl.insertBefore(marker, others[targetIndex] || null);
+      index = Math.max(min, Math.min(index, max));
+      beforeId = others[index] ? others[index].dataset.id : null;
+      colEl.insertBefore(marker, others[index] || null);
     };
     const onEnd = ev => {
       grip.removeEventListener('pointermove', onMove);
@@ -672,7 +692,10 @@ function buildDeskCardGrip(card, cardEl) {
       cardEl.classList.remove('desk-dragging');
       marker.remove();
       if (targetCol === null || ev.type === 'pointercancel') return;
-      deskPlaceCard(card, targetCol, targetIndex);
+      // Position in der ganzen Spalte (am Handy stehen wichtige Karten nicht darin)
+      const rest = sortedDeskCards(targetCol).filter(c => c !== card);
+      const at = beforeId ? rest.findIndex(c => c.id === beforeId) : -1;
+      deskPlaceCard(card, targetCol, at < 0 ? rest.length : at);
     };
     grip.addEventListener('pointermove', onMove);
     grip.addEventListener('pointerup', onEnd);
@@ -833,6 +856,8 @@ function openDeskCardModal(cardId) {
 
   document.querySelectorAll('#desk-modal-column-picker .toggle-select-btn')
     .forEach(b => b.classList.toggle('active', Number(b.dataset.col) === selectedDeskColumn));
+  document.getElementById('desk-modal-order-row').style.display = card ? '' : 'none';
+  if (card) updateDeskMoveButtons(card);
 
   deskColorShown = card ? (card.color || HUB_PALETTE_HEX[0]) : HUB_PALETTE_HEX[0];
   deskColorWidget.setValue(deskColorShown);
@@ -856,6 +881,30 @@ document.querySelectorAll('#desk-modal-column-picker .toggle-select-btn').forEac
   btn.addEventListener('click', () => {
     selectedDeskColumn = Number(btn.dataset.col);
     document.querySelectorAll('#desk-modal-column-picker .toggle-select-btn').forEach(b => b.classList.toggle('active', b === btn));
+  });
+});
+
+// ▲▼ im Dialog: verschiebt die Karte sofort eine Position in ihrer Spalte
+// (innerhalb ihrer Ebene, wie Griff und Pfeiltasten auch)
+function deskTierNeighbours(card) {
+  const sorted = sortedDeskCards(card.column);
+  const i = sorted.indexOf(card);
+  const tier = deskCardTier(card);
+  return { sorted, i, up: i > 0 && deskCardTier(sorted[i - 1]) === tier, down: i < sorted.length - 1 && deskCardTier(sorted[i + 1]) === tier };
+}
+function updateDeskMoveButtons(card) {
+  const n = deskTierNeighbours(card);
+  document.getElementById('desk-modal-move-up').disabled = !n.up;
+  document.getElementById('desk-modal-move-down').disabled = !n.down;
+}
+['up', 'down'].forEach(dir => {
+  document.getElementById('desk-modal-move-' + dir).addEventListener('click', () => {
+    const card = deskCards.find(c => c.id === editingDeskCardId);
+    if (!card) return;
+    const n = deskTierNeighbours(card);
+    if (!(dir === 'up' ? n.up : n.down)) return;
+    deskPlaceCard(card, card.column, n.i + (dir === 'up' ? -1 : 1));
+    updateDeskMoveButtons(card);
   });
 });
 

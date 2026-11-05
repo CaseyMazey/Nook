@@ -11,9 +11,9 @@ Dateien: `js/pinboard.js`, `css/pinboard.css`, `css/pinboard-rpg.css`.
 # Aufbau
 
 - 3 unabhängige Spalten (Masonry-Prinzip), jede Karte kennt ihre Spalte und Reihenfolge.
-- Angepinnte Karten stehen immer oben in ihrer Spalte.
+- Reihenfolge in jeder Spalte: wichtige Karten ganz oben, dann angepinnte, dann die übrigen (innerhalb jeder Ebene frei sortierbar). Am Handy (Spalten untereinander) stehen die wichtigen Karten aller Spalten gesammelt ganz oben.
 - Karten ohne feste Höhe wachsen mit dem Text. Eine gezogene Höhe bleibt, bis sie per Doppelklick auf den Griff oder mit Entf zurückgesetzt wird. Am Handy zieht der Griff erst nach kurzem Gedrückthalten, normales Wischen scrollt.
-- Verschieben: Griff ziehen oder Pfeiltasten auf dem Griff. Die Spalte lässt sich auch im Karten-Dialog wählen.
+- Verschieben: Griff ziehen, Pfeiltasten auf dem Griff oder ▲▼ „Nach oben/unten“ im Karten-Dialog (wirkt sofort). Die Spalte lässt sich auch im Karten-Dialog wählen.
 
 ## Kartenstile
 

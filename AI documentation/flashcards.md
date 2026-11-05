@@ -101,13 +101,16 @@ Die Fachliste ist kompakt (Name + fällig-Zahl, darunter Lehrer, Kartenzahl und 
 
 # Archiv
 
-Unter den aktiven Fächern liegt ein aufklappbares Archiv mit eigenen Gruppen (z. B. „1. Schuljahr“, „2. Schuljahr“). Fächer werden über ⋮ → „Ins Archiv…“ in eine bestehende oder neue Gruppe verschoben und über „Aus dem Archiv holen“ zurückgeholt.
+Gruppen und Archiv sind zwei getrennte Dinge:
+
+- **Gruppen** (z. B. „Lernfelder“, „1. Schuljahr“) ordnen Fächer — auf der Tafel wie im Archiv. Über ⋮ → „In Gruppe…“ kommt ein Fach in eine bestehende oder neue Gruppe (oder wieder heraus). Gruppen lassen sich auf- und zuklappen, umbenennen, als Ganzes archivieren bzw. zurückholen und auflösen (die Fächer bleiben dabei, wo sie sind).
+- **Archiv** blendet vergangene Fächer von der Tafel aus, damit dort nur die aktuellen Themen stehen: ⋮ → „Archivieren“ bzw. „Zurück auf die Tafel“. Ein archiviertes Fach behält seine Gruppe, im Archiv erscheint es darunter.
 
 - Archivierte Fächer bleiben vollständig nutzbar und lernbar, sie zählen nur nicht mehr in der globalen Statistik (Karten insgesamt, Erfolgsquote).
 - Die Suche findet auch archivierte Fächer und klappt die passenden Gruppen auf.
 - „Gruppe auflösen“ holt alle Fächer der Gruppe zurück zu den aktiven Fächern, es gehen nie Karten verloren.
 
-Gespeichert als `subject.archiveGroupId` (fehlt = aktiv) im Key `subjects`, die Gruppen unter `fc_archive_groups = [{ id, name }]`, aufgeklappte Gruppen unter `fc_archive_open` (`'root'` = das Archiv selbst). Verweist ein Fach auf eine nicht mehr vorhandene Gruppe, gilt es als aktiv.
+Gespeichert im Key `subjects` als `subject.folderId` (Gruppe, fehlt = ohne Gruppe) und `subject.archived` (fehlt = auf der Tafel); die Gruppen unter `fc_folders = [{ id, name }]`, Aufgeklappt-Zustand unter `fc_folder_open` (`'archive'`, `'a:<id>'` auf der Tafel, `'x:<id>'` im Archiv). Verweist ein Fach auf eine aufgelöste Gruppe, gilt es als ohne Gruppe. Die früheren Archiv-Gruppen (`subject.archiveGroupId`, `fc_archive_groups`) wurden einmalig übernommen; die alten Keys bleiben unangetastet.
 
 ---
 

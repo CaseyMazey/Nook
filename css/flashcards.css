@@ -94,7 +94,8 @@
   #subject-list { max-height: min(62vh, 620px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
 }
 
-/* Archiv: aufklappbare Gruppen unter den aktiven Fächern */
+/* Gruppen (auf der Tafel und im Archiv) + das Archiv selbst, aufklappbar.
+   Klassen heißen historisch fc-archive-*, gelten aber für beide Orte. */
 .fc-archive { border-top: 1px dashed var(--border-strong); margin-top: 2px; }
 .fc-archive-head, .fc-archive-group-head { display: flex; align-items: center; gap: 8px; width: 100%; background: none; border: none; cursor: pointer; font-family: var(--font); text-align: left; transition: background var(--transition); }
 .fc-archive-head { padding: 9px 12px; font-size: calc(10px * var(--core-font-scale)); font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--text-3); }
@@ -110,6 +111,16 @@
 .fc-archive-group .subject-item:not(.active) .subject-name { color: var(--text-2); }
 .fc-archive-empty { margin: 0; padding: 4px 12px 10px 30px; font-size: calc(11.5px * var(--core-font-scale)); color: var(--text-3); line-height: 1.4; }
 #fc-archive-name-row.hidden, #fc-archive-select-row.hidden { display: none; }
+/* Gruppen auf der Tafel: eine Ebene weniger eingerückt als im Archiv */
+.fc-folder-a { border-top: 1px solid var(--border); }
+.fc-folder-a > .fc-archive-group-head { padding-left: 12px; }
+.fc-folder-a .subject-item { padding-left: 22px; }
+.fc-folder-a .subject-item:not(.active) .subject-name { color: var(--text); }
+.fc-folder-a .fc-archive-empty { padding-left: 22px; }
+.fc-archive-empty-top { padding-left: 12px; padding-top: 10px; }
+/* Archivierte Fächer ohne Gruppe: eingerückt und gedämpft wie die in Gruppen */
+.fc-archive-body > .subject-item { padding-left: 20px; }
+.fc-archive-body > .subject-item:not(.active) .subject-name { color: var(--text-2); }
 
 /* Detail view */
 #flashcard-placeholder { text-align: center; padding: 60px 20px; color: var(--text-3); }
