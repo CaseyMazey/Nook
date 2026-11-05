@@ -144,7 +144,11 @@
     def: id => nookSkinRegistry.get(id),
     getEntry: labEntry,
     commit: labCommit,
-    onToggle: () => { labMarkSelected(); labUpdatePencils(); }
+    onToggle: () => {
+      document.documentElement.classList.toggle('tl-panel-open', panel.isOpen());
+      window.dispatchEvent(new Event('resize')); // Zeitleiste & Co. messen neu
+      labMarkSelected(); labUpdatePencils();
+    }
   });
 
   // =========================================================================
@@ -252,12 +256,34 @@
       return Array.from(document.querySelectorAll(selector)).filter(n => !n.closest('.theme-lab-ui'));
     } catch (e) { return []; }
   }
-  function labFirstVisible(selector) {
-    for (const n of labMatches(selector)) {
-      const r = n.getBoundingClientRect();
-      if (r.width > 0 && r.height > 0) return r;
+  // Sichtbarer Teil eines Elements: Rechteck geschnitten mit allen Vorfahren, die
+  // abschneiden (z.B. die seitlich scrollende Zeitleiste). null = nicht zu sehen.
+  function labVisibleRect(n) {
+    const b = n.getBoundingClientRect();
+    if (b.width <= 0 || b.height <= 0) return null;
+    let l = b.left, t = b.top, r = b.right, btm = b.bottom;
+    for (let p = n.parentElement; p && p !== document.body; p = p.parentElement) {
+      const cs = getComputedStyle(p);
+      if (cs.overflowX === 'visible' && cs.overflowY === 'visible') continue;
+      const pr = p.getBoundingClientRect();
+      if (cs.overflowX !== 'visible') { l = Math.max(l, pr.left); r = Math.min(r, pr.right); }
+      if (cs.overflowY !== 'visible') { t = Math.max(t, pr.top); btm = Math.min(btm, pr.bottom); }
+      if (r - l < 8 || btm - t < 8) return null;
     }
-    return null;
+    return { left: l, top: t, right: r, bottom: btm };
+  }
+  // Erster sichtbarer Treffer. Treffer, die zugleich zu einem anderen Element
+  // gehören (aktiver Menü-Knopf ist auch ein Menü-Knopf), nur als Rückfall.
+  function labFirstVisible(def, others) {
+    let fallback = null;
+    for (const n of labMatches(def.selector)) {
+      const r = labVisibleRect(n);
+      if (!r) continue;
+      const shared = others.some(o => { try { return n.matches(o.selector); } catch (e) { return false; } });
+      if (!shared) return r;
+      if (!fallback) fallback = r;
+    }
+    return fallback;
   }
 
   function labUpdatePencils() {
@@ -282,7 +308,7 @@
         pencilLayer.appendChild(b);
         pencils.set(d.id, b);
       }
-      const r = modalOpen ? null : labFirstVisible(d.selector);
+      const r = modalOpen ? null : labFirstVisible(d, defs.filter(o => o !== d));
       if (!r || r.bottom < TOOLBAR_H + 10 || r.top > window.innerHeight - 10 || r.left > maxX - PENCIL) {
         b.hidden = true;
         continue;

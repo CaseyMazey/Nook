@@ -15,6 +15,8 @@ html.theme-lab {
 html.theme-lab body { padding-top: var(--tl-bar-h); }
 html.theme-lab #app { min-height: calc(100vh - var(--tl-bar-h)); }
 html.theme-lab #sidebar { top: var(--tl-bar-h); height: calc(100vh - var(--tl-bar-h)); }
+/* Offenes Panel verdeckt nichts: die Seite wird um die Panelbreite schmaler */
+html.theme-lab.tl-panel-open body { padding-right: var(--tl-panel-w); }
 
 html.theme-lab .theme-lab-ui,
 html.theme-lab .theme-lab-ui * { box-sizing: border-box; }
