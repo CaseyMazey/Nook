@@ -640,6 +640,10 @@ function renderScheduleCatalog() {
   host.appendChild(tplSec);
 }
 
+// Startet Nook direkt in den Einstellungen, liefen sie vor dieser Datei —
+// die Stundenplan-Übersicht dort jetzt nachtragen.
+if (typeof currentView !== 'undefined' && currentView === 'settings') renderScheduleSettings();
+
 // ── Einstiege ───────────────────────────────────────────────────────────
 document.getElementById('schedule-open-btn')?.addEventListener('click', () => openScheduleEditor());
 document.getElementById('today-schedule-edit-btn')?.addEventListener('click', () => openScheduleEditor(state.currentDate.getDay()));

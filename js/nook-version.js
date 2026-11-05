@@ -10,9 +10,26 @@
 // hinten wegfallen, angezeigt werden ohnehin nur die neuesten.
 // =========================
 
-window.NOOK_VERSION = '2026.11.5';
+window.NOOK_VERSION = '2026.11.6';
 
 window.NOOK_CHANGELOG = [
+  {
+    version: '2026.11.6',
+    date: '2026-11-05',
+    items: [
+      'Heute: Stundenplan je Wochentag – eigene Zeiten, Pausen, Unterricht (Fach, Lehrkraft, Raum) und Projekt-Blöcke pro Tag, mit Vorlagen, „Kopieren nach“ und Rückgängig; bearbeiten unter Einstellungen › Stundenplan oder ✎ über der Zeitleiste',
+      'Heute (RPG): Stundenplan-Schilder mit ruhiger Holzfläche statt starker Maserung, der laufende Block leuchtet golden, Vergangenes tritt zurück',
+      'Budget: Wiederkehrende Posten gelten ab einem Startmonat („Gilt ab“) und erscheinen in früheren Monaten nicht mehr; Beträge stehen bündig untereinander',
+      'Budget: Taschengeld steht bei den wiederkehrenden Einnahmen und in der Prognose; Sparziele in eigener Reihenfolge, die Priorität ist nur noch Markierung',
+      'Budget (RPG): Schatzhort-Einstellungen passend benannt, Schatzkammer am Handy ohne Überlauf; Einnahme und bezahlte Ausgabe per Textmarker verbunden',
+      'Pinnwand: „Wichtig“ ist eine Markierung für jeden Kartenstil und rückt die Karte ganz nach oben (am Handy über alle Spalten); „Nach oben/unten“ im Karten-Dialog',
+      'Pinnwand: Kartenhöhe am Handy erst nach kurzem Gedrückthalten änderbar, normales Wischen scrollt; Checklisten-Einträge in einem mehrzeiligen Feld bearbeiten',
+      'Karteikarten: Gruppen gibt es jetzt immer, nicht nur im Archiv; das Archiv blendet vergangene Fächer von der Tafel aus, sie behalten ihre Gruppe; eine alte Lernsession springt nicht mehr bei jedem Öffnen auf',
+      'Themes: eigene Themes als Datei exportieren und importieren, eigene Bilder für Kalender, Start-Banner und Icon, neues Muster-Theme; eigener Nook-Farbwähler statt des Browser-Dialogs',
+      'Projekte öffnen auf jedem Gerät die Ansicht, die dort zuletzt offen war; Einstellungen zeigen Version und Speicher wieder an, auch beim Start direkt in den Einstellungen',
+      'Außerdem: Termin-Balken im Mini-Kalender wieder da, Hinweis zum Installieren auf dem Handy, RPG-Tool-Blätter mit abwechselndem Papier',
+    ],
+  },
   {
     version: '2026.11.5',
     date: '2026-11-04',

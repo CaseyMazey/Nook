@@ -10,7 +10,10 @@ function renderSettings(){
   renderStartViewSettings();
   renderThemeSettings();
   renderDisplaySettings();
-  renderScheduleSettings();
+  // Stundenplan-Übersicht: js/schedule-editor.js lädt erst nach dieser
+  // Datei — startet Nook direkt in den Einstellungen, existiert sie hier
+  // noch nicht (schedule-editor.js füllt sie dann beim eigenen Laden).
+  if (typeof renderScheduleSettings === 'function') renderScheduleSettings();
   renderWeatherSettings();
   renderColorSettings();
   renderTabVisibilitySettings();
