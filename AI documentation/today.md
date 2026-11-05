@@ -79,7 +79,7 @@ Ein Tag besteht aus:
 
 Die Zeitleiste wird daraus berechnet (`scheduleComputeSegments`): Pause vor Unterricht vor Schulzeit vor Block; unverplante Arbeitszeit erscheint als „Nicht zugewiesen“. Blöcke, die in Pausen oder Unterricht ragen, werden dort nur nicht angezeigt — gespeichert wird nie etwas still verändert, der Editor zeigt einen Hinweis.
 
-Der aktuelle Abschnitt wird hervorgehoben (JETZT). Pausen sind schmale Markierungen, Blockarten haben je eine Akzentfarbe.
+Der aktuelle Abschnitt wird hervorgehoben (JETZT). Pausen sind schmale Markierungen, Blockarten haben je eine Akzentfarbe. Die Zeitleiste ist eine seitlich scrollende Zeile (Desktop und Handy, Mausrad scrollt seitlich); sie rückt den laufenden Abschnitt in die Mitte, sobald sich Tag oder laufender Abschnitt ändern (Prüfung jede Minute), und behält sonst die Scrollposition.
 
 Aufgaben hängen wie bisher per `task.blocks` an Block-IDs. Block-IDs sind nur innerhalb eines Tages eindeutig: Kopien eines Tages behalten sie, damit eine Aufgabe an allen Tagen mit diesem Block erscheint.
 

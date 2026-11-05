@@ -447,10 +447,8 @@
 @media (prefers-reduced-motion: reduce) {
   [data-today-style="rpg"] #blocks-row .block-slot.active-block .active-tag { animation: none; }
 }
-/* Handy: die Zeile scrollt seitlich und schneidet sonst Leuchten und Anheben ab */
-@media (max-width: 480px) {
-  [data-today-style="rpg"] #blocks-row { padding: 16px 12px 12px; }
-}
+/* Die Zeile scrollt seitlich und schneidet sonst Leuchten und Anheben ab */
+[data-today-style="rpg"] #blocks-row { padding: 16px 14px 14px; }
 /* Vorbei: Schilder und Pausen, die heute schon hinter einem liegen, treten zurück */
 [data-today-style="rpg"] #blocks-row :is(.block-slot, .block-break).seg-past { opacity: .55; filter: saturate(.6); }
 [data-today-style="rpg"] #blocks-row .block-break.active-break {

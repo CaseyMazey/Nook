@@ -721,9 +721,21 @@ function renderBlocksProgress() {
 // Zeitleiste des angezeigten Tages aus dem Stundenplan (js/schedule.js):
 // Unterricht, Pausen, Blöcke und nicht zugewiesene Arbeitszeit. Aufgaben
 // hängen wie bisher per task.blocks an den Block-IDs.
-let blocksActiveScrolledOnce = false;
+// Die Zeitleiste ist eine seitlich scrollende Zeile (css/schedule.css).
+// Sie springt nur dann zum laufenden Abschnitt, wenn sich Tag oder
+// laufender Abschnitt geändert haben — sonst bleibt die Scrollposition
+// des Nutzers erhalten (z.B. nach dem Bearbeiten einer Aufgabe).
+let blocksFocusKey = null;
+function currentBlocksFocusKey() {
+  const plan = scheduleSegmentsForDate(state.currentDate);
+  if (!isToday(state.currentDate) || plan.off) return dateKey(state.currentDate);
+  const n = new Date(), nowM = n.getHours() * 60 + n.getMinutes();
+  const seg = plan.segments.find(s => nowM >= scheduleToMin(s.start) && nowM < scheduleToMin(s.end));
+  return dateKey(state.currentDate) + '|' + (seg ? seg.start : (nowM >= scheduleToMin(plan.end) ? 'end' : 'before'));
+}
 function renderBlocks() {
   const row = document.getElementById('blocks-row');
+  const keepLeft = row.scrollLeft;
   row.innerHTML = '';
   const plan = scheduleSegmentsForDate(state.currentDate);
   const nowM = (() => { const n = new Date(); return n.getHours() * 60 + n.getMinutes(); })();
@@ -799,18 +811,43 @@ function renderBlocks() {
     });
   });
 
-  // Mobile: aktueller Block ist horizontal scrollbar (scroll-snap, siehe
-  // today.css) — beim allerersten Rendern automatisch zum aktiven Block
-  // scrollen, statt ihn hinter vorherigen Karten zu verstecken. Nur einmal
-  // pro Seitenaufruf, damit spätere renderBlocks()-Aufrufe (z.B. nach dem
-  // Bearbeiten einer Aufgabe) die Scrollposition des Nutzers nicht kappen.
-  if (!blocksActiveScrolledOnce && mehrPhoneQuery.matches) {
-    blocksActiveScrolledOnce = true;
-    row.querySelector('.block-slot.active-block, .block-break.active-break')?.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
-  }
+  // Laufenden Abschnitt mittig zeigen (nur die Zeile scrollen, nicht die
+  // Seite); an anderen Tagen am Anfang beginnen. Ist Heute gerade nicht
+  // sichtbar, hat die Zeile keine Maße — dann beim nächsten Mal nachholen.
+  // Einrasten (scroll-snap, am Handy „mandatory“) kurz aussetzen: sonst
+  // setzt der Browser nach dem Neuaufbau die alte Einrastposition zurück.
+  const focusKey = currentBlocksFocusKey();
+  row.style.scrollSnapType = 'none';
+  if (row.clientWidth && focusKey !== blocksFocusKey) {
+    blocksFocusKey = focusKey;
+    const target = row.querySelector('.block-slot.active-block, .block-break.active-break');
+    if (target) {
+      const r = row.getBoundingClientRect(), t = target.getBoundingClientRect();
+      // relativ zur aktuellen Position (der Browser behält sie teils über den Neuaufbau)
+      row.scrollLeft += t.left - r.left - (row.clientWidth - t.width) / 2;
+    } else row.scrollLeft = 0;
+  } else row.scrollLeft = keepLeft;
+  requestAnimationFrame(() => { row.style.scrollSnapType = ''; });
 
   renderBlocksProgress();
 }
+
+// Jede Minute prüfen, ob ein neuer Abschnitt läuft — dann wandert „JETZT“
+// weiter und die Zeile folgt ihm (vorher erst beim nächsten Neuaufbau).
+setInterval(() => {
+  if (typeof currentView !== 'undefined' && currentView === 'today' && currentBlocksFocusKey() !== blocksFocusKey) renderBlocks();
+}, 60 * 1000);
+
+// Mausrad ohne Seitwärts-Geste scrollt die Zeile seitlich; am Anfang bzw.
+// Ende der Zeile scrollt wieder die Seite, damit man nicht festhängt.
+document.getElementById('blocks-row').addEventListener('wheel', e => {
+  const row = e.currentTarget;
+  if (e.deltaX || e.shiftKey || e.ctrlKey || row.scrollWidth <= row.clientWidth + 1) return;
+  const atStart = row.scrollLeft <= 0, atEnd = row.scrollLeft + row.clientWidth >= row.scrollWidth - 1;
+  if ((e.deltaY < 0 && atStart) || (e.deltaY > 0 && atEnd)) return;
+  e.preventDefault();
+  row.scrollLeft += e.deltaY;
+}, { passive: false });
 
 // =========================
 // TASKS

@@ -10,9 +10,17 @@
 // hinten wegfallen, angezeigt werden ohnehin nur die neuesten.
 // =========================
 
-window.NOOK_VERSION = '2026.11.7';
+window.NOOK_VERSION = '2026.11.8';
 
 window.NOOK_CHANGELOG = [
+  {
+    version: '2026.11.8',
+    date: '2026-11-05',
+    items: [
+      'Heute: Der Stundenplan ist auch am Desktop eine einzelne, seitlich scrollende Zeile (Mausrad scrollt seitlich) und rückt den laufenden Block automatisch in die Mitte',
+      'Heute: „JETZT“ wandert von selbst zum nächsten Block, sobald er beginnt; eine selbst gewählte Scrollposition bleibt beim Bearbeiten von Aufgaben erhalten',
+    ],
+  },
   {
     version: '2026.11.7',
     date: '2026-11-05',

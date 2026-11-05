@@ -23,9 +23,16 @@
 .today-schedule-edit:hover { background: var(--accent-soft); color: var(--text); }
 .today-schedule-edit:focus-visible { outline: 2px solid var(--sage); outline-offset: 1px; }
 
-/* Flex statt festem Raster: Pausen sind schmale Markierungen zwischen den Karten */
-#blocks-row { display: flex; flex-wrap: wrap; align-items: stretch; }
-#blocks-row .block-slot { flex: 1 1 148px; min-width: 0; }
+/* Eine Zeile, seitlich scrollbar (wie am Handy) statt mehrerer Reihen —
+   today.js renderBlocks() rückt den laufenden Abschnitt in die Mitte.
+   Pausen sind schmale Markierungen zwischen den Karten. */
+#blocks-row {
+  display: flex; flex-wrap: nowrap; align-items: stretch;
+  overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity;
+  padding-bottom: 6px; scrollbar-width: thin;
+}
+#blocks-row .block-slot { flex: 0 0 clamp(190px, 24%, 260px); min-width: 0; scroll-snap-align: center; }
+#blocks-row .block-break { scroll-snap-align: center; }
 #blocks-row .block-slot.seg-block,
 #blocks-row .block-slot.seg-lesson,
 #blocks-row .block-slot.seg-school { box-shadow: inset 4px 0 0 var(--seg-accent), var(--shadow-xs); }
@@ -59,7 +66,7 @@
 [data-today-style="rpg"] #blocks-row .block-slot.seg-school { box-shadow: none; }
 
 @media (max-width: 480px) {
-  #blocks-row { flex-wrap: nowrap; }
+  #blocks-row { scroll-snap-type: x mandatory; }
   /* wie bisher in today.css: eine Karte fast bildschirmbreit, seitlich wischen */
   #blocks-row .block-slot { flex: 0 0 86%; }
   #blocks-row .block-break { flex: 0 0 76px; scroll-snap-align: center; }
