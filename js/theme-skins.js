@@ -361,9 +361,41 @@
     return Object.keys(result).length ? result : null;
   }
 
+  // ── Brücke Hauptfenster ↔ Musterfenster ──
+  // Nur Nachrichten aus dem eigenen Lab-iframe mit Typ "nook-theme-lab:…" zählen.
+  function isLabMessage(event, frameWindow) {
+    if (!event || !frameWindow || event.source !== frameWindow) return false;
+    const d = event.data;
+    return !!isObj(d) && typeof d.type === "string" && d.type.indexOf("nook-theme-lab:") === 0;
+  }
+
+  // Ersetzt skins des Themes durch die bereinigten Skins und speichert. Wirft save()
+  // (z.B. Speicher voll), wird der alte Stand wiederhergestellt — nichts bleibt halb geändert.
+  function applyLabSave(themes, themeId, skins, opts) {
+    const t = Array.isArray(themes) ? themes.find(x => x && x.id === themeId) : null;
+    if (!t) return { ok: false, message: "Das Theme wurde nicht gefunden." };
+    const hadSkins = Object.prototype.hasOwnProperty.call(t, "skins");
+    const old = t.skins;
+    const clean = opts.sanitize(skins);
+    if (clean) t.skins = clean; else delete t.skins;
+    try {
+      opts.save();
+      return { ok: true };
+    } catch (e) {
+      if (hadSkins) t.skins = old; else delete t.skins;
+      const quota = e && (e.name === "QuotaExceededError" || /quota/i.test(String(e.message || e)));
+      return {
+        ok: false,
+        message: quota
+          ? "Der Speicher ist voll. Entferne eigene Bilder oder nutze Vorlagen (die kosten keinen Speicher)."
+          : "Speichern nicht möglich (" + String((e && e.message) || e).slice(0, 120) + ")."
+      };
+    }
+  }
+
   const api = {
     createSkinRegistry, SKIN_TEMPLATES, SKIN_FASTENERS, SEAL_FILTERS,
-    resolveSkinSrc, buildSkinCss, sanitizeSkins
+    resolveSkinSrc, buildSkinCss, sanitizeSkins, isLabMessage, applyLabSave
   };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; return; }
   Object.assign(globalThis, api);

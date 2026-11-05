@@ -32,7 +32,8 @@
 .theme-picker-icon:hover { opacity: 1; }
 .theme-picker-icon-del:hover { color: var(--prio-1); }
 .theme-picker-icon-edit:hover,
-.theme-picker-icon-export:hover { color: var(--sage); }
+.theme-picker-icon-export:hover,
+.theme-picker-icon-live:hover { color: var(--sage); }
 
 /* ── Theme-Editor ────────────────────────────────────────────────────── */
 .tb-modal-box {
@@ -225,3 +226,13 @@
 @media (max-width: 480px) {
   .tb-modal-box { width: 100%; }
 }
+
+/* ── Theme live bearbeiten: Musterfenster als Vollbild-iframe (js/theme-engine.js) ── */
+#theme-lab-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100; /* über App und Modals, unter der Suche (1200) */
+  background: var(--bg);
+}
+#theme-lab-overlay iframe { display: block; width: 100%; height: 100%; border: 0; }
+body.theme-lab-open { overflow: hidden; }

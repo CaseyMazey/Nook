@@ -1284,7 +1284,7 @@ function syncThemeBuilderBgUI() {
 function saveThemeBuilder() {
   const nameInput = tbEl('name');
   const name = nameInput.value.trim();
-  if (!name) { nameInput.focus(); return; }
+  if (!name) { nameInput.focus(); return null; }
 
   _teBuilderVariants[_teBuilderVariant] = readThemeBuilderVariant();
   const cleanBg = bg => {
@@ -1334,11 +1334,12 @@ function saveThemeBuilder() {
   try { saveCustomThemes(); }
   catch {
     alert('Das Theme konnte nicht gespeichert werden — der Speicher ist voll. Versuch es mit einem kleineren Hintergrundbild.');
-    return;
+    return null;
   }
   closeThemeBuilder();
   setTheme(showNight ? id + NIGHT_SUFFIX : id);
   if (typeof renderThemeSettings === 'function') renderThemeSettings();
+  return id; // für „Theme live bearbeiten“ (startThemeLabFromBuilder)
 }
 
 // ── Tag/Nacht im Editor ──────────────────────────────────────────────────
@@ -1392,11 +1393,16 @@ function renderCustomThemeButtons() {
       <span class="theme-swatch-dot" style="background:${core.surface};border-color:${core.accent};"></span>
       <span>${escHtml(ct.name)}</span>
       <span class="theme-picker-icon theme-picker-icon-edit" title="${isPreset ? 'Als eigenes Theme anpassen' : 'Bearbeiten'}">✎</span>
+      ${isPreset ? '' : '<span class="theme-picker-icon theme-picker-icon-live" title="Theme live bearbeiten (Elemente einzeln gestalten)">✦</span>'}
       ${isPreset ? '' : '<span class="theme-picker-icon theme-picker-icon-export" title="Als Datei exportieren (zum Teilen)">⤓</span>'}
       ${isPreset ? '' : '<span class="theme-picker-icon theme-picker-icon-del" title="Löschen">✕</span>'}`;
     btn.querySelector('.theme-picker-icon-edit').addEventListener('click', e => {
       e.stopPropagation();
       openThemeBuilder(ct.id);
+    });
+    btn.querySelector('.theme-picker-icon-live')?.addEventListener('click', e => {
+      e.stopPropagation();
+      openThemeLab(ct.id);
     });
     btn.querySelector('.theme-picker-icon-export')?.addEventListener('click', e => {
       e.stopPropagation();
@@ -1554,6 +1560,12 @@ function sanitizeImportedTheme(file, notes) {
   t.graphics = gMode === 'theme'
     ? { mode: 'theme', theme: pick(g(src.graphics, 'theme'), graphicsIds, DEFAULT_GRAPHICS_THEME) }
     : { mode: 'custom' };
+  // Element-Designs („Theme live bearbeiten“): gleiche Prüfung wie beim Speichern
+  // aus dem Musterfenster; Unbekanntes wird verworfen und landet in notes.
+  if (src.skins && typeof src.skins === 'object' && typeof sanitizeSkins === 'function') {
+    const skins = sanitizeSkins(src.skins, notes, skinSanitizeContext());
+    if (skins) t.skins = skins;
+  }
   return t;
 }
 
@@ -1667,6 +1679,84 @@ function initBgImageSettings() {
 }
 
 // =========================================================================
+// THEME LIVE BEARBEITEN — Musterfenster öffnen und dessen Speichern annehmen
+// Das Musterfenster ist index.html?themeLab=1&theme=<id> in einem Vollbild-
+// iframe (js/theme-lab-boot.js trennt dort den Speicher, js/theme-lab.js ist
+// der Editor). Es schickt nur Nachrichten; geprüft und gespeichert wird hier
+// mit isLabMessage/applyLabSave/sanitizeSkins aus js/theme-skins.js.
+// =========================================================================
+let _themeLabId = null;
+
+function themeLabOrigin() { return location.protocol === 'file:' ? '*' : location.origin; }
+
+function openThemeLab(id) {
+  if (window.NOOK_THEME_LAB) return;            // kein Musterfenster im Musterfenster
+  const ct = customThemes.find(t => t.id === id);
+  if (!ct || document.getElementById('theme-lab-overlay')) return;
+  _themeLabId = id;
+  const overlay = document.createElement('div');
+  overlay.id = 'theme-lab-overlay';
+  overlay.setAttribute('role', 'dialog');
+  overlay.setAttribute('aria-label', 'Theme live bearbeiten: ' + ct.name);
+  const frame = document.createElement('iframe');
+  frame.id = 'theme-lab-frame';
+  frame.title = 'Nook mit Musterdaten';
+  frame.src = 'index.html?themeLab=1&theme=' + encodeURIComponent(id) + '#today';
+  overlay.appendChild(frame);
+  document.body.appendChild(overlay);
+  document.body.classList.add('theme-lab-open');
+  frame.addEventListener('load', () => { try { frame.contentWindow.focus(); } catch (e) { /* egal */ } }, { once: true });
+}
+
+function closeThemeLab() {
+  document.getElementById('theme-lab-overlay')?.remove();
+  document.body.classList.remove('theme-lab-open');
+  _themeLabId = null;
+}
+
+// Aus dem Theme-Editor: erst speichern (Presets werden dabei zur eigenen Kopie
+// „<Name> (eigen)“), dann das Musterfenster für genau dieses Theme öffnen.
+async function startThemeLabFromBuilder() {
+  const name = tbEl('name').value.trim();
+  if (!name) { tbEl('name').focus(); return; }
+  const ok = await hubConfirm({
+    title: 'Theme live bearbeiten',
+    message: `„${name}" wird dafür jetzt gespeichert. Danach öffnet sich Nook mit Musterdaten, in dem du jedes Element einzeln gestalten kannst – deine echten Daten bleiben unberührt.`,
+    confirmText: 'Speichern & öffnen'
+  });
+  if (!ok) return;
+  const id = saveThemeBuilder();
+  if (id) openThemeLab(id);
+}
+
+window.addEventListener('message', e => {
+  const frame = document.getElementById('theme-lab-frame');
+  if (!frame || typeof isLabMessage !== 'function' || !isLabMessage(e, frame.contentWindow)) return;
+  if (location.protocol !== 'file:' && e.origin !== location.origin) return;
+  const d = e.data;
+  const reply = msg => { try { frame.contentWindow.postMessage(msg, themeLabOrigin()); } catch (err) { /* Fenster weg */ } };
+  if (d.type === 'nook-theme-lab:close') { closeThemeLab(); return; }
+  if (d.type !== 'nook-theme-lab:save') return;
+  if (d.themeId !== _themeLabId) {
+    reply({ type: 'nook-theme-lab:save-failed', message: 'Das Musterfenster gehört zu einem anderen Theme.' });
+    return;
+  }
+  const notes = new Set();
+  const res = applyLabSave(customThemes, d.themeId, d.skins, {
+    sanitize: s => sanitizeSkins(s, notes, skinSanitizeContext()),
+    save: saveCustomThemes
+  });
+  if (!res.ok) { reply({ type: 'nook-theme-lab:save-failed', message: res.message }); return; }
+  reply({ type: 'nook-theme-lab:saved' });
+  const id = d.themeId;
+  closeThemeLab();
+  // Aktive Tag- oder Nachtversion behalten, sonst das bearbeitete Theme aktivieren
+  setTheme(themePickerId(theme) === id ? theme : id);
+  if (typeof renderThemeSettings === 'function') renderThemeSettings();
+  if (notes.size) hubAlert('Theme gespeichert', 'Einiges wurde nicht übernommen: ' + Array.from(notes).join(' · '));
+});
+
+// =========================================================================
 // EDITOR-EVENTS
 // =========================================================================
 
@@ -1679,6 +1769,7 @@ function initThemeBuilder() {
   tbEl('close').addEventListener('click', closeThemeBuilder);
   tbEl('cancel').addEventListener('click', closeThemeBuilder);
   tbEl('save').addEventListener('click', saveThemeBuilder);
+  tbEl('live').addEventListener('click', startThemeLabFromBuilder);
   tbEl('delete').addEventListener('click', async () => {
     const id = _teBuilderEditId;
     const ct = id && getCustomTheme(id);
