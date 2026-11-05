@@ -10,9 +10,16 @@
 // hinten wegfallen, angezeigt werden ohnehin nur die neuesten.
 // =========================
 
-window.NOOK_VERSION = '2026.11.6';
+window.NOOK_VERSION = '2026.11.7';
 
 window.NOOK_CHANGELOG = [
+  {
+    version: '2026.11.7',
+    date: '2026-11-05',
+    items: [
+      'App-Icon füllt seine Fläche jetzt aus und ist in der Taskleiste so groß wie andere Apps (Desktop-App und installierte Web-App)',
+    ],
+  },
   {
     version: '2026.11.6',
     date: '2026-11-05',
