@@ -88,7 +88,8 @@
 }
 
 /* Beschriftungen direkt auf dem Holz */
-[data-today-style="rpg"] #today-blocks-section > .today-section-label {
+[data-today-style="rpg"] #today-blocks-section .today-section-label,
+[data-today-style="rpg"] #today-blocks-section .today-schedule-edit {
   /* Text steht in Versalien im Markup — dafür ist die Zierschrift zu
      schwer lesbar, also Brotschrift mit Sperrung, hell aufs Holz */
   font-size: calc(11px * var(--core-font-scale));
@@ -386,27 +387,76 @@
   --flip: 1 !important;
   padding: 20px 20px 18px;
 }
+/* Nur der Messingrahmen kommt aus der Grafik (schmaler Zuschnitt, ohne
+   „fill“) — die stark gemaserte Holzfläche war hinter der Schrift schwer
+   lesbar. Gleicher Maßstab wie vorher (54px Quelle → 12px). */
 [data-today-style="rpg"] #blocks-row .block-slot::before {
-  border-width: 22px;
-  border-image: url('../assets/today/plaque.webp?v=2') 95 fill / 22px / 0 stretch;
+  border-width: 12px;
+  border-image: url('../assets/today/plaque.webp?v=2') 54 / 12px / 0 stretch;
   filter: var(--paper-dim) saturate(.78) brightness(1.04);
 }
 /* Nachts nur leicht abdunkeln — sonst verschwindet die Tinte im Holz */
 [data-today-style="rpg"][data-theme-family="dark"] #blocks-row .block-slot::before { filter: saturate(.75) brightness(.95); }
-/* Auf dem Eichenholz kräftigere Tinte als auf Papier */
+/* Innenfläche: lackiertes Ahornholz mit kaum sichtbarer Maserung. Liegt
+   als eigener Hintergrund innerhalb des Rahmens (10px Rand). */
 [data-today-style="rpg"] #blocks-row .block-slot {
-  --text-2: color-mix(in srgb, var(--deco-ink) 90%, transparent);
-  --text-3: color-mix(in srgb, var(--deco-ink) 82%, transparent);
-  /* „eingebrannt“: heller Schatten darunter hebt die Schrift von der Maserung ab */
-  text-shadow: 0 1px 0 color-mix(in srgb, var(--sheen) 35%, transparent);
+  --plaque-wood: color-mix(in srgb, var(--amber) 48%, var(--sheen));
+  --plaque-wood-deep: color-mix(in srgb, var(--amber) 62%, var(--sheen));
+  --plaque-grain: color-mix(in srgb, var(--deco-ink) 5%, transparent);
+  --text-2: color-mix(in srgb, var(--deco-ink) 88%, transparent);
+  --text-3: color-mix(in srgb, var(--deco-ink) 74%, transparent);
+  background:
+    radial-gradient(ellipse at 50% 35%, color-mix(in srgb, var(--sheen) 28%, transparent), transparent 70%),
+    repeating-linear-gradient(177deg, transparent 0 13px, var(--plaque-grain) 13px 14px, transparent 14px 31px),
+    linear-gradient(to bottom, var(--plaque-wood), var(--plaque-wood-deep))
+    center / calc(100% - 20px) calc(100% - 20px) no-repeat !important;
+  text-shadow: none;
   font-weight: 600;
 }
+[data-today-style="rpg"][data-theme-family="dark"] #blocks-row .block-slot {
+  --plaque-wood: color-mix(in srgb, var(--amber) 58%, var(--sheen));
+  --plaque-wood-deep: color-mix(in srgb, var(--amber) 72%, var(--sheen));
+}
+[data-today-style="rpg"] #blocks-row .block-slot > * { position: relative; }
 [data-today-style="rpg"] #blocks-row .block-slot::after { display: none; }
+
+/* Aktueller Block: deutlich hervorgehoben — heller Goldrahmen mit
+   Leuchten (Salbei ist im RPG-Theme ein Braunton und ginge auf dem Tisch
+   unter), leicht angehoben und größer, Innenfläche heller. */
 [data-today-style="rpg"] #blocks-row .block-slot.active-block {
-  transform: translateY(-3px);
-  filter:
-    drop-shadow(0 0 7px color-mix(in srgb, var(--amber) 80%, transparent))
-    drop-shadow(0 8px 9px color-mix(in srgb, var(--shadow-tint) 40%, transparent));
+  --plaque-wood: color-mix(in srgb, var(--amber) 26%, var(--sheen));
+  --plaque-wood-deep: color-mix(in srgb, var(--amber) 38%, var(--sheen));
+  transform: translateY(-4px) scale(1.03);
+  z-index: 1;
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--sheen) 90%, var(--amber)),
+    0 0 0 6px color-mix(in srgb, var(--amber) 75%, transparent),
+    0 0 30px 8px color-mix(in srgb, var(--amber) 70%, var(--sheen)) !important;
+  border-radius: 6px;
+  filter: drop-shadow(0 10px 10px color-mix(in srgb, var(--shadow-tint) 45%, transparent));
+}
+[data-today-style="rpg"] #blocks-row .block-slot.active-block .active-tag {
+  background: var(--deco-ink); color: var(--sheen); text-shadow: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--sheen) 60%, transparent);
+  animation: rpg-now-pulse 2.4s ease-in-out infinite;
+}
+@keyframes rpg-now-pulse {
+  0%, 100% { box-shadow: 0 0 0 2px color-mix(in srgb, var(--sheen) 60%, transparent); }
+  50%      { box-shadow: 0 0 0 5px color-mix(in srgb, var(--amber) 55%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-today-style="rpg"] #blocks-row .block-slot.active-block .active-tag { animation: none; }
+}
+/* Handy: die Zeile scrollt seitlich und schneidet sonst Leuchten und Anheben ab */
+@media (max-width: 480px) {
+  [data-today-style="rpg"] #blocks-row { padding: 16px 12px 12px; }
+}
+/* Vorbei: Schilder und Pausen, die heute schon hinter einem liegen, treten zurück */
+[data-today-style="rpg"] #blocks-row :is(.block-slot, .block-break).seg-past { opacity: .55; filter: saturate(.6); }
+[data-today-style="rpg"] #blocks-row .block-break.active-break {
+  border-style: solid; border-color: color-mix(in srgb, var(--sheen) 85%, var(--amber));
+  background: color-mix(in srgb, var(--amber) 35%, transparent);
+  box-shadow: 0 0 18px 4px color-mix(in srgb, var(--amber) 60%, transparent);
 }
 /* Fortschritt des Tages: schmale Messingschiene */
 [data-today-style="rpg"] #blocks-progress-bar {

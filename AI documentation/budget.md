@@ -90,7 +90,7 @@ Der Header enthält:
 - Monatsnavigation
 - Kontostand
 - Aktionen
-- Menü (Zahnrad): Finanzbaum konfigurieren (nur die Schwellen — die Stufen-Namen sind fest), Taschengeld-Berechnung, Archiv, Monatsrückblick, Monat als CSV exportieren
+- Menü (Zahnrad): Finanzbaum konfigurieren (nur die Schwellen — die Stufen-Namen sind fest; im RPG-Theme „Schatzhort konfigurieren“ mit den Hort-Stufen), Taschengeld-Berechnung, Archiv, Monatsrückblick, Monat als CSV exportieren
 
 ---
 
@@ -239,7 +239,9 @@ Die Sparprognose berechnet aus den wiederkehrenden Posten drei mögliche monatli
 - 📊 Realistisch – inkl. Durchschnitt variabler Posten
 - 🚀 Optimistisch – bester Fall
 
-Jeder wiederkehrende Posten kann einzeln von der Sparplan-Berechnung ausgeschlossen werden.
+Jeder wiederkehrende Posten kann einzeln von der Sparplan-Berechnung ausgeschlossen werden. Das Taschengeld steht als eigene Zeile unter „Einnahmen & Ausgaben“.
+
+Die Sparrate wird in der selbst festgelegten Reihenfolge (▲▼) auf die Sparziele verteilt. Die Priorität (Muss/Brauche/Möchte) ist dabei nur eine Markierung und erzwingt keine Reihenfolge.
 
 ## Zeitstrahl
 
@@ -296,6 +298,9 @@ Jeder Eintrag besitzt:
 - Typ
 - Priorität
 - Intervall
+- Gilt ab (Monat, `startMonth`) — in früheren Monaten wird der Posten nicht angezeigt; neue Posten starten im laufenden Monat, Altdaten ohne Wert gelten immer
+
+Das Taschengeld erscheint als berechnete Einnahme mit in der Liste (Bearbeiten öffnet die Taschengeld-Einstellungen).
 
 ---
 

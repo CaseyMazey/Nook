@@ -139,6 +139,8 @@ let eventSeries       = DB.get('eventSeries', []);
 function saveEventSeries(){ DB.set('eventSeries', eventSeries); }
 let quicknote        = DB.get('quicknote', '');
 let berichtsheft     = DB.get('berichtsheft', { betrieb: '', schule: '' });
+// Frühere, für alle Tage gleiche Zeitblöcke — nur noch Quelle der einmaligen
+// Übernahme in den Stundenplan je Wochentag (js/schedule.js, scheduleWeek).
 let blocks           = DB.get('blocks', DEFAULT_BLOCKS);
 let countdownVisible = DB.get('countdownVisible', {});
 // ── Theme-Engine (Phase 2) ───────────────────────────────────────────────
@@ -330,10 +332,11 @@ function dateKey(date) {
   return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
 }
 function parseLocalDate(str) { const [y,m,d]=str.split('-').map(Number); return new Date(y,m-1,d); }
+// Laufender Block von heute — aus dem Stundenplan je Wochentag (js/schedule.js)
 function getCurrentBlock() {
   const now=new Date();
-  const hhmm=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-  return blocks.find(b=>hhmm>=b.start&&hhmm<=b.end);
+  const nowM=now.getHours()*60+now.getMinutes();
+  return scheduleBlocksForDate(now).find(b=>nowM>=scheduleToMin(b.start)&&nowM<scheduleToMin(b.end));
 }
 
 // =========================

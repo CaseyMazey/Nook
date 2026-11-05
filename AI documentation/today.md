@@ -66,20 +66,28 @@ Der Header bildet den Einstieg in den Tag.
 
 ---
 
-## Zeitblöcke
+## Zeitblöcke (Stundenplan)
 
-Zeigt den Tagesablauf.
+Zeigt den Tagesablauf des **angezeigten Wochentags** — jeder Wochentag hat eine eigene Struktur (js/schedule.js, bearbeitet in js/schedule-editor.js: Einstellungen → Stundenplan oder ✎ über der Zeitleiste).
 
-Jeder Block besitzt:
+Ein Tag besteht aus:
 
-- Uhrzeit
-- Titel
-- Aufgaben
-- Status
+- Tagesrahmen (Beginn/Ende) — außerhalb ist Feierabend
+- optional Schulzeit, darin Unterrichtsstunden (Fach, Lehrkraft, Raum, Thema)
+- Pausen
+- Projekt-/Arbeitsblöcke (bestehendes Projekt oder Aktivität: Lernen, Organisation, Sonstiges, Freie Zeit)
 
-Der aktuelle Block wird hervorgehoben.
+Die Zeitleiste wird daraus berechnet (`scheduleComputeSegments`): Pause vor Unterricht vor Schulzeit vor Block; unverplante Arbeitszeit erscheint als „Nicht zugewiesen“. Blöcke, die in Pausen oder Unterricht ragen, werden dort nur nicht angezeigt — gespeichert wird nie etwas still verändert, der Editor zeigt einen Hinweis.
 
-Freie Blöcke werden anders dargestellt.
+Der aktuelle Abschnitt wird hervorgehoben (JETZT). Pausen sind schmale Markierungen, Blockarten haben je eine Akzentfarbe.
+
+Aufgaben hängen wie bisher per `task.blocks` an Block-IDs. Block-IDs sind nur innerhalb eines Tages eindeutig: Kopien eines Tages behalten sie, damit eine Aufgabe an allen Tagen mit diesem Block erscheint.
+
+Daten: `scheduleWeek` (Tage), `scheduleLessons`, `scheduleSubjects`, `scheduleTeachers`, `scheduleTemplates`. Der alte Key `blocks` war die Quelle der einmaligen Übernahme (Mo–Fr) und wird nicht mehr geschrieben.
+
+Vorlagen sind Ausgangspunkte: Anwenden kopiert sie in den Tag, spätere Änderungen an Vorlage oder Tag beeinflussen sich nicht. Ersetzende Aktionen (Vorlage, Kopieren, Löschen) fragen nach und lassen sich einmal rückgängig machen.
+
+Tests der Berechnung: `node --test tests/schedule.test.js`.
 
 ---
 

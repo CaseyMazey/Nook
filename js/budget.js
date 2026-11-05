@@ -99,7 +99,15 @@ function escHtml(v) {
 // Montage im August" → 4 Termine). Wird von der Geldfluss-Ansicht
 // (budget-analysis.js) für Einnahmen UND Ausgaben gleichermaßen
 // genutzt — eine einzige Generator-Funktion für beide Seiten.
+// Wiederkehrende Posten gelten erst ab ihrem Startmonat (startMonth
+// 'YYYY-MM', beim Anlegen auf den laufenden Monat gesetzt, im Dialog
+// änderbar). Altdaten ohne startMonth gelten weiterhin in jedem Monat.
+function recurringActiveInMonth(entry, year, month) {
+  return !entry.startMonth || `${year}-${String(month).padStart(2, '0')}` >= entry.startMonth;
+}
+
 function recurringOccurrencesInMonth(entry, year, month) {
+  if (!recurringActiveInMonth(entry, year, month)) return [];
   const daysInMonth = new Date(year, month, 0).getDate();
   const amount = entry.amount || 0;
   const results = [];
@@ -376,6 +384,7 @@ function calcMonthProjection() {
 
 function getMonthRecurringItems(year, month) {
   const items = budgetRecurring.filter(r => {
+    if (!recurringActiveInMonth(r, year, month)) return false;
     if (r.freq === 'monthly') return true;
     if (r.freq === 'yearly')  return r.dateMonth === month;
     // Täglich/wöchentlich/2-wöchentlich: PHASE 1 (Stopgap) — erscheinen
@@ -996,12 +1005,21 @@ function renderRecurringList(mk) {
       return da-db;
     });
   }
-  const allRecIncomes    = sortByPrioDay(budgetRecurring.filter(r=>r.type==='income'));
-  const allRecExpMonthly = sortByPrioDay(budgetRecurring.filter(r=>r.type==='expense'&&r.freq==='monthly'));
-  const allRecExpYearly  = sortByPrioDay(budgetRecurring.filter(r=>r.type==='expense'&&r.freq==='yearly'));
+  const [mkYear, mkMonth] = mk.split('-').map(Number);
+  const activeRec        = budgetRecurring.filter(r => recurringActiveInMonth(r, mkYear, mkMonth));
+  const allRecIncomes    = sortByPrioDay(activeRec.filter(r=>r.type==='income'));
+  const allRecExpMonthly = sortByPrioDay(activeRec.filter(r=>r.type==='expense'&&r.freq==='monthly'));
+  const allRecExpYearly  = sortByPrioDay(activeRec.filter(r=>r.type==='expense'&&r.freq==='yearly'));
+  // Taschengeld (budget-taschengeld.js) ist kein Eintrag in budgetRecurring,
+  // gehört aber als monatlich berechnete Einnahme sichtbar in diese Liste.
+  const tgEntry = typeof getTaschengeldMonthEntry === 'function' ? getTaschengeldMonthEntry(mkYear, mkMonth) : null;
+  if (tgEntry) allRecIncomes.push(Object.assign({}, tgEntry, { freq: 'monthly' }));
   const recList = document.getElementById('budget-recurring-list');
   recList.innerHTML = '';
-  if (!budgetRecurring.length) { recList.innerHTML = '<div class="empty-state">Noch keine wiederkehrenden Posten.</div>'; return; }
+  if (!activeRec.length && !tgEntry) {
+    recList.innerHTML = `<div class="empty-state">${budgetRecurring.length ? 'In diesem Monat gilt noch kein wiederkehrender Posten.' : 'Noch keine wiederkehrenden Posten.'}</div>`;
+    return;
+  }
 
   function renderRecSubgroup(entries, type, headerLabel, sumLabel, freqOverride) {
     if (!entries.length) return;
@@ -1011,6 +1029,24 @@ function renderRecurringList(mk) {
     recList.appendChild(header);
     entries.forEach(r => {
       const recPaid = isRecurringPaid(r.id, mk);
+      if (r.taschengeld) {
+        // Betrag kommt aus der Taschengeld-Berechnung: Bearbeiten öffnet deren
+        // Einstellungen, Löschen gibt es hier nicht (Abschalten dort).
+        recList.appendChild(makeBudgetRow({
+          name: r.name, amount: r.amount, type: 'income', priority: 'none', paid: recPaid,
+          subtitleHtml: '<span class="b-freq-chip monthly">Monatlich · berechnet</span>',
+          onEdit: () => { if (typeof openTaschengeldSettingsModal === 'function') openTaschengeldSettingsModal(mkYear, mkMonth); },
+          onPaidToggle: () => {
+            const np = !recPaid; setRecurringPaid(r.id, mk, np);
+            kontostand = (kontostand || 0) + (np ? r.amount : -r.amount);
+            saveKontostand();
+            // Gleiche Regel wie in der Einnahmen-Karte: erhalten = Betrag fixieren
+            if (np) freezeTaschengeldMonth(mk, r.amount); else unfreezeTaschengeldMonth(mk);
+            renderBudget();
+          }
+        }));
+        return;
+      }
       const FREQ_LABELS = { daily: 'T\u00e4glich', weekly: 'W\u00f6chentlich', biweekly: 'Alle 2 Wochen', monthly: 'Monatlich' };
       const freqChip = r.freq==='yearly'
         ? `<span class="b-freq-chip yearly">J\u00e4hrlich \u00b7 ${r.dateDay}.${String(r.dateMonth).padStart(2,'0')}.</span>`
@@ -2024,7 +2060,7 @@ function renderFinanzgarten() {
       </div>
       ${gardenGoals.length > 0 ? `
         <button class="b-garden-select-btn" id="garden-select-goal-btn">
-          ${activeGoal ? `${plantEmoji} ${escHtml(activeGoal.name)}` : 'Ziel wählen'}
+          <span class="b-garden-select-name">${activeGoal ? `${plantEmoji} ${escHtml(activeGoal.name)}` : 'Ziel wählen'}</span>
           <span class="b-garden-select-arrow">▾</span>
         </button>` : ''}
     </div>
@@ -2246,21 +2282,25 @@ function makeBudgetRow({ name, amount, type, priority, paid, subtitle, subtitleH
   amt.textContent = (type === 'income' ? '+' : '-') + fmtEuro(amount);
   amt.style.color = type === 'income' ? 'var(--budget-income)' : 'var(--budget-expense)';
 
-  const del = document.createElement('button');
-  del.className = 'task-delete';
-  del.textContent = '✕';
-  del.addEventListener('click', onDel);
-
+  // Fehlende Knöpfe bekommen einen leeren Platzhalter gleicher Breite —
+  // so stehen Kreis und Betrag in allen Zeilen exakt untereinander.
+  const slot = () => { const s = document.createElement('span'); s.className = 'budget-row-slot'; s.setAttribute('aria-hidden', 'true'); return s; };
+  right.append(paidBtn, amt);
   if (onEdit) {
     const editBtn = document.createElement('button');
     editBtn.className = 'budget-edit-btn';
     editBtn.title = 'Bearbeiten';
     editBtn.innerHTML = '&#9998;';
     editBtn.addEventListener('click', e => { e.stopPropagation(); onEdit(); });
-    right.append(paidBtn, amt, editBtn, del);
-  } else {
-    right.append(paidBtn, amt, del);
-  }
+    right.append(editBtn);
+  } else right.append(slot());
+  if (onDel) {
+    const del = document.createElement('button');
+    del.className = 'task-delete';
+    del.textContent = '✕';
+    del.addEventListener('click', onDel);
+    right.append(del);
+  } else right.append(slot());
 
   row.append(left, right);
   return row;
@@ -2475,6 +2515,7 @@ function openRecurringModal(entry = null) {
     document.getElementById('recurring-var-min').value = entry.varMin ?? '';
     document.getElementById('recurring-var-max').value = entry.varMax ?? '';
     document.getElementById('recurring-sparplan-include').checked = entry.includeInSparplan !== false;
+    document.getElementById('recurring-start-month').value = entry.startMonth || '';
     if (entry.freq === 'monthly') {
       document.getElementById('recurring-day').value        = entry.day || '';
       document.getElementById('recurring-date-day').value   = '';
@@ -2503,6 +2544,7 @@ function openRecurringModal(entry = null) {
     recurringType = 'income'; recurringFreq = 'monthly'; recurringPriority = 'need'; recurringCertainty = 'fixed';
     recurringIcon = '💶';
     document.getElementById('recurring-sparplan-include').checked = true;
+    document.getElementById('recurring-start-month').value = budgetMonthKey(new Date());
   }
 
   ['income','expense'].forEach(t =>
@@ -2641,6 +2683,8 @@ document.getElementById('recurring-save').addEventListener('click', () => {
       e.dateMonth = parseInt(document.getElementById('recurring-date-month').value) || 1;
     }
     // daily braucht kein Positionsfeld
+    const startMonth = document.getElementById('recurring-start-month').value;
+    if (/^\d{4}-\d{2}$/.test(startMonth)) e.startMonth = startMonth; else delete e.startMonth;
   }
 
   if (recurringEditId) {
@@ -3252,12 +3296,18 @@ document.getElementById('goal-tx-save').addEventListener('click', () => {
 function openFinanzbaumModal() {
   const levels = getTreeLevels();
   const rows   = document.getElementById('finanzbaum-config-rows');
+  // RPG-Theme: der Finanzbaum ist dort der Schatzhort (budget-schatzkammer.js)
+  const treasure = isTreasureStyle();
+  document.getElementById('finanzbaum-modal-title').textContent = treasure ? '💰 Schatzhort konfigurieren' : '🌱 Finanzbaum konfigurieren';
+  document.getElementById('finanzbaum-modal-hint').textContent = treasure
+    ? 'Lege fest, ab welchem Kontostand der Schatzhort in die nächste Stufe wächst.'
+    : 'Lege fest, ab welchem Kontostand der Baum in die nächste Wachstumsstufe wechselt.';
   rows.innerHTML = '';
   levels.forEach((lv, i) => {
     const row = document.createElement('div');
     row.className = 'finanzbaum-config-row';
     row.innerHTML = `
-      <label class="finanzbaum-config-label">${lv.label}</label>
+      <label class="finanzbaum-config-label">${escHtml(treasure ? hoardStageLabel(lv) : lv.label)}</label>
       <div class="finanzbaum-config-input-wrap">
         <input type="number" class="modal-input finanzbaum-min-input" data-index="${i}"
           value="${lv.min}" min="0" step="50"
@@ -3488,7 +3538,7 @@ if (budgetHeaderMenuBtn) {
     if (wasOpen) return;
 
     menu.innerHTML = `
-      <button type="button" class="b-header-dropdown-item" id="budget-header-menu-finanzbaum">🌳 Finanzbaum konfigurieren</button>
+      <button type="button" class="b-header-dropdown-item" id="budget-header-menu-finanzbaum">${isTreasureStyle() ? '💰 Schatzhort konfigurieren' : '🌳 Finanzbaum konfigurieren'}</button>
       <button type="button" class="b-header-dropdown-item" id="budget-header-menu-taschengeld">🪙 Taschengeld-Berechnung</button>
       <button type="button" class="b-header-dropdown-item" id="budget-header-menu-archiv">📦 Archiv</button>
       <button type="button" class="b-header-dropdown-item" id="budget-header-menu-rueckblick">📊 Monatsrückblick</button>

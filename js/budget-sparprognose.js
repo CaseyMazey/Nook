@@ -115,17 +115,12 @@ function sparplanerAllRates() {
 }
 
 // ETA-Simulation — arbeitet exakt nach dem vorgegebenen Algorithmus:
-// Jeden Monat kommt die volle Sparrate dazu und wird strikt nach
-// Priorität verteilt. Ein Ziel bekommt erst dann Geld, wenn alle
-// Ziele mit höherer Priorität vollständig finanziert sind. Bleibt in
-// einem Monat nach Erreichen eines Ziels noch Geld übrig, fließt der
-// Rest SOFORT (im selben Monat) ins nächste Ziel — kein Monat wird
-// verschenkt.
-// Prioritäts-Reihenfolge wie bei Ausgaben: Muss vor Brauche vor Möchte.
-// Innerhalb derselben Priorität bleibt die bestehende manuelle ▲▼-
-// Reihenfolge (Array-Index) als Tie-Breaker erhalten — die Sortierung
-// per Priorität ergänzt die manuelle Sortierung also, statt sie zu
-// ersetzen.
+// Jeden Monat kommt die volle Sparrate dazu und wird strikt in der
+// selbst festgelegten Reihenfolge (▲▼, sparplanerAllocationOrder())
+// verteilt. Ein Ziel bekommt erst dann Geld, wenn alle Ziele darüber
+// vollständig finanziert sind. Bleibt in einem Monat nach Erreichen
+// eines Ziels noch Geld übrig, fließt der Rest SOFORT (im selben Monat)
+// ins nächste Ziel — kein Monat wird verschenkt.
 // Archivierte Sparziele (siehe archiveGoal() in budget-sparziele.js) sind
 // erledigt und dürfen in der Sparprognose nicht mehr auftauchen — weder
 // als Zeile noch in der ETA-/Prioritäts-Berechnung. Zentrale Stelle, damit
@@ -135,15 +130,33 @@ function sparplanerActiveGoals() {
   return budgetGoals.filter(g => !g.archived);
 }
 
+// Verteil-Reihenfolge = die selbst festgelegte Reihenfolge (▲▼, Array-Index
+// in budgetGoals). Die Priorität (Muss/Brauche/Möchte) ist nur noch eine
+// Markierung und erzwingt keine Reihenfolge mehr — wer ein „Möchte“-Ziel
+// wichtiger findet als ein „Brauche“-Ziel, schiebt es einfach nach oben.
 const GOAL_PRIO_ORDER = { must: 0, need: 1, want: 2 };
 function sparplanerAllocationOrder() {
-  const goals = sparplanerActiveGoals();
-  return goals.map((_, i) => i).sort((a, b) => {
-    const pa = GOAL_PRIO_ORDER[goals[a].priority] ?? 1;
-    const pb = GOAL_PRIO_ORDER[goals[b].priority] ?? 1;
-    return pa !== pb ? pa - pb : a - b;
-  });
+  return sparplanerActiveGoals().map((_, i) => i);
 }
+
+// Einmalig: Früher wurde zuerst nach Priorität, dann nach Array-Index
+// verteilt. Damit sich beim Umstieg nichts verschiebt, wird budgetGoals
+// einmal in genau diese bisherige Reihenfolge gebracht (archivierte Ziele
+// behalten ihre Plätze).
+(function migrateGoalManualOrder() {
+  if (DB.get('budgetGoalsManualOrder', false)) return;
+  const slots = [];
+  budgetGoals.forEach((g, i) => { if (!g.archived) slots.push(i); });
+  const sorted = slots.map(i => budgetGoals[i]).map((g, i) => ({ g, i })).sort((a, b) => {
+    const pa = GOAL_PRIO_ORDER[a.g.priority] ?? 1, pb = GOAL_PRIO_ORDER[b.g.priority] ?? 1;
+    return pa !== pb ? pa - pb : a.i - b.i;
+  }).map(x => x.g);
+  if (sorted.some((g, k) => budgetGoals[slots[k]] !== g)) {
+    sorted.forEach((g, k) => { budgetGoals[slots[k]] = g; });
+    saveBudgetGoals();
+  }
+  DB.set('budgetGoalsManualOrder', true);
+})();
 
 // (24) Während EINES renderSparplaner()-Durchlaufs werden die ETAs je Rate
 // zwischengespeichert — Szenarien, Zeitstrahl, Simulator und
@@ -360,7 +373,18 @@ function renderSparplanIncomeExpense() {
   // da "Saldo / Jahr" genau das ausweisen soll.
   const sonderNet  = b.sonderIncome.reduce((s, r) => s + r.amount, 0) - b.sonderExpense.reduce((s, r) => s + r.amount, 0);
 
-  if (!fixedAll.length && !varAll.length && !sonderAll.length) {
+  // Taschengeld ist kein budgetRecurring-Posten (budget-taschengeld.js),
+  // fließt aber in jede Sparrate ein — deshalb hier sichtbar als eigene
+  // Zeile, mit der Spanne Garantiert–Optimistisch wie bei variablen Posten.
+  const tg = { min: sparplanerTaschengeldAmount('garant'), avg: sparplanerTaschengeldAmount('real'), max: sparplanerTaschengeldAmount('opt') };
+  const fmtShort = v => v.toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  const tgGroup = (tg.max || tg.avg) ? `
+      <div class="sp-group">
+        <div class="sp-group-label variabel"><span class="dot"></span> Taschengeld (berechnet)</div>
+        <div class="sp-row"><span class="sp-row-name">🪙 Taschengeld ${escHtml(budgetMonthLabel(budgetMonth))}</span>${tg.min !== tg.max ? `<span class="sp-row-range">${fmtShort(tg.min)}–${fmtShort(tg.max)} €</span>` : '<span></span>'}<span class="sp-row-amt income">+${fmtEuro(tg.avg)}</span></div>
+      </div>` : '';
+
+  if (!fixedAll.length && !varAll.length && !sonderAll.length && !tgGroup) {
     el.innerHTML = '<div class="empty-state">Noch keine wiederkehrenden Posten im Budget-Tab angelegt.</div>';
     return;
   }
@@ -368,6 +392,7 @@ function renderSparplanIncomeExpense() {
   el.innerHTML =
     group('Garantiert', 'garant', fixedAll, 'Summe garantiert', fixedNet) +
     group('Variabel (Ø)', 'variabel', varAll, 'Saldo Ø', varNetAvg) +
+    tgGroup +
     group('Sonderfälle', 'sonder', sonderAll, 'Saldo / Jahr', sonderNet) +
     `<div class="sp-source-note">↺ Einnahmen &amp; Ausgaben werden 1:1 aus dem Budget-Tab übernommen. Sicherheit (fest/variabel) und Einbeziehung von Sonderfällen lassen sich dort beim Bearbeiten eines Postens einstellen.</div>`;
 }
@@ -389,13 +414,9 @@ function renderSparplanGoals(rates) {
     opt:    sparplanerETAs(rates.opt),
   };
 
-  // Zeilen in der TATSÄCHLICHEN Verteil-Reihenfolge (Priorität, darin die
-  // manuelle Reihenfolge) — vorher zeigte die Nummer die Array-Reihenfolge,
-  // verteilt wurde aber nach Priorität. ▲▼ verschieben deshalb nur noch
-  // innerhalb derselben Priorität; zwischen Prioritäten entscheidet die
-  // Priorität selbst (änderbar beim Bearbeiten des Ziels).
+  // Zeilen in der Verteil-Reihenfolge = selbst festgelegte Reihenfolge;
+  // ▲▼ verschieben frei, unabhängig von der Priorität.
   const order = sparplanerAllocationOrder();
-  const prioOf = idx => activeGoals[idx].priority || 'need';
   const rows = order.map((i, pos) => {
     const g = activeGoals[i];
     const pct = g.target > 0 ? Math.min(100, Math.round((g.current / g.target) * 100)) : 0;
@@ -429,15 +450,14 @@ function renderSparplanGoals(rates) {
       }
     }
 
-    const upIdx   = pos > 0 && prioOf(order[pos - 1]) === prioOf(i) ? order[pos - 1] : null;
-    const downIdx = pos < order.length - 1 && prioOf(order[pos + 1]) === prioOf(i) ? order[pos + 1] : null;
-    const lockTitle = 'Zwischen verschiedenen Prioritäten entscheidet die Priorität — änderbar beim Bearbeiten des Ziels';
+    const upIdx   = pos > 0 ? order[pos - 1] : null;
+    const downIdx = pos < order.length - 1 ? order[pos + 1] : null;
     return `
       <div class="sp-goal-row">
         <div class="sp-goal-order">
-          <button class="sp-order-btn" data-a="${i}" data-b="${upIdx ?? ''}" ${upIdx === null ? `disabled title="${lockTitle}"` : 'title="Nach oben"'}>▲</button>
+          <button class="sp-order-btn" data-a="${i}" data-b="${upIdx ?? ''}" ${upIdx === null ? 'disabled' : ''} title="Wichtiger (nach oben)" aria-label="${escHtml(g.name)} nach oben">▲</button>
           <span class="sp-goal-prio">${pos + 1}</span>
-          <button class="sp-order-btn" data-a="${i}" data-b="${downIdx ?? ''}" ${downIdx === null ? `disabled title="${lockTitle}"` : 'title="Nach unten"'}>▼</button>
+          <button class="sp-order-btn" data-a="${i}" data-b="${downIdx ?? ''}" ${downIdx === null ? 'disabled' : ''} title="Weniger wichtig (nach unten)" aria-label="${escHtml(g.name)} nach unten">▼</button>
         </div>
         <div class="sp-goal-name">
           <div class="sp-goal-name-top">${emoji} ${escHtml(g.name)} ${priorityBadge(g.priority || 'need')} <span class="sp-goal-target">${fmtEuro(g.target)}</span></div>
@@ -455,9 +475,9 @@ function renderSparplanGoals(rates) {
   }).join('');
 
   el.innerHTML = `
-    <div class="sp-goal-table-head"><span></span><span>Ziel</span><span>Fortschritt</span><span>ETA (G/R/O)</span><span>Vergleich</span></div>
+    <div class="sp-goal-table-head"><span></span><span>Ziel &amp; Fortschritt</span><span>ETA (G/R/O)</span><span>Vergleich</span></div>
     ${rows}
-    <div class="sp-source-note">↕ Reihenfolge = Verteilung des Sparbetrags: zuerst nach Priorität (Muss → Brauche → Möchte), innerhalb einer Priorität per ▲ ▼. Sobald ein Ziel erreicht ist, fließt der volle Sparbetrag automatisch ins nächste.</div>`;
+    <div class="sp-source-note">↕ Reihenfolge = Verteilung des Sparbetrags: Du legst sie mit ▲ ▼ selbst fest, ganz oben steht, was dir am wichtigsten ist. Die Priorität (Muss/Brauche/Möchte) ist nur eine Markierung. Sobald ein Ziel erreicht ist, fließt der volle Sparbetrag automatisch ins nächste.</div>`;
 
   el.querySelectorAll('.sp-order-btn').forEach(btn => {
     btn.addEventListener('click', () => {

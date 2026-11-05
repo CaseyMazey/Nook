@@ -36,3 +36,6 @@ Müll-Wasser.xlsx
 *.xcf
 # Persönliche Nook-Datensicherungen — dürfen nie öffentlich werden
 Backups/
+
+# Node-Tests der Web-App (node --test tests/schedule.test.js), nicht Teil der App
+tests/

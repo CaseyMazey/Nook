@@ -670,16 +670,22 @@ function renderMiniCal() {
 // PROGRESS BAR (Tagesfortschritt durch Blöcke)
 // =========================
 
+// Tagesrahmen aus dem Stundenplan des angezeigten Tages (js/schedule.js);
+// an anderen Tagen als heute bzw. an freien Tagen bleibt der Balken leer.
 function renderBlocksProgress() {
   const bar   = document.getElementById('blocks-progress-bar');
   const label = document.getElementById('blocks-progress-label');
-  if (!bar || !blocks.length) return;
+  if (!bar) return;
+  const plan = scheduleSegmentsForDate(state.currentDate);
+  const wrap = document.getElementById('blocks-progress-wrap');
+  if (wrap) wrap.classList.toggle('hidden', plan.off || !isToday(state.currentDate));
+  if (plan.off || !isToday(state.currentDate)) return;
 
   const now = new Date();
   const hhmm = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 
-  const dayStart = blocks[0]?.start || '07:00';
-  const dayEnd   = blocks[blocks.length-1]?.end || '17:00';
+  const dayStart = plan.start;
+  const dayEnd   = plan.end;
 
   const toMins = t => { const [h,m] = t.split(':').map(Number); return h*60+m; };
   const startM = toMins(dayStart);
@@ -693,7 +699,7 @@ function renderBlocksProgress() {
   }
   if (nowM >= endM) {
     bar.style.setProperty('--progress', '100%');
-    label.textContent = 'Schultag beendet';
+    label.textContent = 'Feierabend';
     return;
   }
 
@@ -712,33 +718,70 @@ function renderBlocksProgress() {
 // BLOCKS
 // =========================
 
-function saveBlocks() { DB.set('blocks', blocks); }
-
+// Zeitleiste des angezeigten Tages aus dem Stundenplan (js/schedule.js):
+// Unterricht, Pausen, Blöcke und nicht zugewiesene Arbeitszeit. Aufgaben
+// hängen wie bisher per task.blocks an den Block-IDs.
 let blocksActiveScrolledOnce = false;
 function renderBlocks() {
   const row = document.getElementById('blocks-row');
   row.innerHTML = '';
-  const activeBlock = getCurrentBlock();
-  blocks.forEach(block => {
-    const isActive = activeBlock && activeBlock.id === block.id && isToday(state.currentDate);
-    const slot = document.createElement('div');
-    slot.className = 'block-slot' + (block.free ? ' free' : '') + (isActive ? ' active-block' : '');
-    const time  = document.createElement('div'); time.className = 'block-time'; time.textContent = `${block.start} – ${block.end}`;
-    const label = document.createElement('div'); label.className = 'block-label';
+  const plan = scheduleSegmentsForDate(state.currentDate);
+  const nowM = (() => { const n = new Date(); return n.getHours() * 60 + n.getMinutes(); })();
+  const viewingToday = isToday(state.currentDate);
+  const isNow = seg => viewingToday && nowM >= scheduleToMin(seg.start) && nowM < scheduleToMin(seg.end);
+  const isPast = seg => viewingToday && nowM >= scheduleToMin(seg.end);
 
-    if (isActive) {
+  if (plan.off) {
+    const slot = document.createElement('div');
+    slot.className = 'block-slot seg-off';
+    slot.innerHTML = `<div class="block-time">${scheduleEsc(SCHEDULE_DAY_NAMES[state.currentDate.getDay()])}</div><div class="block-label"><span>Freier Tag</span></div>`;
+    row.appendChild(slot);
+  }
+
+  plan.segments.forEach(seg => {
+    const active = isNow(seg);
+    // Pausen: schmale Markierung statt voller Karte
+    if (seg.type === 'break') {
+      const br = document.createElement('div');
+      br.className = 'block-break' + (active ? ' active-break' : '') + (isPast(seg) ? ' seg-past' : '');
+      br.title = `${seg.label} ${seg.start}–${seg.end}`;
+      br.innerHTML = `<span class="block-break-icon" aria-hidden="true">☕</span><span class="block-break-label">${scheduleEsc(seg.label)}</span><span class="block-break-time">${seg.start}–${seg.end}</span>`;
+      row.appendChild(br);
+      return;
+    }
+    const slot = document.createElement('div');
+    const kindCls = seg.type === 'block' ? ' seg-kind-' + seg.kind : '';
+    slot.className = `block-slot seg-${seg.type}${kindCls}` + (seg.type === 'unassigned' || seg.kind === 'free' ? ' free' : '') + (active ? ' active-block' : '') + (isPast(seg) ? ' seg-past' : '');
+    const time  = document.createElement('div'); time.className = 'block-time'; time.textContent = `${seg.start} – ${seg.end}`;
+    const label = document.createElement('div'); label.className = 'block-label';
+    if (active) {
       const t = document.createElement('span'); t.className = 'active-tag'; t.textContent = 'JETZT';
       label.appendChild(t);
     }
-    const nameSpan = document.createElement('span'); nameSpan.textContent = block.label;
+    const nameSpan = document.createElement('span'); nameSpan.textContent = seg.label;
     label.appendChild(nameSpan);
+    slot.append(time, label);
 
-    if (block.free) { const t = document.createElement('span'); t.className = 'free-tag'; t.textContent = 'frei'; label.appendChild(t); }
+    const sub = [];
+    if (seg.type === 'lesson') { if (seg.teacher) sub.push(seg.teacher); if (seg.room) sub.push('Raum ' + seg.room); }
+    if (seg.type === 'block' && seg.project && seg.project !== seg.label) sub.push('🌳 ' + seg.project);
+    if (seg.type === 'block' && seg.kind !== 'project' && seg.kind !== 'other' && seg.label !== SCHEDULE_BLOCK_KINDS[seg.kind].label) sub.push(SCHEDULE_BLOCK_KINDS[seg.kind].label);
+    if (sub.length) { const s = document.createElement('div'); s.className = 'block-sub'; s.textContent = sub.join(' · '); slot.appendChild(s); }
+    if (seg.type === 'lesson' && seg.notes) { const n = document.createElement('div'); n.className = 'block-sub block-notes'; n.textContent = seg.notes; slot.appendChild(n); }
 
-    const ul = document.createElement('ul'); ul.className = 'block-tasks'; ul.id = `block-${block.id}`;
-    slot.append(time, label, ul);
+    if (seg.type === 'block') {
+      const ul = document.createElement('ul'); ul.className = 'block-tasks'; ul.dataset.blockId = String(seg.id);
+      slot.appendChild(ul);
+    }
     row.appendChild(slot);
   });
+
+  if (!plan.off) {
+    const end = document.createElement('div');
+    end.className = 'block-break block-end' + (viewingToday && nowM >= scheduleToMin(plan.end) ? ' active-break' : '');
+    end.innerHTML = `<span class="block-break-icon" aria-hidden="true">🌙</span><span class="block-break-label">Feierabend</span><span class="block-break-time">ab ${plan.end}</span>`;
+    row.appendChild(end);
+  }
 
   const dayTasks = getTasksForBlockView();
   dayTasks.forEach(task => {
@@ -747,7 +790,8 @@ function renderBlocks() {
                    : (task.block != null ? [task.block] : []);
     const status = taskStatusOf(task);
     blockIds.forEach(bid => {
-      const ul = document.getElementById(`block-${bid}`); if (!ul) return;
+      // Ein Block kann durch Pausen in mehrere Teile zerfallen — Aufgaben nur im ersten zeigen
+      const ul = row.querySelector(`.block-tasks[data-block-id="${CSS.escape(String(bid))}"]`); if (!ul) return;
       const li = document.createElement('li');
       li.className = 'block-task-status-' + status + (status === 'completed' ? ' block-task-done' : '');
       li.textContent = `${TASK_STATUS[status].icon} ${task.title}`;
@@ -762,7 +806,7 @@ function renderBlocks() {
   // Bearbeiten einer Aufgabe) die Scrollposition des Nutzers nicht kappen.
   if (!blocksActiveScrolledOnce && mehrPhoneQuery.matches) {
     blocksActiveScrolledOnce = true;
-    row.querySelector('.block-slot.active-block')?.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
+    row.querySelector('.block-slot.active-block, .block-break.active-break')?.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
   }
 
   renderBlocksProgress();
@@ -957,11 +1001,31 @@ function buildTaskItem(task) {
   const _blockIds = Array.isArray(task.blocks) ? task.blocks
                   : (task.block != null ? [task.block] : []);
   const badge = document.createElement('span'); badge.className = 'task-block-badge';
-  badge.textContent = _blockIds.length ? _blockIds.map(b => `B${b}`).join(' ') : '–';
+  badge.textContent = _blockIds.length ? taskBlockBadgeText(_blockIds) : '–';
+  if (_blockIds.length) badge.title = taskBlockBadgeTitle(_blockIds);
   const del   = document.createElement('button'); del.className = 'task-delete'; del.textContent = '✕';
   del.addEventListener('click', () => { tasks = tasks.filter(t => t.id !== task.id); saveTasks(); renderTasks(); renderBlocks(); });
   li.append(statusCtrl, dot, info, badge, del);
   return li;
+}
+
+// Block-Abzeichen einer Aufgabe: Name des Blocks (Stundenplan), gekürzt.
+// IDs von Blöcken, die es an keinem Tag mehr gibt, werden ausgelassen
+// (die Zuordnung bleibt gespeichert, falls der Block zurückkommt).
+function taskBlockBadgeText(ids) {
+  const names = ids.map(id => scheduleFindBlock(id, state.currentDate)).filter(Boolean).map(b => {
+    const name = scheduleBlockDisplayName(b);
+    return name.length > 14 ? name.slice(0, 13) + '…' : name;
+  });
+  return names.length ? names.join(' · ') : '–';
+}
+function taskBlockBadgeTitle(ids) {
+  return ids.map(id => {
+    const b = scheduleFindBlock(id, state.currentDate);
+    if (!b) return 'Block ' + id;
+    const days = scheduleBlockWeekdays(id);
+    return scheduleBlockDisplayName(b) + (days.length ? ` (${days.join(', ')})` : '');
+  }).join('\n');
 }
 
 // =========================
@@ -990,7 +1054,7 @@ function buildMobileTaskItem(task) {
   const _blockIds = Array.isArray(task.blocks) ? task.blocks : (task.block != null ? [task.block] : []);
   if (_blockIds.length) {
     const badge = document.createElement('span'); badge.className = 'tasks-mobile-item-badge';
-    badge.textContent = _blockIds.map(b => `B${b}`).join(' ');
+    badge.textContent = taskBlockBadgeText(_blockIds);
     info.appendChild(badge);
   }
   info.addEventListener('click', () => openTaskModal(task));
@@ -1053,23 +1117,42 @@ function openTaskModal(existingTask = null) {
   document.getElementById('modal-task-input').value = existingTask ? existingTask.title : '';
   document.getElementById('modal-task-notes').value = existingTask?.notes || '';
   // Determine pre-selected block IDs: migrate legacy task.block → task.blocks
+  // Blöcke des angezeigten Tages (Stundenplan, js/schedule.js). Neue Aufgabe:
+  // der gerade laufende Block ist vorausgewählt.
+  const dayBlocks = scheduleBlocksForDate(state.currentDate);
+  const nowM = new Date().getHours() * 60 + new Date().getMinutes();
+  const runningBlock = isToday(state.currentDate)
+    ? dayBlocks.find(b => nowM >= scheduleToMin(b.start) && nowM < scheduleToMin(b.end)) : null;
   const _preSelected = existingTask
     ? (Array.isArray(existingTask.blocks) ? existingTask.blocks
        : existingTask.block != null ? [existingTask.block] : [])
-    : [2]; // default: Block 2
+    : (runningBlock ? [runningBlock.id] : []);
 
   const chipsWrap = document.getElementById('modal-block-chips');
   chipsWrap.innerHTML = '';
-  blocks.forEach(b => {
+  const addChip = (id, text, title) => {
     const chip = document.createElement('button');
     chip.type = 'button';
-    chip.className = 'task-chip' + (_preSelected.includes(b.id) ? ' active' : '');
-    chip.dataset.blockId = b.id;
-    chip.textContent = `Block ${b.id}`;
-    chip.title = `${b.label} (${b.start}–${b.end})`;
+    chip.className = 'task-chip' + (_preSelected.includes(id) ? ' active' : '');
+    chip.dataset.blockId = id;
+    chip.textContent = text;
+    chip.title = title;
     chip.addEventListener('click', () => chip.classList.toggle('active'));
     chipsWrap.appendChild(chip);
+  };
+  dayBlocks.slice().sort((a, b) => (scheduleToMin(a.start) ?? 0) - (scheduleToMin(b.start) ?? 0))
+    .forEach(b => addChip(b.id, scheduleBlockDisplayName(b), `${b.start}–${b.end}`));
+  // Zuordnungen zu Blöcken anderer Tage bleiben erhalten und abwählbar
+  _preSelected.filter(id => !dayBlocks.some(b => b.id === id)).forEach(id => {
+    const b = scheduleFindBlock(id);
+    const days = scheduleBlockWeekdays(id);
+    addChip(id, (b ? scheduleBlockDisplayName(b) : 'Block ' + id) + (days.length ? ` (${days.join(', ')})` : ''), 'Block an einem anderen Tag');
   });
+  if (!chipsWrap.children.length) {
+    const hint = document.createElement('span'); hint.className = 'task-chip-empty';
+    hint.textContent = 'An diesem Tag gibt es keine Blöcke.';
+    chipsWrap.appendChild(hint);
+  }
   document.querySelectorAll('.prio-btn').forEach(b => b.classList.toggle('active', Number(b.dataset.prio) === state.selectedPriority));
   document.querySelectorAll('#status-picker .status-btn').forEach(b => b.classList.toggle('active', b.dataset.status === state.selectedStatus));
   taskModal.open();

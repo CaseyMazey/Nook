@@ -534,11 +534,12 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
   padding: 14px 18px 10px;
   border-bottom: 1px solid var(--b-garden-line);
   background: var(--b-garden-header-bg);
 }
-.b-garden-title-block { display: flex; align-items: center; gap: 7px; }
+.b-garden-title-block { display: flex; align-items: center; gap: 7px; flex-shrink: 0; }
 .b-garden-emoji { font-size: calc(16px * var(--core-font-scale)); line-height: 1; }
 .b-garden-title { font-size: calc(12px * var(--core-font-scale)); font-weight: 700; text-transform: uppercase; letter-spacing: 0.10em; color: var(--b-garden-title); }
 
@@ -558,7 +559,10 @@
   text-overflow: ellipsis;
 }
 .b-garden-select-btn:hover { background: var(--b-garden-chip-bg-hover); }
-.b-garden-select-arrow { opacity: 0.6; font-size: calc(10px * var(--core-font-scale)); }
+/* Langer Zielname: Etikett schrumpft und kürzt mit „…“, Pfeil bleibt sichtbar */
+.b-garden-select-btn { min-width: 0; }
+.b-garden-select-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.b-garden-select-arrow { opacity: 0.6; font-size: calc(10px * var(--core-font-scale)); flex-shrink: 0; }
 
 /* Emoji in Sparzielliste */
 .budget-goal-emoji { font-size: calc(15px * var(--core-font-scale)); line-height: 1; vertical-align: middle; margin-right: 2px; }
@@ -596,6 +600,7 @@
 
 .b-garden-plant {
   flex: 1;
+  min-width: 0; /* sonst drücken Bild/langer Name die Spalte über den Kartenrand */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -613,7 +618,7 @@
 .b-garden-svg { width: 80px; height: 80px; }
 .b-garden-svg svg { width: 100%; height: 100%; }
 .b-garden-svg-empty { opacity: 0.28; filter: grayscale(0.4); }
-.b-garden-plant-name { font-size: calc(12px * var(--core-font-scale)); font-weight: 600; color: var(--b-garden-plant); text-align: center; }
+.b-garden-plant-name { font-size: calc(12px * var(--core-font-scale)); font-weight: 600; color: var(--b-garden-plant); text-align: center; overflow-wrap: anywhere; }
 .b-garden-plant-val  { font-family: var(--mono); font-size: calc(12px * var(--core-font-scale)); font-weight: 600; color: var(--b-garden-plant-val); text-align: center; }
 
 /* Progress */
@@ -861,7 +866,13 @@
 .budget-row-name { font-size: calc(12.5px * var(--core-font-scale)); color: var(--text); }
 .budget-row-sub  { font-size: calc(11px * var(--core-font-scale)); color: var(--text-3); }
 .budget-row-right { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
-.budget-row-amount { font-size: calc(13px * var(--core-font-scale)); font-weight: 600; font-family: var(--font); }
+/* Feste Spalten (Kreis | Betrag | ✎ | ✕), damit Beträge und Kreise in
+   allen Zeilen bündig untereinander stehen — egal wie lang der Betrag
+   ist oder ob ein Knopf fehlt (Platzhalter .budget-row-slot, budget.js). */
+.budget-row-amount { font-size: calc(13px * var(--core-font-scale)); font-weight: 600; font-family: var(--font); min-width: 6.8em; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.budget-row-right > .budget-edit-btn,
+.budget-row-right > .task-delete,
+.budget-row-right > .budget-row-slot { width: 22px; padding-left: 0; padding-right: 0; text-align: center; flex-shrink: 0; }
 
 .b-sum-row {
   display: flex;
@@ -880,7 +891,9 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
-.b-sum-value { font-family: var(--font); font-size: calc(14px * var(--core-font-scale)); font-weight: 400; }
+/* Summe bündig unter der Betragsspalte der Zeilen darüber: ✎ + ✕ (je 22px)
+   + 2 Lücken (5px) = 54px, minus 4px mehr Innenabstand der Summenzeile */
+.b-sum-value { font-family: var(--font); font-size: calc(14px * var(--core-font-scale)); font-weight: 400; margin-right: 50px; font-variant-numeric: tabular-nums; white-space: nowrap; flex-shrink: 0; }
 .b-sum-value.income  { color: var(--b-green); }
 .b-sum-value.expense { color: var(--b-red); }
 
@@ -951,7 +964,7 @@
 
 /* ── Finanzgarten: Auswahl "Pflicht-Posten" vs. "Alle Posten" als
    verfolgter Zielbetrag (nur sichtbar bei optionalen Posten) — budget.js ── */
-.b-garden-track-toggle { display: flex; gap: 4px; }
+.b-garden-track-toggle { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
 .b-garden-track-btn {
   font-size: calc(10px * var(--core-font-scale)); font-weight: 600; color: var(--b-garden-select);
   background: var(--b-garden-chip-bg);
@@ -1622,7 +1635,9 @@
 
 @media (max-width: 720px) {
   .sp-scenarios-grid { grid-template-columns: 1fr; }
-  .sp-goal-table-head, .sp-goal-row { grid-template-columns: 40px 1fr; }
+  /* Spaltenköpfe passen nicht in das zweispaltige Zeilenlayout — überlagerten sich */
+  .sp-goal-table-head { display: none; }
+  .sp-goal-row { grid-template-columns: 40px 1fr; }
   .sp-goal-eta-block, .sp-goal-compare { grid-column: 1 / -1; }
   .sp-plaene-grid { grid-template-columns: 1fr; }
   .sp-wizard-custom-row { grid-template-columns: auto 1fr auto; }
@@ -1845,6 +1860,7 @@
   .budget-row { align-items: flex-start; padding: 9px 14px; gap: 8px; }
   .budget-row-right { padding-top: 1px; }
   .b-sum-row { padding: 10px 14px 12px; }
+  .b-sum-value { margin-right: 54px; } /* hier gleicher Innenabstand wie die Zeilen */
   .budget-edit-btn,
   #view-budget .task-delete { opacity: 1; }
 

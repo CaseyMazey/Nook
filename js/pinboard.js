@@ -14,8 +14,7 @@
 const DESK_STYLE_DESC = {
   standard:  'Freies Textfeld, wie die Schnellnotiz.',
   pinned:    'Bleibt immer ganz oben in der Spalte.',
-  important: 'Auffälliger, mit größerem Titel.',
-  code:      'Für Code und Terminalbefehle.',
+  code:     'Für Code und Terminalbefehle.',
   checklist: 'Kästchen zum Abhaken, mit Fortschritt.',
   quote:     'Ein einzelner, groß gesetzter Satz.',
   berichtsheft: 'Zwei feste Felder: Betrieb und Schule.',
@@ -190,6 +189,24 @@ function deskFoldContentIntoItems(card) {
   if (changed) saveDeskCards();
 })();
 
+// ---- „Wichtig“ ist eine Markierung (card.important), kein eigener Stil ----
+// So lässt es sich mit jedem Stil kombinieren (z.B. wichtige Checkliste).
+// Früher war es der Stil 'important' — der zählt weiterhin als wichtig
+// (falls ein anderes Gerät noch alte Karten liefert) und wird umgestellt.
+function deskCardIsImportant(card) {
+  return !!card.important || card.style === 'important';
+}
+(function migrateDeskImportantStyle() {
+  let changed = false;
+  deskCards.forEach(card => {
+    if (card.style !== 'important') return;
+    card.style = 'standard';
+    card.important = true;
+    changed = true;
+  });
+  if (changed) saveDeskCards();
+})();
+
 // ---- Sortierung: Angepinnt zuerst, sonst nach gespeicherter Reihenfolge ----
 function sortedDeskCards(col) {
   return deskCards
@@ -252,11 +269,12 @@ window.addEventListener('resize', () => {
   });
 });
 
-const DESK_STYLE_ICON = { pinned: '📌 ', important: '⭐ ' };
+const DESK_STYLE_ICON = { pinned: '📌 ' };
 
 function buildDeskCardEl(card) {
   const el = document.createElement('div');
-  el.className = `panel desk-card desk-card--${card.style}` + (card.height ? '' : ' desk-card--auto');
+  const important = deskCardIsImportant(card);
+  el.className = `panel desk-card desk-card--${card.style}` + (important ? ' desk-card--important' : '') + (card.height ? '' : ' desk-card--auto');
   el.dataset.id = card.id;
   if (card.color) {
     applyUserColorVars(el, card.color);
@@ -277,7 +295,7 @@ function buildDeskCardEl(card) {
   titleWrap.appendChild(buildDeskCardGrip(card, el));
   const title = document.createElement('span');
   title.className = 'desk-card-title';
-  title.textContent = (DESK_STYLE_ICON[card.style] || '') + card.title;
+  title.textContent = (DESK_STYLE_ICON[card.style] || '') + (important ? '⭐ ' : '') + card.title;
   title.title = card.title;
   titleWrap.appendChild(title);
   const actions = document.createElement('div');
@@ -335,7 +353,7 @@ function buildDeskCardEl(card) {
   // Resize-Handle — Kartenhöhe frei ziehbar, wird persistiert
   const handle = document.createElement('div');
   handle.className = 'desk-resize-handle';
-  handle.title = 'Höhe ziehen, Doppelklick stellt sie wieder automatisch ein';
+  handle.title = 'Höhe ziehen (am Handy erst kurz gedrückt halten), Doppelklick stellt sie wieder automatisch ein';
   handle.tabIndex = 0;
   handle.setAttribute('role', 'separator');
   handle.setAttribute('aria-orientation', 'horizontal');
@@ -406,7 +424,7 @@ function buildDeskCardBody(body, card) {
       body.appendChild(wrap);
       break;
     }
-    default: // standard, pinned, important, quote — alle ein freies Textfeld
+    default: // standard, pinned, quote (und alter Stil important) — alle ein freies Textfeld
       body.appendChild(deskTextField(card, 'content', 'desk-textarea', 'Notizen...'));
   }
 }
@@ -487,15 +505,19 @@ function buildDeskChecklist(body, card) {
   body.appendChild(input);
 }
 
+// Mehrzeiliges Feld statt einzeiligem <input>: lange Einträge bleiben beim
+// Bearbeiten ganz sichtbar und umbrechen wie im angezeigten Text.
+// Enter speichert weiterhin, Zeilenumbrüche werden zu Leerzeichen.
 function startDeskItemEdit(span, card, item) {
-  const input = document.createElement('input');
-  input.type = 'text'; input.className = 'desk-item-edit'; input.value = item.text;
+  const input = document.createElement('textarea');
+  input.className = 'desk-item-edit'; input.value = item.text; input.rows = 1;
   input.setAttribute('aria-label', 'Eintrag bearbeiten');
+  input.addEventListener('input', () => deskAutosize(input));
   let finished = false;
   const finish = save => {
     if (finished) return;
     finished = true;
-    const text = input.value.trim();
+    const text = input.value.replace(/\s*\n\s*/g, ' ').trim();
     if (save && text && text !== item.text) { item.text = text; saveDeskCards(); }
     renderDesk();
     const cardEl = document.querySelector(`.desk-card[data-id="${CSS.escape(card.id)}"]`);
@@ -507,6 +529,7 @@ function startDeskItemEdit(span, card, item) {
   });
   input.addEventListener('blur', () => finish(true));
   span.replaceWith(input);
+  deskAutosize(input);
   input.focus(); input.select();
 }
 
@@ -659,6 +682,7 @@ function buildDeskCardGrip(card, cardEl) {
 }
 
 // ---- Kartenhöhe per Resize-Handle ziehen — wird in deskCards.height persistiert ----
+const DESK_RESIZE_HOLD_MS = 350;
 function wireDeskResize(handle, card, cardEl) {
   let startY = 0, startH = 0, moved = false;
   function move(e) {
@@ -673,10 +697,11 @@ function wireDeskResize(handle, card, cardEl) {
     cardEl.style.height = Math.max(90, startH + (y - startY)) + 'px';
   }
   function up() {
+    clearTimeout(holdTimer);
     handle.classList.remove('resizing');
     document.removeEventListener('mousemove', move);
     document.removeEventListener('mouseup', up);
-    document.removeEventListener('touchmove', move);
+    document.removeEventListener('touchmove', touchMove);
     document.removeEventListener('touchend', up);
     document.removeEventListener('touchcancel', up);
     const h = parseInt(cardEl.style.height, 10);
@@ -693,9 +718,31 @@ function wireDeskResize(handle, card, cardEl) {
     document.addEventListener('mousemove', move);
     document.addEventListener('mouseup', up);
   });
+  // Touch: Der Griff liegt genau dort, wo man beim Scrollen über die
+  // Pinnwand wischt. Deshalb zieht er erst nach kurzem Gedrückthalten
+  // (DESK_RESIZE_HOLD_MS) — bewegt sich der Finger vorher, ist es Scrollen
+  // und die Höhe bleibt unverändert.
+  let holdTimer = null, armed = false, touchStartY = 0;
+  function touchMove(e) {
+    const y = e.touches[0].clientY;
+    if (!armed) {
+      if (Math.abs(y - touchStartY) > 8) up(); // Scrollen, kein Ziehen
+      return;
+    }
+    e.preventDefault(); // gehalten: Seite bleibt stehen, Karte wird gezogen
+    move(e);
+  }
   handle.addEventListener('touchstart', e => {
-    beginDrag(e.touches[0].clientY);
-    document.addEventListener('touchmove', move, { passive: false });
+    if (e.touches.length > 1) return;
+    touchStartY = e.touches[0].clientY;
+    armed = false;
+    clearTimeout(holdTimer);
+    holdTimer = setTimeout(() => {
+      armed = true;
+      beginDrag(touchStartY);
+      if (navigator.vibrate) navigator.vibrate(12);
+    }, DESK_RESIZE_HOLD_MS);
+    document.addEventListener('touchmove', touchMove, { passive: false });
     document.addEventListener('touchend', up);
     // Ohne touchcancel bliebe die Karte im "resizing"-Zustand hängen, falls
     // die Geste unterbrochen wird (System-Geste, eingehender Anruf, o.ä.).
@@ -741,6 +788,14 @@ function showDeskUndo(message, restore) {
 let editingDeskCardId = null;
 let selectedDeskStyle = 'standard';
 let selectedDeskColumn = 0;
+let selectedDeskImportant = false;
+function setDeskImportantToggle(on) {
+  selectedDeskImportant = on;
+  const btn = document.getElementById('desk-modal-important');
+  btn.classList.toggle('active', on);
+  btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+}
+document.getElementById('desk-modal-important').addEventListener('click', () => setDeskImportantToggle(!selectedDeskImportant));
 let deskColorShown = null; // Farbe beim Öffnen: Karten ohne Farbe behalten das, bis sie geändert wird
 const deskColorWidget = initColorPickerWidget(
   { pickerId: 'desk-modal-color', previewId: 'desk-modal-color-preview', addBtnId: 'desk-modal-color-add-btn', libraryId: 'desk-modal-color-library' },
@@ -762,8 +817,9 @@ function openDeskCardModal(cardId) {
   document.getElementById('desk-modal-save').textContent = card ? 'Speichern' : 'Erstellen';
   document.getElementById('desk-modal-delete-btn').style.display = card ? 'inline-flex' : 'none';
 
-  selectedDeskStyle = card ? card.style : 'standard';
+  selectedDeskStyle = card && card.style !== 'important' ? card.style : 'standard';
   selectedDeskColumn = card ? card.column : 0;
+  setDeskImportantToggle(card ? deskCardIsImportant(card) : false);
 
   // Berichtsheft hat einen festen Aufbau — kein Stil-Wechsel möglich, weder
   // weg von ihm noch zu ihm hin (nur als neue Karte wählbar).
@@ -812,7 +868,7 @@ function nextDeskOrder(col) {
 // — die Pinnwand legt ihre Karte selbst an, im selben Format wie das Modal.
 function addDeskCardFromText(title, content) {
   const card = {
-    id: crypto.randomUUID(), title: title || 'Notiz', style: 'standard', color: null,
+    id: crypto.randomUUID(), title: title || 'Notiz', style: 'standard', color: null, important: false,
     column: 0, order: nextDeskOrder(0), height: null,
     content: content || '', items: [], hideCompleted: false, betrieb: '', schule: '',
   };
@@ -835,6 +891,7 @@ document.getElementById('desk-modal-save').addEventListener('click', () => {
   if (editingDeskCardId) {
     const card = deskCards.find(c => c.id === editingDeskCardId); if (!card) return;
     card.title = title;
+    card.important = selectedDeskImportant;
     if (card.color || color !== deskColorShown) card.color = color;
     if (card.style !== 'berichtsheft') {
       if (selectedDeskStyle === 'checklist' && card.style !== 'checklist') deskFoldContentIntoItems(card);
@@ -847,7 +904,7 @@ document.getElementById('desk-modal-save').addEventListener('click', () => {
     }
   } else {
     deskCards.push({
-      id: crypto.randomUUID(), title, style: selectedDeskStyle, color,
+      id: crypto.randomUUID(), title, style: selectedDeskStyle, color, important: selectedDeskImportant,
       column: selectedDeskColumn, order: nextDeskOrder(selectedDeskColumn), height: null,
       content: '', items: [], hideCompleted: false, betrieb: '', schule: '',
     });

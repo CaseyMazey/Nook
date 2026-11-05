@@ -10,7 +10,7 @@ The UI language is German; keep new UI strings, comments, and variable names in 
 
 ## Running / testing
 
-No install, build, or lint commands exist for the web app, and no automated tests for it (the desktop app has its own tests, see "Desktop app"). To work on the app, open `index.html` in a browser (or serve the folder with any static file server). Verify changes by opening the relevant tab in a browser and exercising it manually — there is no automated test suite for the web app.
+No install, build, or lint commands exist for the web app. The only automated web-app tests cover the pure schedule calculation: `node --test tests/schedule.test.js` (Node 18+, no dependencies; `tests/` is excluded from deploys). The desktop app has its own tests, see "Desktop app". To work on the app, open `index.html` in a browser (or serve the folder with any static file server). Verify changes by opening the relevant tab in a browser and exercising it manually — there is no automated test suite for the web app.
 
 ## Architecture
 

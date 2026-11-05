@@ -12,17 +12,19 @@ Dateien: `js/pinboard.js`, `css/pinboard.css`, `css/pinboard-rpg.css`.
 
 - 3 unabhängige Spalten (Masonry-Prinzip), jede Karte kennt ihre Spalte und Reihenfolge.
 - Angepinnte Karten stehen immer oben in ihrer Spalte.
-- Karten ohne feste Höhe wachsen mit dem Text. Eine gezogene Höhe bleibt, bis sie per Doppelklick auf den Griff oder mit Entf zurückgesetzt wird.
+- Karten ohne feste Höhe wachsen mit dem Text. Eine gezogene Höhe bleibt, bis sie per Doppelklick auf den Griff oder mit Entf zurückgesetzt wird. Am Handy zieht der Griff erst nach kurzem Gedrückthalten, normales Wischen scrollt.
 - Verschieben: Griff ziehen oder Pfeiltasten auf dem Griff. Die Spalte lässt sich auch im Karten-Dialog wählen.
 
 ## Kartenstile
 
 | Stil | Inhalt |
 |---|---|
-| Standard, Angepinnt, Wichtig, Zitat | freies Textfeld (`content`) |
+| Standard, Angepinnt, Zitat | freies Textfeld (`content`) |
 | Code | Textfeld in Code-Schrift mit Kopieren-Knopf (`content`) |
 | Checkliste | Einträge (`items`) mit Abhaken, Bearbeiten, Sortieren, Fortschritt |
 | Berichtsheft | zwei feste Felder (`betrieb`, `schule`), nur als neue Karte wählbar, kein Stilwechsel |
+
+„Wichtig“ ist kein Stil, sondern eine Markierung (`important: true`), die sich mit jedem Stil kombinieren lässt (⭐ im Titel, größerer Titel). Alte Karten mit dem früheren Stil `important` werden beim Laden auf Standard + Markierung umgestellt.
 
 Ein Stilwechsel zwischen Text und Checkliste wandelt den Inhalt um (Zeilen ↔ Einträge, erledigte Einträge als `☑`). Es bleibt nie Inhalt unsichtbar in einer Karte liegen.
 

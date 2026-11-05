@@ -10,7 +10,7 @@ function renderSettings(){
   renderStartViewSettings();
   renderThemeSettings();
   renderDisplaySettings();
-  renderBlockSettings();
+  renderScheduleSettings();
   renderWeatherSettings();
   renderColorSettings();
   renderTabVisibilitySettings();
@@ -500,15 +500,12 @@ function ensureBlockTimePickerPanel() {
 
   panel.querySelector('.bs-picker-ok').addEventListener('click', () => {
     if (!_bsTimePickerTarget) return;
-    const { input, block, key } = _bsTimePickerTarget;
+    const { input } = _bsTimePickerTarget;
     const hh = readBsWheelIndex(hourWheel);
     const mm = readBsWheelIndex(minuteWheel);
-    const value = String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
-    input.value = value;
-    block[key] = value;
-    saveBlocks();
-    validateBlockSettings();
-    if (currentView === 'today') renderBlocks();
+    input.value = String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
+    // Übernehmen wie eine Eingabe — das Feld (Stundenplan-Editor) speichert selbst
+    input.dispatchEvent(new Event('change', { bubbles: true }));
     closeBlockTimePicker();
   });
   panel.querySelector('.bs-picker-cancel').addEventListener('click', () => closeBlockTimePicker());
@@ -612,225 +609,9 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeBlockTimePicker(); });
 
-// ── Drag & Drop zum Sortieren der Unterrichtsblöcke ──────────────────────
-// Pointer Events statt der nativen HTML5-Drag&Drop-API, weil diese auf
-// Touch nicht funktioniert (dasselbe Grundprinzip wie beim bestehenden
-// Finanzgarten-Drag in js/budget-analysis.js: Ziehen startet ausschließlich
-// über einen kleinen Handle, mit Schwellwert, damit ein normaler Klick
-// nicht versehentlich als Drag gewertet wird).
-//
-// WICHTIG — vorherige Fassung war komplett funktionsunfähig: pointermove/
-// pointerup waren auf dem HANDLE registriert, kombiniert mit
-// handle.setPointerCapture(). Sobald der erste Reorder-Schritt per
-// list.insertBefore(row, ...) die gezogene Zeile (und damit den Handle als
-// ihr Kind) im DOM verschob, feuerte Chromium sofort "lostpointercapture"
-// und lieferte dem Handle danach keinerlei weitere pointermove/pointerup-
-// Events mehr aus — bestätigt per echtem Playwright/Chromium-Trace: nach
-// exakt einem insertBefore kam "lostpointercapture" und der Drag "hing"
-// unwiderruflich fest (genau das vom Nutzer beschriebene "funktioniert
-// überhaupt nicht"). Der Finanzgarten-Drag hat dieses Problem nie, weil er
-// pointermove/pointerup von Anfang an auf document registriert (siehe
-// makeGeldflussDraggable) und gar kein setPointerCapture verwendet — exakt
-// dieses Muster wird hier übernommen: document-Listener statt Handle-
-// Listener, kein setPointerCapture. Reihenfolge wird weiterhin direkt aus
-// der DOM-Reihenfolge nach dem Loslassen ins bestehende blocks-Array
-// übernommen — keine separate blockOrder-Struktur nötig, da blocks bereits
-// als geordnete Liste gespeichert wird.
-function initBlockDragHandle(handle, row, block) {
-  const DRAG_THRESHOLD = 4;
-
-  handle.addEventListener('pointerdown', e => {
-    if (e.button > 0) return; // nur primäre Taste/Touch/Pen
-    e.preventDefault();
-    const list = document.getElementById('blocks-settings-list');
-    const startY = e.clientY;
-    let dragging = false;
-
-    function onMove(ev) {
-      if (!dragging) {
-        if (Math.abs(ev.clientY - startY) < DRAG_THRESHOLD) return;
-        dragging = true;
-        row.classList.add('bs-dragging');
-      }
-      // Verhindert auf Touch, dass die Settings-Seite während des Ziehens
-      // gleichzeitig nativ mitscrollt (Maus/Pen scrollen dadurch ohnehin
-      // nicht — e.cancelable schützt gegen evtl. passive Listener).
-      if (ev.cancelable) ev.preventDefault();
-      const y = ev.clientY;
-      for (const r of list.children) {
-        if (r === row) continue;
-        const rect = r.getBoundingClientRect();
-        if (y >= rect.top && y <= rect.bottom) {
-          const before = y < rect.top + rect.height / 2;
-          list.insertBefore(row, before ? r : r.nextSibling);
-          break;
-        }
-      }
-    }
-    function onUp() {
-      document.removeEventListener('pointermove', onMove);
-      document.removeEventListener('pointerup', onUp);
-      document.removeEventListener('pointercancel', onUp);
-      if (!dragging) return;
-      row.classList.remove('bs-dragging');
-      // Neue Reihenfolge aus der tatsächlichen DOM-Reihenfolge lesen (per
-      // stabiler block-id, nicht per Index) und ins Datenmodell übernehmen.
-      const newOrder = Array.from(list.children)
-        .map(r => blocks.find(b => String(b.id) === r.dataset.blockId))
-        .filter(Boolean);
-      blocks.splice(0, blocks.length, ...newOrder);
-      saveBlocks();
-      renderBlockSettings();
-      if (currentView === 'today') renderBlocks();
-    }
-    document.addEventListener('pointermove', onMove);
-    document.addEventListener('pointerup', onUp);
-    document.addEventListener('pointercancel', onUp);
-  });
-
-  // Optionale Tastaturbedienung: fokussierter Handle + Pfeiltasten
-  // vertauscht mit dem Nachbarblock. Sekundär zum Drag & Drop, aber ohne
-  // nennenswerten Zusatzaufwand über dieselbe Speicherlogik umsetzbar.
-  handle.addEventListener('keydown', e => {
-    if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
-    e.preventDefault();
-    const idx = blocks.indexOf(block);
-    const swapWith = e.key === 'ArrowUp' ? idx - 1 : idx + 1;
-    if (idx === -1 || swapWith < 0 || swapWith >= blocks.length) return;
-    [blocks[idx], blocks[swapWith]] = [blocks[swapWith], blocks[idx]];
-    saveBlocks();
-    renderBlockSettings();
-    if (currentView === 'today') renderBlocks();
-    requestAnimationFrame(() => {
-      const newHandle = document.querySelector(`.block-settings-row[data-block-id="${block.id}"] .bs-drag-handle`);
-      if (newHandle) newHandle.focus();
-    });
-  });
-}
-
-function renderBlockSettings(){
-  const list = document.getElementById('blocks-settings-list'); list.innerHTML = '';
-  blocks.forEach(block => {
-    const row = document.createElement('div'); row.className = 'block-settings-row';
-    row.dataset.blockId = String(block.id);
-    row.innerHTML = `
-      <span class="bs-drag-handle" tabindex="0" role="button" aria-label="Unterrichtsblock verschieben">⠿</span>
-      <input class="bs-label" type="text" value="${escHtml(block.label)}" placeholder="Name"/>
-      <div class="bs-time-wrap">
-        <input class="bs-time" type="text" inputmode="numeric" maxlength="5" placeholder="HH:MM" value="${block.start}"/>
-        <button type="button" class="bs-time-trigger" aria-label="Startzeit auswählen">▾</button>
-      </div>
-      <span class="bs-dash">–</span>
-      <div class="bs-time-wrap">
-        <input class="bs-time" type="text" inputmode="numeric" maxlength="5" placeholder="HH:MM" value="${block.end}"/>
-        <button type="button" class="bs-time-trigger" aria-label="Endzeit auswählen">▾</button>
-      </div>
-      <label class="toggle bs-free-toggle" title="Unterricht (aus = frei)">
-        <input type="checkbox" aria-label="Unterricht findet statt" ${block.free ? '' : 'checked'}/>
-        <span class="toggle-slider"></span>
-      </label>
-      <button class="bs-del icon-btn" aria-label="Unterrichtsblock löschen" title="Löschen">✕</button>`;
-    row.querySelector('.bs-label').addEventListener('input', e => { block.label = e.target.value; saveBlocks(); if(currentView==='today') renderBlocks(); });
-
-    const timeWraps = row.querySelectorAll('.bs-time-wrap');
-    const timeKeys = ['start', 'end'];
-    timeWraps.forEach((wrap, i) => {
-      const key = timeKeys[i];
-      const input = wrap.querySelector('.bs-time');
-      const trigger = wrap.querySelector('.bs-time-trigger');
-      input.addEventListener('input', () => formatBlockTimeLive(input));
-      input.addEventListener('change', () => {
-        const normalized = normalizeBlockTime(input.value);
-        input.value = normalized || block[key]; // ungültig/zu kurz → vorherigen gespeicherten Wert wiederherstellen
-        if (normalized) { block[key] = normalized; saveBlocks(); validateBlockSettings(); if(currentView==='today') renderBlocks(); }
-      });
-      trigger.addEventListener('click', e => { e.stopPropagation(); openBlockTimePicker(trigger, input, block, key); });
-    });
-
-    // Toggle AN = Unterricht findet statt, AUS = frei — bewusst umgekehrt
-    // zur gespeicherten Property block.free (true = frei), die an allen
-    // anderen Stellen (js/today.js) unverändert weiterverwendet wird.
-    // Invertierung ausschließlich hier an der UI-Grenze, keine doppelte
-    // Verneinung: checked bedeutet einfach "nicht frei".
-    row.querySelector('.bs-free-toggle input').addEventListener('change', e => { block.free = !e.target.checked; saveBlocks(); if(currentView==='today') renderBlocks(); });
-    row.querySelector('.bs-del').addEventListener('click', () => deleteBlockWithConfirm(block));
-
-    initBlockDragHandle(row.querySelector('.bs-drag-handle'), row, block);
-
-    list.appendChild(row);
-  });
-  const hint = document.createElement('p');
-  hint.id = 'blocks-settings-hint';
-  hint.className = 'settings-status settings-status-error hidden';
-  hint.setAttribute('role', 'status');
-  list.appendChild(hint);
-  validateBlockSettings();
-}
-
-// Markiert Blöcke, deren Ende nicht nach dem Beginn liegt, und Blöcke, die
-// sich zeitlich überschneiden. Speichern wird nicht blockiert (man tippt
-// oft erst Beginn, dann Ende) — nur deutlich angezeigt.
-function validateBlockSettings() {
-  const list = document.getElementById('blocks-settings-list');
-  if (!list) return;
-  const problems = new Map(); // id -> Text
-  blocks.forEach(b => { if (b.start && b.end && b.end <= b.start) problems.set(b.id, 'Ende liegt nicht nach dem Beginn'); });
-  const sorted = blocks.filter(b => b.start && b.end && b.end > b.start).slice().sort((a, b) => a.start.localeCompare(b.start));
-  for (let i = 1; i < sorted.length; i++) {
-    if (sorted[i].start < sorted[i - 1].end) {
-      if (!problems.has(sorted[i].id)) problems.set(sorted[i].id, `Überschneidet sich mit „${sorted[i - 1].label}“`);
-      if (!problems.has(sorted[i - 1].id)) problems.set(sorted[i - 1].id, `Überschneidet sich mit „${sorted[i].label}“`);
-    }
-  }
-  list.querySelectorAll('.block-settings-row').forEach(row => {
-    const msg = problems.get(blocks.find(b => String(b.id) === row.dataset.blockId)?.id);
-    row.classList.toggle('bs-invalid', !!msg);
-    if (msg) row.title = msg; else row.removeAttribute('title');
-  });
-  const hint = document.getElementById('blocks-settings-hint');
-  if (hint) {
-    const msgs = [...problems.entries()].map(([id, msg]) => `${blocks.find(b => b.id === id)?.label || 'Block'}: ${msg}`);
-    hint.textContent = msgs.join(' · ');
-    hint.classList.toggle('hidden', !msgs.length);
-  }
-}
-
-// Löschen mit Rückfrage; Aufgaben, die dem Block zugeordnet waren, verlieren
-// nur diese Zuordnung (task.blocks bzw. Alt-Feld task.block, siehe today.js).
-async function deleteBlockWithConfirm(block) {
-  const usedBy = tasks.filter(t => (Array.isArray(t.blocks) ? t.blocks : (t.block != null ? [t.block] : [])).includes(block.id));
-  const ok = await hubConfirm({
-    title: 'Unterrichtsblock löschen',
-    message: `„${block.label || 'Block'}“ wirklich löschen?` + (usedBy.length
-      ? ` ${usedBy.length} ${usedBy.length === 1 ? 'Aufgabe ist' : 'Aufgaben sind'} diesem Block zugeordnet und ${usedBy.length === 1 ? 'verliert' : 'verlieren'} diese Zuordnung.`
-      : ''),
-    confirmText: 'Löschen',
-    danger: true,
-  });
-  if (!ok) return;
-  if (usedBy.length) {
-    usedBy.forEach(t => {
-      if (Array.isArray(t.blocks)) t.blocks = t.blocks.filter(id => id !== block.id);
-      if (t.block === block.id) delete t.block;
-    });
-    saveTasks();
-  }
-  const idx = blocks.indexOf(block);
-  if (idx !== -1) blocks.splice(idx, 1);
-  saveBlocks();
-  renderBlockSettings();
-  if (currentView === 'today') { renderBlocks(); renderTasks(); }
-}
-
-document.getElementById('add-block-btn').addEventListener('click', () => {
-  // Neuer Block direkt hinter dem letzten (nach Endzeit), 90 Minuten lang.
-  const lastEnd = blocks.map(b => b.end).filter(Boolean).sort().pop() || '07:45';
-  const [h, m] = lastEnd.split(':').map(Number);
-  const startMin = Math.min(h * 60 + m + 15, 22 * 60);
-  const fmtMin = v => String(Math.floor(v / 60)).padStart(2, '0') + ':' + String(v % 60).padStart(2, '0');
-  blocks.push({ id: Date.now(), label: `Block ${blocks.length+1}`, start: fmtMin(startMin), end: fmtMin(Math.min(startMin + 90, 23 * 60 + 59)), free: false });
-  saveBlocks(); renderBlockSettings(); if(currentView==='today') renderBlocks();
-});
+// Der frühere Editor für die (für alle Tage gleichen) Unterrichtsblöcke
+// ist im Stundenplan aufgegangen: js/schedule-editor.js. Zeitfeld und
+// Zeitrad oben nutzt der Stundenplan-Editor weiter.
 
 // =========================
 // WEATHER SETTINGS
@@ -885,7 +666,8 @@ const BACKUP_CACHE_KEYS = ['weatherData', 'currentDate'];
 const NOOK_DATA_GROUPS = [
   { id: 'today',      label: 'Heute',        resettable: true,
     keys: ['tasks', 'blocks', 'notes', 'quicknote', 'berichtsheft', 'mealPlanWeeks', 'todayTracker', 'todayBudgetDue', 'qnSendLastTarget', 'qnSendLastProject', 'brainDump',
-           'gdDuties', 'gdGroups', 'gdPeople', 'gdSchedule', 'gdScheduleAlgoV2'] },
+           'gdDuties', 'gdGroups', 'gdPeople', 'gdSchedule', 'gdScheduleAlgoV2'],
+    prefixes: ['schedule'] }, // Stundenplan: scheduleWeek, scheduleLessons, scheduleSubjects, scheduleTeachers, scheduleTemplates
   { id: 'positivity', label: 'Positivity',   resettable: true, prefixes: ['positivity'] },
   { id: 'pinboard',   label: 'Pinnwand',     resettable: true,
     keys: ['deskCards', 'deskLegacyCleaned', 'tileDesigns', 'customTiles', 'generalTodos', 'shoppingList'] },
@@ -1134,6 +916,11 @@ const BACKUP_SHAPE_CHECKS = {
   deskCards:       Array.isArray,
   customThemes:    Array.isArray,
   blocks:          Array.isArray,
+  scheduleWeek:    v => v !== null && typeof v === 'object' && v.days !== null && typeof v.days === 'object',
+  scheduleLessons: Array.isArray,
+  scheduleSubjects: Array.isArray,
+  scheduleTeachers: Array.isArray,
+  scheduleTemplates: Array.isArray,
   hiddenTabs:      Array.isArray,
   tabOrder:        Array.isArray,
   bottomNavTabs:   Array.isArray,

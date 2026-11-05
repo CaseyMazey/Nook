@@ -283,7 +283,7 @@
   letter-spacing: .03em;
 }
 [data-pages-style="rpg"] #budget-garden-card .b-garden-ground { display: none; }
-[data-pages-style="rpg"] #budget-garden-card .b-garden-svg { width: 132px; height: 132px; margin: -14px 0 -10px; }
+[data-pages-style="rpg"] #budget-garden-card .b-garden-svg { width: 132px; max-width: 100%; height: auto; aspect-ratio: 1; margin: -14px 0 -10px; }
 
 /* Ziel-Auswahl: Papier-Etikett mit Wachssiegel */
 [data-pages-style="rpg"] #budget-garden-card .b-garden-select-btn {

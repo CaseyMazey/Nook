@@ -133,7 +133,17 @@
 .desk-item-edit-btn:hover { opacity: 1 !important; }
 .checklist .empty-state { color: color-mix(in srgb, var(--card-fg, var(--text)) 60%, transparent); }
 .desk-item-edit, .desk-add-item { min-width: 0; font: inherit; color: inherit; box-sizing: border-box; }
-.desk-item-edit { flex: 1; padding: 0 4px; border: none; border-radius: 4px; outline: 1px solid color-mix(in srgb, var(--card-fg, var(--text)) 35%, transparent); background: transparent; }
+/* Bearbeitungsfeld eines Eintrags: mehrzeilig, wächst mit (pinboard.js: startDeskItemEdit).
+   Selektor mit .desk-card, damit die Autosize-Regel der Karten-Textfelder
+   (.desk-card--auto textarea, min-height 64px) hier nicht greift. */
+.desk-card .desk-item-edit {
+  flex: 1 1 auto; min-height: 0; margin: -3px 0; padding: 3px 6px; display: block;
+  border: none; border-radius: 4px; resize: none; overflow: hidden; line-height: inherit;
+  outline: 1.5px solid color-mix(in srgb, var(--card-fg, var(--text)) 35%, transparent);
+  background: color-mix(in srgb, var(--card-fg, var(--text)) 5%, transparent);
+}
+/* Während des Bearbeitens bekommt das Feld die ganze Zeilenbreite */
+.checklist-item:has(.desk-item-edit) :is(.desk-item-edit-btn, .note-del) { display: none; }
 .desk-add-item { flex-shrink: 0; width: 100%; padding: 8px 16px; border: none; border-top: 1px dashed color-mix(in srgb, var(--card-fg, var(--text)) 16%, transparent); outline: none; background: transparent; font-size: calc(13px * var(--core-font-scale)); }
 .desk-add-item:focus { background: color-mix(in srgb, var(--card-fg, var(--text)) 5%, transparent); }
 
@@ -211,5 +221,10 @@
   }
   /* Griffe auf Touch groß genug zum sicheren Treffen */
   .desk-grip { padding: 4px 6px; font-size: calc(15px * var(--core-font-scale)); }
-  .desk-resize-handle { height: 24px; }
+  /* Wischen über den Griff scrollt die Seite; Ziehen erst nach kurzem
+     Gedrückthalten (pinboard.js: DESK_RESIZE_HOLD_MS). */
+  .desk-resize-handle { height: 24px; touch-action: pan-y; -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
+  .desk-resize-handle.resizing::after { width: 44px; height: 4px; }
+  /* 16px verhindert das automatische Hineinzoomen von iOS beim Bearbeiten */
+  .desk-card .desk-item-edit { font-size: max(16px, 1em); }
 }
