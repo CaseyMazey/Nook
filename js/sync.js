@@ -87,9 +87,12 @@ function isSyncInternalKey(key) {
 // Reine Geräte-Zustände bzw. Caches, die lokal bleiben: der Wetter-Cache
 // (enthält bei GPS den Standort), Akkordeon-/Layout-Zustände dieses Geräts.
 // Würden sonst bei jedem Seitenaufruf bzw. Klick einen Upload auslösen.
+// lastOpenProjectDetailId: welche Projektansicht DIESES Gerät zuletzt offen
+// hatte — synchronisiert öffnete sonst z.B. der PC die Detailseite, die am
+// Handy offen geblieben war, obwohl am PC zuletzt die Übersicht offen war.
 const SYNC_LOCAL_ONLY_KEYS = [
   "weatherData", "currentDate", "tabVisibilityOpen", "googleCalSettingsOpen",
-  "sidebarCollapsed", "settingsCollapsedGroups",
+  "sidebarCollapsed", "settingsCollapsedGroups", "lastOpenProjectDetailId",
 ];
 
 // Keys, die nie über die generische DB-Sync-Logik laufen dürfen.

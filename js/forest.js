@@ -489,7 +489,8 @@ let mainTasksCollapsed = false;
 // nur "#projects" o.ä.), rein Projekte-intern. Ein manueller Browser-
 // Reload landete vorher immer auf der Wald-Übersicht, selbst wenn man
 // gerade eine Detailseite offen hatte — siehe Start-Aufruf am Ende dieses
-// Abschnitts.
+// Abschnitts. Der Wert gilt nur für dieses Gerät (SYNC_LOCAL_ONLY_KEYS in
+// js/sync.js), sonst bestimmte das zuletzt benutzte andere Gerät die Ansicht.
 let lastOpenProjectDetailId = DB.get('lastOpenProjectDetailId', null);
 function saveLastOpenProjectDetailId(id) {
   lastOpenProjectDetailId = id;
