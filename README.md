@@ -107,7 +107,7 @@ Ein eigenständiger, ruhiger Bilderbuch-Garten zum Sammeln, über 70 Pflanzenart
 Lernsystem nach dem Leitner-Prinzip mit Fächern, Themengruppen, Lernsessions und Statistiken.
 → [Wiki: Karteikarten](https://github.com/CaseyMazey/Nook/wiki/Karteikarten)
 
-### 📝 Anleitungen
+### 📝 Anleitungen 🔧 *Momentan in Bearbeitung*
 
 Persönliches Markdown-Bücherregal für Notizen, Code-Beispiele und Dokumentation.
 → [Wiki: Anleitungen](https://github.com/CaseyMazey/Nook/wiki/Anleitungen)
@@ -121,7 +121,7 @@ Langfristige Vorhaben im Projektwald — jedes Projekt wächst als eigener, indi
 
 Gamifiziertes Planungsbrett im Tavernen-Look: Daily, Weekly/Check, Time und Side Quests, ein Würfel gegen Entscheidungs-Paralyse, Termin-Aushang aus dem Kalender und eine optionale Schatztruhe mit Münzen und eigenen Belohnungen.
 
-### 🧰 Tools 🔧 *Momentan in Bearbeitung*
+### 🧰 Tools
 
 Taschenrechner, Focus Timer, Converter, Datenübertragungsraten-Rechner mit Lernmodus, Notenmanager.
 → [Wiki: Tools](https://github.com/CaseyMazey/Nook/wiki/Tools)
