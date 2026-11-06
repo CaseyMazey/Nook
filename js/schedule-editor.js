@@ -244,8 +244,10 @@ function renderScheduleDayEditor() {
   });
   host.appendChild(brSec);
 
-  // Unterricht (nur an Tagen mit Schulzeit)
+  // Unterricht (an Tagen mit Schulzeit; ohne Schulzeit nur übrig gebliebene
+  // Stunden, damit sie sich löschen lassen)
   if (day.school) host.appendChild(buildScheduleLessonSection(wd, day));
+  else if (scheduleLessonsForWeekday(wd).length) host.appendChild(buildScheduleOrphanLessons(wd));
 
   // Blöcke
   host.appendChild(buildScheduleBlockSection(wd, day, commit));
@@ -421,6 +423,36 @@ function buildScheduleLessonSection(wd, day) {
   return sec;
 }
 
+// Stunden eines Tages ohne Schulzeit: werden in Heute nicht gezeigt —
+// hier sichtbar machen, damit man sie löschen oder die Schulzeit wieder
+// einschalten kann.
+function buildScheduleOrphanLessons(wd) {
+  const sec = scheduleSection('Unterricht (ohne Schulzeit)');
+  sec.appendChild(scheduleEl('p', 'schedule-hint', 'An diesem Tag ist keine Schulzeit eingestellt, deshalb erscheinen diese Stunden nicht in „Heute“. Schulzeit oben einschalten oder die Stunden löschen.'));
+  scheduleLessonsForWeekday(wd).forEach(l => {
+    const row = scheduleEl('div', 'schedule-row schedule-item schedule-lesson-row');
+    row.dataset.ref = 'lesson:' + l.id;
+    const name = scheduleNames.subject(l.subjectId) || 'Unterricht';
+    const extra = [scheduleNames.teacher(l.teacherId), l.room && 'Raum ' + l.room].filter(Boolean).join(' · ');
+    row.append(scheduleEl('span', 'schedule-orphan-label', `${scheduleEsc(l.start)}–${scheduleEsc(l.end)} · ${scheduleEsc(name)}${extra ? ' · ' + scheduleEsc(extra) : ''}`),
+      scheduleDelBtn('Stunde löschen', () => {
+        scheduleRememberUndo('Unterrichtsstunde gelöscht');
+        scheduleLessons = scheduleLessons.filter(x => x !== l);
+        saveScheduleLessons(); scheduleChanged(); renderScheduleEditor();
+      }));
+    sec.appendChild(row);
+  });
+  const all = scheduleEl('button', 'schedule-link-btn', 'Alle löschen');
+  all.type = 'button';
+  all.addEventListener('click', () => {
+    scheduleRememberUndo('Unterrichtsstunden ohne Schulzeit gelöscht');
+    scheduleLessons = scheduleLessons.filter(x => x.weekday !== wd);
+    saveScheduleLessons(); scheduleChanged(); renderScheduleEditor();
+  });
+  sec.appendChild(all);
+  return sec;
+}
+
 // Vorschau: so erscheint der Tag in „Heute“
 function buildSchedulePreview(wd) {
   const sec = scheduleSection('Vorschau');
@@ -449,6 +481,28 @@ function renderSchedulePreviewOnly(wd) {
   if (sec) fillSchedulePreview(sec, wd);
 }
 
+// Beim Anwenden einer Vorlage die IDs der bisherigen Blöcke des Tages
+// übernehmen — so bleiben Aufgaben-Zuordnungen und die gleichen IDs an den
+// übrigen Wochentagen erhalten. Zuerst nach gleichem Namen, danach der Reihe
+// nach (1. Block → 1. Block); übrige Vorlagenblöcke bekommen neue IDs.
+function scheduleKeepBlockIds(oldBlocks, newBlocks) {
+  const byStart = list => list.slice().sort((a, b) => (scheduleToMin(a.start) ?? 0) - (scheduleToMin(b.start) ?? 0));
+  const free = byStart(oldBlocks);
+  const target = byStart(newBlocks);
+  const take = b => { free.splice(free.indexOf(b), 1); return b.id; };
+  const assigned = new Map();
+  target.forEach(nb => {
+    const name = scheduleBlockDisplayName(nb).toLowerCase();
+    const same = free.find(ob => scheduleBlockDisplayName(ob).toLowerCase() === name);
+    if (same) assigned.set(nb, take(same));
+  });
+  target.forEach(nb => {
+    if (assigned.has(nb)) return;
+    assigned.set(nb, free.length ? take(free[0]) : scheduleNewId());
+  });
+  newBlocks.forEach(nb => { nb.id = assigned.get(nb); });
+}
+
 // ── Vorlagen anwenden / speichern, Tag kopieren ─────────────────────────
 function buildScheduleDayActions(wd) {
   const sec = scheduleSection('Vorlagen & Kopieren');
@@ -463,20 +517,22 @@ function buildScheduleDayActions(wd) {
   applyBtn.addEventListener('click', async () => {
     const tpl = scheduleTemplates.find(t => t.id === tplSel.value);
     if (!tpl) return;
-    const assigned = new Set(day.blocks.flatMap(b => scheduleTasksForBlock(b.id).map(t => t.id))).size;
+    const copy = scheduleNormalizeDay(scheduleClone(tpl.day));
+    copy.enabled = true;
+    scheduleKeepBlockIds(day.blocks, copy.blocks);
+    copy.breaks.forEach(b => { b.id = scheduleNewId(); });
+    // Aufgaben, deren Block es nach dem Anwenden an diesem Tag nicht mehr gibt
+    const keptIds = new Set(copy.blocks.map(b => b.id));
+    const lost = new Set(day.blocks.filter(b => !keptIds.has(b.id)).flatMap(b => scheduleTasksForBlock(b.id).map(t => t.id))).size;
     const ok = await hubConfirm({
       title: `Vorlage auf ${SCHEDULE_DAY_NAMES[wd]} anwenden?`,
-      message: `„${tpl.name}“ ersetzt Zeiten, Schulzeit, Pausen und Blöcke von ${SCHEDULE_DAY_NAMES[wd]}. Unterrichtsstunden und alle anderen Tage bleiben unverändert.`
-        + (assigned ? ` ${assigned} ${assigned === 1 ? 'Aufgabe ist' : 'Aufgaben sind'} Blöcken dieses Tages zugeordnet und ${assigned === 1 ? 'erscheint' : 'erscheinen'} hier danach nicht mehr in einem Block.` : '')
+      message: `„${tpl.name}“ ersetzt Zeiten, Schulzeit, Pausen und Blöcke von ${SCHEDULE_DAY_NAMES[wd]}. Unterrichtsstunden und alle anderen Tage bleiben unverändert. Blöcke, die es schon gab, behalten ihre Aufgaben.`
+        + (lost ? ` ${lost} ${lost === 1 ? 'Aufgabe ist' : 'Aufgaben sind'} Blöcken zugeordnet, die wegfallen, und ${lost === 1 ? 'erscheint' : 'erscheinen'} an diesem Tag danach nicht mehr in einem Block.` : '')
         + ' Mit „Rückgängig“ lässt sich das zurücknehmen.',
       confirmText: 'Anwenden',
     });
     if (!ok) return;
     scheduleRememberUndo(`Vorlage „${tpl.name}“ auf ${SCHEDULE_DAY_NAMES[wd]} angewendet`);
-    const copy = scheduleNormalizeDay(scheduleClone(tpl.day));
-    copy.enabled = true;
-    copy.blocks.forEach(b => { b.id = scheduleNewId(); });
-    copy.breaks.forEach(b => { b.id = scheduleNewId(); });
     scheduleWeek.days[wd] = copy;
     scheduleSaveAll();
     renderScheduleEditor();

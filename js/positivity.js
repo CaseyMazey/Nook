@@ -447,8 +447,8 @@ function renderPositivityCardsList() {
       renderPositivityCardsList();
     });
     const delBtn = row.querySelector('.task-delete');
-    if (delBtn) delBtn.addEventListener('click', () => {
-      if (!confirm('Diese Karte löschen?')) return;
+    if (delBtn) delBtn.addEventListener('click', async () => {
+      if (!(await hubConfirm({ title: 'Karte löschen?', message: `„${card.text}“ wird gelöscht.`, confirmText: 'Löschen', danger: true }))) return;
       deletePositivityCard(card.id);
       renderPositivityCardsList();
     });
@@ -583,7 +583,7 @@ function initPositivity() {
       try {
         const data = JSON.parse(ev.target.result);
         const cat = findPositivityCategory(positivityImportTargetCatId);
-        if (!cat || !Array.isArray(data.cards)) { alert('Ungültige Datei.'); return; }
+        if (!cat || !Array.isArray(data.cards)) { hubAlert('Import nicht möglich', 'Die Datei enthält keine Positivity-Karten.'); return; }
         const existingTexts = new Set(cat.cards.map(c => c.text));
         let added = 0;
         data.cards.forEach(item => {
@@ -599,9 +599,9 @@ function initPositivity() {
         savePositivityQueue();
         renderPositivitySettings();
         renderPositivityCardsList();
-        alert(`${added} ${added === 1 ? 'Karte' : 'Karten'} importiert.`);
+        hubAlert('Import abgeschlossen', `${added} ${added === 1 ? 'Karte' : 'Karten'} importiert.`);
       } catch {
-        alert('Ungültige Backup-Datei.');
+        hubAlert('Import nicht möglich', 'Die Datei ist keine gültige Positivity-Datei.');
       }
     };
     reader.readAsText(file);

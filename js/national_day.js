@@ -1868,6 +1868,7 @@ function ndDayUrl(date) {
 
 function buildWidget(entries) {
   if (document.getElementById('national-day-widget')) return;
+  if (!entries) return;
   const sidebar = document.getElementById('today-right');
   if (!sidebar) return;
 
@@ -1944,6 +1945,12 @@ function initNationalDay() {
   const entries = getDayEntries();
   if (entries) buildWidget(entries);
 }
+
+// Tageswechsel (today.js: todayMinuteTick) — Widget für den neuen Tag neu bauen
+window.renderNationalDay = function () {
+  document.getElementById('national-day-widget')?.remove();
+  initNationalDay();
+};
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initNationalDay);

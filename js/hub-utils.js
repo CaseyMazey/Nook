@@ -593,3 +593,30 @@ function hubConfirm(opts = {}) {
 function hubAlert(title, message) {
   return hubConfirm({ title, message, confirmText: 'OK', hideCancel: true }).then(() => {});
 }
+
+/**
+ * Kurzer Hinweis unten mit „Rückgängig“ (8 s), z.B. nach dem Löschen.
+ * restore() stellt den alten Stand wieder her (inkl. Speichern/Neuzeichnen).
+ * Ein neuer Hinweis ersetzt den vorigen.
+ */
+let hubUndoTimer = null;
+function hubUndo(message, restore) {
+  let bar = document.getElementById('hub-undo');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'hub-undo';
+    bar.setAttribute('role', 'status');
+    document.body.appendChild(bar);
+  }
+  bar.innerHTML = '';
+  const label = document.createElement('span');
+  label.textContent = message;
+  const btn = document.createElement('button');
+  btn.type = 'button'; btn.textContent = 'Rückgängig';
+  const hide = () => { clearTimeout(hubUndoTimer); bar.classList.add('hidden'); };
+  btn.addEventListener('click', () => { hide(); restore(); });
+  bar.append(label, btn);
+  bar.classList.remove('hidden');
+  clearTimeout(hubUndoTimer);
+  hubUndoTimer = setTimeout(hide, 8000);
+}

@@ -10,9 +10,20 @@
 // hinten wegfallen, angezeigt werden ohnehin nur die neuesten.
 // =========================
 
-window.NOOK_VERSION = '2026.11.11';
+window.NOOK_VERSION = '2026.11.12';
 
 window.NOOK_CHANGELOG = [
+  {
+    version: '2026.11.12',
+    date: '2026-11-06',
+    items: [
+      'Heute: Bleibt Nook über Nacht offen, springt die Seite um Mitternacht auf den neuen Tag (Stundenplan, „JETZT“, „Heute ist“, Speiseplan); die Restzeit im Fortschrittsbalken zählt jede Minute weiter',
+      'Heute: Gelöschte Aufgaben lassen sich 8 Sekunden lang wiederherstellen („Rückgängig“)',
+      'Gruppenpflichten: Personen und Gruppen umbenennen, Gruppenmitglieder ändern und löschen – unter „Pflichten verwalten“',
+      'Stundenplan: Eine Vorlage behält die Blöcke, die es schon gab – Aufgaben bleiben zugeordnet; Stunden an Tagen ohne Schulzeit lassen sich wieder löschen',
+      'Kleinere Korrekturen: Termintitel mit < im Mini-Kalender, Nook-Dialoge bei Positivity, genauere Meldungen beim PDF-Import',
+    ],
+  },
   {
     version: '2026.11.11',
     date: '2026-11-06',

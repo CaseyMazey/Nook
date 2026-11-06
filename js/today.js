@@ -554,7 +554,7 @@ function buildMiniCal(refDate) {
                        : isRowStart ? 'bar-start'
                        : isRowEnd   ? 'bar-end'
                        : 'bar-mid';
-          return `<span class="mini-cal-bar ${posCls}" style="background:${info.color}"></span>`;
+          return `<span class="mini-cal-bar ${posCls}" style="background:${scheduleEsc(info.color)}"></span>`;
         }).join('');
         barsHtml = `<div class="mini-cal-bars">${laneBars}</div>`;
       }
@@ -610,9 +610,9 @@ function buildMiniCal(refDate) {
     upcomingHtml = `<div id="mini-cal-events">${
       upcoming.slice(0,5).map(e =>
         `<div class="mini-cal-event-row" data-date="${dateKey(e.date)}" style="cursor:pointer;">
-          <span class="mini-cal-event-dot${e.isRange ? ' range-ev' : ''}" style="background:${e.color}"></span>
-          <span class="mini-cal-event-title">${e.title}</span>
-          <span class="mini-cal-event-date">${e.dateStr}</span>
+          <span class="mini-cal-event-dot${e.isRange ? ' range-ev' : ''}" style="background:${scheduleEsc(e.color)}"></span>
+          <span class="mini-cal-event-title">${scheduleEsc(e.title)}</span>
+          <span class="mini-cal-event-date">${scheduleEsc(e.dateStr)}</span>
         </div>`
       ).join('')
     }</div>`;
@@ -832,11 +832,36 @@ function renderBlocks() {
   renderBlocksProgress();
 }
 
-// Jede Minute prüfen, ob ein neuer Abschnitt läuft — dann wandert „JETZT“
-// weiter und die Zeile folgt ihm (vorher erst beim nächsten Neuaufbau).
-setInterval(() => {
-  if (typeof currentView !== 'undefined' && currentView === 'today' && currentBlocksFocusKey() !== blocksFocusKey) renderBlocks();
-}, 60 * 1000);
+// Minuten-Takt der Heute-Seite:
+// - Tageswechsel: Bleibt Nook über Mitternacht offen (Desktop-App, PWA),
+//   springt die Seite auf den neuen Tag — sofern sie vorher „heute“ zeigte
+//   (eine bewusst gewählte andere Woche bleibt stehen). „Heute ist“, Speise-
+//   plan, „Heute fällig“ usw. bauen sich über renderView('today') neu.
+// - Neuer Abschnitt: „JETZT“ wandert weiter, die Zeile folgt ihm.
+// - Sonst nur Fortschrittsbalken/Restzeit und Begrüßung (Morgen → Tag) auffrischen.
+let todayLastDayKey = dateKey(new Date());
+function todayMinuteTick() {
+  const nowKey = dateKey(new Date());
+  if (nowKey !== todayLastDayKey) {
+    const wasToday = dateKey(state.currentDate) === todayLastDayKey;
+    const prevMonth = todayLastDayKey.slice(0, 7);
+    todayLastDayKey = nowKey;
+    if (wasToday) state.currentDate = new Date();
+    if (miniCalDate.getFullYear() + '-' + String(miniCalDate.getMonth() + 1).padStart(2, '0') === prevMonth) miniCalDate = new Date();
+    if (typeof renderNationalDay === 'function') renderNationalDay();
+    updateHeader();
+    if (typeof currentView !== 'undefined' && currentView === 'today') renderView('today');
+    return;
+  }
+  renderTodayHeader();
+  if (typeof currentView === 'undefined' || currentView !== 'today') return;
+  if (currentBlocksFocusKey() !== blocksFocusKey) renderBlocks();
+  else renderBlocksProgress();
+}
+setInterval(todayMinuteTick, 60 * 1000);
+// Nach Ruhezustand/Tab im Hintergrund laufen Intervalle verspätet — beim
+// Zurückkehren sofort prüfen.
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') todayMinuteTick(); });
 
 // Mausrad ohne Seitwärts-Geste scrollt die Zeile seitlich; am Anfang bzw.
 // Ende der Zeile scrollt wieder die Seite, damit man nicht festhängt.
@@ -1041,9 +1066,24 @@ function buildTaskItem(task) {
   badge.textContent = _blockIds.length ? taskBlockBadgeText(_blockIds) : '–';
   if (_blockIds.length) badge.title = taskBlockBadgeTitle(_blockIds);
   const del   = document.createElement('button'); del.className = 'task-delete'; del.textContent = '✕';
-  del.addEventListener('click', () => { tasks = tasks.filter(t => t.id !== task.id); saveTasks(); renderTasks(); renderBlocks(); });
+  del.title = 'Aufgabe löschen'; del.setAttribute('aria-label', 'Aufgabe löschen');
+  del.addEventListener('click', () => deleteTaskWithUndo(task));
   li.append(statusCtrl, dot, info, badge, del);
   return li;
+}
+
+// Löschen ohne Rückfrage, dafür 8 s „Rückgängig“ (hubUndo) — die Aufgabe
+// kommt an ihre alte Position zurück.
+function deleteTaskWithUndo(task) {
+  const idx = tasks.findIndex(t => t.id === task.id);
+  if (idx < 0) return;
+  tasks.splice(idx, 1);
+  saveTasks(); renderTasks(); renderBlocks();
+  hubUndo(`„${task.title}“ gelöscht`, () => {
+    if (tasks.some(t => t.id === task.id)) return;
+    tasks.splice(Math.min(idx, tasks.length), 0, task);
+    saveTasks(); renderTasks(); renderBlocks();
+  });
 }
 
 // Block-Abzeichen einer Aufgabe: Name des Blocks (Stundenplan), gekürzt.
@@ -1100,8 +1140,7 @@ function buildMobileTaskItem(task) {
   del.type = 'button'; del.className = 'tasks-mobile-item-delete'; del.setAttribute('aria-label', 'Aufgabe löschen'); del.textContent = '✕';
   del.addEventListener('click', (e) => {
     e.stopPropagation();
-    tasks = tasks.filter(t => t.id !== task.id);
-    saveTasks(); renderTasks(); renderBlocks();
+    deleteTaskWithUndo(task);
   });
 
   li.append(statusCtrl, info, del);

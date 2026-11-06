@@ -813,6 +813,20 @@ body.bg-frosted .modal-box {
    .modal-backdrop-Wert (100), damit es garantiert obenauf liegt. */
 #hub-confirm-overlay { z-index: 200; }
 
+/* ── Rückgängig-Hinweis (hubUndo in js/hub-utils.js) ── */
+#hub-undo {
+  position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 900;
+  display: flex; align-items: center; gap: 14px; max-width: calc(100vw - 32px); box-sizing: border-box; padding: 10px 16px;
+  border-radius: var(--radius-lg); border: 1px solid var(--border-strong); background: var(--surface-solid);
+  color: var(--text); font-size: calc(13px * var(--core-font-scale)); box-shadow: var(--shadow-sm);
+}
+#hub-undo.hidden { display: none; }
+#hub-undo span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#hub-undo button { color: var(--sage-dark); font-weight: 600; white-space: nowrap; background: none; border: 0; cursor: pointer; font: inherit; font-weight: 600; }
+@media (max-width: 480px) {
+  #hub-undo { bottom: calc(76px + env(safe-area-inset-bottom)); width: calc(100vw - 32px); justify-content: space-between; }
+}
+
 /* Schwebende Pille unten rechts für Update-Hinweise (Sync-Update, App-
    Update), statt Modal/Overlay, damit sie die aktuelle Ansicht nie
    blockiert. Gemeinsame Basis, geteilt von js/sync.js (#sync-update-banner)

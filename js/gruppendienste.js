@@ -22,8 +22,9 @@
 // =========================
 // DATENMODELL
 // =========================
-let gdPeople   = DB.get('gdPeople', []);    // [{id, name}]
-let gdGroups   = DB.get('gdGroups', []);    // [{id, name, memberIds:[personId...]}]
+let gdPeople   = DB.get('gdPeople', []);    // [{id, name, deleted?}]
+let gdGroups   = DB.get('gdGroups', []);    // [{id, name, memberIds:[personId...], deleted?}]
+// deleted = gelöscht, aber für vergangene Wochen noch mit Namen auflösbar
 let gdDuties   = DB.get('gdDuties', []);    // [{id,name,icon,startDate,endDate,participants,seatsRegular,seatsErsatz,rotationMode,fixedOrder,autoRotationOrder,linkedDutyIds}]
 let gdSchedule = DB.get('gdSchedule', {});  // { [dutyId]: { [weekId]: {regular:[{type,id}...], ersatz:[{type,id}...]} } }
 
@@ -53,6 +54,8 @@ function gdShuffle(arr) {
 function gdFindPerson(id) { return gdPeople.find(p => p.id === id); }
 function gdFindGroup(id)  { return gdGroups.find(g => g.id === id); }
 function gdFindDuty(id)   { return gdDuties.find(d => d.id === id); }
+function gdActivePeople() { return gdPeople.filter(p => !p.deleted); }
+function gdActiveGroups() { return gdGroups.filter(g => !g.deleted); }
 function gdPersonName(id) { const p = gdFindPerson(id); return p ? p.name : '?'; }
 function gdGroupMemberIds(id) { const g = gdFindGroup(id); return g ? g.memberIds.slice() : []; }
 
@@ -334,6 +337,7 @@ const gdOverviewModal = wireModal('gd-overview-modal-overlay', { closeIds: ['gd-
 
 function gdOpenOverview() {
   gdRenderOverviewList();
+  gdRenderPeopleAdmin();
   gdOverviewModal.open();
 }
 
@@ -399,6 +403,131 @@ function gdDeleteDuty(id) {
 }
 
 document.getElementById('gd-overview-add')?.addEventListener('click', () => gdOpenDutyEditor(null));
+
+// =========================
+// PERSONEN & GRUPPEN VERWALTEN (in der Übersicht)
+// Umbenennen, Gruppenmitglieder ändern, löschen. Gelöscht wird weich
+// (deleted: true): vergangene Wochen in gdSchedule zeigen weiter den Namen,
+// in Auswahl und künftiger Planung taucht die Person/Gruppe nicht mehr auf.
+// Betroffene Pflichten werden ab der aktuellen Woche neu berechnet.
+// =========================
+function gdDutiesUsing(pred) {
+  return gdDuties.filter(d => (d.participants || []).some(pred) || (d.fixedOrder || []).some(pred));
+}
+function gdRecomputeDuties(duties) {
+  const visited = new Set();
+  duties.forEach(d => {
+    if (visited.has(d.id)) return;
+    gdConnectedComponent(d.id).forEach(cd => visited.add(cd.id));
+    gdRecomputeComponent(d.id);
+  });
+}
+function gdDutiesWithPerson(pid) {
+  return gdDutiesUsing(r => (r.type === 'person' && r.id === pid) || (r.type === 'group' && gdGroupMemberIds(r.id).includes(pid)));
+}
+
+function gdRenderPeopleAdmin() {
+  const box = document.getElementById('gd-people-admin');
+  if (!box) return;
+  const people = gdActivePeople();
+  const groups = gdActiveGroups();
+  box.innerHTML = `
+    <div class="gd-admin-head">Personen</div>
+    ${people.length ? people.map(p => `
+      <div class="gd-admin-row" data-person="${gdEsc(p.id)}">
+        <input type="text" class="modal-input gd-admin-name" value="${gdEsc(p.name)}" aria-label="Name von ${gdEsc(p.name)}" maxlength="60"/>
+        <button type="button" class="icon-btn gd-admin-del" title="Person löschen" aria-label="${gdEsc(p.name)} löschen">✕</button>
+      </div>`).join('') : '<div class="modal-hint">Noch keine Personen — sie entstehen im Pflicht-Editor unter „Teilnehmer“.</div>'}
+    <div class="gd-admin-head">Gruppen</div>
+    ${groups.length ? groups.map(g => `
+      <div class="gd-admin-group" data-group="${gdEsc(g.id)}">
+        <div class="gd-admin-row">
+          <input type="text" class="modal-input gd-admin-name" value="${gdEsc(g.name)}" aria-label="Name der Gruppe ${gdEsc(g.name)}" maxlength="60"/>
+          <button type="button" class="icon-btn gd-admin-del" title="Gruppe löschen" aria-label="Gruppe ${gdEsc(g.name)} löschen">✕</button>
+        </div>
+        <div class="gd-chip-picker gd-admin-members">${people.map(p => `
+          <button type="button" class="gd-chip${g.memberIds.includes(p.id) ? ' active' : ''}" data-member="${gdEsc(p.id)}" aria-pressed="${g.memberIds.includes(p.id)}">${gdEsc(p.name)}</button>`).join('') || '<span class="modal-hint">Keine Personen.</span>'}
+        </div>
+      </div>`).join('') : '<div class="modal-hint">Noch keine Gruppen.</div>'}`;
+}
+
+const gdPeopleAdmin = document.getElementById('gd-people-admin');
+gdPeopleAdmin?.addEventListener('change', e => {
+  if (!e.target.classList.contains('gd-admin-name')) return;
+  const name = e.target.value.trim();
+  const pRow = e.target.closest('[data-person]');
+  const gRow = e.target.closest('[data-group]');
+  const item = pRow ? gdFindPerson(pRow.dataset.person) : gRow ? gdFindGroup(gRow.dataset.group) : null;
+  if (!item) return;
+  if (!name) { e.target.value = item.name; return; }
+  item.name = name;
+  pRow ? gdSavePeople() : gdSaveGroups();
+  gdRenderOverviewList();
+  gdBuildWidget();
+});
+gdPeopleAdmin?.addEventListener('click', async e => {
+  const member = e.target.closest('[data-member]');
+  if (member) {
+    const g = gdFindGroup(member.closest('[data-group]').dataset.group);
+    if (!g) return;
+    const pid = member.dataset.member;
+    g.memberIds = g.memberIds.includes(pid) ? g.memberIds.filter(id => id !== pid) : [...g.memberIds, pid];
+    gdSaveGroups();
+    gdRecomputeDuties(gdDutiesUsing(r => r.type === 'group' && r.id === g.id));
+    gdRenderPeopleAdmin();
+    gdBuildWidget();
+    return;
+  }
+  const del = e.target.closest('.gd-admin-del');
+  if (!del) return;
+  const pRow = del.closest('[data-person]');
+  if (pRow) {
+    const p = gdFindPerson(pRow.dataset.person);
+    if (!p) return;
+    const affected = gdDutiesWithPerson(p.id);
+    const ok = await hubConfirm({
+      title: 'Person löschen?',
+      message: `„${p.name}“ wird aus allen Pflichten und Gruppen entfernt.`
+        + (affected.length ? ` Betroffene Pflichten (${affected.map(d => d.name).join(', ')}) werden ab dieser Woche neu verteilt.` : '')
+        + ' Vergangene Wochen bleiben unverändert.',
+      confirmText: 'Löschen', danger: true,
+    });
+    if (!ok) return;
+    p.deleted = true;
+    const isP = r => r.type === 'person' && r.id === p.id;
+    gdGroups.forEach(g => { g.memberIds = g.memberIds.filter(id => id !== p.id); });
+    gdDuties.forEach(d => {
+      d.participants = (d.participants || []).filter(r => !isP(r));
+      d.fixedOrder = (d.fixedOrder || []).filter(r => !isP(r));
+      d.autoRotationOrder = (d.autoRotationOrder || []).filter(id => id !== p.id);
+    });
+    gdSavePeople(); gdSaveGroups(); gdSaveDuties();
+    gdRecomputeDuties(affected);
+  } else {
+    const g = gdFindGroup(del.closest('[data-group]').dataset.group);
+    if (!g) return;
+    const isG = r => r.type === 'group' && r.id === g.id;
+    const affected = gdDutiesUsing(isG);
+    const ok = await hubConfirm({
+      title: 'Gruppe löschen?',
+      message: `„${g.name}“ wird gelöscht; die Personen darin bleiben erhalten.`
+        + (affected.length ? ` Betroffene Pflichten (${affected.map(d => d.name).join(', ')}) werden ab dieser Woche neu verteilt.` : '')
+        + ' Vergangene Wochen bleiben unverändert.',
+      confirmText: 'Löschen', danger: true,
+    });
+    if (!ok) return;
+    g.deleted = true;
+    gdDuties.forEach(d => {
+      d.participants = (d.participants || []).filter(r => !isG(r));
+      d.fixedOrder = (d.fixedOrder || []).filter(r => !isG(r));
+    });
+    gdSaveGroups(); gdSaveDuties();
+    gdRecomputeDuties(affected);
+  }
+  gdRenderPeopleAdmin();
+  gdRenderOverviewList();
+  gdBuildWidget();
+});
 
 // =========================
 // PFLICHT-EDITOR
@@ -468,7 +597,7 @@ document.querySelectorAll('#gd-duty-icon-picker .recurring-icon-btn').forEach(bt
 function gdRenderPeoplePicker() {
   const wrap = document.getElementById('gd-duty-people-picker');
   if (!wrap) return;
-  wrap.innerHTML = gdPeople.map(p => {
+  wrap.innerHTML = gdActivePeople().map(p => {
     const active = gdEditingParticipants.some(r => r.type === 'person' && r.id === p.id);
     return `<button type="button" class="gd-chip${active ? ' active' : ''}" data-id="${p.id}">${gdEsc(p.name)}</button>`;
   }).join('');
@@ -479,7 +608,7 @@ function gdRenderPeoplePicker() {
 function gdRenderGroupsPicker() {
   const wrap = document.getElementById('gd-duty-groups-picker');
   if (!wrap) return;
-  wrap.innerHTML = gdGroups.map(g => {
+  wrap.innerHTML = gdActiveGroups().map(g => {
     const active = gdEditingParticipants.some(r => r.type === 'group' && r.id === g.id);
     return `<button type="button" class="gd-chip${active ? ' active' : ''}" data-id="${g.id}">${gdEsc(g.name)} <span style="opacity:.65;">(${g.memberIds.length})</span></button>`;
   }).join('');
@@ -529,7 +658,7 @@ document.getElementById('gd-new-group-toggle')?.addEventListener('click', () => 
 });
 function gdRenderNewGroupMembers() {
   const wrap = document.getElementById('gd-new-group-members');
-  wrap.innerHTML = gdPeople.map(p => `<button type="button" class="gd-chip" data-id="${p.id}">${gdEsc(p.name)}</button>`).join('')
+  wrap.innerHTML = gdActivePeople().map(p => `<button type="button" class="gd-chip" data-id="${p.id}">${gdEsc(p.name)}</button>`).join('')
     || '<span class="modal-hint">Erst Personen anlegen (Bereich „Teilnehmer" → Personen).</span>';
   wrap.querySelectorAll('.gd-chip').forEach(btn => btn.addEventListener('click', () => btn.classList.toggle('active')));
 }
@@ -892,7 +1021,7 @@ document.getElementById('gd-export-pdf')?.addEventListener('click', async () => 
     gdExportModal.close();
   } catch (err) {
     gdExportShowError(/Script konnte nicht geladen/.test(err.message)
-      ? 'Der PDF-Baustein konnte nicht geladen werden (keine Internetverbindung?). „Drucken“ funktioniert trotzdem.'
+      ? 'Der PDF-Baustein konnte nicht geladen werden. „Drucken“ funktioniert trotzdem.'
       : 'PDF konnte nicht erstellt werden: ' + err.message);
   } finally {
     btn.disabled = false;

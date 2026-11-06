@@ -13,8 +13,9 @@
 // file://. Der Worker wird ebenfalls als normales Script geladen
 // (globalThis.pdfjsWorker), pdf.js rechnet dann im Hauptthread — ein
 // echter Web-Worker von fremder Herkunft wäre unter file:// und auf der
-// gehosteten Seite ohnehin blockiert. Ohne Internet schlägt nur der
-// Import fehl; das Modal öffnet dann leer zum Eintragen von Hand.
+// gehosteten Seite ohnehin blockiert. pdf.js liegt lokal (js/vendor) und
+// funktioniert damit auch offline; schlägt das Laden trotzdem fehl, öffnet
+// das Modal leer zum Eintragen von Hand.
 //
 // Tabellen-Erkennung über die Textpositionen (siehe mealPlanParsePage):
 //   - Spalten: Überschriften MONTAG … FREITAG, Grenze jeweils mittig
@@ -402,7 +403,7 @@ async function mealPlanImport(file) {
   } catch (err) {
     const offline = /Script konnte nicht geladen/.test(err.message);
     mealPlanOpenEditor(null, null, offline
-      ? 'Der PDF-Leser konnte nicht geladen werden (keine Internetverbindung?). Du kannst die Gerichte hier von Hand eintragen.'
+      ? 'Der PDF-Leser konnte nicht geladen werden. Du kannst die Gerichte hier von Hand eintragen.'
       : err.message);
   } finally {
     widget?.classList.remove('mealplan-loading');

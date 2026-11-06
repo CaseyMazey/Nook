@@ -954,3 +954,12 @@
   .bd-grid { grid-template-columns: 1fr; }
   .bd-act { opacity: 1; }
 }
+
+/* ── Gruppenpflichten: Personen & Gruppen verwalten (gruppendienste.js: gdRenderPeopleAdmin) ── */
+.gd-people-admin-wrap { border-top: 1px solid var(--border); padding-top: 12px; }
+.gd-people-admin-wrap summary { cursor: pointer; font-weight: 600; color: var(--text-2); font-size: calc(13px * var(--core-font-scale)); }
+.gd-people-admin { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; max-height: 46vh; overflow-y: auto; }
+.gd-admin-head { font-size: calc(10.5px * var(--core-font-scale)); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); margin-top: 6px; }
+.gd-admin-row { display: flex; gap: 8px; align-items: center; }
+.gd-admin-row .gd-admin-name { flex: 1; min-width: 0; }
+.gd-admin-group { display: flex; flex-direction: column; gap: 6px; padding: 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); }
