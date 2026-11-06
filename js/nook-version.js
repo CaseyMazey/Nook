@@ -10,9 +10,17 @@
 // hinten wegfallen, angezeigt werden ohnehin nur die neuesten.
 // =========================
 
-window.NOOK_VERSION = '2026.11.10';
+window.NOOK_VERSION = '2026.11.11';
 
 window.NOOK_CHANGELOG = [
+  {
+    version: '2026.11.11',
+    date: '2026-11-06',
+    items: [
+      'Anleitungen: Das Bücherregal scrollt seitlich – mit dem Mausrad, über Pfeile an den Rändern oder per Wischen; die Bücher rasten dabei ein',
+      'Anleitungen: Ein geöffnetes Buch bleibt im Bild, das Regal springt nicht mehr an den Anfang zurück',
+    ],
+  },
   {
     version: '2026.11.10',
     date: '2026-11-06',

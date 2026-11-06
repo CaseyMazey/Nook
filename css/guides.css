@@ -455,15 +455,49 @@ body:not(:has(#view-guides.active)) #guide-scroll-top { display: none; }
 .lib-view-btn.active { background: var(--sage); color: var(--sage-fg); }
  
 /* ── Bookshelf ─────────────────────────────────────────────── */
-.guide-shelf-wrap { margin-bottom: 30px; }
+.guide-shelf-wrap { margin-bottom: 30px; position: relative; }
 .guide-shelf {
   display: flex;
   align-items: flex-end;
   gap: 16px;
   overflow-x: auto;
+  overscroll-behavior-x: contain;
   padding: 6px 6px 0;
   scrollbar-width: thin;
 }
+/* Seitlich scrollen: Bücher rasten ein (js/guides.js: initGuideShelfScroll) */
+.guide-shelf:not(.list-mode) { scroll-snap-type: x proximity; scroll-padding-inline: 6px; }
+.guide-shelf:not(.list-mode) > .guide-book,
+.guide-shelf:not(.list-mode) > .guide-book-add { scroll-snap-align: start; }
+@media (max-width: 640px) {
+  .guide-shelf:not(.list-mode) { scroll-snap-type: x mandatory; }
+}
+/* Pfeile an den Rändern, nur wenn es in die Richtung weitergeht */
+.guide-shelf-arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 3;
+  width: 34px;
+  height: 34px;
+  margin-top: -24px;
+  border-radius: 50%;
+  border: 1px solid var(--border-strong);
+  background: color-mix(in srgb, var(--surface-solid) 92%, transparent);
+  color: var(--text);
+  font-size: 22px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  padding: 0 0 3px;
+  cursor: pointer;
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--shadow-tint) 30%, transparent);
+  transition: background var(--transition), transform var(--transition);
+}
+.guide-shelf-arrow:hover { background: var(--surface-solid); transform: scale(1.06); }
+.guide-shelf-arrow[hidden] { display: none; }
+.guide-shelf-arrow--prev { left: 4px; }
+.guide-shelf-arrow--next { right: 4px; }
+@media (hover: none) { .guide-shelf-arrow { width: 30px; height: 30px; font-size: 19px; } }
 .guide-shelf::-webkit-scrollbar { height: 6px; }
 .guide-shelf::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 4px; }
  

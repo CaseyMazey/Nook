@@ -785,10 +785,15 @@ function renderLibraryHeader() {
 
 // ── Bookshelf ──────────────────────────────────────────────
 
+// Zuletzt ins Bild geholtes Buch — nur bei einem Wechsel wird neu ausgerichtet,
+// sonst bleibt die selbst gewählte Scrollposition des Regals erhalten.
+let guideShelfFocusId = null;
+
 function renderGuideShelf() {
   const shelf = document.getElementById('guide-shelf');
   const empty = document.getElementById('guide-category-empty');
   if (!shelf) return;
+  const keepLeft = shelf.scrollLeft;   // innerHTML = '' würde das Regal an den Anfang springen lassen
   shelf.innerHTML = '';
   renderLibraryHeader();
 
@@ -857,6 +862,62 @@ function renderGuideShelf() {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openGuideCatModal(); }
   });
   shelf.appendChild(addTile);
+
+  // Scrollposition zurück; ein neu geöffnetes Buch, das halb verdeckt ist, ins Bild holen
+  shelf.scrollLeft = keepLeft;
+  const activeId = !guideSearchQuery ? state.activeGuideCategoryId : null;
+  if (activeId !== guideShelfFocusId) {
+    guideShelfFocusId = activeId;
+    const book = shelf.querySelector('.guide-book.active');
+    if (book && !shelf.classList.contains('list-mode')) guideShelfReveal(shelf, book);
+  }
+  updateGuideShelfArrows();
+}
+
+// ── Regal seitlich scrollen (wie die Zeitleiste in „Heute“) ──
+function guideShelfReveal(shelf, el) {
+  const s = shelf.getBoundingClientRect(), r = el.getBoundingClientRect();
+  if (r.left >= s.left - 1 && r.right <= s.right + 1) return;   // schon ganz sichtbar
+  // Ziel ist ein Einrastpunkt (Anfang eines Buchs), sonst schiebt das Einrasten
+  // das Regal gleich wieder weg: links → das Buch selbst, rechts → der erste
+  // Buchanfang, ab dem das Buch ganz ins Bild passt.
+  const startOf = c => shelf.scrollLeft + c.getBoundingClientRect().left - s.left - 6;
+  let target = startOf(el);
+  if (r.right > s.right) {
+    const need = shelf.scrollLeft + r.right - s.right + 6;
+    const fit = [...shelf.children].map(startOf).find(x => x >= need);
+    target = fit === undefined ? target : Math.min(fit, target);
+  }
+  shelf.scrollLeft = Math.max(0, target);   // direkt: ein zweites Neuzeichnen würde eine Animation abbrechen
+}
+function updateGuideShelfArrows() {
+  const shelf = document.getElementById('guide-shelf');
+  const prev = document.getElementById('guide-shelf-prev');
+  const next = document.getElementById('guide-shelf-next');
+  if (!shelf || !prev || !next) return;
+  const scrollable = !shelf.classList.contains('list-mode') && shelf.scrollWidth > shelf.clientWidth + 1;
+  prev.hidden = !scrollable || shelf.scrollLeft <= 8;   // Einrasten verschiebt um ein paar px
+  next.hidden = !scrollable || shelf.scrollLeft + shelf.clientWidth >= shelf.scrollWidth - 8;
+}
+function initGuideShelfScroll() {
+  const shelf = document.getElementById('guide-shelf');
+  if (!shelf) return;
+  // Mausrad scrollt das Regal seitlich; am Anfang/Ende scrollt wieder die Seite
+  shelf.addEventListener('wheel', e => {
+    if (e.deltaX || e.shiftKey || e.ctrlKey || shelf.classList.contains('list-mode')) return;
+    if (shelf.scrollWidth <= shelf.clientWidth + 1) return;
+    const atStart = shelf.scrollLeft <= 0, atEnd = shelf.scrollLeft + shelf.clientWidth >= shelf.scrollWidth - 1;
+    if ((e.deltaY < 0 && atStart) || (e.deltaY > 0 && atEnd)) return;
+    e.preventDefault();
+    shelf.scrollLeft += e.deltaY;
+  }, { passive: false });
+  let raf = 0;
+  const schedule = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; updateGuideShelfArrows(); }); };
+  shelf.addEventListener('scroll', schedule, { passive: true });
+  window.addEventListener('resize', schedule);
+  const page = dir => shelf.scrollBy({ left: dir * Math.max(180, shelf.clientWidth * 0.8), behavior: 'smooth' });
+  document.getElementById('guide-shelf-prev')?.addEventListener('click', () => page(-1));
+  document.getElementById('guide-shelf-next')?.addEventListener('click', () => page(1));
 }
 
 // ── Main content dispatcher ───────────────────────────────
@@ -2490,10 +2551,12 @@ function initGuides() {
     gridBtn.classList.toggle('active', mode !== 'list');
     listBtn.classList.toggle('active', mode === 'list');
     DB.set('guideShelfMode', mode);
+    updateGuideShelfArrows();
   };
   gridBtn.addEventListener('click', () => setShelfMode('grid'));
   listBtn.addEventListener('click', () => setShelfMode('list'));
   setShelfMode(DB.get('guideShelfMode', 'grid'));
+  initGuideShelfScroll();
 
   // Close chapter-detail meatball menu on outside click
   document.addEventListener('click', () => {
