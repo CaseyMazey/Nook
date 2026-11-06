@@ -121,7 +121,16 @@ brainDumpGrid?.addEventListener('click', e => {
   const hit = brainDumpFind(row.dataset.id);
   if (!hit) return;
   if (e.target.closest('.bd-del')) {
-    brainDump.items[hit.sec] = brainDump.items[hit.sec].filter(i => i !== hit.item);
+    const list = brainDump.items[hit.sec];
+    const idx = list.indexOf(hit.item);
+    list.splice(idx, 1);
+    hubUndo(`„${hit.item.text}“ entfernt`, () => {
+      const cur = (brainDump.items[hit.sec] ||= []);
+      if (cur.some(i => i.id === hit.item.id)) return;
+      cur.splice(Math.min(idx, cur.length), 0, hit.item);
+      saveBrainDump();
+      renderBrainDump();
+    });
   } else if (e.target.closest('.bd-to-task')) {
     addWeekTasksFromLines([hit.item.text], hit.sec === 'prio' ? 1 : 2);
     hit.item.sent = true;

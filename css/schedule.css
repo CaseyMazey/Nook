@@ -27,7 +27,7 @@
    today.js renderBlocks() rückt den laufenden Abschnitt in die Mitte.
    Pausen sind schmale Markierungen zwischen den Karten. */
 #blocks-row {
-  display: flex; flex-wrap: nowrap; align-items: stretch;
+  display: flex; flex-wrap: nowrap; align-items: stretch; gap: 8px;
   overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity;
   padding-bottom: 6px; scrollbar-width: thin;
 }
@@ -66,11 +66,34 @@
 [data-today-style="rpg"] #blocks-row .block-slot.seg-school { box-shadow: none; }
 
 @media (max-width: 480px) {
-  #blocks-row { scroll-snap-type: x mandatory; }
+  #blocks-row { scroll-snap-type: x mandatory; gap: 10px; }
   /* wie bisher in today.css: eine Karte fast bildschirmbreit, seitlich wischen */
   #blocks-row .block-slot { flex: 0 0 86%; }
   #blocks-row .block-break { flex: 0 0 76px; scroll-snap-align: center; }
 }
+
+/* ── Umschalter „Heute / Morgen“ (today.js: renderTodayDaySwitch) ── */
+.today-section-head .today-day-switch { margin-left: auto; }
+.today-day-switch { display: inline-flex; border: 1px solid var(--border); border-radius: 99px; overflow: hidden; }
+.today-day-switch button {
+  padding: 2px 10px; font-size: calc(11px * var(--core-font-scale)); color: var(--text-3); background: transparent;
+  transition: background var(--transition), color var(--transition);
+}
+.today-day-switch button + button { border-left: 1px solid var(--border); }
+.today-day-switch button.active { background: var(--sage-bg); color: var(--sage-dark); font-weight: 600; }
+.today-day-switch button:focus-visible { outline: 2px solid var(--sage); outline-offset: -2px; }
+
+/* ── „+“ in Projekt-/Arbeitsblöcken: Aufgabe für diesen Block ── */
+#blocks-row .block-slot.seg-block { position: relative; }
+.block-add-task {
+  position: absolute; top: 8px; right: 8px; width: 22px; height: 22px; border-radius: 50%;
+  display: grid; place-items: center; font-size: 15px; line-height: 1; color: var(--text-3);
+  background: color-mix(in srgb, var(--surface-solid) 70%, transparent); border: 1px solid var(--border);
+  opacity: 0; transition: opacity var(--transition), color var(--transition), background var(--transition);
+}
+.block-slot:hover .block-add-task, .block-add-task:focus-visible { opacity: 1; }
+.block-add-task:hover { color: var(--sage-dark); background: var(--sage-bg); }
+@media (hover: none) { .block-add-task { opacity: .85; } }
 
 /* ── Einstellungen: Wochenübersicht ──────────────────────────── */
 .schedule-settings-open { padding: 5px 12px; font-size: calc(12px * var(--core-font-scale)); }

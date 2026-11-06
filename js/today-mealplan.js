@@ -51,10 +51,6 @@ const MEALPLAN_WEEKDAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Frei
 
 const PDFJS_BASE = "js/vendor/pdfjs/"; // pdf.js 3.11.174, lokal ausgeliefert
 
-function mealPlanEsc(s) {
-  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
-}
-
 function mealPlanEmptyDays() {
   return MEALPLAN_WEEKDAYS.map(() => ({ menu1: '', menu2: '', menu3: '', dessert: '' }));
 }
@@ -71,28 +67,14 @@ function mealPlanLookup(date) {
 // =========================
 // PDF.JS — lazy per <script>-Tag
 // =========================
-let mealPlanPdfjsPromise = null;
-function mealPlanLoadScript(src) {
-  return new Promise((resolve, reject) => {
-    const s = document.createElement('script');
-    s.src = src;
-    s.onload = resolve;
-    s.onerror = () => reject(new Error('Script konnte nicht geladen werden: ' + src));
-    document.head.appendChild(s);
-  });
-}
+// loadScriptOnce (hub-utils.js) lädt jede Datei nur einmal
 function mealPlanLoadPdfjs() {
-  if (window.pdfjsLib && window.pdfjsWorker) return Promise.resolve(window.pdfjsLib);
-  if (!mealPlanPdfjsPromise) {
-    mealPlanPdfjsPromise = mealPlanLoadScript(PDFJS_BASE + 'pdf.min.js')
-      .then(() => mealPlanLoadScript(PDFJS_BASE + 'pdf.worker.min.js'))
-      .then(() => {
-        window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_BASE + 'pdf.worker.min.js';
-        return window.pdfjsLib;
-      })
-      .catch(err => { mealPlanPdfjsPromise = null; throw err; });
-  }
-  return mealPlanPdfjsPromise;
+  return loadScriptOnce(PDFJS_BASE + 'pdf.min.js')
+    .then(() => loadScriptOnce(PDFJS_BASE + 'pdf.worker.min.js'))
+    .then(() => {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_BASE + 'pdf.worker.min.js';
+      return window.pdfjsLib;
+    });
 }
 
 // =========================
@@ -311,7 +293,7 @@ function mealPlanDishHtml(text) {
   if (!text) return '<span class="mealplan-dish-empty">—</span>';
   const vegan = /^VEGAN\b/i.test(text);
   const clean = vegan ? text.replace(/^VEGAN\s*/i, '') : text;
-  return `${vegan ? '<span class="mealplan-tag">vegan</span>' : ''}${mealPlanEsc(clean)}`;
+  return `${vegan ? '<span class="mealplan-tag">vegan</span>' : ''}${escHtml(clean)}`;
 }
 
 function renderMealPlan() {
@@ -336,7 +318,7 @@ function renderMealPlan() {
   const bodyHtml = hasDay
     ? `<ul class="mealplan-list">${MEALPLAN_SLOTS.map(s => `
         <li class="mealplan-item">
-          <div class="mealplan-slot">${s.label}${week.labels && week.labels[s.key] ? `<span class="mealplan-slot-sub">${mealPlanEsc(week.labels[s.key])}</span>` : ''}</div>
+          <div class="mealplan-slot">${s.label}${week.labels && week.labels[s.key] ? `<span class="mealplan-slot-sub">${escHtml(week.labels[s.key])}</span>` : ''}</div>
           <div class="mealplan-dish">${mealPlanDishHtml(day[s.key])}</div>
         </li>`).join('')}</ul>`
     : `<div class="mealplan-empty">
@@ -350,7 +332,7 @@ function renderMealPlan() {
       <span class="panel-label">Speiseplan</span>
       <div class="mealplan-head-actions">
         <button type="button" class="week-btn" id="mealplan-prev" aria-label="Vorheriger Tag">&#8249;</button>
-        <span class="mealplan-day-label" id="mealplan-day-label" title="${mealPlanEsc(fmt(date, { weekday: 'long', day: 'numeric', month: 'long' }))}">${mealPlanEsc(mealPlanDayLabel(date))}</span>
+        <span class="mealplan-day-label" id="mealplan-day-label" title="${escHtml(fmt(date, { weekday: 'long', day: 'numeric', month: 'long' }))}">${escHtml(mealPlanDayLabel(date))}</span>
         <button type="button" class="week-btn" id="mealplan-next" aria-label="Nächster Tag">&#8250;</button>
         <button type="button" class="icon-btn" data-mealplan-import title="Speiseplan-PDF importieren" aria-label="Speiseplan-PDF importieren">
           <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 2v8M4.5 6.5L8 10l3.5-3.5M3 13h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -434,7 +416,7 @@ function mealPlanOpenEditor(monday, data, message = '', title = 'Speiseplan prü
       ${MEALPLAN_SLOTS.map(s => `
         <label class="mealplan-edit-row">
           <span>${s.label}</span>
-          <textarea class="modal-textarea mealplan-edit-input" rows="2" data-day="${d}" data-slot="${s.key}">${mealPlanEsc(days[d][s.key] || '')}</textarea>
+          <textarea class="modal-textarea mealplan-edit-input" rows="2" data-day="${d}" data-slot="${s.key}">${escHtml(days[d][s.key] || '')}</textarea>
         </label>`).join('')}
     </div>`).join('');
   mealPlanModal.open();

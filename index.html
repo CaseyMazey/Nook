@@ -349,6 +349,10 @@
             <div id="today-blocks-section">
               <div class="today-section-head">
                 <div class="today-section-label">STUNDENPLAN</div>
+                <div class="today-day-switch" id="today-day-switch" role="group" aria-label="Welcher Tag">
+                  <button type="button" data-offset="0" class="active" aria-pressed="true">Heute</button>
+                  <button type="button" data-offset="1" aria-pressed="false">Morgen</button>
+                </div>
                 <button type="button" class="today-schedule-edit" id="today-schedule-edit-btn" title="Stundenplan dieses Wochentags bearbeiten" aria-label="Stundenplan bearbeiten">✎</button>
               </div>
               <div id="blocks-row"></div>
@@ -1598,6 +1602,15 @@
                     <input type="date" id="setting-tracker-end" class="modal-input settings-input"/>
                   </div>
                   <p class="settings-status hidden" id="tracker-settings-hint" role="status">Das Ende muss nach dem Start liegen.</p>
+                </div>
+              </div>
+
+              <!-- Heutige Termine (js/today-events.js) -->
+              <div class="panel settings-panel">
+                <div class="panel-header"><span class="panel-label">Termine auf der Heute-Seite</span></div>
+                <div class="settings-row">
+                  <div><div class="settings-row-title">Heutige Termine anzeigen</div><div class="settings-row-sub">Termine aus dem Kalender, die heute anstehen — nur zur Info, ein Klick öffnet den Tag</div></div>
+                  <label class="toggle"><input type="checkbox" id="setting-today-events-due"/><span class="toggle-slider"></span></label>
                 </div>
               </div>
 
@@ -4286,6 +4299,7 @@
   <script src="js/budget-sparprognose.js"></script>
   <script src="js/budget-sparplaene.js"></script>
   <script src="js/today-budget.js"></script>
+  <script src="js/today-events.js"></script>
   <script src="js/today-quicknote-send.js"></script>
   <script src="js/today-braindump.js"></script>
   <script src="js/projects.js"></script>

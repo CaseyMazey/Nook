@@ -40,6 +40,13 @@ function scheduleChanged() {
     if (currentView === 'settings') renderScheduleSettings();
   }
 }
+// Für Texteingaben (Namen, Raum, Notiz): sofort speichern, die Seite darunter
+// aber erst nach einer kurzen Tipp-Pause neu zeichnen.
+let scheduleChangedTimer = null;
+function scheduleChangedSoon() {
+  clearTimeout(scheduleChangedTimer);
+  scheduleChangedTimer = setTimeout(scheduleChanged, 300);
+}
 function scheduleSaveAll() {
   saveScheduleWeek(); saveScheduleLessons();
   scheduleChanged();
@@ -61,8 +68,7 @@ function scheduleUndo() {
 
 // Aufgaben, die einem Block zugeordnet sind (task.blocks / Alt-Feld task.block)
 function scheduleTasksForBlock(id) {
-  return (typeof tasks !== 'undefined' ? tasks : [])
-    .filter(t => (Array.isArray(t.blocks) ? t.blocks : (t.block != null ? [t.block] : [])).includes(id));
+  return (typeof tasks !== 'undefined' ? tasks : []).filter(t => taskBlockIds(t).includes(id));
 }
 
 // ── Einstellungen: kurze Wochenübersicht + Knopf ────────────────────────
@@ -72,7 +78,7 @@ function renderScheduleSettings() {
   box.innerHTML = SCHEDULE_WEEKDAYS.map(wd => `
     <button type="button" class="schedule-summary-row" data-wd="${wd}">
       <span class="schedule-summary-day">${SCHEDULE_DAY_SHORT[wd]}</span>
-      <span class="schedule-summary-text">${scheduleEsc(scheduleDaySummary(wd))}</span>
+      <span class="schedule-summary-text">${escHtml(scheduleDaySummary(wd))}</span>
     </button>`).join('');
   box.querySelectorAll('.schedule-summary-row').forEach(b =>
     b.addEventListener('click', () => openScheduleEditor(Number(b.dataset.wd))));
@@ -82,8 +88,8 @@ function renderScheduleSettings() {
 function scheduleTimeField(value, onCommit, ariaLabel) {
   const wrap = document.createElement('div');
   wrap.className = 'bs-time-wrap';
-  wrap.innerHTML = `<input class="bs-time" type="text" inputmode="numeric" maxlength="5" placeholder="HH:MM" aria-label="${scheduleEsc(ariaLabel)}"/>
-    <button type="button" class="bs-time-trigger" aria-label="${scheduleEsc(ariaLabel)} auswählen">▾</button>`;
+  wrap.innerHTML = `<input class="bs-time" type="text" inputmode="numeric" maxlength="5" placeholder="HH:MM" aria-label="${escHtml(ariaLabel)}"/>
+    <button type="button" class="bs-time-trigger" aria-label="${escHtml(ariaLabel)} auswählen">▾</button>`;
   const input = wrap.querySelector('input');
   const trigger = wrap.querySelector('button');
   input.value = value || '';
@@ -107,9 +113,9 @@ function scheduleEl(tag, cls, html) {
 function scheduleSection(title, actionLabel, onAction) {
   const sec = scheduleEl('section', 'schedule-section');
   const head = scheduleEl('div', 'schedule-section-head');
-  head.appendChild(scheduleEl('h3', 'schedule-section-title', scheduleEsc(title)));
+  head.appendChild(scheduleEl('h3', 'schedule-section-title', escHtml(title)));
   if (actionLabel) {
-    const btn = scheduleEl('button', 'schedule-add-btn', scheduleEsc(actionLabel));
+    const btn = scheduleEl('button', 'schedule-add-btn', escHtml(actionLabel));
     btn.type = 'button';
     btn.addEventListener('click', onAction);
     head.appendChild(btn);
@@ -125,7 +131,7 @@ function scheduleDelBtn(label, onClick) {
 }
 function scheduleToggle(checked, label, onChange) {
   const wrap = scheduleEl('label', 'schedule-toggle');
-  wrap.innerHTML = `<span class="toggle"><input type="checkbox" ${checked ? 'checked' : ''}/><span class="toggle-slider"></span></span><span>${scheduleEsc(label)}</span>`;
+  wrap.innerHTML = `<span class="toggle"><input type="checkbox" ${checked ? 'checked' : ''}/><span class="toggle-slider"></span></span><span>${escHtml(label)}</span>`;
   wrap.querySelector('input').addEventListener('change', e => onChange(e.target.checked));
   return wrap;
 }
@@ -147,7 +153,7 @@ function renderScheduleUndoBar() {
   const bar = document.getElementById('schedule-undo-bar');
   bar.classList.toggle('hidden', !scheduleUndoSnap);
   if (!scheduleUndoSnap) return;
-  bar.innerHTML = `<span>${scheduleEsc(scheduleUndoSnap.label)}</span>`;
+  bar.innerHTML = `<span>${escHtml(scheduleUndoSnap.label)}</span>`;
   const btn = scheduleEl('button', 'schedule-undo-btn', '↶ Rückgängig');
   btn.type = 'button';
   btn.addEventListener('click', scheduleUndo);
@@ -165,7 +171,7 @@ function renderScheduleWeekStrip() {
     btn.type = 'button';
     btn.setAttribute('aria-pressed', wd === scheduleEditDay ? 'true' : 'false');
     btn.innerHTML = `<span class="schedule-day-tab-name">${SCHEDULE_DAY_SHORT[wd]}${issues ? ' <span class="schedule-day-tab-warn" title="Hinweise vorhanden">⚠</span>' : ''}</span>
-      <span class="schedule-day-tab-info">${scheduleEsc(scheduleDaySummary(wd))}</span>`;
+      <span class="schedule-day-tab-info">${escHtml(scheduleDaySummary(wd))}</span>`;
     btn.addEventListener('click', () => { scheduleEditDay = wd; renderScheduleEditor(); });
     strip.appendChild(btn);
   });
@@ -234,7 +240,7 @@ function renderScheduleDayEditor() {
     row.dataset.ref = 'break:' + br.id;
     const name = scheduleEl('input', 'modal-input schedule-name');
     name.value = br.label || ''; name.placeholder = 'Pause'; name.setAttribute('aria-label', 'Name der Pause');
-    name.addEventListener('input', () => { br.label = name.value; saveScheduleWeek(); scheduleChanged(); });
+    name.addEventListener('input', () => { br.label = name.value; saveScheduleWeek(); scheduleChangedSoon(); });
     row.append(name,
       scheduleTimeField(br.start, v => { br.start = v; commit(); }, 'Pausenbeginn'),
       scheduleEl('span', 'schedule-dash', '–'),
@@ -257,7 +263,7 @@ function renderScheduleDayEditor() {
   if (issues.length) {
     const box = scheduleEl('div', 'schedule-issues');
     box.setAttribute('role', 'status');
-    box.innerHTML = `<strong>⚠ Bitte prüfen</strong><ul>${issues.map(i => `<li>${scheduleEsc(i.msg)}</li>`).join('')}</ul>
+    box.innerHTML = `<strong>⚠ Bitte prüfen</strong><ul>${issues.map(i => `<li>${escHtml(i.msg)}</li>`).join('')}</ul>
       <p>Überschneidende Teile von Blöcken werden in der Tagesansicht nicht gezeigt — gespeichert bleibt alles.</p>`;
     host.appendChild(box);
     const refs = new Set(issues.map(i => i.ref));
@@ -280,15 +286,15 @@ function buildScheduleKindSelect(block) {
   const activeProjects = (typeof projects !== 'undefined' ? projects : []).filter(p => !p.archived);
   let html = '<optgroup label="Aktivität">' + Object.entries(SCHEDULE_BLOCK_KINDS)
     .filter(([k]) => k !== 'project')
-    .map(([k, v]) => `<option value="kind:${k}">${v.icon} ${scheduleEsc(v.label)}</option>`).join('') + '</optgroup>';
+    .map(([k, v]) => `<option value="kind:${k}">${v.icon} ${escHtml(v.label)}</option>`).join('') + '</optgroup>';
   if (activeProjects.length) {
     html += '<optgroup label="Projekte">' + activeProjects
-      .map(p => `<option value="project:${scheduleEsc(p.id)}">🌳 ${scheduleEsc(p.name)}</option>`).join('') + '</optgroup>';
+      .map(p => `<option value="project:${escHtml(p.id)}">🌳 ${escHtml(p.name)}</option>`).join('') + '</optgroup>';
   }
   // Zugewiesenes, inzwischen archiviertes/gelöschtes Projekt bleibt sichtbar
   if (block.kind === 'project' && block.projectId != null && !activeProjects.some(p => p.id === block.projectId)) {
     const name = scheduleNames.project(block.projectId);
-    html += `<option value="project:${scheduleEsc(block.projectId)}">🌳 ${scheduleEsc(name || 'Projekt (nicht mehr vorhanden)')}</option>`;
+    html += `<option value="project:${escHtml(block.projectId)}">🌳 ${escHtml(name || 'Projekt (nicht mehr vorhanden)')}</option>`;
   }
   sel.innerHTML = html;
   sel.value = block.kind === 'project' ? 'project:' + block.projectId : 'kind:' + block.kind;
@@ -326,7 +332,7 @@ function buildScheduleBlockSection(wd, day, commit) {
     name.value = bl.label || '';
     name.placeholder = scheduleBlockDisplayName(Object.assign({}, bl, { label: '' }));
     name.setAttribute('aria-label', 'Name des Blocks');
-    name.addEventListener('input', () => { bl.label = name.value; saveScheduleWeek(); scheduleChanged(); renderSchedulePreviewOnly(wd); });
+    name.addEventListener('input', () => { bl.label = name.value; saveScheduleWeek(); scheduleChangedSoon(); renderSchedulePreviewOnly(wd); });
 
     const sel = buildScheduleKindSelect(bl);
     sel.addEventListener('change', () => {
@@ -385,7 +391,7 @@ function buildScheduleLessonSection(wd, day) {
     row.dataset.ref = 'lesson:' + l.id;
     const subj = scheduleEl('select', 'modal-select');
     subj.setAttribute('aria-label', 'Fach');
-    subj.innerHTML = '<option value="">— Fach —</option>' + scheduleSubjects.map(s => `<option value="${scheduleEsc(s.id)}">${scheduleEsc(s.name)}</option>`).join('');
+    subj.innerHTML = '<option value="">— Fach —</option>' + scheduleSubjects.map(s => `<option value="${escHtml(s.id)}">${escHtml(s.name)}</option>`).join('');
     subj.value = l.subjectId || '';
     subj.addEventListener('change', () => { l.subjectId = subj.value || null; commitLessons(); });
 
@@ -394,7 +400,7 @@ function buildScheduleLessonSection(wd, day) {
     teach.setAttribute('aria-label', 'Lehrkraft');
     const fits = scheduleTeachers.filter(t => l.subjectId && t.subjectIds.includes(l.subjectId));
     const rest = scheduleTeachers.filter(t => !fits.includes(t));
-    const opt = t => `<option value="${scheduleEsc(t.id)}">${scheduleEsc(t.name)}</option>`;
+    const opt = t => `<option value="${escHtml(t.id)}">${escHtml(t.name)}</option>`;
     teach.innerHTML = '<option value="">— Lehrkraft —</option>'
       + (fits.length ? `<optgroup label="Unterrichtet dieses Fach">${fits.map(opt).join('')}</optgroup>` : '')
       + (rest.length ? `<optgroup label="${fits.length ? 'Weitere' : 'Lehrkräfte'}">${rest.map(opt).join('')}</optgroup>` : '');
@@ -403,10 +409,10 @@ function buildScheduleLessonSection(wd, day) {
 
     const room = scheduleEl('input', 'modal-input schedule-room');
     room.value = l.room || ''; room.placeholder = 'Raum'; room.setAttribute('aria-label', 'Raum');
-    room.addEventListener('input', () => { l.room = room.value; saveScheduleLessons(); scheduleChanged(); });
+    room.addEventListener('input', () => { l.room = room.value; saveScheduleLessons(); scheduleChangedSoon(); });
     const notes = scheduleEl('input', 'modal-input schedule-notes');
     notes.value = l.notes || ''; notes.placeholder = 'Thema / Notiz'; notes.setAttribute('aria-label', 'Thema oder Notiz');
-    notes.addEventListener('input', () => { l.notes = notes.value; saveScheduleLessons(); scheduleChanged(); });
+    notes.addEventListener('input', () => { l.notes = notes.value; saveScheduleLessons(); scheduleChangedSoon(); });
 
     row.append(subj, teach,
       scheduleTimeField(l.start, v => { l.start = v; commitLessons(); }, 'Stundenbeginn'),
@@ -434,7 +440,7 @@ function buildScheduleOrphanLessons(wd) {
     row.dataset.ref = 'lesson:' + l.id;
     const name = scheduleNames.subject(l.subjectId) || 'Unterricht';
     const extra = [scheduleNames.teacher(l.teacherId), l.room && 'Raum ' + l.room].filter(Boolean).join(' · ');
-    row.append(scheduleEl('span', 'schedule-orphan-label', `${scheduleEsc(l.start)}–${scheduleEsc(l.end)} · ${scheduleEsc(name)}${extra ? ' · ' + scheduleEsc(extra) : ''}`),
+    row.append(scheduleEl('span', 'schedule-orphan-label', `${escHtml(l.start)}–${escHtml(l.end)} · ${escHtml(name)}${extra ? ' · ' + escHtml(extra) : ''}`),
       scheduleDelBtn('Stunde löschen', () => {
         scheduleRememberUndo('Unterrichtsstunde gelöscht');
         scheduleLessons = scheduleLessons.filter(x => x !== l);
@@ -469,7 +475,7 @@ function fillSchedulePreview(sec, wd) {
     const extra = s.type === 'lesson' ? [s.teacher, s.room && 'Raum ' + s.room].filter(Boolean).join(' · ')
       : s.type === 'block' && s.project && s.project !== s.label ? '🌳 ' + s.project : '';
     const li = scheduleEl('li', `schedule-preview-item seg-${s.type}` + (s.kind ? ' seg-kind-' + s.kind : ''));
-    li.innerHTML = `<span class="schedule-preview-time">${s.start}–${s.end}</span><span class="schedule-preview-label">${scheduleEsc(s.label)}</span>${extra ? `<span class="schedule-preview-extra">${scheduleEsc(extra)}</span>` : ''}`;
+    li.innerHTML = `<span class="schedule-preview-time">${s.start}–${s.end}</span><span class="schedule-preview-label">${escHtml(s.label)}</span>${extra ? `<span class="schedule-preview-extra">${escHtml(extra)}</span>` : ''}`;
     list.appendChild(li);
   });
   const end = scheduleEl('li', 'schedule-preview-item seg-end', `<span class="schedule-preview-time">ab ${plan.end}</span><span class="schedule-preview-label">Feierabend</span>`);
@@ -512,7 +518,7 @@ function buildScheduleDayActions(wd) {
   const tplRow = scheduleEl('div', 'schedule-row schedule-actions-row');
   const tplSel = scheduleEl('select', 'modal-select');
   tplSel.setAttribute('aria-label', 'Vorlage');
-  tplSel.innerHTML = '<option value="">Vorlage wählen …</option>' + scheduleTemplates.map(t => `<option value="${scheduleEsc(t.id)}">${scheduleEsc(t.name)}</option>`).join('');
+  tplSel.innerHTML = '<option value="">Vorlage wählen …</option>' + scheduleTemplates.map(t => `<option value="${escHtml(t.id)}">${escHtml(t.name)}</option>`).join('');
   const applyBtn = scheduleEl('button', 'btn-ghost', 'Anwenden'); applyBtn.type = 'button';
   applyBtn.addEventListener('click', async () => {
     const tpl = scheduleTemplates.find(t => t.id === tplSel.value);
@@ -610,7 +616,7 @@ function renderScheduleCatalog() {
     const row = scheduleEl('div', 'schedule-row schedule-item schedule-subject-row');
     const name = scheduleEl('input', 'modal-input schedule-name');
     name.value = s.name; name.placeholder = 'z.B. Anwendungsentwicklung'; name.setAttribute('aria-label', 'Name des Fachs');
-    name.addEventListener('input', () => { s.name = name.value; saveScheduleSubjects(); scheduleChanged(); });
+    name.addEventListener('input', () => { s.name = name.value; saveScheduleSubjects(); scheduleChangedSoon(); });
     const used = scheduleLessons.filter(l => l.subjectId === s.id).length;
     row.append(name, scheduleEl('span', 'schedule-meta', used ? `${used} ${used === 1 ? 'Stunde' : 'Stunden'}` : ''),
       scheduleDelBtn('Fach löschen', async () => {
@@ -638,12 +644,12 @@ function renderScheduleCatalog() {
     const row = scheduleEl('div', 'schedule-row schedule-item schedule-teacher-row');
     const name = scheduleEl('input', 'modal-input schedule-name');
     name.value = t.name; name.placeholder = 'z.B. Frau Muster'; name.setAttribute('aria-label', 'Name der Lehrkraft');
-    name.addEventListener('input', () => { t.name = name.value; saveScheduleTeachers(); scheduleChanged(); });
+    name.addEventListener('input', () => { t.name = name.value; saveScheduleTeachers(); scheduleChangedSoon(); });
     const subs = scheduleEl('div', 'schedule-teacher-subjects');
     if (!scheduleSubjects.length) subs.appendChild(scheduleEl('span', 'schedule-meta', 'Fächer oben anlegen, dann hier zuordnen'));
     scheduleSubjects.forEach(s => {
       const lab = scheduleEl('label', 'schedule-chip' + (t.subjectIds.includes(s.id) ? ' active' : ''),
-        `<input type="checkbox" ${t.subjectIds.includes(s.id) ? 'checked' : ''}/> ${scheduleEsc(s.name || 'Fach')}`);
+        `<input type="checkbox" ${t.subjectIds.includes(s.id) ? 'checked' : ''}/> ${escHtml(s.name || 'Fach')}`);
       lab.querySelector('input').addEventListener('change', e => {
         t.subjectIds = e.target.checked ? [...t.subjectIds, s.id] : t.subjectIds.filter(id => id !== s.id);
         lab.classList.toggle('active', e.target.checked);
@@ -677,7 +683,7 @@ function renderScheduleCatalog() {
     name.addEventListener('input', () => { tpl.name = name.value; saveScheduleTemplates(); });
     const d = tpl.day;
     const info = [`${d.start}–${d.end}`, d.school ? `Schule bis ${d.school.end}` : '', `${(d.blocks || []).length} Blöcke`].filter(Boolean).join(' · ');
-    row.append(name, scheduleEl('span', 'schedule-meta', scheduleEsc(info)), scheduleDelBtn('Vorlage löschen', async () => {
+    row.append(name, scheduleEl('span', 'schedule-meta', escHtml(info)), scheduleDelBtn('Vorlage löschen', async () => {
       const ok = await hubConfirm({ title: 'Vorlage löschen?', message: `„${tpl.name}“ wird gelöscht. Tage, auf die sie angewendet wurde, bleiben unverändert.`, confirmText: 'Löschen', danger: true });
       if (!ok) return;
       scheduleTemplates = scheduleTemplates.filter(x => x !== tpl);
@@ -702,4 +708,4 @@ if (typeof currentView !== 'undefined' && currentView === 'settings') renderSche
 
 // ── Einstiege ───────────────────────────────────────────────────────────
 document.getElementById('schedule-open-btn')?.addEventListener('click', () => openScheduleEditor());
-document.getElementById('today-schedule-edit-btn')?.addEventListener('click', () => openScheduleEditor(state.currentDate.getDay()));
+document.getElementById('today-schedule-edit-btn')?.addEventListener('click', () => openScheduleEditor(timelineDate().getDay()));

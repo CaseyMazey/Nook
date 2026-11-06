@@ -57,6 +57,10 @@ function taskStatusOf(t) {
   return (t && TASK_STATUS[t.status]) ? t.status : (t && t.done ? 'completed' : 'open');
 }
 function isTaskCompleted(t) { return taskStatusOf(t) === 'completed'; }
+// Block-IDs einer Aufgabe — neues Feld task.blocks, Alt-Feld task.block
+function taskBlockIds(t) {
+  return Array.isArray(t && t.blocks) ? t.blocks : (t && t.block != null ? [t.block] : []);
+}
 
 // Setzt den Status und hält das abgeleitete `done`-Bool synchron, damit Module,
 // die weiterhin `task.done` lesen (z.B. calendar.js), korrekt bleiben:
@@ -676,7 +680,7 @@ placeSidebarWidgets(mehrPhoneQuery.matches);
 mehrPhoneQuery.addEventListener('change', e => placeSidebarWidgets(e.matches));
 
 function renderView(name) {
-  if(name==='today')     { renderBlocks(); renderTasks(); refreshTodayTextareas(); renderGruppendienste(); renderMealPlan(); if (typeof renderTodayTracker === 'function') renderTodayTracker(); if (typeof renderTodayBudgetDue === 'function') renderTodayBudgetDue(); }
+  if(name==='today')     { renderBlocks(); renderTasks(); refreshTodayTextareas(); renderGruppendienste(); renderMealPlan(); if (typeof renderTodayTracker === 'function') renderTodayTracker(); if (typeof renderTodayBudgetDue === 'function') renderTodayBudgetDue(); if (typeof renderTodayEventsDue === 'function') renderTodayEventsDue(); }
   if(name==='pinboard')  { renderDesk(); }
   if(name==='flashcards'){ renderSubjectList(); }
   if(name==='guides')    { initGuides(); }

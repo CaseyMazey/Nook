@@ -54,10 +54,6 @@ function scheduleNewId() {
   return Date.now() * 1000 + scheduleIdSeq;
 }
 function scheduleClone(v) { return JSON.parse(JSON.stringify(v)); }
-// Eigenes Escaping: escHtml() liegt in später geladenen Dateien
-function scheduleEsc(v) {
-  return String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-}
 function scheduleEmptyDay(enabled = false) {
   return { enabled, start: '08:00', end: '16:00', school: null, breaks: [], blocks: [] };
 }

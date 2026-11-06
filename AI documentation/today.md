@@ -1,6 +1,6 @@
 # Today.md
 
-Version: 1.1
+Version: 1.2
 
 ---
 
@@ -42,7 +42,7 @@ Der Today-Tab besteht aus folgenden Bereichen:
 
 1. Begrüßungsheader
 2. Zeitblöcke
-3. Aufgaben
+3. Aufgaben (darunter die Gruppenpflichten)
 4. Rechte Sidebar
 
 Diese Struktur soll grundsätzlich erhalten bleiben.
@@ -60,7 +60,11 @@ Enthält:
 - Datum
 - Kalenderwoche
 - Wetter
-- Uhr
+- optional: Fortschritts-Tracker (z.B. „Ausbildung 64 / 156 Wochen“, js/today-tracker.js)
+- optional: „📅 Heute“ — die heutigen Termine aus dem Kalender (js/today-events.js, Key `todayEventsDue`)
+- optional: „💶 Heute fällig“ — heute anstehende Budget-Posten (js/today-budget.js, Key `todayBudgetDue`)
+
+Die drei optionalen Zeilen sind nur lesend und lassen sich unter Einstellungen → Heute-Seite abschalten; ein Klick führt in den zuständigen Tab (Kalender-Tagesfenster bzw. Budget). Die Uhr steht in der rechten Spalte.
 
 Der Header bildet den Einstieg in den Tag.
 
@@ -79,13 +83,15 @@ Ein Tag besteht aus:
 
 Die Zeitleiste wird daraus berechnet (`scheduleComputeSegments`): Pause vor Unterricht vor Schulzeit vor Block; unverplante Arbeitszeit erscheint als „Nicht zugewiesen“. Blöcke, die in Pausen oder Unterricht ragen, werden dort nur nicht angezeigt — gespeichert wird nie etwas still verändert, der Editor zeigt einen Hinweis.
 
+Über der Zeitleiste schaltet „Heute / Morgen“ auf den Stundenplan des Folgetags (nur Vorschau; Aufgabenliste und Woche bleiben, in den Blöcken stehen die noch offenen Aufgaben). Ein „+“ in Projekt-/Arbeitsblöcken öffnet „Neue Aufgabe“ mit diesem Block. Bleibt Nook über Mitternacht offen, springt die Seite selbst auf den neuen Tag (`todayMinuteTick`).
+
 Der aktuelle Abschnitt wird hervorgehoben (JETZT). Pausen sind schmale Markierungen, Blockarten haben je eine Akzentfarbe. Die Zeitleiste ist eine seitlich scrollende Zeile (Desktop und Handy, Mausrad scrollt seitlich); sie rückt den laufenden Abschnitt in die Mitte, sobald sich Tag oder laufender Abschnitt ändern (Prüfung jede Minute), und behält sonst die Scrollposition.
 
 Aufgaben hängen wie bisher per `task.blocks` an Block-IDs. Block-IDs sind nur innerhalb eines Tages eindeutig: Kopien eines Tages behalten sie, damit eine Aufgabe an allen Tagen mit diesem Block erscheint.
 
 Daten: `scheduleWeek` (Tage), `scheduleLessons`, `scheduleSubjects`, `scheduleTeachers`, `scheduleTemplates`. Der alte Key `blocks` war die Quelle der einmaligen Übernahme (Mo–Fr) und wird nicht mehr geschrieben.
 
-Vorlagen sind Ausgangspunkte: Anwenden kopiert sie in den Tag, spätere Änderungen an Vorlage oder Tag beeinflussen sich nicht. Ersetzende Aktionen (Vorlage, Kopieren, Löschen) fragen nach und lassen sich einmal rückgängig machen.
+Vorlagen sind Ausgangspunkte: Anwenden kopiert sie in den Tag, spätere Änderungen an Vorlage oder Tag beeinflussen sich nicht. Dabei behalten bestehende Blöcke ihre IDs (gleicher Name, sonst der Reihe nach), damit Aufgaben-Zuordnungen bleiben. Ersetzende Aktionen (Vorlage, Kopieren, Löschen) fragen nach und lassen sich einmal rückgängig machen.
 
 Tests der Berechnung: `node --test tests/schedule.test.js`.
 
@@ -103,8 +109,14 @@ Sortierung:
 Aufgaben können:
 
 - Priorität besitzen
-- mehreren Blöcken zugeordnet sein
+- mehreren Blöcken zugeordnet sein (`task.blocks`; Alt-Feld `task.block` liest `taskBlockIds()` in main.js mit)
 - Notizen enthalten
+
+Löschen geht ohne Rückfrage, dafür gibt es 8 Sekunden „Rückgängig“ (`hubUndo`, hub-utils.js).
+
+## Gruppenpflichten
+
+Eigenes Planungssystem unter den Aufgaben (js/gruppendienste.js): Pflichten mit Personen/Gruppen, automatischer fairer Rotation oder fester Reihenfolge, Verknüpfung gegen Doppelbelegung, gespeicherte Planung (`gdSchedule`, nur die Zukunft wird neu berechnet) und PDF-/Druckexport. Die Woche folgt der Kopf-Woche (`todayShiftWeek`). Personen und Gruppen werden unter „Pflichten verwalten → Personen & Gruppen verwalten“ umbenannt, geändert und weich gelöscht (`deleted: true`, damit vergangene Wochen ihre Namen behalten).
 
 ---
 
@@ -118,8 +130,9 @@ Aktuell:
 - Schnellnotiz
 - Speiseplan
 - Mini-Kalender
-- Nationaler Tag
-- Countdowns
+- Nationaler Tag („Heute ist“)
+
+Countdowns und die Positivity-Karte stehen in der linken Navigationsleiste (am Handy im Mehr-Menü), nicht in dieser Spalte.
 
 ---
 
@@ -137,7 +150,7 @@ Beim Anklicken eines Tages öffnet sich das Tagesmodal des Kalenders.
 
 Der Mini-Kalender besitzt keine eigene Terminverwaltung.
 
-Er verwendet ausschließlich Daten aus dem Kalender-Modul.
+Er verwendet ausschließlich Daten aus dem Kalender-Modul (`getEventsForRange`, also auch Serien und den Google-Spiegel).
 
 ---
 
@@ -179,7 +192,7 @@ Nicht als Aufgabenverwaltung.
 
 Zeigt Menü 1–3 und Dessert der Kantine für heute (am Wochenende: Montag), mit Pfeilen zu anderen Wochentagen.
 
-Quelle ist das wöchentliche Speiseplan-PDF aus Dock B (Browser-Export einer Intrexx-Tabelle mit Textebene). Der Nutzer gibt es per Button oder Drag & Drop, Nook liest es lokal mit pdf.js (lazy von cdnjs geladen) und zeigt das Ergebnis zur Kontrolle im Modal, bevor gespeichert wird. Ohne Internet bleibt das Modal zum Eintragen von Hand.
+Quelle ist das wöchentliche Speiseplan-PDF aus Dock B (Browser-Export einer Intrexx-Tabelle mit Textebene). Der Nutzer gibt es per Button oder Drag & Drop, Nook liest es lokal mit pdf.js (liegt in `js/vendor/pdfjs`, wird erst beim ersten Import über `loadScriptOnce` geladen, funktioniert offline) und zeigt das Ergebnis zur Kontrolle im Modal, bevor gespeichert wird. Schlägt das Laden fehl, öffnet das Modal leer zum Eintragen von Hand.
 
 Code: `js/today-mealplan.js`, DB-Key `mealPlanWeeks` (nach Montag der Woche; es wird immer nur die aktuelle Woche gehalten, Speichern ersetzt die vorige).
 

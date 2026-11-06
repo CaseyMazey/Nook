@@ -279,9 +279,6 @@ async function renderWeather() {
 function updateHeader() {
   state.currentWeekId = getWeekId(state.currentDate);
   document.getElementById('week-label').textContent = `KW ${getISOWeek(state.currentDate)}`;
-  // today-title bleibt für Kompatibilität, wird aber nicht mehr angezeigt
-  const titleEl = document.getElementById('today-title');
-  if (titleEl) titleEl.textContent = fmt(new Date(), { weekday: 'long', day: 'numeric', month: 'long' });
   updateCountdown();
   // Zurück-zur-aktuellen-Woche-Knopf nur zeigen, wenn eine andere Woche gewählt ist.
   document.getElementById('week-today-btn')?.classList.toggle('hidden', getWeekId(state.currentDate) === getWeekId(new Date()));
@@ -329,12 +326,14 @@ document.getElementById('sidebar-countdowns')?.addEventListener('click', openCou
 document.getElementById('week-today-btn')?.addEventListener('click', () => {
   state.currentDate = new Date(); updateHeader(); renderView(currentView);
 });
-document.getElementById('prev-week').addEventListener('click', () => {
-  state.currentDate.setDate(state.currentDate.getDate() - 7); updateHeader(); renderView(currentView);
-});
-document.getElementById('next-week').addEventListener('click', () => {
-  state.currentDate.setDate(state.currentDate.getDate() + 7); updateHeader(); renderView(currentView);
-});
+// Woche der Heute-Seite blättern — auch von den Pfeilen der Gruppenpflichten
+// (gruppendienste.js) benutzt, damit beide immer dieselbe Woche zeigen.
+function todayShiftWeek(n) {
+  state.currentDate.setDate(state.currentDate.getDate() + 7 * n);
+  updateHeader(); renderView(currentView);
+}
+document.getElementById('prev-week').addEventListener('click', () => todayShiftWeek(-1));
+document.getElementById('next-week').addEventListener('click', () => todayShiftWeek(1));
 document.getElementById('exam-pill').addEventListener('click', openCountdownModal);
 
 // =========================
@@ -467,47 +466,33 @@ function buildMiniCal(refDate) {
   const monthNames = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
   const dayNames   = ['Mo','Di','Mi','Do','Fr','Sa','So'];
 
-  // Ereignis-Vorkommen dieses Monats pro Tag sammeln (Tag → Liste von Einträgen)
+  // Alle Termine des Monats in EINEM Durchlauf — getEventsForRange (calendar.js)
+  // liefert Einzel-, Mehrtages- und Serientermine sowie den Google-Spiegel.
+  // Daraus: Balken je Tag (dayEntries) und die Terminliste unten (upcoming).
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
   const dayEntries = new Map();
-  const addEntry = (day, entry) => {
-    if (!dayEntries.has(day)) dayEntries.set(day, []);
-    dayEntries.get(day).push(entry);
-  };
-
-  if (typeof events !== 'undefined') {
-    Object.entries(events).forEach(([key, dayEvs]) => {
-      (dayEvs || []).forEach(ev => {
+  const upcoming = [];
+  const listedRanges = new Set();
+  if (typeof getEventsForRange === 'function') {
+    getEventsForRange(new Date(year, month, 1), new Date(year, month, daysInMonth)).forEach((entries, k) => {
+      const d = parseLocalDate(k);
+      entries.forEach(({ ev, isRange, isRecurring }) => {
         const color = ev.color || DEFAULT_EVENT_COLOR;
-        if (!ev.endDate) {
-          // Einzeltag
-          const d = parseLocalDate(key);
-          if (d.getFullYear() === year && d.getMonth() === month) {
-            addEntry(d.getDate(), { id: ev.id, color, isRange: false });
-          }
-          return;
-        }
-        // Mehrtägig: jeden Tag im Zeitraum als eigenen Eintrag der gleichen Ereignis-ID erfassen
-        const start = parseLocalDate(ev.startDate || key); start.setHours(0,0,0,0);
-        const end   = parseLocalDate(ev.endDate);           end.setHours(0,0,0,0);
-        const cur   = new Date(start);
-        while (cur <= end) {
-          if (cur.getFullYear() === year && cur.getMonth() === month) {
-            addEntry(cur.getDate(), { id: ev.id, color, isRange: true });
-          }
-          cur.setDate(cur.getDate() + 1);
+        const baseId = ev.id || ev.googleEventId || ev.title;
+        const id = isRecurring ? baseId + '_' + k : baseId;
+        if (!dayEntries.has(d.getDate())) dayEntries.set(d.getDate(), []);
+        dayEntries.get(d.getDate()).push({ id, color, isRange: !!isRange });
+        if (ev.showInAgenda === false) return;
+        if (isRange) {
+          if (listedRanges.has(baseId)) return;   // Mehrtägige nur einmal listen
+          listedRanges.add(baseId);
+          const start = parseLocalDate(ev.startDate || k), end = parseLocalDate(ev.endDate || k);
+          const short = x => x.toLocaleDateString('de-DE', { day: 'numeric', month: 'short' });
+          upcoming.push({ title: ev.title, date: d, dateStr: `${short(start)} – ${short(end)}`, color, isRange: true });
+        } else {
+          upcoming.push({ title: (isRecurring ? '↻ ' : '') + ev.title, date: d, dateStr: d.toLocaleDateString('de-DE', { day: 'numeric', month: 'long' }), color, isRange: false });
         }
       });
-    });
-  }
-
-  // Wiederkehrende Vorkommen dieses Monats als Einzeltag-Einträge erfassen
-  if (typeof getSeriesOccurrencesInRange === 'function') {
-    const gridStart = new Date(year, month, 1);
-    const gridEnd   = new Date(year, month + 1, 0);
-    getSeriesOccurrencesInRange(gridStart, gridEnd).forEach(({ date: d, event: ev }) => {
-      if (d.getFullYear() === year && d.getMonth() === month) {
-        addEntry(d.getDate(), { id: ev.id + '_' + dateKey(d), color: ev.color || DEFAULT_EVENT_COLOR, isRange: false });
-      }
     });
   }
 
@@ -515,7 +500,6 @@ function buildMiniCal(refDate) {
   let startDow = firstDay.getDay();
   startDow = startDow === 0 ? 6 : startDow - 1;
 
-  const daysInMonth = new Date(year, month+1, 0).getDate();
   const prevDays    = new Date(year, month, 0).getDate();
   const total       = startDow + daysInMonth;
   const remainder   = total % 7 === 0 ? 0 : 7 - (total % 7);
@@ -554,7 +538,7 @@ function buildMiniCal(refDate) {
                        : isRowStart ? 'bar-start'
                        : isRowEnd   ? 'bar-end'
                        : 'bar-mid';
-          return `<span class="mini-cal-bar ${posCls}" style="background:${scheduleEsc(info.color)}"></span>`;
+          return `<span class="mini-cal-bar ${posCls}" style="background:${escHtml(info.color)}"></span>`;
         }).join('');
         barsHtml = `<div class="mini-cal-bars">${laneBars}</div>`;
       }
@@ -563,56 +547,17 @@ function buildMiniCal(refDate) {
     });
   }
 
-  // Terminliste des angezeigten Monats — immer der gesamte Monat (1. bis
-  // letzter Tag), unabhängig davon ob aktueller, vergangener oder künftiger
-  // Monat. Ein einmaliger Scan über alle Termine statt Tag-für-Tag-Lookup,
-  // da mehrtägige Termine nur unter ihrem Start-Datum-Schlüssel liegen und
-  // sonst verpasst würden, sobald das Fenster nicht exakt am Starttag beginnt.
+  // Terminliste: immer der ganze angezeigte Monat (oben gesammelt)
   let upcomingHtml = '';
-  const upcoming = [];
-  const listFrom  = new Date(year, month, 1);
-  const listTo    = new Date(year, month, daysInMonth);
-
-  if (typeof events !== 'undefined') {
-    Object.entries(events).forEach(([key, dayEvs]) => {
-      (dayEvs || []).forEach(ev => {
-        if (ev.showInAgenda === false) return; // per Toggle aus der Liste ausgeblendet
-        const evColor = ev.color || DEFAULT_EVENT_COLOR;
-        if (!ev.endDate) {
-          const d = parseLocalDate(key);
-          if (d < listFrom || d > listTo) return;
-          upcoming.push({ title: ev.title, date: d, dateStr: d.toLocaleDateString('de-DE', { day: 'numeric', month: 'long' }), color: evColor, isRange: false });
-          return;
-        }
-        const start = parseLocalDate(ev.startDate || key); start.setHours(0,0,0,0);
-        const end   = parseLocalDate(ev.endDate);           end.setHours(0,0,0,0);
-        if (end < listFrom || start > listTo) return; // kein Überschneiden mit dem angezeigten Monat
-        const startStr = start.toLocaleDateString('de-DE', { day: 'numeric', month: 'short' });
-        const endStr   = end.toLocaleDateString('de-DE',   { day: 'numeric', month: 'short' });
-        // Sortierdatum: Beginn des Termins, geclamped auf den Monatsanfang, falls er vorher startete
-        const sortDate = start < listFrom ? listFrom : start;
-        upcoming.push({ title: ev.title, date: sortDate, dateStr: `${startStr} – ${endStr}`, color: evColor, isRange: true });
-      });
-    });
-  }
-
-  // Wiederkehrende Vorkommen im gesamten angezeigten Monat (Funktion unterstützt bereits Zeiträume)
-  if (typeof getSeriesOccurrencesInRange === 'function') {
-    getSeriesOccurrencesInRange(listFrom, listTo).forEach(({ date: d, event: ev }) => {
-      if (ev.showInAgenda === false) return;
-      upcoming.push({ title: '↻ ' + ev.title, date: d, dateStr: d.toLocaleDateString('de-DE', { day: 'numeric', month: 'long' }), color: ev.color || DEFAULT_EVENT_COLOR, isRange: false });
-    });
-  }
-
   upcoming.sort((a, b) => a.date - b.date);
 
   if (upcoming.length > 0) {
     upcomingHtml = `<div id="mini-cal-events">${
       upcoming.slice(0,5).map(e =>
         `<div class="mini-cal-event-row" data-date="${dateKey(e.date)}" style="cursor:pointer;">
-          <span class="mini-cal-event-dot${e.isRange ? ' range-ev' : ''}" style="background:${scheduleEsc(e.color)}"></span>
-          <span class="mini-cal-event-title">${scheduleEsc(e.title)}</span>
-          <span class="mini-cal-event-date">${scheduleEsc(e.dateStr)}</span>
+          <span class="mini-cal-event-dot${e.isRange ? ' range-ev' : ''}" style="background:${escHtml(e.color)}"></span>
+          <span class="mini-cal-event-title">${escHtml(e.title)}</span>
+          <span class="mini-cal-event-date">${escHtml(e.dateStr)}</span>
         </div>`
       ).join('')
     }</div>`;
@@ -670,16 +615,45 @@ function renderMiniCal() {
 // PROGRESS BAR (Tagesfortschritt durch Blöcke)
 // =========================
 
+// Umschalter „Heute / Morgen“ über der Zeitleiste: 0 = angezeigter Tag,
+// 1 = der Tag danach (nur Vorschau des Stundenplans; Aufgaben-Liste und
+// Woche bleiben). Gilt für Zeitleiste, Fortschritt und die Block-Auswahl
+// neuer Aufgaben.
+let todayDayOffset = 0;
+function timelineDate() {
+  const d = new Date(state.currentDate);
+  d.setDate(d.getDate() + todayDayOffset);
+  return d;
+}
+function renderTodayDaySwitch() {
+  const base = isToday(state.currentDate);
+  const next = new Date(state.currentDate); next.setDate(next.getDate() + 1);
+  document.querySelectorAll('#today-day-switch [data-offset]').forEach(b => {
+    const off = Number(b.dataset.offset);
+    b.textContent = off === 0 ? (base ? 'Heute' : SCHEDULE_DAY_SHORT[state.currentDate.getDay()])
+                              : (base ? 'Morgen' : SCHEDULE_DAY_SHORT[next.getDay()]);
+    b.classList.toggle('active', off === todayDayOffset);
+    b.setAttribute('aria-pressed', off === todayDayOffset ? 'true' : 'false');
+  });
+}
+document.getElementById('today-day-switch')?.addEventListener('click', e => {
+  const b = e.target.closest('[data-offset]');
+  if (!b || Number(b.dataset.offset) === todayDayOffset) return;
+  todayDayOffset = Number(b.dataset.offset);
+  renderBlocks();
+});
+
 // Tagesrahmen aus dem Stundenplan des angezeigten Tages (js/schedule.js);
 // an anderen Tagen als heute bzw. an freien Tagen bleibt der Balken leer.
 function renderBlocksProgress() {
   const bar   = document.getElementById('blocks-progress-bar');
   const label = document.getElementById('blocks-progress-label');
   if (!bar) return;
-  const plan = scheduleSegmentsForDate(state.currentDate);
+  const day  = timelineDate();
+  const plan = scheduleSegmentsForDate(day);
   const wrap = document.getElementById('blocks-progress-wrap');
-  if (wrap) wrap.classList.toggle('hidden', plan.off || !isToday(state.currentDate));
-  if (plan.off || !isToday(state.currentDate)) return;
+  if (wrap) wrap.classList.toggle('hidden', plan.off || !isToday(day));
+  if (plan.off || !isToday(day)) return;
 
   const now = new Date();
   const hhmm = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
@@ -727,26 +701,29 @@ function renderBlocksProgress() {
 // des Nutzers erhalten (z.B. nach dem Bearbeiten einer Aufgabe).
 let blocksFocusKey = null;
 function currentBlocksFocusKey() {
-  const plan = scheduleSegmentsForDate(state.currentDate);
-  if (!isToday(state.currentDate) || plan.off) return dateKey(state.currentDate);
+  const day = timelineDate();
+  const plan = scheduleSegmentsForDate(day);
+  if (!isToday(day) || plan.off) return dateKey(day);
   const n = new Date(), nowM = n.getHours() * 60 + n.getMinutes();
   const seg = plan.segments.find(s => nowM >= scheduleToMin(s.start) && nowM < scheduleToMin(s.end));
-  return dateKey(state.currentDate) + '|' + (seg ? seg.start : (nowM >= scheduleToMin(plan.end) ? 'end' : 'before'));
+  return dateKey(day) + '|' + (seg ? seg.start : (nowM >= scheduleToMin(plan.end) ? 'end' : 'before'));
 }
 function renderBlocks() {
   const row = document.getElementById('blocks-row');
   const keepLeft = row.scrollLeft;
   row.innerHTML = '';
-  const plan = scheduleSegmentsForDate(state.currentDate);
+  renderTodayDaySwitch();
+  const day = timelineDate();
+  const plan = scheduleSegmentsForDate(day);
   const nowM = (() => { const n = new Date(); return n.getHours() * 60 + n.getMinutes(); })();
-  const viewingToday = isToday(state.currentDate);
+  const viewingToday = isToday(day);
   const isNow = seg => viewingToday && nowM >= scheduleToMin(seg.start) && nowM < scheduleToMin(seg.end);
   const isPast = seg => viewingToday && nowM >= scheduleToMin(seg.end);
 
   if (plan.off) {
     const slot = document.createElement('div');
     slot.className = 'block-slot seg-off';
-    slot.innerHTML = `<div class="block-time">${scheduleEsc(SCHEDULE_DAY_NAMES[state.currentDate.getDay()])}</div><div class="block-label"><span>Freier Tag</span></div>`;
+    slot.innerHTML = `<div class="block-time">${escHtml(SCHEDULE_DAY_NAMES[day.getDay()])}</div><div class="block-label"><span>Freier Tag</span></div>`;
     row.appendChild(slot);
   }
 
@@ -757,7 +734,7 @@ function renderBlocks() {
       const br = document.createElement('div');
       br.className = 'block-break' + (active ? ' active-break' : '') + (isPast(seg) ? ' seg-past' : '');
       br.title = `${seg.label} ${seg.start}–${seg.end}`;
-      br.innerHTML = `<span class="block-break-icon" aria-hidden="true">☕</span><span class="block-break-label">${scheduleEsc(seg.label)}</span><span class="block-break-time">${seg.start}–${seg.end}</span>`;
+      br.innerHTML = `<span class="block-break-icon" aria-hidden="true">☕</span><span class="block-break-label">${escHtml(seg.label)}</span><span class="block-break-time">${seg.start}–${seg.end}</span>`;
       row.appendChild(br);
       return;
     }
@@ -784,6 +761,11 @@ function renderBlocks() {
     if (seg.type === 'block') {
       const ul = document.createElement('ul'); ul.className = 'block-tasks'; ul.dataset.blockId = String(seg.id);
       slot.appendChild(ul);
+      const add = document.createElement('button');
+      add.type = 'button'; add.className = 'block-add-task'; add.textContent = '+';
+      add.title = `Aufgabe für „${seg.label}“ anlegen`; add.setAttribute('aria-label', add.title);
+      add.addEventListener('click', e => { e.stopPropagation(); openTaskModal(null, seg.id); });
+      slot.appendChild(add);
     }
     row.appendChild(slot);
   });
@@ -795,11 +777,11 @@ function renderBlocks() {
     row.appendChild(end);
   }
 
-  const dayTasks = getTasksForBlockView();
+  // Morgen-Vorschau: die heute noch offenen Aufgaben (der Kalendertag
+  // „morgen“ hätte sonst noch keine)
+  const dayTasks = todayDayOffset ? getTasksForBlockView().filter(t => !isTaskCompleted(t)) : getTasksForBlockView();
   dayTasks.forEach(task => {
-    // Support both legacy single block (task.block) and new multi-block (task.blocks)
-    const blockIds = Array.isArray(task.blocks) ? task.blocks
-                   : (task.block != null ? [task.block] : []);
+    const blockIds = taskBlockIds(task);
     const status = taskStatusOf(task);
     blockIds.forEach(bid => {
       // Ein Block kann durch Pausen in mehrere Teile zerfallen — Aufgaben nur im ersten zeigen
@@ -847,6 +829,7 @@ function todayMinuteTick() {
     const prevMonth = todayLastDayKey.slice(0, 7);
     todayLastDayKey = nowKey;
     if (wasToday) state.currentDate = new Date();
+    todayDayOffset = 0;
     if (miniCalDate.getFullYear() + '-' + String(miniCalDate.getMonth() + 1).padStart(2, '0') === prevMonth) miniCalDate = new Date();
     if (typeof renderNationalDay === 'function') renderNationalDay();
     updateHeader();
@@ -1059,9 +1042,7 @@ function buildTaskItem(task) {
   const title = document.createElement('span'); title.className = 'task-title'; title.textContent = task.title;
   title.addEventListener('click', () => openTaskModal(task)); info.appendChild(title);
   if (task.notes) { const sub = document.createElement('span'); sub.className = 'task-sub'; sub.textContent = task.notes; info.appendChild(sub); }
-  // Build badge for all assigned blocks (legacy: task.block, new: task.blocks)
-  const _blockIds = Array.isArray(task.blocks) ? task.blocks
-                  : (task.block != null ? [task.block] : []);
+  const _blockIds = taskBlockIds(task);
   const badge = document.createElement('span'); badge.className = 'task-block-badge';
   badge.textContent = _blockIds.length ? taskBlockBadgeText(_blockIds) : '–';
   if (_blockIds.length) badge.title = taskBlockBadgeTitle(_blockIds);
@@ -1128,7 +1109,7 @@ function buildMobileTaskItem(task) {
   const title = document.createElement('span'); title.className = 'tasks-mobile-item-title'; title.textContent = task.title;
   info.appendChild(title);
 
-  const _blockIds = Array.isArray(task.blocks) ? task.blocks : (task.block != null ? [task.block] : []);
+  const _blockIds = taskBlockIds(task);
   if (_blockIds.length) {
     const badge = document.createElement('span'); badge.className = 'tasks-mobile-item-badge';
     badge.textContent = taskBlockBadgeText(_blockIds);
@@ -1185,7 +1166,7 @@ const taskModal = wireModal('modal-overlay', {
   onClose: () => { state.editingTask = null; },
 });
 
-function openTaskModal(existingTask = null) {
+function openTaskModal(existingTask = null, presetBlockId = null) {
   state.editingTask = existingTask;
   state.selectedPriority = existingTask ? existingTask.priority : 2;
   state.selectedStatus = existingTask ? taskStatusOf(existingTask) : 'open';
@@ -1195,13 +1176,13 @@ function openTaskModal(existingTask = null) {
   // Determine pre-selected block IDs: migrate legacy task.block → task.blocks
   // Blöcke des angezeigten Tages (Stundenplan, js/schedule.js). Neue Aufgabe:
   // der gerade laufende Block ist vorausgewählt.
-  const dayBlocks = scheduleBlocksForDate(state.currentDate);
+  const planDay = timelineDate();
+  const dayBlocks = scheduleBlocksForDate(planDay);
   const nowM = new Date().getHours() * 60 + new Date().getMinutes();
-  const runningBlock = isToday(state.currentDate)
+  const runningBlock = isToday(planDay)
     ? dayBlocks.find(b => nowM >= scheduleToMin(b.start) && nowM < scheduleToMin(b.end)) : null;
-  const _preSelected = existingTask
-    ? (Array.isArray(existingTask.blocks) ? existingTask.blocks
-       : existingTask.block != null ? [existingTask.block] : [])
+  const _preSelected = existingTask ? taskBlockIds(existingTask)
+    : presetBlockId != null ? [presetBlockId]
     : (runningBlock ? [runningBlock.id] : []);
 
   const chipsWrap = document.getElementById('modal-block-chips');

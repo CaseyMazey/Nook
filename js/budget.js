@@ -86,11 +86,7 @@ function isoDateYMD(y, m, d) { return `${y}-${String(m).padStart(2,'0')}-${Strin
 function todayIso() { const n = new Date(); return isoDateYMD(n.getFullYear(), n.getMonth() + 1, n.getDate()); }
 // Fester Bezugspunkt für 2-wöchentliche Posten ohne gespeichertes anchorDate.
 const BIWEEKLY_FALLBACK_ANCHOR = '2024-01-01';
-// Nutzertext (Posten-/Ziel-/Plan-Namen) sicher in HTML-Vorlagen einsetzen —
-// ein „<“ im Namen hat sonst die ganze Zeile zerschossen.
-function escHtml(v) {
-  return String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-}
+// escHtml() (Nutzertext sicher in HTML-Vorlagen) liegt in js/hub-utils.js.
 
 // Echte Zahltermine eines wiederkehrenden Postens INNERHALB eines
 // bestimmten Monats — im Gegensatz zu recurringMonthlyEquivalent()

@@ -595,6 +595,36 @@ function hubAlert(title, message) {
 }
 
 /**
+ * Nutzertext sicher in HTML-Vorlagen einsetzen. Einzige Escape-Funktion für
+ * alle Tabs (lädt früh, damit auch beim ersten Zeichnen verfügbar);
+ * null/undefined werden zu ''.
+ */
+function escHtml(v) {
+  return String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+/**
+ * Lädt ein Skript per <script>-Tag genau einmal (kein fetch(), geht auch
+ * unter file://). Schlägt es fehl, darf der nächste Aufruf es neu versuchen.
+ * Für selten gebrauchte Bausteine wie pdf.js oder jsPDF (js/vendor).
+ */
+const hubScriptLoads = new Map();
+function loadScriptOnce(src) {
+  if (!hubScriptLoads.has(src)) {
+    const p = new Promise((resolve, reject) => {
+      const el = document.createElement('script');
+      el.src = src;
+      el.onload = resolve;
+      el.onerror = () => reject(new Error('Script konnte nicht geladen werden: ' + src));
+      document.head.appendChild(el);
+    });
+    p.catch(() => hubScriptLoads.delete(src));
+    hubScriptLoads.set(src, p);
+  }
+  return hubScriptLoads.get(src);
+}
+
+/**
  * Kurzer Hinweis unten mit „Rückgängig“ (8 s), z.B. nach dem Löschen.
  * restore() stellt den alten Stand wieder her (inkl. Speichern/Neuzeichnen).
  * Ein neuer Hinweis ersetzt den vorigen.

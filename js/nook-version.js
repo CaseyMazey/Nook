@@ -10,9 +10,21 @@
 // hinten wegfallen, angezeigt werden ohnehin nur die neuesten.
 // =========================
 
-window.NOOK_VERSION = '2026.11.12';
+window.NOOK_VERSION = '2026.11.13';
 
 window.NOOK_CHANGELOG = [
+  {
+    version: '2026.11.13',
+    date: '2026-11-06',
+    items: [
+      'Heute: Umschalter „Heute / Morgen“ über dem Stundenplan – abends schon sehen, was morgen ansteht',
+      'Heute: „+“ in einem Projekt- oder Arbeitsblock legt eine Aufgabe für genau diesen Block an',
+      'Heute: Die Termine von heute stehen als Zeile unter dem Datum (abschaltbar unter Einstellungen → Heute-Seite)',
+      'Heute: Gruppenpflichten blättern dieselbe Woche wie der Kopf; der Mini-Kalender zeigt auch Google-Termine',
+      'Brain Dump: Entfernte Einträge lassen sich wiederherstellen; neue Positivity-Startkarten auf Deutsch',
+      'Aufgeräumt: eine gemeinsame Funktion für sicheres Einsetzen von Text, schnelleres Tippen im Stundenplan-Editor',
+    ],
+  },
   {
     version: '2026.11.12',
     date: '2026-11-06',

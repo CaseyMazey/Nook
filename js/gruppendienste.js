@@ -33,9 +33,6 @@ function gdSaveGroups()   { DB.set('gdGroups', gdGroups); }
 function gdSaveDuties()   { DB.set('gdDuties', gdDuties); }
 function gdSaveSchedule() { DB.set('gdSchedule', gdSchedule); }
 
-function gdEsc(s) {
-  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
-}
 function gdId() { return crypto.randomUUID(); }
 function gdFmtDate(str) { return str ? fmt(parseLocalDate(str), { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'; }
 function gdShuffle(arr) {
@@ -250,8 +247,9 @@ function gdRecomputeComponent(dutyId) {
 
 // =========================
 // KACHEL — dynamische Liste aller in der angezeigten Woche aktiven Pflichten
+// Die Woche ist die der Heute-Seite (state.currentDate): die Pfeile hier
+// blättern dieselbe Woche wie die KW-Pfeile im Kopf (todayShiftWeek, today.js).
 // =========================
-let gdWidgetViewDate = new Date();
 
 function gdActiveDutiesForWeek(date) {
   const weekId = getWeekId(date);
@@ -261,13 +259,13 @@ function gdActiveDutiesForWeek(date) {
 }
 
 function gdColHtmlForDuty(duty, entry) {
-  const regularNames = (entry?.regular || []).map(gdRefName).map(gdEsc);
-  const ersatzNames  = (entry?.ersatz  || []).map(gdRefName).map(gdEsc);
+  const regularNames = (entry?.regular || []).map(gdRefName).map(escHtml);
+  const ersatzNames  = (entry?.ersatz  || []).map(gdRefName).map(escHtml);
   const regLine = regularNames.length ? regularNames.join(' · ') : '—';
   const ersLine = ersatzNames.length ? `<div class="gd-col-ersatz">Ersatz: ${ersatzNames.join(' · ')}</div>` : '';
   return `
     <div class="gd-col">
-      <div class="gd-col-title"><span class="gd-col-icon">${duty.icon || '📋'}</span>${gdEsc(duty.name)}</div>
+      <div class="gd-col-title"><span class="gd-col-icon">${duty.icon || '📋'}</span>${escHtml(duty.name)}</div>
       <div class="gd-col-names">${regLine}</div>
       ${ersLine}
     </div>`;
@@ -286,8 +284,8 @@ function gdBuildWidget() {
     else main.appendChild(widget);
   }
 
-  const kw = getISOWeek(gdWidgetViewDate);
-  const active = gdActiveDutiesForWeek(gdWidgetViewDate);
+  const kw = getISOWeek(state.currentDate);
+  const active = gdActiveDutiesForWeek(state.currentDate);
 
   const bodyHtml = active.length
     ? `<div class="gd-row">${active.map(a => gdColHtmlForDuty(a.duty, a.entry)).join('')}</div>`
@@ -317,8 +315,8 @@ function gdBuildWidget() {
 
   document.getElementById('gd-edit-btn')?.addEventListener('click', gdOpenOverview);
   document.getElementById('gd-export-btn')?.addEventListener('click', gdOpenExport);
-  document.getElementById('gd-week-prev')?.addEventListener('click', () => { gdWidgetViewDate.setDate(gdWidgetViewDate.getDate() - 7); gdBuildWidget(); });
-  document.getElementById('gd-week-next')?.addEventListener('click', () => { gdWidgetViewDate.setDate(gdWidgetViewDate.getDate() + 7); gdBuildWidget(); });
+  document.getElementById('gd-week-prev')?.addEventListener('click', () => todayShiftWeek(-1));
+  document.getElementById('gd-week-next')?.addEventListener('click', () => todayShiftWeek(1));
   // Accordion-Umschalter: wirkt sich nur auf Mobile aus (siehe gd-body-Regel
   // in today.css, @media max-width:480px) — auf Desktop bleibt gd-body
   // unabhängig von dieser Klasse immer sichtbar.
@@ -361,8 +359,8 @@ function gdRenderOverviewList() {
     <div class="gd-overview-item" data-id="${d.id}">
       <span class="gd-overview-icon">${d.icon || '📋'}</span>
       <div class="gd-overview-info">
-        <div class="gd-overview-name">${gdEsc(d.name)}</div>
-        <div class="gd-overview-meta">${gdEsc(gdDutyMetaLine(d))}</div>
+        <div class="gd-overview-name">${escHtml(d.name)}</div>
+        <div class="gd-overview-meta">${escHtml(gdDutyMetaLine(d))}</div>
       </div>
       <div class="gd-overview-actions">
         <button type="button" class="icon-btn gd-overview-edit" title="Bearbeiten">✎</button>
@@ -434,19 +432,19 @@ function gdRenderPeopleAdmin() {
   box.innerHTML = `
     <div class="gd-admin-head">Personen</div>
     ${people.length ? people.map(p => `
-      <div class="gd-admin-row" data-person="${gdEsc(p.id)}">
-        <input type="text" class="modal-input gd-admin-name" value="${gdEsc(p.name)}" aria-label="Name von ${gdEsc(p.name)}" maxlength="60"/>
-        <button type="button" class="icon-btn gd-admin-del" title="Person löschen" aria-label="${gdEsc(p.name)} löschen">✕</button>
+      <div class="gd-admin-row" data-person="${escHtml(p.id)}">
+        <input type="text" class="modal-input gd-admin-name" value="${escHtml(p.name)}" aria-label="Name von ${escHtml(p.name)}" maxlength="60"/>
+        <button type="button" class="icon-btn gd-admin-del" title="Person löschen" aria-label="${escHtml(p.name)} löschen">✕</button>
       </div>`).join('') : '<div class="modal-hint">Noch keine Personen — sie entstehen im Pflicht-Editor unter „Teilnehmer“.</div>'}
     <div class="gd-admin-head">Gruppen</div>
     ${groups.length ? groups.map(g => `
-      <div class="gd-admin-group" data-group="${gdEsc(g.id)}">
+      <div class="gd-admin-group" data-group="${escHtml(g.id)}">
         <div class="gd-admin-row">
-          <input type="text" class="modal-input gd-admin-name" value="${gdEsc(g.name)}" aria-label="Name der Gruppe ${gdEsc(g.name)}" maxlength="60"/>
-          <button type="button" class="icon-btn gd-admin-del" title="Gruppe löschen" aria-label="Gruppe ${gdEsc(g.name)} löschen">✕</button>
+          <input type="text" class="modal-input gd-admin-name" value="${escHtml(g.name)}" aria-label="Name der Gruppe ${escHtml(g.name)}" maxlength="60"/>
+          <button type="button" class="icon-btn gd-admin-del" title="Gruppe löschen" aria-label="Gruppe ${escHtml(g.name)} löschen">✕</button>
         </div>
         <div class="gd-chip-picker gd-admin-members">${people.map(p => `
-          <button type="button" class="gd-chip${g.memberIds.includes(p.id) ? ' active' : ''}" data-member="${gdEsc(p.id)}" aria-pressed="${g.memberIds.includes(p.id)}">${gdEsc(p.name)}</button>`).join('') || '<span class="modal-hint">Keine Personen.</span>'}
+          <button type="button" class="gd-chip${g.memberIds.includes(p.id) ? ' active' : ''}" data-member="${escHtml(p.id)}" aria-pressed="${g.memberIds.includes(p.id)}">${escHtml(p.name)}</button>`).join('') || '<span class="modal-hint">Keine Personen.</span>'}
         </div>
       </div>`).join('') : '<div class="modal-hint">Noch keine Gruppen.</div>'}`;
 }
@@ -599,7 +597,7 @@ function gdRenderPeoplePicker() {
   if (!wrap) return;
   wrap.innerHTML = gdActivePeople().map(p => {
     const active = gdEditingParticipants.some(r => r.type === 'person' && r.id === p.id);
-    return `<button type="button" class="gd-chip${active ? ' active' : ''}" data-id="${p.id}">${gdEsc(p.name)}</button>`;
+    return `<button type="button" class="gd-chip${active ? ' active' : ''}" data-id="${p.id}">${escHtml(p.name)}</button>`;
   }).join('');
   wrap.querySelectorAll('.gd-chip').forEach(btn => {
     btn.addEventListener('click', () => gdToggleParticipant({ type: 'person', id: btn.dataset.id }));
@@ -610,7 +608,7 @@ function gdRenderGroupsPicker() {
   if (!wrap) return;
   wrap.innerHTML = gdActiveGroups().map(g => {
     const active = gdEditingParticipants.some(r => r.type === 'group' && r.id === g.id);
-    return `<button type="button" class="gd-chip${active ? ' active' : ''}" data-id="${g.id}">${gdEsc(g.name)} <span style="opacity:.65;">(${g.memberIds.length})</span></button>`;
+    return `<button type="button" class="gd-chip${active ? ' active' : ''}" data-id="${g.id}">${escHtml(g.name)} <span style="opacity:.65;">(${g.memberIds.length})</span></button>`;
   }).join('');
   wrap.querySelectorAll('.gd-chip').forEach(btn => {
     btn.addEventListener('click', () => gdToggleParticipant({ type: 'group', id: btn.dataset.id }));
@@ -628,7 +626,7 @@ function gdRenderParticipantsOverview() {
   const wrap = document.getElementById('gd-participants-overview');
   if (!wrap) return;
   wrap.innerHTML = gdEditingParticipants.map(ref => `
-    <span class="gd-chip active" data-type="${ref.type}" data-id="${ref.id}">${gdEsc(gdRefName(ref))}<span class="gd-chip-remove" title="Entfernen">✕</span></span>
+    <span class="gd-chip active" data-type="${ref.type}" data-id="${ref.id}">${escHtml(gdRefName(ref))}<span class="gd-chip-remove" title="Entfernen">✕</span></span>
   `).join('');
   wrap.querySelectorAll('.gd-chip-remove').forEach(x => {
     x.addEventListener('click', e => {
@@ -658,7 +656,7 @@ document.getElementById('gd-new-group-toggle')?.addEventListener('click', () => 
 });
 function gdRenderNewGroupMembers() {
   const wrap = document.getElementById('gd-new-group-members');
-  wrap.innerHTML = gdActivePeople().map(p => `<button type="button" class="gd-chip" data-id="${p.id}">${gdEsc(p.name)}</button>`).join('')
+  wrap.innerHTML = gdActivePeople().map(p => `<button type="button" class="gd-chip" data-id="${p.id}">${escHtml(p.name)}</button>`).join('')
     || '<span class="modal-hint">Erst Personen anlegen (Bereich „Teilnehmer" → Personen).</span>';
   wrap.querySelectorAll('.gd-chip').forEach(btn => btn.addEventListener('click', () => btn.classList.toggle('active')));
 }
@@ -713,7 +711,7 @@ function gdRenderFixedOrderList() {
   }
   wrap.innerHTML = gdEditingFixedOrder.map((ref, i) => `
     <div class="gd-order-row" data-idx="${i}">
-      <span class="gd-order-row-label">${i + 1}. ${gdEsc(gdRefName(ref))}</span>
+      <span class="gd-order-row-label">${i + 1}. ${escHtml(gdRefName(ref))}</span>
       <div class="gd-order-row-btns">
         <button type="button" class="icon-btn gd-order-up" title="Nach oben verschieben" ${i === 0 ? 'disabled' : ''}>⬆</button>
         <button type="button" class="icon-btn gd-order-down" title="Nach unten verschieben" ${i === gdEditingFixedOrder.length - 1 ? 'disabled' : ''}>⬇</button>
@@ -749,7 +747,7 @@ function gdRenderLinksList() {
   if (!others.length) { wrap.innerHTML = '<span class="modal-hint">Keine weiteren Pflichten vorhanden.</span>'; return; }
   wrap.innerHTML = others.map(d => {
     const active = gdEditingLinks.includes(d.id);
-    return `<button type="button" class="gd-chip${active ? ' active' : ''}" data-id="${d.id}">${d.icon || '📋'} ${gdEsc(d.name)}</button>`;
+    return `<button type="button" class="gd-chip${active ? ' active' : ''}" data-id="${d.id}">${d.icon || '📋'} ${escHtml(d.name)}</button>`;
   }).join('');
   wrap.querySelectorAll('.gd-chip').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -847,7 +845,7 @@ let gdExportMonths = 6;
 let gdExportDutyIds = new Set();
 
 function gdOpenExport() {
-  document.getElementById('gd-export-start').value = dateKey(getWeekStart(gdWidgetViewDate));
+  document.getElementById('gd-export-start').value = dateKey(getWeekStart(state.currentDate));
   gdExportDutyIds = new Set(gdDuties.map(d => d.id));
   gdExportShowError('');
   gdRenderExportOptions();
@@ -884,7 +882,7 @@ function gdRenderExportOptions() {
 
   const dutyWrap = document.getElementById('gd-export-duties');
   dutyWrap.innerHTML = gdDuties.map(d =>
-    `<button type="button" class="gd-chip${gdExportDutyIds.has(d.id) ? ' active' : ''}" data-id="${d.id}">${d.icon || '📋'} ${gdEsc(d.name)}</button>`).join('');
+    `<button type="button" class="gd-chip${gdExportDutyIds.has(d.id) ? ' active' : ''}" data-id="${d.id}">${d.icon || '📋'} ${escHtml(d.name)}</button>`).join('');
   dutyWrap.querySelectorAll('.gd-chip').forEach(btn => btn.addEventListener('click', () => {
     const id = btn.dataset.id;
     if (gdExportDutyIds.has(id)) gdExportDutyIds.delete(id); else gdExportDutyIds.add(id);
@@ -930,7 +928,7 @@ function gdExportData() {
 function gdBuildPrintHtml(data) {
   const cellHtml = c => !c
     ? '<td class="gd-print-off">–</td>'
-    : `<td>${c.regular.length ? c.regular.map(gdEsc).join(', ') : '–'}${c.ersatz.length ? `<div class="gd-print-ersatz">Ersatz: ${c.ersatz.map(gdEsc).join(', ')}</div>` : ''}</td>`;
+    : `<td>${c.regular.length ? c.regular.map(escHtml).join(', ') : '–'}${c.ersatz.length ? `<div class="gd-print-ersatz">Ersatz: ${c.ersatz.map(escHtml).join(', ')}</div>` : ''}</td>`;
   const rows = data.rows.map(r => `<tr${r.isNow ? ' class="gd-print-now"' : ''}>
       <td class="gd-print-kw">${r.kw}</td>
       <td class="gd-print-dates">${r.dates}</td>
@@ -940,7 +938,7 @@ function gdBuildPrintHtml(data) {
     <h1 class="gd-print-title">Gruppenpflichten</h1>
     <div class="gd-print-sub">${data.range}</div>
     <table class="gd-print-table">
-      <thead><tr><th>KW</th><th>Woche</th>${data.duties.map(d => `<th>${d.icon || ''} ${gdEsc(d.name)}</th>`).join('')}</tr></thead>
+      <thead><tr><th>KW</th><th>Woche</th>${data.duties.map(d => `<th>${d.icon || ''} ${escHtml(d.name)}</th>`).join('')}</tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
 }
@@ -948,25 +946,10 @@ function gdBuildPrintHtml(data) {
 // ── jsPDF lazy per <script>-Tag (wie pdf.js im Speiseplan) ──
 const GD_JSPDF_URL = 'js/vendor/jspdf.umd.min.js';
 const GD_AUTOTABLE_URL = 'js/vendor/jspdf.plugin.autotable.min.js';
-let gdJsPdfPromise = null;
-function gdLoadScript(src) {
-  return new Promise((resolve, reject) => {
-    const el = document.createElement('script');
-    el.src = src;
-    el.onload = resolve;
-    el.onerror = () => reject(new Error('Script konnte nicht geladen werden: ' + src));
-    document.head.appendChild(el);
-  });
-}
 function gdLoadJsPdf() {
-  if (window.jspdf && window.jspdf.jsPDF && window.jspdf.jsPDF.API.autoTable) return Promise.resolve(window.jspdf.jsPDF);
-  if (!gdJsPdfPromise) {
-    gdJsPdfPromise = gdLoadScript(GD_JSPDF_URL)
-      .then(() => gdLoadScript(GD_AUTOTABLE_URL))
-      .then(() => window.jspdf.jsPDF)
-      .catch(err => { gdJsPdfPromise = null; throw err; });
-  }
-  return gdJsPdfPromise;
+  return loadScriptOnce(GD_JSPDF_URL)
+    .then(() => loadScriptOnce(GD_AUTOTABLE_URL))
+    .then(() => window.jspdf.jsPDF);
 }
 
 // PDF-Datei bauen. Emojis (Pflicht-Icons) kann die eingebaute PDF-Schrift

@@ -2,50 +2,52 @@
 // POSITIVITY — Tägliche positive Erinnerungen
 // =========================
 
+// Startkarten nur für neue Nutzer (ohne gespeicherte Kategorien) —
+// bestehende Karten, auch die früheren englischen, bleiben unverändert.
 const POSITIVITY_DEFAULTS = [
   {
-    id: 'cat-remember', name: 'Things To Remember', color: '#7A9B6A', builtIn: true,
+    id: 'cat-remember', name: 'Zum Merken', color: '#7A9B6A', builtIn: true,
     texts: [
-      'Small steps are progress too.',
-      'Asking for help is strength.',
-      'Tomorrow is a new day.',
-      "You don't have to be perfect.",
-      'Your boundaries are important.',
-      "It's okay to start over.",
-      'Mistakes are part of learning.',
-      'Progress is still progress.',
-      'Rest is productive too.',
-      'You are more than your achievements.',
+      'Kleine Schritte sind auch Fortschritt.',
+      'Um Hilfe zu bitten ist eine Stärke.',
+      'Morgen ist ein neuer Tag.',
+      'Du musst nicht perfekt sein.',
+      'Deine Grenzen sind wichtig.',
+      'Neu anfangen ist in Ordnung.',
+      'Fehler gehören zum Lernen dazu.',
+      'Fortschritt bleibt Fortschritt.',
+      'Pausen sind auch produktiv.',
+      'Du bist mehr als deine Leistungen.',
     ]
   },
   {
-    id: 'cat-selfcare', name: 'Self Care', color: '#7A94B8', builtIn: true,
+    id: 'cat-selfcare', name: 'Selbstfürsorge', color: '#7A94B8', builtIn: true,
     texts: [
-      'Drink a glass of water.',
-      'Relax your shoulders.',
-      'Take three deep breaths.',
-      'Stretch for one minute.',
-      'Step away from the screen briefly.',
-      "Check if you've eaten today.",
-      'Rest your eyes for a moment.',
-      'Sit comfortably.',
-      'Take a short walk.',
-      'Be gentle with yourself today.',
+      'Trink ein Glas Wasser.',
+      'Lass die Schultern sinken.',
+      'Atme dreimal tief durch.',
+      'Streck dich eine Minute lang.',
+      'Geh kurz weg vom Bildschirm.',
+      'Hast du heute schon gegessen?',
+      'Gönn deinen Augen einen Moment Ruhe.',
+      'Setz dich bequem hin.',
+      'Mach einen kurzen Spaziergang.',
+      'Sei heute nachsichtig mit dir.',
     ]
   },
   {
     id: 'cat-motivation', name: 'Motivation', color: '#C9975B', builtIn: true,
     texts: [
-      'Start with five minutes.',
-      'Done is better than perfect.',
-      'One task at a time.',
-      'Future you will thank you.',
-      "Begin before you're ready.",
-      'Progress beats waiting.',
-      'Focus on the next step.',
-      "You don't need perfect conditions.",
-      'Consistency matters more than intensity.',
-      'Keep going.',
+      'Fang mit fünf Minuten an.',
+      'Erledigt ist besser als perfekt.',
+      'Eine Aufgabe nach der anderen.',
+      'Dein zukünftiges Ich wird dir danken.',
+      'Fang an, bevor du dich bereit fühlst.',
+      'Machen schlägt Warten.',
+      'Konzentrier dich auf den nächsten Schritt.',
+      'Du brauchst keine perfekten Bedingungen.',
+      'Regelmäßig zählt mehr als viel auf einmal.',
+      'Bleib dran.',
     ]
   },
   { id: 'cat-personal', name: 'Persönliches', color: '#9A7FB8', builtIn: true, texts: [] },
@@ -608,8 +610,15 @@ function initPositivity() {
     e.target.value = '';
   });
 
-  // Mitternacht-Rollover: einmal pro Minute prüfen, ob ein neuer Tag begonnen hat
-  setInterval(renderPositivityWidget, 60000);
+  // Mitternacht-Rollover: einmal pro Minute prüfen, ob ein neuer Tag begonnen
+  // hat — neu gezeichnet wird nur dann (sonst gingen Hover/Fokus verloren)
+  let positivityShownDay = getTodayStr();
+  setInterval(() => {
+    const day = getTodayStr();
+    if (day === positivityShownDay) return;
+    positivityShownDay = day;
+    renderPositivityWidget();
+  }, 60000);
 }
 
 initPositivity();
