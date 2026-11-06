@@ -6,6 +6,12 @@ Nook läuft komplett lokal im Browser und kombiniert Organisation, Lernen, Finan
 
 Keine Installation. Kein Server. Keine Cloud-Pflicht.
 
+## 🌐 Direkt im Browser öffnen
+
+**[nook-ci7.pages.dev](https://nook-ci7.pages.dev)** – ohne Download, auch auf dem Handy. Über das Browser-Menü (*Zum Startbildschirm hinzufügen* bzw. *Installieren*) lässt sich Nook dort wie eine App installieren und funktioniert danach auch offline. Deine Daten bleiben trotzdem lokal in deinem Browser.
+
+## 🛠️ Selbst ausführen
+
 ```bash
 git clone https://github.com/CaseyMazey/Nook.git
 cd Nook
@@ -13,7 +19,7 @@ cd Nook
 
 Anschließend einfach `index.html` öffnen — oder den Ordner mit einem beliebigen statischen Server bereitstellen.
 
-Für Funktionen, die einen sicheren Browser-Kontext brauchen (Google-Calendar-Anmeldung, Installierbarkeit/Offline-Zugriff als PWA), muss Nook über `https://` oder `http://localhost` laufen, nicht per direktem Öffnen der Datei — dafür gibt es eine laufende Deploy-Version.
+Für Funktionen, die einen sicheren Browser-Kontext brauchen (Google-Calendar-Anmeldung, Installierbarkeit/Offline-Zugriff als PWA), muss Nook über `https://` oder `http://localhost` laufen, nicht per direktem Öffnen der Datei — dafür gibt es die [Web-Version](https://nook-ci7.pages.dev).
 
 ## 💻 Desktop-App herunterladen
 
