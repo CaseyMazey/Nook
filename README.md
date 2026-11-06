@@ -72,7 +72,7 @@ Der Download ist rund 330 MB groß. Die `.yml`- und `.blockmap`-Dateien auf der 
 
 Kurzüberblick pro Bereich — die vollständige Nutzer-Doku mit allen Optionen und Details steht im [Wiki](https://github.com/CaseyMazey/Nook/wiki).
 
-### 🏠 Heute
+### 🏠 Heute 🔧 *Momentan in Bearbeitung*
 
 Persönliche Startseite: Unterrichtsblöcke, Wochenaufgaben, Gruppenpflichten-Planer, Mini-Kalender, Wetter, Schnellnotiz, National-Day- und Positivity-Widget.
 → [Wiki: Heute](https://github.com/CaseyMazey/Nook/wiki/Heute)
@@ -107,7 +107,7 @@ Ein eigenständiger, ruhiger Bilderbuch-Garten zum Sammeln, über 70 Pflanzenart
 Lernsystem nach dem Leitner-Prinzip mit Fächern, Themengruppen, Lernsessions und Statistiken.
 → [Wiki: Karteikarten](https://github.com/CaseyMazey/Nook/wiki/Karteikarten)
 
-### 📝 Anleitungen 🔧 *Momentan in Bearbeitung*
+### 📝 Anleitungen
 
 Persönliches Markdown-Bücherregal für Notizen, Code-Beispiele und Dokumentation.
 → [Wiki: Anleitungen](https://github.com/CaseyMazey/Nook/wiki/Anleitungen)
