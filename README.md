@@ -121,12 +121,12 @@ Langfristige Vorhaben im Projektwald — jedes Projekt wächst als eigener, indi
 
 Gamifiziertes Planungsbrett im Tavernen-Look: Daily, Weekly/Check, Time und Side Quests, ein Würfel gegen Entscheidungs-Paralyse, Termin-Aushang aus dem Kalender und eine optionale Schatztruhe mit Münzen und eigenen Belohnungen.
 
-### 🧰 Tools
+### 🧰 Tools 🔧 *Momentan in Bearbeitung*
 
 Taschenrechner, Focus Timer, Converter, Datenübertragungsraten-Rechner mit Lernmodus, Notenmanager.
 → [Wiki: Tools](https://github.com/CaseyMazey/Nook/wiki/Tools)
 
-### ⚙️ Einstellungen 🔧 *Momentan in Bearbeitung*
+### ⚙️ Einstellungen
 
 Themes & Theme-Editor, Tab-Verwaltung, Backup, optionaler Geräte-Sync, Google-Calendar-Verbindung.
 → [Wiki: Einstellungen](https://github.com/CaseyMazey/Nook/wiki/Einstellungen)
