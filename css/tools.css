@@ -1085,18 +1085,128 @@
 .noten-subject-card {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 10px 14px;
-  min-width: 96px;
-  cursor: pointer;
-  transition: border-color var(--transition), background var(--transition);
-  font-family: var(--font);
+  min-width: 130px;
+  overflow: hidden;
+  transition: border-color var(--transition);
 }
-.noten-subject-card:hover { border-color: var(--sage); background: var(--sage-bg); }
+.noten-subject-card:hover { border-color: var(--sage); }
+.noten-subject-open {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  flex: 1;
+  padding: 10px 14px 8px;
+  background: none;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+  font-family: var(--font);
+  color: inherit;
+  transition: background var(--transition);
+}
+.noten-subject-open:hover { background: var(--sage-bg); }
+.noten-subject-recent { display: flex; gap: 4px; flex-wrap: wrap; }
+.noten-subject-recent span {
+  font-family: var(--mono);
+  font-size: calc(10.5px * var(--core-font-scale));
+  color: var(--text-2);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0 5px;
+}
+.noten-subject-quick {
+  border: 0;
+  border-top: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--sage-dark);
+  font-family: var(--font);
+  font-size: calc(12px * var(--core-font-scale));
+  font-weight: 600;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+.noten-subject-quick:hover { background: var(--sage); color: var(--surface-solid); }
+
+/* „+ Fach“-Kachel und Inline-Eingabe */
+.noten-subject-add {
+  min-width: 130px;
+  min-height: 72px;
+  border: 1.5px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-2);
+  font-family: var(--font);
+  font-size: calc(13px * var(--core-font-scale));
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color var(--transition), color var(--transition), background var(--transition);
+}
+.noten-subject-add:hover { border-color: var(--sage); color: var(--sage-dark); background: var(--sage-bg); }
+.noten-subject-add.is-editing {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  min-width: 220px;
+  padding: 8px 10px;
+  border-color: var(--sage);
+  cursor: default;
+}
+.noten-subject-nograde { font-size: calc(11.5px * var(--core-font-scale)); color: var(--text-3); }
+.noten-subject-add-hint { font-size: calc(10.5px * var(--core-font-scale)); font-weight: 400; color: var(--text-3); }
+.noten-subject-grid > .noten-subject-empty { width: 100%; padding: 2px 0 0; text-align: left; }
+
+/* Leerer Zustand ohne Ausbildungsjahr */
+.noten-empty-start { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 22px 0; }
+.noten-empty-start.hidden { display: none; }
+.noten-empty-start p { margin: 0; }
+
+/* Kategorie-Chips (Leistung-Modal + Schnell-Eingabe) */
+.noten-cat-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.noten-cat-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-2);
+  font-family: var(--font);
+  font-size: calc(12px * var(--core-font-scale));
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition), color var(--transition);
+}
+.noten-cat-chip:hover { border-color: var(--sage); }
+.noten-cat-chip.active { border-color: var(--sage); background: var(--sage-bg); color: var(--sage-dark); font-weight: 600; }
+.noten-cat-chip-w { font-size: calc(10px * var(--core-font-scale)); color: var(--text-3); font-weight: 400; }
+
+/* Leistung-Modal */
+.noten-entry-subject { color: var(--text-3); font-weight: 400; }
+.noten-entry-grade-input { font-size: calc(16px * var(--core-font-scale)); font-family: var(--mono); }
+.noten-entry-extra { display: grid; grid-template-columns: 1fr 110px; gap: 10px; }
+
+/* Schnell-Eingabe im Fach */
+.noten-quick-add {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: var(--sage-bg);
+  border: 1px solid color-mix(in srgb, var(--sage) 35%, transparent);
+  border-radius: var(--radius-sm);
+}
+.noten-quick-row { display: flex; gap: 8px; }
+.noten-quick-row .modal-input { flex: 1; min-width: 0; font-family: var(--mono); font-size: calc(15px * var(--core-font-scale)); }
+.noten-quick-msg { font-size: calc(11.5px * var(--core-font-scale)); color: var(--sage-dark); min-height: 0; }
+.noten-quick-msg:empty { display: none; }
+.noten-quick-msg.is-error { color: var(--prio-1); }
 
 .noten-subject-name { font-size: calc(12.5px * var(--core-font-scale)); font-weight: 600; color: var(--text); }
 .noten-subject-avg { font-family: var(--mono); font-size: calc(14px * var(--core-font-scale)); font-weight: 600; color: var(--sage-dark); }
@@ -1139,6 +1249,7 @@
   gap: 6px;
   max-height: 320px;
   overflow-y: auto;
+  flex-shrink: 0; /* sonst drückt das scrollende Modal die Liste auf Höhe 0 */
 }
 
 .noten-entry-row {
@@ -1273,6 +1384,10 @@
   .dr-formula-nav-item { flex-shrink: 0; }
 
   .noten-year-meta { display: none; }
+  .noten-subject-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .noten-subject-grid > .noten-subject-empty { grid-column: 1 / -1; }
+  .noten-subject-card, .noten-subject-add { min-width: 0; }
+  .noten-subject-add.is-editing { grid-column: 1 / -1; min-width: 0; }
   .noten-entry-cat { display: none; }
   .noten-entry-row { gap: 8px; }
   .noten-compare-selects { flex-direction: column; align-items: stretch; }

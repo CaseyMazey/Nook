@@ -45,6 +45,8 @@ let notenReportYearId    = null;
 let notenReportEditId    = null;
 let notenCompareYearId   = null;
 let notenYearModalReturnId = null; // gesetzt, wenn "+ Fach" aus dem Ausbildungsjahr-Modal heraus geöffnet wurde
+let notenAddingSubjectYear = null; // Jahr, in dem gerade die Inline-Eingabe „+ Fach“ offen ist
+let notenSubjectAddSilent  = false; // blur beim Neuzeichnen ignorieren
 
 function saveNotenYears()       { DB.set('notenYears', notenYears); }
 function saveNotenSubjects()    { DB.set('notenSubjects', notenSubjects); }
@@ -240,8 +242,31 @@ function wireNotenEvents() {
     openNotenSubjectModal(notenYearEditId, null);
   });
 
+  // ── Leerer Zustand: erstes Ausbildungsjahr ──
+  document.getElementById('noten-empty-add-btn').addEventListener('click', () => openNotenYearModal(null));
+
+  // ── Inline „+ Fach“ (Enter legt an und lässt das Feld für das nächste Fach offen) ──
+  const yearsList = document.getElementById('noten-years-list');
+  yearsList.addEventListener('keydown', e => {
+    if (!e.target.classList.contains('noten-subject-add-input')) return;
+    if (e.key === 'Enter') { e.preventDefault(); notenAddSubjectInline(e.target, true); }
+    else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); notenCloseSubjectAdd(); }
+  });
+  yearsList.addEventListener('focusout', e => {
+    if (!e.target.classList.contains('noten-subject-add-input') || notenSubjectAddSilent) return;
+    // Klick daneben: Eingetipptes nicht verlieren, sonst Feld schließen
+    if (e.target.value.trim()) notenAddSubjectInline(e.target, false);
+    else notenCloseSubjectAdd();
+  });
+
   // ── Jahres-Liste (Delegation: Toggle, Umbenennen, Löschen, + Fach, Kategorien, Fach öffnen) ──
-  document.getElementById('noten-years-list').addEventListener('click', e => {
+  yearsList.addEventListener('click', e => {
+    const addSubjectBtn = e.target.closest('[data-noten-add-subject]');
+    if (addSubjectBtn) { notenOpenSubjectAdd(addSubjectBtn.dataset.notenAddSubject); return; }
+
+    const quickBtn = e.target.closest('[data-noten-quick-grade]');
+    if (quickBtn) { openNotenEntryModal(quickBtn.dataset.notenQuickGrade, null); return; }
+
     const editBtn = e.target.closest('[data-noten-edit-year]');
     if (editBtn) { openNotenYearModal(editBtn.dataset.notenEditYear); return; }
 
@@ -300,6 +325,28 @@ function wireNotenEvents() {
   document.getElementById('noten-entry-category').addEventListener('change', e => {
     const cat = notenCategoryById(e.target.value);
     if (cat) document.getElementById('noten-entry-weight').value = cat.weight;
+    notenSyncCategoryChips('noten-entry-cat-chips', e.target.value);
+  });
+  document.getElementById('noten-entry-cat-chips').addEventListener('click', e => {
+    const chip = e.target.closest('[data-cat-id]');
+    if (!chip) return;
+    const sel = document.getElementById('noten-entry-category');
+    sel.value = chip.dataset.catId;
+    sel.dispatchEvent(new Event('change'));
+    document.getElementById('noten-entry-grade').focus();
+  });
+
+  // ── Fach-Detail: Schnell-Eingabe (Note + Kategorie, Datum heute, Gewichtung der Kategorie) ──
+  document.getElementById('noten-quick-add-btn').addEventListener('click', notenQuickAdd);
+  document.getElementById('noten-quick-grade').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); notenQuickAdd(); }
+  });
+  document.getElementById('noten-quick-cat-chips').addEventListener('click', e => {
+    const chip = e.target.closest('[data-cat-id]');
+    if (!chip) return;
+    notenQuickCatId = chip.dataset.catId;
+    notenSyncCategoryChips('noten-quick-cat-chips', notenQuickCatId);
+    document.getElementById('noten-quick-grade').focus();
   });
   document.getElementById('noten-entry-save').addEventListener('click', saveNotenEntry);
   document.getElementById('noten-entry-grade').addEventListener('keydown', e => {
@@ -388,18 +435,64 @@ function renderNotenYears() {
 
 function notenRenderSubjectGrid(yearId) {
   const subjects = notenYearSubjects(yearId);
-  if (!subjects.length) return `<div class="noten-subject-empty">Noch keine Fächer.</div>`;
-  return subjects.map(s => {
+  const cards = subjects.map(s => {
     const avg = notenSubjectAverage(s.id);
-    const pendingCount = notenSubjectEntries(s.id).filter(e => e.grade === null || e.grade === undefined).length;
+    const entries = notenSubjectEntries(s.id);
+    const pendingCount = entries.filter(e => e.grade === null || e.grade === undefined).length;
+    const recent = entries.filter(e => e.grade !== null && e.grade !== undefined).slice(-5);
     return `
-      <button class="noten-subject-card" data-noten-open-subject="${s.id}">
-        <span class="noten-subject-name">${escHtml(s.name)}</span>
-        <span class="noten-subject-avg">${avg !== null ? 'Ø ' + notenFormatGrade(avg) : '–'}</span>
-        ${pendingCount ? `<span class="noten-subject-pending">${pendingCount} ausstehend</span>` : ''}
-      </button>
+      <div class="noten-subject-card">
+        <button type="button" class="noten-subject-open" data-noten-open-subject="${s.id}" title="${escHtml(s.name)} öffnen">
+          <span class="noten-subject-name">${escHtml(s.name)}</span>
+          ${avg !== null ? `<span class="noten-subject-avg">Ø ${notenFormatGrade(avg)}</span>` : '<span class="noten-subject-nograde">noch keine Note</span>'}
+          ${recent.length ? `<span class="noten-subject-recent">${recent.map(e => `<span>${notenFormatGradeShort(e.grade)}</span>`).join('')}</span>` : ''}
+          ${pendingCount ? `<span class="noten-subject-pending">${pendingCount} ausstehend</span>` : ''}
+        </button>
+        <button type="button" class="noten-subject-quick" data-noten-quick-grade="${s.id}" title="Note für ${escHtml(s.name)} eintragen">+ Note</button>
+      </div>
     `;
   }).join('');
+  const adder = notenAddingSubjectYear === yearId
+    ? `<div class="noten-subject-add is-editing"><input type="text" class="modal-input noten-subject-add-input" data-year-id="${yearId}" placeholder="Fachname" aria-label="Name des neuen Fachs" autocomplete="off" maxlength="60"/><span class="noten-subject-add-hint">Enter = anlegen · Esc = fertig</span></div>`
+    : `<button type="button" class="noten-subject-add" data-noten-add-subject="${yearId}">＋ Fach</button>`;
+  const hint = subjects.length ? '' : `<div class="noten-subject-empty">Noch keine Fächer – lege hier dein erstes an.</div>`;
+  return hint + cards + adder;
+}
+
+// ── Inline „+ Fach“ ──
+function notenOpenSubjectAdd(yearId) {
+  notenAddingSubjectYear = yearId;
+  notenRefreshSubjectGrid(yearId);
+}
+function notenCloseSubjectAdd() {
+  const yearId = notenAddingSubjectYear;
+  if (!yearId) return;
+  notenAddingSubjectYear = null;
+  notenRefreshSubjectGrid(yearId);
+}
+// Zeichnet nur das Fächer-Raster eines Jahres neu (Fokus bleibt im Eingabefeld)
+function notenRefreshSubjectGrid(yearId) {
+  const grid = document.getElementById('noten-subject-grid-' + yearId);
+  if (!grid) { renderNotenYears(); return; }
+  notenSubjectAddSilent = true;
+  grid.innerHTML = notenRenderSubjectGrid(yearId);
+  notenSubjectAddSilent = false;
+  const input = grid.querySelector('.noten-subject-add-input');
+  if (input) input.focus();
+  // Kopfzeile (Anzahl Fächer) aktuell halten
+  const item = grid.closest('.noten-year-item');
+  const meta = item && item.querySelector('.noten-year-meta');
+  const n = notenYearSubjects(yearId).length;
+  if (meta) meta.textContent = `${n} ${n === 1 ? 'Fach' : 'Fächer'}`;
+}
+function notenAddSubjectInline(input, keepOpen) {
+  const name = input.value.trim();
+  const yearId = input.dataset.yearId;
+  if (!name) { if (!keepOpen) notenCloseSubjectAdd(); return; }
+  notenSubjects.push({ id: notenUid(), yearId, name });
+  saveNotenSubjects();
+  if (!keepOpen) notenAddingSubjectYear = null;
+  notenRefreshSubjectGrid(yearId);
 }
 
 function toggleNotenYear(yearId) {
@@ -416,10 +509,10 @@ function openNotenYearModal(yearId) {
   notenYearEditId = yearId || null;
   const year = yearId ? notenYears.find(y => y.id === yearId) : null;
   document.getElementById('noten-year-modal-title').textContent = year ? 'Ausbildungsjahr bearbeiten' : 'Neues Ausbildungsjahr';
-  document.getElementById('noten-year-name').value = year ? year.name : '';
+  document.getElementById('noten-year-name').value = year ? year.name : `${notenYears.length + 1}. Ausbildungsjahr`;
   document.getElementById('noten-year-subject-row').classList.toggle('hidden', !year);
   notenModals.year.open();
-  setTimeout(() => document.getElementById('noten-year-name').focus(), 50);
+  setTimeout(() => { const el = document.getElementById('noten-year-name'); el.focus(); el.select(); }, 50);
 }
 function closeNotenYearModal() { notenModals.year.close(); }
 function saveNotenYear() {
@@ -434,10 +527,12 @@ function saveNotenYear() {
     notenYears.push({ id, name });
     notenOpenYears[id] = true;
     saveNotenOpenYears();
+    notenAddingSubjectYear = id;   // neues Jahr: gleich das erste Fach eintippen
   }
   saveNotenYears();
   closeNotenYearModal();
   renderNotenYears();
+  document.querySelector('.noten-subject-add-input')?.focus();
 }
 async function confirmDeleteNotenYear(yearId) {
   const year = notenYears.find(y => y.id === yearId);
@@ -544,9 +639,11 @@ function openNotenEntryModal(subjectId, entryId) {
 
   document.getElementById('noten-entry-date').value = entry ? entry.date : dateKey(new Date());
 
-  const initialCatId = entry ? entry.categoryId : (cats[0] ? cats[0].id : '');
+  const initialCatId = entry ? entry.categoryId : (notenLastCategoryId() || (cats[0] ? cats[0].id : ''));
   catSelect.value = initialCatId;
   const initialCat = notenCategoryById(initialCatId);
+  document.getElementById('noten-entry-cat-chips').innerHTML = notenCategoryChipsHtml(initialCatId);
+  document.getElementById('noten-entry-subject').textContent = subject.name;
 
   document.getElementById('noten-entry-grade').value  = (entry && entry.grade !== null && entry.grade !== undefined) ? entry.grade : '';
   document.getElementById('noten-entry-weight').value = entry ? entry.weight : (initialCat ? initialCat.weight : 1);
@@ -572,9 +669,57 @@ function saveNotenEntry() {
     notenEntries.push({ id: notenUid(), subjectId: notenEntrySubjectId, date, categoryId, grade, weight });
   }
   saveNotenEntries();
+  DB.set('notenLastCategory', categoryId);
   closeNotenEntryModal();
+  if (notenDetailSubjectId) renderNotenSubjectDetail();
+  renderNotenYears();
+}
+
+// ── Kategorie-Chips (Leistung-Modal + Schnell-Eingabe) ──
+function notenLastCategoryId() {
+  const id = DB.get('notenLastCategory', null);
+  return notenCategoryById(id) ? id : null;
+}
+function notenCategoryChipsHtml(activeId) {
+  return notenCategories.map(c =>
+    `<button type="button" class="noten-cat-chip${c.id === activeId ? ' active' : ''}" data-cat-id="${c.id}" aria-pressed="${c.id === activeId}">${escHtml(c.name)}<span class="noten-cat-chip-w">×${notenFormatGradeShort(c.weight)}</span></button>`).join('');
+}
+function notenSyncCategoryChips(containerId, activeId) {
+  document.querySelectorAll('#' + containerId + ' [data-cat-id]').forEach(b => {
+    const on = b.dataset.catId === activeId;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-pressed', on);
+  });
+}
+
+// ── Schnell-Eingabe im Fach ──
+let notenQuickCatId = null;
+function notenRenderQuickAdd() {
+  if (!notenCategoryById(notenQuickCatId)) notenQuickCatId = notenLastCategoryId() || (notenCategories[0] ? notenCategories[0].id : null);
+  document.getElementById('noten-quick-cat-chips').innerHTML = notenCategoryChipsHtml(notenQuickCatId);
+}
+function notenQuickAdd() {
+  const input = document.getElementById('noten-quick-grade');
+  const msg = document.getElementById('noten-quick-msg');
+  const raw = input.value;
+  const grade = notenParseGrade(raw);
+  if (grade === null) { input.focus(); return; }
+  if (Number.isNaN(grade)) {
+    msg.textContent = 'Note nicht erkannt – z. B. 2 · 2,3 · 2- · 1-2 · 87P';
+    msg.classList.add('is-error');
+    input.focus();
+    return;
+  }
+  const cat = notenCategoryById(notenQuickCatId);
+  notenEntries.push({ id: notenUid(), subjectId: notenDetailSubjectId, date: dateKey(new Date()), categoryId: cat ? cat.id : '', grade, weight: cat ? cat.weight : 1 });
+  saveNotenEntries();
+  if (cat) DB.set('notenLastCategory', cat.id);
+  input.value = '';
+  msg.classList.remove('is-error');
+  msg.textContent = `${notenFormatGradeShort(grade)}${cat ? ' (' + cat.name + ')' : ''} eingetragen.`;
   renderNotenSubjectDetail();
   renderNotenYears();
+  input.focus();
 }
 
 // =========================
@@ -587,8 +732,12 @@ function openNotenSubjectDetail(subjectId) {
   const first = notenCategories[0];
   document.getElementById('noten-target-avg').value = '';
   document.getElementById('noten-target-weight').value = first ? first.weight : 1;
+  document.getElementById('noten-quick-grade').value = '';
+  document.getElementById('noten-quick-msg').textContent = '';
+  notenRenderQuickAdd();
   renderNotenSubjectDetail();
   notenModals.detail.open();
+  setTimeout(() => document.getElementById('noten-quick-grade').focus(), 50);
 }
 function closeNotenSubjectDetail() { notenModals.detail.close(); }
 
@@ -637,7 +786,7 @@ function renderNotenSubjectDetail() {
         </div>
       </div>
     `;
-  }).join('') : `<div class="noten-empty-hint">Noch keine Leistungen erfasst.</div>`;
+  }).join('') : `<div class="noten-empty-hint">Noch keine Noten – trag oben die erste ein.</div>`;
   renderNotenTrend(entries);
   renderNotenTarget();
 }

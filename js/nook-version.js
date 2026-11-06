@@ -10,9 +10,18 @@
 // hinten wegfallen, angezeigt werden ohnehin nur die neuesten.
 // =========================
 
-window.NOOK_VERSION = '2026.11.9';
+window.NOOK_VERSION = '2026.11.10';
 
 window.NOOK_CHANGELOG = [
+  {
+    version: '2026.11.10',
+    date: '2026-11-06',
+    items: [
+      'Notenmanager: Fächer direkt über die Kachel „＋ Fach“ anlegen – Enter, nächstes Fach tippen, fertig',
+      'Notenmanager: „+ Note“ auf jeder Fachkarte und eine Schnell-Eingabe im Fach (Note tippen, Art antippen, Enter); die letzten Noten stehen direkt auf der Karte',
+      'Notenmanager: Die Liste der Leistungen im Fach wurde nicht mehr angezeigt – behoben',
+    ],
+  },
   {
     version: '2026.11.9',
     date: '2026-11-05',

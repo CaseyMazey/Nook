@@ -460,7 +460,10 @@ function initTools() {
               <p class="modal-hint">Tipp: Bei einer Leistung kannst du direkt „87P“ eintragen — die Note wird nach diesem Schlüssel gesetzt.</p>
             </div>
             <div class="noten-years-list" id="noten-years-list"></div>
-            <div class="noten-empty hidden" id="noten-empty">Noch keine Ausbildungsjahre angelegt. Lege dein erstes mit „+ Ausbildungsjahr" an.</div>
+            <div class="noten-empty noten-empty-start hidden" id="noten-empty">
+              <p>Hier sammelst du deine Noten – nach Ausbildungs- oder Schuljahr und Fach.</p>
+              <button class="btn-primary" id="noten-empty-add-btn">＋ Erstes Ausbildungsjahr anlegen</button>
+            </div>
           </div>
         </div>
 
@@ -658,11 +661,13 @@ function initTools() {
       <!-- Notenmanager: Leistung anlegen/bearbeiten -->
       <div id="noten-entry-modal-overlay" class="modal-backdrop hidden" style="z-index:300;">
         <div class="modal-box" style="width:400px;">
-          <div class="modal-head"><span id="noten-entry-modal-title">Neue Leistung</span><button class="modal-x" id="noten-entry-modal-close">&#10005;</button></div>
-          <div class="modal-row"><label>Datum</label><input type="date" class="modal-date" id="noten-entry-date"/></div>
-          <div class="modal-row"><label>Kategorie</label><select class="modal-select" id="noten-entry-category"></select></div>
-          <div class="modal-row"><label>Note (leer = ausstehend)</label><input type="text" inputmode="decimal" class="modal-input" id="noten-entry-grade" placeholder="z.B. 2,3 · 2- · 1-2 · 87P"/></div>
-          <div class="modal-row"><label>Gewichtung</label><input type="number" class="modal-input" id="noten-entry-weight" step="0.5" min="0.5"/></div>
+          <div class="modal-head"><span><span id="noten-entry-modal-title">Neue Leistung</span> <span class="noten-entry-subject" id="noten-entry-subject"></span></span><button class="modal-x" id="noten-entry-modal-close">&#10005;</button></div>
+          <div class="modal-row"><label for="noten-entry-grade">Note</label><input type="text" inputmode="decimal" class="modal-input noten-entry-grade-input" id="noten-entry-grade" placeholder="z. B. 2 · 2,3 · 2- · 87P" autocomplete="off"/><span class="modal-hint">Leer lassen, wenn die Note noch aussteht.</span></div>
+          <div class="modal-row"><label>Art</label><div class="noten-cat-chips" id="noten-entry-cat-chips"></div><select class="modal-select hidden" id="noten-entry-category" aria-hidden="true" tabindex="-1"></select></div>
+          <div class="noten-entry-extra">
+            <div class="modal-row"><label>Datum</label><input type="date" class="modal-date" id="noten-entry-date"/></div>
+            <div class="modal-row"><label>Gewichtung</label><input type="number" class="modal-input" id="noten-entry-weight" step="0.5" min="0.5"/></div>
+          </div>
           <div class="modal-actions"><button id="noten-entry-cancel" class="btn-ghost">Abbrechen</button><button id="noten-entry-save" class="btn-primary">Speichern</button></div>
         </div>
       </div>
@@ -681,6 +686,14 @@ function initTools() {
               <button class="btn-ghost" id="noten-detail-delete-btn">🗑 Löschen</button>
             </div>
           </div>
+          <div class="noten-quick-add">
+            <div class="noten-quick-row">
+              <input type="text" inputmode="decimal" class="modal-input" id="noten-quick-grade" placeholder="Neue Note, z. B. 2,3" autocomplete="off" aria-label="Neue Note"/>
+              <button class="btn-primary" id="noten-quick-add-btn">Eintragen</button>
+            </div>
+            <div class="noten-cat-chips" id="noten-quick-cat-chips" aria-label="Art der Leistung"></div>
+            <div class="noten-quick-msg" id="noten-quick-msg" aria-live="polite"></div>
+          </div>
           <div class="noten-entry-list" id="noten-detail-entries"></div>
           <div class="noten-trend" id="noten-trend"></div>
           <div class="noten-target">
@@ -690,7 +703,7 @@ function initTools() {
             <div class="noten-target-result" id="noten-target-result" aria-live="polite"></div>
           </div>
           <div class="modal-actions" style="justify-content:flex-start;">
-            <button class="btn-primary" id="noten-detail-add-entry-btn">+ Leistung hinzufügen</button>
+            <button class="btn-ghost" id="noten-detail-add-entry-btn" title="Mit Datum, Gewichtung oder als ausstehend">＋ Leistung mit Details…</button>
           </div>
         </div>
       </div>
