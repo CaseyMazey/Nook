@@ -301,12 +301,67 @@ function openExpensesByPriority(mk, recItems) {
   res.total = round2(res.must + res.need + res.want);
   return res;
 }
-// Kaskade Kontostand → Muss → Brauche → Möchte
-function priorityCascade(start, open) {
-  const afterMust = start - open.must;
-  const afterNeed = afterMust - open.need;
-  const afterWant = afterNeed - open.want;
-  return { afterMust, afterNeed, afterWant };
+// Offene Einnahmen + Ausgaben eines Monats als Zeitachse (Tag, Betrag).
+// Ausgaben ohne Priorität (Muss/Brauche/Möchte) zählen wie in
+// openExpensesByPriority() nicht mit.
+function openMonthFlows(mk, recItems) {
+  const y = parseInt(mk.slice(0, 4), 10), m = parseInt(mk.slice(5, 7), 10);
+  const items = recItems || getMonthRecurringItems(y, m);
+  const flows = [];
+  const add = (type, day, amount, priority) => {
+    if (type === 'income') flows.push({ income: true, day: day || 1, amount });
+    else if (type === 'expense') {
+      const p = priority || 'need';
+      if (p === 'must' || p === 'need' || p === 'want') flows.push({ income: false, day: day || 1, amount, priority: p });
+    }
+  };
+  items.forEach(i => { if (!isRecurringPaid(i.id, mk)) add(i.type, i.day, i.amount, i.priority); });
+  budgetOnetime.forEach(e => { if (e.monthKey === mk && !e.paid) add(e.type, e.day, e.amount, e.priority); });
+  return flows;
+}
+
+// Deckung entlang der Zeit: ab dem Kontostand Tag für Tag, Einnahmen zählen
+// ab ihrem Datum (am selben Tag vor den Ausgaben), Ausgaben an ihrem
+// Fälligkeitstag. Im laufenden Monat gilt alles bereits Überfällige als
+// heute fällig. Nur Ausgaben der Prioritäten in `prios` werden abgezogen —
+// so prüft z. B. ['must'], ob die Pflichtausgaben rechtzeitig gedeckt sind,
+// auch wenn Wünsche das Geld sonst vorher aufbrauchen würden.
+// Ergebnis: tiefster Stand (min, minDay) und Stand am Monatsende (end).
+function cashflowCoverage(start, flows, prios, fromDay) {
+  const ev = flows
+    .filter(f => f.income || prios.includes(f.priority))
+    .map(f => ({ ...f, day: Math.max(f.day, fromDay || 1) }))
+    .sort((a, b) => a.day - b.day || (a.income ? 0 : 1) - (b.income ? 0 : 1));
+  let bal = start, min = start, minDay = null;
+  ev.forEach(f => {
+    bal += f.income ? f.amount : -f.amount;
+    if (bal < min - 0.004) { min = bal; minDay = f.day; }
+  });
+  return { min: round2(min), minDay, end: round2(bal) };
+}
+
+// Ab welchem Tag die Zeitachse eines Monats läuft: im laufenden Monat ab
+// heute, sonst ab dem Monatsersten.
+function budgetFlowStartDay(mk) {
+  const now = new Date();
+  return mk === budgetMonthKey(now) ? now.getDate() : 1;
+}
+
+// Status-Kern für Ampel und Karte „Verfügbar“ (eine Berechnung für beide)
+function budgetCoverage(mk, recItems) {
+  const flows = openMonthFlows(mk, recItems);
+  const from = budgetFlowStartDay(mk);
+  const must = cashflowCoverage(kontostand, flows, ['must'], from);
+  const need = cashflowCoverage(kontostand, flows, ['must', 'need'], from);
+  const all  = cashflowCoverage(kontostand, flows, ['must', 'need', 'want'], from);
+  const sum = (pred) => round2(flows.filter(pred).reduce((s, f) => s + f.amount, 0));
+  return {
+    must, need, all,
+    openIncome: sum(f => f.income),
+    openMust: sum(f => !f.income && f.priority === 'must'),
+    openNeed: sum(f => !f.income && f.priority === 'need'),
+    openWant: sum(f => !f.income && f.priority === 'want'),
+  };
 }
 
 // =========================
@@ -449,7 +504,10 @@ function budgetIncomeSourceById(id) {
 
 // =========================
 // FINANCIAL STATUS
-// Basiert auf offenem Kontostand (bereits erledigt = bereits verbucht)
+// Basiert auf dem Kontostand (Erledigtes ist dort schon verbucht) plus den
+// offenen Einnahmen und Ausgaben des Monats, entlang ihrer Daten: Eine
+// Einnahme, die vor einer Ausgabe eingeht, deckt sie. „Nicht gedeckt“
+// heißt, der Kontostand fiele an einem Tag des Monats unter null.
 // =========================
 
 function calcFinancialStatus(mk) {
@@ -458,13 +516,12 @@ function calcFinancialStatus(mk) {
   const useMk = mk || budgetMonthKey(new Date());
   const useYear  = parseInt(useMk.slice(0,4));
   const useMonth = parseInt(useMk.slice(5,7));
-  const openByPrio = openExpensesByPriority(useMk, getMonthRecurringItems(useYear, useMonth));
+  const cov = budgetCoverage(useMk, getMonthRecurringItems(useYear, useMonth));
 
-  // Kumulative Deckungsprüfung: Kontostand → Muss → Rest → Brauche → Rest → Möchte
-  const { afterMust, afterNeed, afterWant } = priorityCascade(kontostand, openByPrio);
-  const mustCovered = afterMust >= 0;
-  const needCovered = mustCovered && afterNeed >= 0;
-  const wantCovered = needCovered && afterWant >= 0;
+  // Kumulativ nach Priorität: Muss allein → Muss+Brauche → alles
+  const mustCovered = cov.must.min >= 0;
+  const needCovered = mustCovered && cov.need.min >= 0;
+  const wantCovered = needCovered && cov.all.min >= 0;
 
   let status;
   if (!mustCovered)       status = 'red';
@@ -473,45 +530,49 @@ function calcFinancialStatus(mk) {
   else                    status = 'green';
 
   const fmt = v => fmtEuro(Math.abs(v)).replace(' €', '');
+  const mm = String(useMonth).padStart(2, '0');
+  // „am 27.11. fehlen 12,00 €“ — Tag, an dem der Stand am tiefsten fällt
+  const gap = c => (c.minDay ? `am ${String(c.minDay).padStart(2, '0')}.${mm}. ` : '') + `fehlen ${fmt(c.min)} €`;
 
   const checks = [];
   if (mustCovered) {
     checks.push({ icon: '✓', iconClass: 'ok',      label: 'Muss gedeckt' });
   } else {
-    checks.push({ icon: '✗', iconClass: 'bad',     label: `Muss nicht gedeckt — fehlen ${fmt(afterMust)} €` });
+    checks.push({ icon: '✗', iconClass: 'bad',     label: `Muss nicht gedeckt — ${gap(cov.must)}` });
   }
   if (!mustCovered) {
     checks.push({ icon: '–', iconClass: 'neutral', label: 'Brauche nicht auswertbar' });
   } else if (needCovered) {
     checks.push({ icon: '✓', iconClass: 'ok',      label: 'Brauche gedeckt' });
   } else {
-    checks.push({ icon: '✗', iconClass: 'bad',     label: `Brauche nicht gedeckt — fehlen ${fmt(afterNeed)} €` });
+    checks.push({ icon: '✗', iconClass: 'bad',     label: `Brauche nicht gedeckt — ${gap(cov.need)}` });
   }
   if (!mustCovered || !needCovered) {
     checks.push({ icon: '–', iconClass: 'neutral', label: 'Möchte nicht auswertbar' });
   } else if (wantCovered) {
     checks.push({ icon: '✓', iconClass: 'ok',      label: 'Möchte gedeckt' });
   } else {
-    checks.push({ icon: '⚠', iconClass: 'warn',   label: `Möchte nicht gedeckt — fehlen ${fmt(afterWant)} €` });
+    checks.push({ icon: '⚠', iconClass: 'warn',   label: `Möchte nicht gedeckt — ${gap(cov.all)}` });
   }
 
   let hint;
-  const restAfterAll = afterWant;
   if (status === 'green') {
-    hint = restAfterAll > 0
-      ? { text: `Alle Ausgaben gedeckt. Puffer: +${fmt(restAfterAll)} €`, type: 'good' }
+    // Puffer = tiefster Stand im Monat: so viel kann jetzt zusätzlich weg,
+    // ohne dass irgendwann eine Ausgabe ungedeckt ist
+    hint = cov.all.min > 0
+      ? { text: `Alle Ausgaben gedeckt. Puffer: +${fmt(cov.all.min)} €`, type: 'good' }
       : { text: 'Alle Ausgaben sind gedeckt.', type: 'good' };
   } else if (status === 'yellow') {
-    hint = { text: `Pflicht- und Brauche-Ausgaben gesichert. Für optionale Ausgaben fehlen ${fmt(afterWant)} €.`, type: 'warn' };
+    hint = { text: `Pflicht- und Brauche-Ausgaben gesichert. Für optionale Ausgaben ${gap(cov.all)}.`, type: 'warn' };
   } else if (status === 'orange') {
-    hint = { text: `Brauche-Ausgaben nicht vollständig gedeckt. Fehlbetrag: ${fmt(afterNeed)} €`, type: 'bad' };
+    hint = { text: `Brauche-Ausgaben nicht rechtzeitig gedeckt — ${gap(cov.need)}.`, type: 'bad' };
   } else {
-    hint = { text: `Muss-Ausgaben nicht gedeckt. Fehlbetrag: ${fmt(afterMust)} €`, type: 'bad' };
+    hint = { text: `Muss-Ausgaben nicht rechtzeitig gedeckt — ${gap(cov.must)}.`, type: 'bad' };
   }
 
   return { status, mustCovered, needCovered, wantCovered, checks, hint,
-           openMust: openByPrio.must, openNeed: openByPrio.need, openWant: openByPrio.want,
-           afterMust, afterNeed, afterWant };
+           openMust: cov.openMust, openNeed: cov.openNeed, openWant: cov.openWant,
+           openIncome: cov.openIncome, endBalance: cov.all.end };
 }
 
 function renderFinancialStatus(fs) {
@@ -828,7 +889,7 @@ function renderMainCards(month, mk) {
   const expSum = document.getElementById('b-expense-summary-val');
   if (expSum) expSum.textContent = '-' + fmtEuro(openExpTotal);
 
-  // ── KARTE 3: Verfügbar — zeigt dieselbe Prioritätsberechnung wie der Status ───
+  // ── KARTE 3: Verfügbar — zeigt dieselbe Zeitachsen-Berechnung wie der Status ───
   const freeContent = document.getElementById('b-free-content');
   const freeSummary = document.getElementById('b-free-summary-val');
   freeContent.innerHTML = '';
@@ -837,35 +898,35 @@ function renderMainCards(month, mk) {
     freeContent.innerHTML = '<div class="b-main-empty" style="padding:12px 0;">Kein Kontostand gesetzt.</div>';
     if (freeSummary) { freeSummary.textContent = '—'; freeSummary.className = 'b-mcs-value'; }
   } else {
-    // Dieselbe Berechnung wie calcFinancialStatus — nach Priorität kaskadierend
-    const open = openExpensesByPriority(mk, recItems);
-    const openMust = open.must, openNeed = open.need, openWant = open.want;
-    const { afterMust, afterNeed, afterWant } = priorityCascade(kontostand, open);
-    const vbl       = afterWant;
+    // Dieselbe Berechnung wie calcFinancialStatus — Zeitachse mit offenen Einnahmen
+    const cov = budgetCoverage(mk, recItems);
+    const vbl    = cov.all.end;
     const fmt    = v => fmtEuro(v).replace(' €', '');
     const fmtAbs = v => fmtEuro(Math.abs(v)).replace(' €', '');
+    const mm     = String(month.getMonth() + 1).padStart(2, '0');
+    const mustOk = cov.must.min >= 0, needOk = mustOk && cov.need.min >= 0;
 
-    // Prioritätszeilen
-    const mustRow = openMust > 0
+    // Prioritätszeilen: offene Summe + ob sie rechtzeitig gedeckt ist
+    const prioRow = (amount, dot, label, state, c) => amount > 0
       ? `<div class="b-free-prio-row">
-           <span class="b-free-prio-dot must"></span>
-           <span class="b-free-prio-label">Nach Pflichtausgaben</span>
-           <span class="b-free-prio-amt">-${fmt(openMust)} €</span>
-           <span class="b-free-prio-after ${afterMust>=0?'ok':'bad'}">${afterMust>=0?'+'+fmt(afterMust):'-'+fmtAbs(afterMust)} €</span>
+           <span class="b-free-prio-dot ${dot}"></span>
+           <span class="b-free-prio-label">${label}</span>
+           <span class="b-free-prio-amt">-${fmt(amount)} €</span>
+           <span class="b-free-prio-after ${state}">${state === 'ok' ? 'gedeckt' : state === 'bad' ? '-' + fmtAbs(c.min) + ' €' : '–'}</span>
          </div>` : '';
-    const needRow = openNeed > 0
-      ? `<div class="b-free-prio-row">
-           <span class="b-free-prio-dot need"></span>
-           <span class="b-free-prio-label">Nach Brauche-Ausgaben</span>
-           <span class="b-free-prio-amt">-${fmt(openNeed)} €</span>
-           <span class="b-free-prio-after ${afterMust<0?'neutral':afterNeed>=0?'ok':'bad'}">${afterMust<0?'–':afterNeed>=0?'+'+fmt(afterNeed):'-'+fmtAbs(afterNeed)} €</span>
+    const mustRow = prioRow(cov.openMust, 'must', 'Muss-Ausgaben', mustOk ? 'ok' : 'bad', cov.must);
+    const needRow = prioRow(cov.openNeed, 'need', 'Brauche-Ausgaben', !mustOk ? 'neutral' : needOk ? 'ok' : 'bad', cov.need);
+    const wantRow = prioRow(cov.openWant, 'want', 'Möchte-Ausgaben', !needOk ? 'neutral' : cov.all.min >= 0 ? 'ok' : 'bad', cov.all);
+    const incomeRow = cov.openIncome > 0
+      ? `<div class="b-free-row">
+           <span class="b-free-label">Offene Einnahmen</span>
+           <span class="b-free-val income">+${fmt(cov.openIncome)} €</span>
          </div>` : '';
-    const wantRow = openWant > 0
-      ? `<div class="b-free-prio-row">
-           <span class="b-free-prio-dot want"></span>
-           <span class="b-free-prio-label">Saldo nach allen Ausgaben</span>
-           <span class="b-free-prio-amt">-${fmt(openWant)} €</span>
-           <span class="b-free-prio-after ${(afterMust<0||afterNeed<0)?'neutral':afterWant>=0?'ok':'bad'}">${(afterMust<0||afterNeed<0)?'–':afterWant>=0?'+'+fmt(afterWant):'-'+fmtAbs(afterWant)} €</span>
+    // Tiefster Stand nur zeigen, wenn er vom Kontostand abweicht
+    const lowRow = cov.all.minDay
+      ? `<div class="b-free-row">
+           <span class="b-free-label">Tiefster Stand (${String(cov.all.minDay).padStart(2, '0')}.${mm}.)</span>
+           <span class="b-free-val ${cov.all.min<0?'expense':''}">${cov.all.min<0?'-':'+'}${fmtAbs(cov.all.min)} €</span>
          </div>` : '';
 
     freeContent.innerHTML = `
@@ -873,10 +934,11 @@ function renderMainCards(month, mk) {
         <span class="b-free-label">Kontostand</span>
         <span class="b-free-val ${kontostand<0?'expense':''}">${kontostand<0?'':'+'}${fmt(kontostand)} €</span>
       </div>
-      ${mustRow}${needRow}${wantRow}
+      ${incomeRow}${mustRow}${needRow}${wantRow}
       <div class="b-free-divider"></div>
+      ${lowRow}
       <div class="b-free-row b-free-row-total">
-        <span class="b-free-label-big">Verbleibend</span>
+        <span class="b-free-label-big">Am Monatsende</span>
         <span class="b-free-val-big ${vbl<0?'expense':'income'}">${vbl<0?'-':'+'}${fmtAbs(vbl)} €</span>
       </div>`;
 

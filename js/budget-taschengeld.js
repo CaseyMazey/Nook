@@ -34,7 +34,15 @@ const TASCHENGELD_DEFAULTS = {
   // Hat ein Monat mindestens einen angeklickten Tag, zählen NUR diese Tage.
   // Monate ohne angeklickte Tage werden mit homeTrip/absences geschätzt.
   presentDays: {},
+  // Tag, an dem das Geld eines Monats im Budget als eingegangen zählt:
+  // 'last' = letzter Tag des Monats, sonst eine Zahl 1–28.
+  payDay: 'last',
 };
+
+function tgNormalizePayDay(v) {
+  const n = parseInt(v, 10);
+  return (n >= 1 && n <= 28) ? n : 'last';
+}
 
 function loadBudgetTaschengeld() {
   const saved = DB.get('budgetTaschengeld', {});
@@ -44,6 +52,7 @@ function loadBudgetTaschengeld() {
     homeTrip: Object.assign({}, TASCHENGELD_DEFAULTS.homeTrip, saved.homeTrip || {}),
     absences: Array.isArray(saved.absences) ? saved.absences : [],
     presentDays: (saved.presentDays && typeof saved.presentDays === 'object') ? saved.presentDays : {},
+    payDay: tgNormalizePayDay(saved.payDay),
   };
 }
 let budgetTaschengeld = loadBudgetTaschengeld();
@@ -251,8 +260,9 @@ function getTaschengeldMonthEntry(year, month) {
   const mk = `${year}-${String(month).padStart(2, '0')}`;
   const frozen = budgetTaschengeldActuals[mk];
   const amount = (typeof frozen === 'number') ? frozen : computeTaschengeldBreakdown(year, month).total;
-  const now = new Date();
-  const day = (year === now.getFullYear() && month === now.getMonth() + 1) ? now.getDate() : 1;
+  // Auszahlungstag aus den Einstellungen (Standard: letzter Tag des Monats)
+  const pd = budgetTaschengeld.payDay;
+  const day = pd === 'last' || pd == null ? new Date(year, month, 0).getDate() : pd;
   return {
     id: TASCHENGELD_ENTRY_ID, name: 'Taschengeld', type: 'income',
     amount, day, priority: 'none', isAverage: false, funding: null,
@@ -407,6 +417,7 @@ function readTgFieldsIntoDraft() {
   tgDraft.rates.sunday   = parseFloat(document.getElementById('tg-rate-sunday').value)   || 0;
   tgDraft.homeTrip.enabled      = document.getElementById('tg-hometrip-enabled').checked;
   tgDraft.homeTrip.anchorMonday = document.getElementById('tg-hometrip-anchor').value || null;
+  tgDraft.payDay = tgNormalizePayDay(document.getElementById('tg-payday').value);
 }
 
 // Klick-Kalender: angeklickte Tage = da und bezahlt. Ohne angeklickte Tage
@@ -469,6 +480,12 @@ function openTaschengeldSettingsModal(year, month) {
   document.getElementById('tg-rate-sunday').value   = tgDraft.rates.sunday;
   document.getElementById('tg-hometrip-enabled').checked = tgDraft.homeTrip.enabled;
   document.getElementById('tg-hometrip-anchor').value    = tgDraft.homeTrip.anchorMonday || '';
+  const payEl = document.getElementById('tg-payday');
+  if (!payEl.options.length) {
+    payEl.add(new Option('Letzter Tag des Monats', 'last'));
+    for (let d = 1; d <= 28; d++) payEl.add(new Option(`Am ${d}. des Monats`, String(d)));
+  }
+  payEl.value = String(tgDraft.payDay ?? 'last');
 
   renderTgAbsenceList();
   updateTgSettingsVisibility();

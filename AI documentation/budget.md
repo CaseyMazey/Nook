@@ -156,6 +156,8 @@ Beispiele:
 
 Zusätzlich werden passende Hinweise angezeigt.
 
+Gerechnet wird entlang der Daten des Monats: Ausgangspunkt ist der Kontostand (Erledigtes ist dort schon verbucht), dann kommen die offenen Einnahmen an ihrem Datum (am selben Tag vor den Ausgaben) und die offenen Ausgaben an ihrem Fälligkeitstag; im laufenden Monat gilt Überfälliges als heute fällig. Eine Prioritätsstufe gilt als gedeckt, wenn der Stand mit ihren Ausgaben (plus denen der höheren Stufen) an keinem Tag unter null fällt — eine Einnahme, die vor einer Ausgabe eingeht, deckt sie also. Die Karte „Verfügbar“ zeigt dieselbe Rechnung: offene Einnahmen, offene Ausgaben je Stufe, tiefster Stand und Stand am Monatsende.
+
 ---
 
 # Liquiditätsvorschau
@@ -401,7 +403,7 @@ sein.
 
 # Taschengeld (optional)
 
-Persönliche Einnahme, die monatlich aus Tagessätzen berechnet wird (js/budget-taschengeld.js, Einstellungen im Zahnrad-Menü). Im Kalender des Fensters werden die Tage angeklickt, an denen man da ist und bezahlt wird; ein Monat mit markierten Tagen wird exakt daraus berechnet. Monate ohne Markierung werden mit den Regeln geschätzt (Freitag immer bezahlt, Heimfahrt-Wochenenden ohne Sa/So, Feiertage zählen wie ihr Wochentag). Sobald das Taschengeld als erhalten markiert ist, wird der Betrag des Monats fixiert. Taschengeld ist kein Eintrag in budgetRecurring, sondern eine virtuelle Einnahme (`budgetIncomeSources()`).
+Persönliche Einnahme, die monatlich aus Tagessätzen berechnet wird (js/budget-taschengeld.js, Einstellungen im Zahnrad-Menü). Im Kalender des Fensters werden die Tage angeklickt, an denen man da ist und bezahlt wird; ein Monat mit markierten Tagen wird exakt daraus berechnet. Monate ohne Markierung werden mit den Regeln geschätzt (Freitag immer bezahlt, Heimfahrt-Wochenenden ohne Sa/So, Feiertage zählen wie ihr Wochentag). Sobald das Taschengeld als erhalten markiert ist, wird der Betrag des Monats fixiert. Der Auszahlungstag ist einstellbar (Standard: letzter Tag des Monats, sonst ein fester Tag 1–28); an diesem Tag zählt das Geld in Status, Karte „Verfügbar“ und Liquiditätsvorschau als eingegangen. Taschengeld ist kein Eintrag in budgetRecurring, sondern eine virtuelle Einnahme (`budgetIncomeSources()`).
 
 ---
 
