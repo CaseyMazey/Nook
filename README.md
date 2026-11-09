@@ -72,7 +72,7 @@ Der Download ist rund 330 MB groß. Die `.yml`- und `.blockmap`-Dateien auf der 
 
 Kurzüberblick pro Bereich — die vollständige Nutzer-Doku mit allen Optionen und Details steht im [Wiki](https://github.com/CaseyMazey/Nook/wiki).
 
-### 🏠 Heute 🔧 *Momentan in Bearbeitung*
+### 🏠 Heute
 
 Persönliche Startseite: Unterrichtsblöcke, Wochenaufgaben, Gruppenpflichten-Planer, Mini-Kalender, Wetter, Schnellnotiz, National-Day- und Positivity-Widget.
 → [Wiki: Heute](https://github.com/CaseyMazey/Nook/wiki/Heute)
@@ -87,7 +87,7 @@ Freie Karten (Notizen, Checklisten, Code, Zitate, …) in drei Masonry-Spalten, 
 Vollständige Terminverwaltung mit wiederkehrenden und mehrtägigen Terminen, Feiertagen/Geburtstagen sowie optionaler Google-Calendar-Anbindung *(in Bearbeitung)*.
 → [Wiki: Kalender](https://github.com/CaseyMazey/Nook/wiki/Kalender)
 
-### 💰 Budget
+### 💰 Budget 🔧 *Momentan in Bearbeitung*
 
 Monatsdashboard, die Finanzierungs-Engine „Jedem Euro einen Job“, Sparprognose & eigene Sparpläne sowie getrennte Schuldenverwaltung.
 → [Wiki: Übersicht](https://github.com/CaseyMazey/Nook/wiki/Budget-Übersicht) · [Finanzierung](https://github.com/CaseyMazey/Nook/wiki/Budget-Finanzierung) · [Sparplaner](https://github.com/CaseyMazey/Nook/wiki/Budget-Sparplaner) · [Schulden](https://github.com/CaseyMazey/Nook/wiki/Budget-Schulden)
