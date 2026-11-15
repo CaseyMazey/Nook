@@ -5,7 +5,7 @@
 // Lade-Reihenfolge (index.html): budget.js -> budget-schatzkammer.js ->
 // budget-taschengeld.js -> budget-sparziele.js -> budget-financing.js ->
 // budget-analysis.js -> budget-debts.js -> budget-sparprognose.js ->
-// budget-sparplaene.js -> budget-import.js (-> today-budget.js liest nur)
+// budget-sparplaene.js -> budget-import.js -> budget-abos.js (-> today-budget.js liest nur)
 // =========================
 
 // =========================
@@ -1068,6 +1068,10 @@ function renderRecurringList(mk) {
   const allRecIncomes    = sortByPrioDay(activeRec.filter(r=>r.type==='income'));
   const allRecExpMonthly = sortByPrioDay(activeRec.filter(r=>r.type==='expense'&&r.freq==='monthly'));
   const allRecExpYearly  = sortByPrioDay(activeRec.filter(r=>r.type==='expense'&&r.freq==='yearly'));
+  // Tägliche/wöchentliche Ausgaben fehlten bisher in der Liste (zählten aber in
+  // allen Berechnungen mit). Eigene Gruppe, Summe = Monats-Äquivalent wie in
+  // getMonthRecurringItems(), damit sie zur Karte „Ausgaben“ passt.
+  const allRecExpOften   = sortByPrioDay(activeRec.filter(r=>r.type==='expense'&&['daily','weekly','biweekly'].includes(r.freq)));
   // Taschengeld (budget-taschengeld.js) ist kein Eintrag in budgetRecurring,
   // gehört aber als monatlich berechnete Einnahme sichtbar in diese Liste.
   const tgEntry = typeof getTaschengeldMonthEntry === 'function' ? getTaschengeldMonthEntry(mkYear, mkMonth) : null;
@@ -1079,7 +1083,7 @@ function renderRecurringList(mk) {
     return;
   }
 
-  function renderRecSubgroup(entries, type, headerLabel, sumLabel, freqOverride) {
+  function renderRecSubgroup(entries, type, headerLabel, sumLabel, freqOverride, totalOf) {
     if (!entries.length) return;
     const header = document.createElement('div'); header.className = 'b-section-label';
     const dotCls = type==='income'?'income':(freqOverride==='yearly'?'expense-yearly':'expense');
@@ -1120,7 +1124,7 @@ function renderRecurringList(mk) {
         }
       }));
     });
-    const total=entries.reduce((s,r)=>s+r.amount,0);
+    const total=entries.reduce((s,r)=>s+(totalOf ? totalOf(r) : r.amount),0);
     const sumRow=document.createElement('div');
     sumRow.className='b-sum-row'+(freqOverride==='yearly'?' b-sum-row-yearly':'');
     sumRow.innerHTML=`<span class="b-sum-label">${sumLabel}</span><span class="b-sum-value ${type==='income'?'income':'expense'}">${type==='income'?'+':'-'}${fmtEuro(total)}</span>`;
@@ -1128,7 +1132,11 @@ function renderRecurringList(mk) {
   }
   renderRecSubgroup(allRecIncomes,   'income', 'Einnahmen','Summe Einnahmen',null);
   renderRecSubgroup(allRecExpMonthly,'expense','Monatliche Fixkosten','Monatliche Gesamtkosten','monthly');
+  renderRecSubgroup(allRecExpOften,  'expense','W\u00f6chentliche Kosten','Im Monat ungef\u00e4hr','monthly',
+    r => recurringMonthlyEquivalent(r));
   renderRecSubgroup(allRecExpYearly, 'expense','J\u00e4hrliche Sonderkosten','J\u00e4hrliche Sonderkosten','yearly');
+  // Abo-Hinweise (budget-abos.js): doppelte Abos, ruhig oberhalb der Liste.
+  if (typeof renderAboHints === 'function') renderAboHints(recList, activeRec);
 }
 
 
@@ -2630,6 +2638,7 @@ function openRecurringModal(entry = null) {
     renderFundingEditor(document.getElementById('recurring-funding-list'), (entry && entry.funding) || [], currentRecurringAmount, 'rec-funding');
   }
 
+  if (typeof updateAboCancelLink === 'function') updateAboCancelLink();
   recurringModal.open();
   setTimeout(() => document.getElementById('recurring-name').focus(), 50);
 }

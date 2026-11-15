@@ -282,6 +282,23 @@ const BudgetImport = (() => {
     return base;
   }
 
+  // Preiserhöhung (nach broke, subscriptions.ts): mindestens zwei Abbuchungen zum gleichen alten Preis
+  // (±2 %), danach alle zum neuen, der 2 % und mindestens 0,50 € höher ist. Strom & Co., die ohnehin
+  // schwanken, fallen dadurch nicht darunter. → { from, to, date } (date = erste Abbuchung zum neuen Preis)
+  function priceHike(sorted) {
+    const a = sorted.map(r => Math.abs(r.amount));
+    if (a.length < 3) return null;
+    const to = a[a.length - 1];
+    let k = a.length - 1;
+    while (k > 0 && Math.abs(a[k - 1] - to) <= to * 0.02) k--;
+    const before = a.slice(0, k);
+    if (before.length < 2) return null;
+    const from = before[before.length - 1];
+    if (before.slice(-3).some(x => Math.abs(x - from) > from * 0.02)) return null;
+    if (!(to > from * 1.02 && to - from >= 0.5)) return null;
+    return { from: Math.round(from * 100) / 100, to: Math.round(to * 100) / 100, date: sorted[k].date };
+  }
+
   // Wiederkehrendes aus Buchungen. amount > 0 = Geld raus.
   // Eine Rechnung darf schwanken (Strom, Handy ±40 %). Wöchentliches muss fast gleich bleiben (±3 %):
   // deutsche Auszüge haben keine Kategorien, und der Wocheneinkauf beim selben Supermarkt ist kein Abo.
@@ -309,8 +326,9 @@ const BudgetImport = (() => {
       const typical = mid(amounts);
       const near = pct => amounts.filter(a => Math.abs(a - typical) <= typical * pct).length >= Math.ceil(amounts.length * 0.8);
       const isIncome = sorted[sorted.length - 1].amount < 0;
+      const hike = isIncome ? null : priceHike(sorted);
       const strict = !isIncome && (every.freq === 'weekly' || every.freq === 'biweekly');
-      if (!near(strict ? 0.03 : 0.4)) continue;
+      if (!hike && !near(strict ? 0.03 : 0.4)) continue;
       const last = sorted[sorted.length - 1];
       const ended = dayNum(today) - dayNum(last.date) > every.days * 2 + every.slack;
       const min = Math.min(...amounts), max = Math.max(...amounts);
@@ -318,9 +336,11 @@ const BudgetImport = (() => {
         key,
         name: displayName(last),
         freq: every.freq,
-        average: Math.round(amounts.reduce((s, a) => s + a, 0) / amounts.length * 100) / 100,
+        // Nach einer Preiserhöhung zählt der neue Preis, nicht der Durchschnitt aus alt und neu.
+        average: hike ? hike.to : Math.round(amounts.reduce((s, a) => s + a, 0) / amounts.length * 100) / 100,
         min, max,
-        varies: max - min > Math.max(1, typical * 0.05),
+        varies: !hike && max - min > Math.max(1, typical * 0.05),
+        hike,
         count: dates.length,
         firstDate: dates[0],
         lastDate: last.date,
@@ -346,6 +366,14 @@ const BudgetImport = (() => {
       const e = cleanName(r.name || '');
       return e && (e === n || e.includes(n) || n.includes(e));
     }) || null;
+  }
+
+  // Vorhandener fester Posten, dessen Betrag nicht mehr zur Bank passt (z.B. nach einer Preiserhöhung)?
+  // → { from, to } zum Anpassen, sonst null. Variable Posten und schwankende Beträge bleiben unberührt.
+  function amountChange(found, existing) {
+    if (!existing || existing.certainty === 'variable' || found.varies || existing.freq !== found.freq) return null;
+    const from = Number(existing.amount) || 0, to = found.average;
+    return Math.abs(from - to) >= 0.5 ? { from, to } : null;
   }
 
   // Ein gefundener Rhythmus als budgetRecurring-Eintrag (Felder wie im Posten-Dialog in budget.js).
@@ -384,7 +412,7 @@ const BudgetImport = (() => {
   }
 
   return { parseDate, dateOrder, parseAmount, readTable, guessMapping, isComplete, applyMapping, parseStatement, decodeBytes,
-    cleanName, findRecurring, findExisting, guessPriority, toBudgetEntry };
+    cleanName, findRecurring, findExisting, amountChange, guessPriority, toBudgetEntry };
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = BudgetImport;
@@ -445,9 +473,13 @@ if (typeof document !== 'undefined') (function initBudgetImport() {
     state.found = all.filter(f => !f.ended && f.freq !== 'quarterly');
     const quarterly = all.filter(f => !f.ended && f.freq === 'quarterly').length;
     state.picks = {};
+    // mode: 'add' = neuer Posten · 'update' = vorhandenen Posten auf den Bank-Betrag anpassen
+    // (vorab an, wenn eine Preiserhöhung erkannt wurde) · 'same' = schon da, Betrag passt.
     state.found.forEach(f => {
       const existing = BudgetImport.findExisting(f, budgetRecurring);
-      state.picks[f.key] = { on: !existing, name: f.name, existing };
+      const change = BudgetImport.amountChange(f, existing);
+      const mode = !existing ? 'add' : change ? 'update' : 'same';
+      state.picks[f.key] = { on: mode === 'add' || (mode === 'update' && !!f.hike), name: f.name, existing, change, mode };
     });
     showStep('result');
     renderMapping(p);
@@ -498,13 +530,19 @@ if (typeof document !== 'undefined') (function initBudgetImport() {
       ${items.map(f => {
         const pk = state.picks[f.key];
         const amount = f.freq === 'monthly' && f.varies ? `${fmtEuro(f.min)} – ${fmtEuro(f.max)}` : fmtEuro(f.average);
-        const note = pk.existing ? `<span class="b-imp-note">ähnlich wie „${escHtml(pk.existing.name)}“</span>` : '';
+        const hike = f.hike ? `<span class="b-imp-hike">teurer seit ${fmtDe(f.hike.date)}: ${fmtEuro(f.hike.from)} → ${fmtEuro(f.hike.to)}</span>` : '';
+        let note = '';
+        if (pk.mode === 'update') note = `<span class="b-imp-note">in Nook als „${escHtml(pk.existing.name)}“ mit ${fmtEuro(pk.change.from)}. Angehakt wird der Betrag angepasst.</span>`;
+        else if (pk.mode === 'same') note = `<span class="b-imp-note">schon da als „${escHtml(pk.existing.name)}“</span>`;
+        const nameField = pk.mode === 'update'
+          ? `<span class="b-imp-name b-imp-name-fixed">${escHtml(pk.existing.name)}</span>`
+          : `<input type="text" class="b-imp-name" data-key="${escHtml(f.key)}" value="${escHtml(pk.name)}" aria-label="Name"/>`;
         return `
         <label class="b-imp-row${pk.on ? '' : ' off'}">
           <input type="checkbox" data-key="${escHtml(f.key)}"${pk.on ? ' checked' : ''}/>
           <span class="b-imp-main">
-            <input type="text" class="b-imp-name" data-key="${escHtml(f.key)}" value="${escHtml(pk.name)}" aria-label="Name"/>
-            <span class="b-imp-meta">${FREQ_LABEL[f.freq]} · ${f.count}× seit ${fmtDe(f.firstDate)}${note}</span>
+            ${nameField}
+            <span class="b-imp-meta">${FREQ_LABEL[f.freq]} · ${f.count}× seit ${fmtDe(f.firstDate)}${hike}${note}</span>
           </span>
           <span class="b-imp-amount ${f.isIncome ? 'income' : 'expense'}">${f.isIncome ? '+' : '-'}${amount}</span>
         </label>`;
@@ -521,31 +559,42 @@ if (typeof document !== 'undefined') (function initBudgetImport() {
     updateSave();
   }
   function updateSave() {
-    const n = state.found.filter(f => state.picks[f.key]?.on).length;
+    const on = state.found.filter(f => state.picks[f.key]?.on);
+    const u = on.filter(f => state.picks[f.key].mode === 'update').length, a = on.length - u;
     const btn = $('budget-import-save');
-    btn.textContent = n === 1 ? '1 Posten übernehmen' : `${n} Posten übernehmen`;
-    btn.disabled = n === 0;
+    btn.textContent = a && u ? `${a} hinzufügen, ${u} anpassen`
+      : u ? (u === 1 ? '1 Betrag anpassen' : `${u} Beträge anpassen`)
+      : `${a} Posten übernehmen`;
+    btn.disabled = on.length === 0;
   }
 
   $('budget-import-save')?.addEventListener('click', () => {
     const startMonth = budgetMonthKey(new Date());
-    const add = [];
+    const add = [], updated = [];
     state.found.forEach(f => {
       const pk = state.picks[f.key];
-      if (!pk?.on || !pk.name.trim()) return;
+      if (!pk?.on) return;
+      if (pk.mode === 'update') {
+        const e = budgetRecurring.find(r => r.id === pk.existing.id);
+        if (e) { updated.push({ id: e.id, amount: e.amount }); e.amount = round2(pk.change.to); }
+        return;
+      }
+      if (!pk.name.trim()) return;
       const icon = f.isIncome && typeof incomeIcon === 'function' ? incomeIcon(pk.name) : undefined;
       const e = BudgetImport.toBudgetEntry(f, { name: pk.name, startMonth, icon });
       if (e) add.push(e);
     });
-    if (!add.length) return;
+    if (!add.length && !updated.length) return;
     budgetRecurring.push(...add);
     saveBudgetRecurring();
     modal.close();
     renderBudget();
     if (typeof hubUndo === 'function') {
       const ids = new Set(add.map(e => e.id));
-      hubUndo(`${add.length} Posten übernommen`, () => {
+      const msg = [add.length ? `${add.length} Posten übernommen` : '', updated.length ? `${updated.length} angepasst` : ''].filter(Boolean).join(', ');
+      hubUndo(msg, () => {
         budgetRecurring = budgetRecurring.filter(r => !ids.has(r.id));
+        updated.forEach(u => { const e = budgetRecurring.find(r => r.id === u.id); if (e) e.amount = u.amount; });
         saveBudgetRecurring();
         renderBudget();
       });

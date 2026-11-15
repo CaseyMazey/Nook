@@ -420,9 +420,22 @@ Zahnrad-Menü → „Kontoauszug importieren“ (js/budget-import.js). Man wähl
 - Die Buchungen selbst werden nie gespeichert und es gibt keinen neuen localStorage-Key — nur die übernommenen Einträge landen in `budgetRecurring` (Startmonat = laufender Monat). Das hält Budget ein Planer, keine Buchhaltung.
 - Monatliche Posten mit schwankendem Betrag (Strom, Handy) kommen als „variabel“ mit Min/Max. Priorität wird aus dem Namen geraten (Miete, Strom, Versicherung → Muss; Streaming, Spiele → Möchte; sonst Brauche).
 - Wöchentliche Ausgaben zählen nur bei fast gleichem Betrag (sonst wäre der Wocheneinkauf ein „Abo“). Umbuchungen und Bargeld werden übersprungen, beendete Rhythmen nicht vorgeschlagen, vierteljährliche ausgelassen (kennt Nook nicht).
-- Ein Posten mit ähnlichem Namen in `budgetRecurring` ist vorab abgehakt und markiert.
+- Ein Posten mit ähnlichem Namen in `budgetRecurring` ist vorab abgewählt und markiert. Passt sein fester Betrag nicht mehr zur Bank (gleicher Rhythmus, mindestens 0,50 € Unterschied), bietet die Zeile „Betrag anpassen“ an statt eines neuen Postens — vorab angehakt, wenn eine Preiserhöhung erkannt wurde.
+- Preiserhöhung: mindestens zwei Abbuchungen zum gleichen alten Preis (±2 %), danach alle zum neuen, 2 % und mindestens 0,50 € höher (Regel aus broke). Die Zeile zeigt „teurer seit …: alt → neu“, übernommen wird der neue Preis statt des Durchschnitts.
 - Deutsche Exporte (Sparkasse, ING, DKB, Volksbank, N26, comdirect): Vorspann-Zeilen, Windows-1252, Dezimalkomma, getrennte Empfänger-/Zahler-Spalten, PayPal & Co. (Händler aus dem Verwendungszweck). Spalten lassen sich im Dialog korrigieren. PDF geht nicht.
 - Erkennung nach broke (MIT, NextWork), siehe Kopf der Datei. Tests: `node --test tests/`.
+
+---
+
+# Abo-Hinweise
+
+js/budget-abos.js. Ruhige Hinweise, keine Warnungen:
+
+- **Doppelte Abos:** Über der Liste der wiederkehrenden Posten erscheint ein Hinweis, wenn im angezeigten Monat zwei Ausgaben derselben Art gelten (zwei Musik-Abos, zwei Streaming-Dienste, zweimal Cloud-Speicher, Hörbuch- oder Gaming-Abos) oder derselbe Name zweimal vorkommt — mit Monatssumme (jährliche Posten anteilig) und Kündigen-Links. „Passt so“ blendet ihn aus (`budgetAboHintsOff`, Hinweis-IDs aus Gruppe + Posten-IDs); kommt ein weiteres Abo dazu, erscheint er wieder.
+- **Kündigen-Link:** Im Posten-Dialog steht unter dem Namen „Bei … kündigen ↗“, wenn der Dienst bekannt ist und eine geprüfte Kündigungsseite hat. Unbekannte oder nicht prüfbare Seiten bekommen keinen Link (in der Tabelle `cancel: null`) — nie raten.
+- **Preiserhöhungen** erkennt der Kontoauszug-Import (siehe oben), weil dafür die Abbuchungen nötig sind.
+
+Die Dienste-Tabelle (`SERVICES`) ist der einzige Ort für Namen, Gruppen und Links. Neuen Dienst = eine Zeile.
 
 ---
 
@@ -488,6 +501,7 @@ Budget ist auf mehrere Dateien aufgeteilt, die zusammen den Sub-Tab-Verbund bild
 - **budget-sparprognose.js** — Sparprognose (Szenarien, Zeitstrahl, Was-wäre-wenn)
 - **budget-sparplaene.js** — Sparpläne (eigenständige Spar-Vorhaben mit Einträgen)
 - **budget-import.js** — Kontoauszug importieren (wiederkehrende Posten aus einem Bank-Export vorschlagen; speichert keine Buchungen)
+- **budget-abos.js** — Abo-Hinweise (doppelte Abos, Kündigen-Links)
 - (**today-budget.js** gehört zur Heute-Seite und liest nur)
 
 Zusammen sind sie verantwortlich für:
