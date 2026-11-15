@@ -671,7 +671,7 @@ const BACKUP_CACHE_KEYS = ['weatherData', 'currentDate'];
 
 const NOOK_DATA_GROUPS = [
   { id: 'today',      label: 'Heute',        resettable: true,
-    keys: ['tasks', 'blocks', 'notes', 'quicknote', 'berichtsheft', 'mealPlanWeeks', 'todayTracker', 'todayBudgetDue', 'todayBudgetDaily', 'todayLernplan', 'todayReview', 'todayReviewSeen', 'todayFocusLog','qnSendLastTarget', 'qnSendLastProject', 'brainDump', 'todayEventsDue',
+    keys: ['tasks', 'blocks', 'notes', 'quicknote', 'berichtsheft', 'mealPlanWeeks', 'mealPlanFavorites', 'mealPlanFavHintHidden','todayTracker', 'todayBudgetDue', 'todayBudgetDaily', 'todayLernplan', 'todayReview', 'todayReviewSeen', 'todayFocusLog','qnSendLastTarget', 'qnSendLastProject', 'brainDump', 'todayEventsDue',
            'gdDuties', 'gdGroups', 'gdPeople', 'gdSchedule', 'gdScheduleAlgoV2'],
     prefixes: ['schedule'] }, // Stundenplan: scheduleWeek, scheduleLessons, scheduleSubjects, scheduleTeachers, scheduleTemplates
   { id: 'positivity', label: 'Positivity',   resettable: true, prefixes: ['positivity'] },

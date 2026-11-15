@@ -41,6 +41,14 @@
 let mealPlanWeeks = DB.get('mealPlanWeeks', {});
 function saveMealPlanWeeks() { DB.set('mealPlanWeeks', mealPlanWeeks); }
 
+// Lieblingsgerichte: Stichwörter (Treffer-Logik in js/mealplan-fav.js),
+// mealPlanFavHintHidden = Montag (dateKey) der Woche, deren Hinweis per ✕
+// ausgeblendet wurde.
+let mealPlanFavorites = DB.get('mealPlanFavorites', []);
+if (!Array.isArray(mealPlanFavorites)) mealPlanFavorites = [];
+function saveMealPlanFavorites() { DB.set('mealPlanFavorites', mealPlanFavorites); }
+let mealPlanFavHintHidden = DB.get('mealPlanFavHintHidden', null);
+
 const MEALPLAN_SLOTS = [
   { key: 'menu1',   label: 'Menü 1' },
   { key: 'menu2',   label: 'Menü 2' },
@@ -296,6 +304,50 @@ function mealPlanDishHtml(text) {
   return `${vegan ? '<span class="mealplan-tag">vegan</span>' : ''}${escHtml(clean)}`;
 }
 
+const MEALPLAN_DAY_SHORT = ['Mo', 'Di', 'Mi', 'Do', 'Fr'];
+
+// Ein Gericht als Listeneintrag; Lieblingsgerichte tragen einen Stern.
+// Der Stern-Knopf merkt ein neues Stichwort (☆) bzw. öffnet die Liste (★).
+function mealPlanItemHtml(slot, text, weekLabels) {
+  const hits = text ? NookMealFav.hitsFor(text, mealPlanFavorites) : [];
+  const fav = hits.length > 0;
+  const favTitle = fav
+    ? `Lieblingsgericht (${hits.map(NookMealFav.label).join(', ')})`
+    : 'Als Lieblingsgericht merken';
+  return `
+    <li class="mealplan-item${fav ? ' is-fav' : ''}">
+      <div class="mealplan-slot">${slot.label}${weekLabels && weekLabels[slot.key] ? `<span class="mealplan-slot-sub">${escHtml(weekLabels[slot.key])}</span>` : ''}</div>
+      <div class="mealplan-dish-row">
+        <div class="mealplan-dish">${mealPlanDishHtml(text)}</div>
+        ${text ? `<button type="button" class="mealplan-fav-btn${fav ? ' is-on' : ''}" data-fav-slot="${slot.key}" title="${escHtml(favTitle)}" aria-label="${escHtml(favTitle)}">${fav ? '★' : '☆'}</button>` : ''}
+      </div>
+    </li>`;
+}
+
+// „★ Diese Woche: Bolognese heute, Do“ — nur Tage ab heute, ✕ blendet ihn für die Woche aus
+function mealPlanFavHintHtml() {
+  if (!mealPlanFavorites.length) return '';
+  const today = mealPlanDefaultDate();
+  const { week, dayIndex } = mealPlanLookup(today);
+  const mondayKey = dateKey(getWeekStart(today));
+  if (!week || mealPlanFavHintHidden === mondayKey) return '';
+  const isToday = dateKey(today) === dateKey(new Date());
+  const hits = NookMealFav.weekHits(week, mealPlanFavorites, MEALPLAN_SLOTS.map(s => s.key), dayIndex)
+    .filter(h => h.dishes.length);
+  if (!hits.length) return '';
+  const parts = hits.map(h => {
+    const days = [...new Set(h.dishes.map(d => d.dayIndex))];
+    const dayBtns = days.map(d => `<button type="button" class="mealplan-fav-day" data-fav-goto="${d}" title="${escHtml(MEALPLAN_WEEKDAYS[d])} anzeigen">${d === dayIndex && isToday ? 'heute' : MEALPLAN_DAY_SHORT[d]}</button>`).join(', ');
+    return `<span class="mealplan-fav-hint-part"><b>${escHtml(NookMealFav.label(h.fav))}</b> ${dayBtns}</span>`;
+  });
+  return `
+    <div class="mealplan-fav-hint" role="note">
+      <span class="mealplan-fav-hint-star" aria-hidden="true">★</span>
+      <span class="mealplan-fav-hint-text">Diese Woche: ${parts.join('<span class="mealplan-fav-hint-sep"> · </span>')}</span>
+      <button type="button" class="mealplan-fav-hint-x" id="mealplan-fav-hint-x" title="Für diese Woche ausblenden" aria-label="Hinweis für diese Woche ausblenden">&#10005;</button>
+    </div>`;
+}
+
 function renderMealPlan() {
   const sidebar = document.getElementById('today-right');
   if (!sidebar) return;
@@ -316,11 +368,7 @@ function renderMealPlan() {
   const hasDay = day && MEALPLAN_SLOTS.some(s => day[s.key]);
 
   const bodyHtml = hasDay
-    ? `<ul class="mealplan-list">${MEALPLAN_SLOTS.map(s => `
-        <li class="mealplan-item">
-          <div class="mealplan-slot">${s.label}${week.labels && week.labels[s.key] ? `<span class="mealplan-slot-sub">${escHtml(week.labels[s.key])}</span>` : ''}</div>
-          <div class="mealplan-dish">${mealPlanDishHtml(day[s.key])}</div>
-        </li>`).join('')}</ul>`
+    ? `<ul class="mealplan-list">${MEALPLAN_SLOTS.map(s => mealPlanItemHtml(s, day[s.key], week.labels)).join('')}</ul>`
     : `<div class="mealplan-empty">
         <div>${week ? 'Für diesen Tag ist nichts eingetragen.' : `Noch kein Speiseplan für KW ${getISOWeek(date)}.`}</div>
         <button type="button" class="btn-ghost mealplan-import-btn" data-mealplan-import>PDF importieren</button>
@@ -334,6 +382,7 @@ function renderMealPlan() {
         <button type="button" class="week-btn" id="mealplan-prev" aria-label="Vorheriger Tag">&#8249;</button>
         <span class="mealplan-day-label" id="mealplan-day-label" title="${escHtml(fmt(date, { weekday: 'long', day: 'numeric', month: 'long' }))}">${escHtml(mealPlanDayLabel(date))}</span>
         <button type="button" class="week-btn" id="mealplan-next" aria-label="Nächster Tag">&#8250;</button>
+        <button type="button" class="icon-btn mealplan-fav-open" id="mealplan-fav-open" title="Lieblingsgerichte" aria-label="Lieblingsgerichte">★</button>
         <button type="button" class="icon-btn" data-mealplan-import title="Speiseplan-PDF importieren" aria-label="Speiseplan-PDF importieren">
           <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 2v8M4.5 6.5L8 10l3.5-3.5M3 13h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
@@ -342,8 +391,26 @@ function renderMealPlan() {
         </button>` : ''}
       </div>
     </div>
+    ${mealPlanFavHintHtml()}
     <div class="mealplan-body">${bodyHtml}</div>
     <input type="file" id="mealplan-file" accept="application/pdf,.pdf" hidden />`;
+
+  widget.querySelector('#mealplan-fav-open').addEventListener('click', () => mealPlanOpenFavorites());
+  widget.querySelectorAll('[data-fav-slot]').forEach(b => b.addEventListener('click', () => {
+    if (b.classList.contains('is-on')) mealPlanOpenFavorites();
+    else mealPlanOpenFavorites(NookMealFav.suggest(day && day[b.dataset.favSlot]));
+  }));
+  widget.querySelectorAll('[data-fav-goto]').forEach(b => b.addEventListener('click', () => {
+    const d = new Date(getWeekStart(mealPlanDefaultDate()));
+    d.setDate(d.getDate() + Number(b.dataset.favGoto));
+    mealPlanViewDate = d;
+    renderMealPlan();
+  }));
+  widget.querySelector('#mealplan-fav-hint-x')?.addEventListener('click', () => {
+    mealPlanFavHintHidden = dateKey(getWeekStart(mealPlanDefaultDate()));
+    DB.set('mealPlanFavHintHidden', mealPlanFavHintHidden);
+    renderMealPlan();
+  });
 
   widget.querySelector('#mealplan-prev').addEventListener('click', () => { mealPlanViewDate = mealPlanShiftDay(date, -1); renderMealPlan(); });
   widget.querySelector('#mealplan-next').addEventListener('click', () => { mealPlanViewDate = mealPlanShiftDay(date, 1); renderMealPlan(); });
@@ -471,5 +538,108 @@ document.getElementById('mealplan-modal-delete')?.addEventListener('click', asyn
   mealPlanModal.close();
   renderMealPlan();
 });
+
+// =========================
+// LIEBLINGSGERICHTE — Dialog (Stichwörter eintragen, mit Vorschau der Woche)
+// =========================
+const mealPlanFavModal = wireModal('mealplan-fav-overlay', { closeIds: ['mealplan-fav-close', 'mealplan-fav-done'] });
+
+// Woche für die Vorschau: die angezeigte, sonst die gespeicherte
+function mealPlanFavPreviewWeek() {
+  return mealPlanLookup(mealPlanViewDate || mealPlanDefaultDate()).week || Object.values(mealPlanWeeks)[0] || null;
+}
+
+function mealPlanFavPreviewHtml(fav) {
+  if (!NookMealFav.parse(fav).word) return '';
+  const week = mealPlanFavPreviewWeek();
+  if (!week) return '<span class="mealplan-fav-none">Noch kein Speiseplan da – der Stern erscheint, sobald ein passendes Gericht dabei ist.</span>';
+  const [hit] = NookMealFav.weekHits(week, [fav], MEALPLAN_SLOTS.map(s => s.key));
+  if (!hit.dishes.length) return `<span class="mealplan-fav-none">In KW ${escHtml(String(week.kw || ''))} nicht dabei.</span>`;
+  return hit.dishes.map(d => `<span class="mealplan-fav-match"><b>${MEALPLAN_DAY_SHORT[d.dayIndex]}</b> ${escHtml(NookMealFav.suggest(d.text))}</span>`).join('');
+}
+
+function mealPlanRenderFavList() {
+  const list = document.getElementById('mealplan-fav-list');
+  if (!list) return;
+  list.innerHTML = mealPlanFavorites.length
+    ? mealPlanFavorites.map((f, i) => `
+        <div class="mealplan-fav-row">
+          <div class="mealplan-fav-row-head">
+            <span class="mealplan-fav-row-star" aria-hidden="true">★</span>
+            <input type="text" class="modal-input mealplan-fav-name" data-fav-i="${i}" value="${escHtml(f)}" maxlength="${NookMealFav.MAX_LEN}" aria-label="Stichwort bearbeiten" />
+            <button type="button" class="icon-btn mealplan-fav-remove" data-fav-remove="${i}" title="Entfernen" aria-label="${escHtml(NookMealFav.label(f))} entfernen">&#10005;</button>
+          </div>
+          <div class="mealplan-fav-preview">${mealPlanFavPreviewHtml(f)}</div>
+        </div>`).join('')
+    : '<div class="mealplan-fav-empty">Noch keine Lieblingsgerichte.</div>';
+
+  list.querySelectorAll('[data-fav-i]').forEach(el => {
+    const i = Number(el.dataset.favI);
+    el.addEventListener('input', () => {
+      el.closest('.mealplan-fav-row').querySelector('.mealplan-fav-preview').innerHTML = mealPlanFavPreviewHtml(el.value);
+    });
+    el.addEventListener('change', () => {
+      mealPlanFavorites = NookMealFav.rename(mealPlanFavorites, i, el.value);
+      saveMealPlanFavorites();
+      mealPlanRenderFavList();
+      renderMealPlan();
+    });
+    el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); el.blur(); } });
+  });
+  list.querySelectorAll('[data-fav-remove]').forEach(b => b.addEventListener('click', () => {
+    const before = mealPlanFavorites.slice();
+    const removed = mealPlanFavorites[Number(b.dataset.favRemove)];
+    mealPlanFavorites = mealPlanFavorites.filter((_, j) => j !== Number(b.dataset.favRemove));
+    saveMealPlanFavorites();
+    mealPlanRenderFavList();
+    renderMealPlan();
+    hubUndo(`„${NookMealFav.label(removed)}“ entfernt`, () => {
+      mealPlanFavorites = before;
+      saveMealPlanFavorites();
+      mealPlanRenderFavList();
+      renderMealPlan();
+    });
+  }));
+}
+
+function mealPlanUpdateFavInputPreview() {
+  const input = document.getElementById('mealplan-fav-input');
+  const box = document.getElementById('mealplan-fav-input-preview');
+  if (!input || !box) return;
+  const html = mealPlanFavPreviewHtml(input.value);
+  box.innerHTML = html;
+  box.classList.toggle('hidden', !html);
+}
+
+function mealPlanOpenFavorites(prefill = '') {
+  const input = document.getElementById('mealplan-fav-input');
+  if (!input) return;
+  input.value = prefill;
+  mealPlanRenderFavList();
+  mealPlanUpdateFavInputPreview();
+  mealPlanFavModal.open();
+  input.focus();
+  if (prefill) input.select();
+}
+
+function mealPlanAddFavorite() {
+  const input = document.getElementById('mealplan-fav-input');
+  const next = NookMealFav.add(mealPlanFavorites, input.value);
+  if (next.length !== mealPlanFavorites.length) {
+    mealPlanFavorites = next;
+    saveMealPlanFavorites();
+    renderMealPlan();
+  }
+  input.value = '';
+  mealPlanUpdateFavInputPreview();
+  mealPlanRenderFavList();
+  input.focus();
+}
+
+document.getElementById('mealplan-fav-input')?.addEventListener('input', mealPlanUpdateFavInputPreview);
+document.getElementById('mealplan-fav-input')?.addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); mealPlanAddFavorite(); }
+});
+document.getElementById('mealplan-fav-add')?.addEventListener('click', mealPlanAddFavorite);
 
 renderMealPlan();

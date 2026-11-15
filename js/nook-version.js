@@ -10,9 +10,16 @@
 // hinten wegfallen, angezeigt werden ohnehin nur die neuesten.
 // =========================
 
-window.NOOK_VERSION = '2026.11.16';
+window.NOOK_VERSION = '2026.11.17';
 
 window.NOOK_CHANGELOG = [
+  {
+    version: '2026.11.17',
+    date: '2026-11-15',
+    items: [
+      'Speiseplan: Lieblingsgerichte – trag ein Wort wie „Bolognese“ ein (★ im Speiseplan), und jedes passende Gericht bekommt einen Stern, auch „Spaghetti mit Erbsen-Bolognese“; oben steht, an welchen Tagen es diese Woche noch etwas Leckeres gibt',
+    ],
+  },
   {
     version: '2026.11.16',
     date: '2026-11-15',

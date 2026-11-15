@@ -677,7 +677,10 @@
 .mealplan-widget.mealplan-drop { border-color: var(--sage); box-shadow: 0 0 0 3px color-mix(in srgb, var(--sage) 22%, transparent); }
 .mealplan-widget.mealplan-loading .mealplan-body { opacity: 0.45; pointer-events: none; }
 .mealplan-widget .panel-header { padding: 10px 12px 10px 18px; }
-.mealplan-head-actions { display: flex; align-items: center; gap: 2px; }
+/* Wird die Spalte schmal (z.B. RPG-Kreidetafel mit breitem Rahmen), rutschen
+   die Knöpfe in eine zweite Zeile statt über den Rand zu ragen. */
+.mealplan-widget .panel-header { flex-wrap: wrap; row-gap: 4px; }
+.mealplan-head-actions { display: flex; align-items: center; gap: 2px; margin-left: auto; }
 .mealplan-head-actions .icon-btn { width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; }
 .mealplan-day-label {
   font-family: var(--mono); font-size: calc(11px * var(--core-font-scale)); font-weight: 600;
@@ -701,6 +704,65 @@
   font-size: calc(9.5px * var(--core-font-scale)); font-weight: 700; letter-spacing: 0.04em;
   color: var(--sage); background: color-mix(in srgb, var(--sage) 14%, transparent);
 }
+
+/* Lieblingsgerichte: Stern am Gericht, Wochenhinweis, Dialog */
+.mealplan-dish-row { display: flex; align-items: flex-start; gap: 6px; }
+.mealplan-dish-row .mealplan-dish { flex: 1; min-width: 0; }
+.mealplan-fav-btn {
+  flex: none; width: 22px; height: 22px; margin-top: -1px; padding: 0; border: none; border-radius: 50%;
+  background: none; cursor: pointer; line-height: 22px; text-align: center;
+  font-size: calc(13px * var(--core-font-scale)); color: var(--text-3);
+  opacity: 0; transition: opacity var(--transition), color var(--transition), background var(--transition);
+}
+.mealplan-item:hover .mealplan-fav-btn, .mealplan-fav-btn:focus-visible { opacity: 0.75; }
+.mealplan-fav-btn:hover { opacity: 1; color: var(--amber); background: color-mix(in srgb, var(--amber) 12%, transparent); }
+.mealplan-fav-btn.is-on { opacity: 1; color: var(--amber); }
+@media (hover: none) { .mealplan-fav-btn { opacity: 0.45; } .mealplan-fav-btn.is-on { opacity: 1; } }
+.mealplan-item.is-fav .mealplan-dish { font-weight: 600; }
+.mealplan-item.is-fav {
+  margin: 0 -8px; padding-left: 8px; padding-right: 8px; border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--amber) 8%, transparent);
+}
+.mealplan-item.is-fav + .mealplan-item, .mealplan-item + .mealplan-item.is-fav { border-top-color: transparent; }
+.mealplan-fav-open { font-size: calc(12px * var(--core-font-scale)); color: var(--text-3); }
+.mealplan-fav-open:hover { color: var(--amber); }
+
+.mealplan-fav-hint {
+  display: flex; align-items: flex-start; gap: 8px; margin: 2px 18px 4px; padding: 7px 8px 7px 10px;
+  border-radius: var(--radius-sm); font-size: calc(12px * var(--core-font-scale)); line-height: 1.5; color: var(--text-2);
+  background: color-mix(in srgb, var(--amber) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--amber) 22%, transparent);
+}
+.mealplan-fav-hint-star { color: var(--amber); }
+.mealplan-fav-hint-text { flex: 1; min-width: 0; }
+.mealplan-fav-hint-text b { color: var(--text); font-weight: 600; }
+.mealplan-fav-hint-sep { color: var(--text-3); }
+.mealplan-fav-hint-part { white-space: nowrap; }
+.mealplan-fav-day {
+  padding: 0; border: none; background: none; cursor: pointer; font: inherit; color: var(--text-2);
+  text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--text) 25%, transparent); text-underline-offset: 2px;
+}
+.mealplan-fav-day:hover { color: var(--text); text-decoration-color: var(--amber); }
+.mealplan-fav-hint-x {
+  flex: none; padding: 0 2px; border: none; background: none; cursor: pointer;
+  font-size: calc(10px * var(--core-font-scale)); line-height: 18px; color: var(--text-3);
+}
+.mealplan-fav-hint-x:hover { color: var(--text); }
+
+.mealplan-fav-box { width: 480px; }
+.mealplan-fav-intro { margin: 0 0 14px; line-height: 1.5; }
+.mealplan-fav-add-row { display: flex; gap: 8px; }
+.mealplan-fav-add-row .modal-input { flex: 1; min-width: 0; }
+.mealplan-fav-preview { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 6px; font-size: calc(12px * var(--core-font-scale)); line-height: 1.45; color: var(--text-2); }
+.mealplan-fav-match b { color: var(--amber); font-weight: 700; margin-right: 3px; }
+.mealplan-fav-none { color: var(--text-3); }
+.mealplan-fav-list { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+.mealplan-fav-row { padding: 10px 0 0; border-top: 1px solid var(--border); }
+.mealplan-fav-row-head { display: flex; align-items: center; gap: 8px; }
+.mealplan-fav-row-star { color: var(--amber); }
+.mealplan-fav-name { flex: 1; min-width: 0; }
+.mealplan-fav-row .mealplan-fav-preview { padding-left: 22px; }
+.mealplan-fav-empty { padding: 10px 0 2px; border-top: 1px solid var(--border); font-size: calc(12.5px * var(--core-font-scale)); color: var(--text-3); }
 
 .mealplan-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 0 6px; text-align: center; font-size: calc(12px * var(--core-font-scale)); color: var(--text-3); line-height: 1.5; }
 .mealplan-hint { font-size: calc(11px * var(--core-font-scale)); color: var(--text-3); opacity: 0.8; }

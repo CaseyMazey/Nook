@@ -4173,6 +4173,26 @@
     </div>
   </div>
 
+  <!-- Speiseplan: Lieblingsgerichte als Stichwörter (js/today-mealplan.js, js/mealplan-fav.js) -->
+  <div id="mealplan-fav-overlay" class="modal-backdrop hidden">
+    <div class="modal-box mealplan-fav-box">
+      <div class="modal-head"><span>Lieblingsgerichte</span><button class="modal-x" id="mealplan-fav-close">&#10005;</button></div>
+      <div class="modal-hint mealplan-fav-intro">Gerichte, die eines dieser Wörter enthalten, bekommen einen Stern – „Bolognese“ trifft auch „Erbsen-Bolognese“ und „Gemüsebolognese“. Steht das Wort in Anführungszeichen ("Reis"), zählt nur das ganze Wort.</div>
+      <div class="modal-row">
+        <label for="mealplan-fav-input">Gerichte markieren, die dieses Wort enthalten</label>
+        <div class="mealplan-fav-add-row">
+          <input type="text" class="modal-input" id="mealplan-fav-input" maxlength="40" placeholder="z.B. Bolognese" autocomplete="off" />
+          <button type="button" class="btn-primary" id="mealplan-fav-add">Hinzufügen</button>
+        </div>
+        <div class="mealplan-fav-preview hidden" id="mealplan-fav-input-preview"></div>
+      </div>
+      <div id="mealplan-fav-list" class="mealplan-fav-list"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn-primary" id="mealplan-fav-done">Fertig</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Gruppendienste: Druckliste / PDF-Export über mehrere Monate -->
   <div id="gd-export-modal-overlay" class="modal-backdrop hidden">
     <div class="modal-box" style="width:480px;">
@@ -4365,6 +4385,7 @@
   <script src="js/schedule.js"></script>
   <script src="js/today.js"></script>
   <script src="js/today-clock-rpg.js"></script>
+  <script src="js/mealplan-fav.js"></script>
   <script src="js/today-mealplan.js"></script>
   <script src="js/today-tracker.js"></script>
   <script src="js/gruppendienste.js"></script>
