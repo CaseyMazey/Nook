@@ -547,6 +547,7 @@ function renderProjectDetail() {
   document.getElementById('proj-detail-desc').textContent   = p.description || '';
   document.getElementById('proj-detail-status').textContent = p.archived ? 'Archiviert' : 'Aktives Projekt';
   document.getElementById('proj-detail-status').className   = 'pdt-status-badge' + (p.archived ? ' archived' : '');
+  if (typeof renderProjectLinks === 'function') renderProjectLinks(p);
 
   // Einzige Fortschritts-Quelle für die Detailseite: getProjectStats() (projects.js)
   // rechnet Haupt- UND Unterprojekt-Aufgaben korrekt zusammen. updateDetailTreeElements()

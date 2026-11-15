@@ -22,6 +22,8 @@ Für alle gilt `CLAUDE.md`: Speichern nur über `DB.get`/`DB.set` mit eigenem Ke
 
 ## 0. Vorarbeit: Tagesverlauf sammeln
 
+**Status:** umgesetzt in 2026.11.18 (`recordFcHistory` in `js/flashcards.js`, Key `fc_history`).
+
 **Problem:** Für das Jahresbuch ist ein Teil der Daten schon da: Aufgaben haben `completedAt`, Fokuszeit liegt je Tag in `todayFocusLog`, Sparbuchungen haben ein Datum. Bei den Karteikarten fehlt das: `fc_session_stats` hält nur den **heutigen** Tag und wird am nächsten überschrieben, und `card.lastSeen` kennt nur den letzten Zeitpunkt.
 
 **Lösung:** In `recordAnswer()` (`js/flashcards.js`) beim Tageswechsel den alten Tag in einen neuen Key `fc_history` schreiben: `{ 'YYYY-MM-DD': { learned, reps, correct } }`. Das ist sehr klein, etwa 365 Einträge im Jahr.
@@ -63,6 +65,8 @@ Für alle gilt `CLAUDE.md`: Speichern nur über `DB.get`/`DB.set` mit eigenem Ke
 
 ## 2. „Willkommen zurück“
 
+**Status:** umgesetzt in 2026.11.18 (`js/today-welcome.js`, „Irgendwann“ in `js/main.js`/`js/today.js`). Irgendwann gilt wie vorgeschlagen nur auf der Heute-Seite.
+
 **Ausgangslage im Code:** Offene Aufgaben haben kein Fälligkeitsdatum; `getTasksForTile()` (`js/main.js`) zeigt **alle** offenen Aufgaben, egal wie alt. Nach einer Pause (Urlaub, krank, Prüfungsphase) liegt deshalb einfach ein Haufen alter Aufgaben da.
 
 **So fühlt es sich an:** Öffnest du Nook nach **mindestens 4 Tagen** zum ersten Mal, erscheint oben auf der Heute-Seite eine ruhige Karte:
@@ -90,6 +94,8 @@ Für alle gilt `CLAUDE.md`: Speichern nur über `DB.get`/`DB.set` mit eigenem Ke
 
 ## 3. Eine Zeile pro Tag
 
+**Status:** umgesetzt in 2026.11.18 (`js/today-dayline.js`).
+
 **So fühlt es sich an:** Ein kleines Feld auf der Heute-Seite: „Wie war dein Tag? (ein Satz)“ und optional eines von 5 Symbolen (🌧 ☁️ ⛅ 🌤 ☀️, Wetter statt Gesichter). Ab 17 Uhr erscheint es offen, vorher nur als kleine Zeile, damit der Morgen ruhig bleibt. Gibt es einen Eintrag von heute vor einem Jahr, steht er klein darüber: *„Heute vor einem Jahr: Erster Tag in der neuen Abteilung.“*
 
 **Wo:** Eigene Datei `js/today-dayline.js` (lädt nach `today.js`), gerendert in der rechten Spalte wie die Schnellnotiz. Beachtet `today.md`: es ist ein neuer, eigener Baustein und doppelt nichts.
@@ -108,6 +114,8 @@ Für alle gilt `CLAUDE.md`: Speichern nur über `DB.get`/`DB.set` mit eigenem Ke
 ---
 
 ## 4. Nook-Jahresbuch
+
+**Status:** umgesetzt in 2026.11.18 (`js/today-yearbook.js`, `css/today-yearbook.css`). Projekte haben kein Archivdatum, deshalb zählt das Buch erledigte Projektschritte; erreichte Sparziele sind der aktuelle Stand (kein Datum). Kein Vorjahresvergleich.
 
 **So fühlt es sich an:** Ab dem **15. Dezember** liegt auf der Heute-Seite ein kleines Buch: „Dein Jahr 2026“. Ein Klick öffnet es groß, man blättert Seite für Seite (Pfeile, Wischen, Tastatur). Der Stil kommt vom Theme, im RPG-Stil sieht es wie ein Ledereinband aus. Bis Ende Januar bleibt es da, danach findet man es unter Einstellungen → Über Nook → „Jahresbücher“.
 
@@ -134,6 +142,8 @@ Für alle gilt `CLAUDE.md`: Speichern nur über `DB.get`/`DB.set` mit eigenem Ke
 
 ## 5. Aufgaben nach Energie
 
+**Status:** umgesetzt in 2026.11.18 (`js/today.js`). Offen: Der Fokusmodus bevorzugt im Wenig-Energie-Modus noch nicht 25 Minuten.
+
 **So fühlt es sich an:** Eine Aufgabe bekommt beim Anlegen oder Bearbeiten optional ein Kärtchen: 🍃 *klein* oder 🔥 *braucht Kraft*. Über der Aufgabenliste gibt es einen Schalter „🍃 Wenig Energie heute“. Ist er an, zeigt Nook nur die kleinen Aufgaben, die anderen sind zugeklappt („5 weitere für einen besseren Tag“). Der Schalter gilt nur für heute und ist morgen wieder aus.
 
 **Daten:**
@@ -148,6 +158,8 @@ Für alle gilt `CLAUDE.md`: Speichern nur über `DB.get`/`DB.set` mit eigenem Ke
 
 ## 6. Barrierefreiheit
 
+**Status:** umgesetzt in 2026.11.18: gut lesbare Schrift (Systemschriften, kein Download) und globaler `:focus-visible`. „Animationen reduzieren“ gab es schon. Offen: Prüfung pro Tab mit `design:accessibility-review`.
+
 **Schon da:** Die globale Schriftgröße (`--user-font-scale`, Einstellungen → Darstellung, `js/main.js`) und an einigen Stellen `prefers-reduced-motion`.
 
 **Neu:**
@@ -161,6 +173,8 @@ Für alle gilt `CLAUDE.md`: Speichern nur über `DB.get`/`DB.set` mit eigenem Ke
 ---
 
 ## 7. Schnellnotiz per Tastenkürzel (Desktop)
+
+**Status:** Stufe 1 umgesetzt in 2026.11.18 (`desktop/lib/quick-capture.js`, `js/today-quickcapture.js`); Ziel ist die Schnellnotiz der Heute-Seite. In der laufenden Electron-App noch nicht ausprobiert.
 
 **So fühlt es sich an:** Du arbeitest in einem anderen Programm, drückst `Strg + Alt + N`, und ein kleines, schlichtes Nook-Fenster erscheint mitten auf dem Bildschirm: ein Textfeld, `Enter` speichert in den Brain Dump, `Esc` schließt. Fertig in drei Sekunden.
 
@@ -178,6 +192,8 @@ Für alle gilt `CLAUDE.md`: Speichern nur über `DB.get`/`DB.set` mit eigenem Ke
 ---
 
 ## 8. Verknüpfungen zwischen Anleitungen, Projekten und Pinnwand
+
+**Status:** umgesetzt in 2026.11.18 (`js/project-links.js`, `searchPickItems`/`searchFindItem` in `js/hub-search.js`). „Verwendet in“ steht bisher nur unter Anleitungen, nicht an Pinnwand-Zetteln; Karteikarten-Fächer noch nicht verknüpfbar.
 
 **So fühlt es sich an:** In einem Projekt gibt es einen Bereich „Verknüpft“ mit „+ Verknüpfen“. Ein kleiner Suchdialog findet Anleitungen und Pinnwand-Zettel, ein Klick hängt sie an. In der Anleitung steht dann unten: „Verwendet in: Projekt Umzug“. Ein Klick springt jeweils hin.
 

@@ -130,6 +130,11 @@
   data.mealPlanWeeks[key(plusDays(7, thisMonday))] = mealWeek(plusDays(7, thisMonday));
   // Lieblingsgericht, damit Stern und Wochenhinweis im Lab sichtbar sind (Mo + Do)
   data.mealPlanFavorites = ["Curry"];
+  // Eine Zeile pro Tag: heute und heute vor einem Jahr, damit das Feld offen und der Rückblick sichtbar ist
+  const yearAgo = new Date(); yearAgo.setFullYear(yearAgo.getFullYear() - 1);
+  data.dayLines = {};
+  data.dayLines[key(new Date())] = { text: "Spaziergang im Park, danach Tee.", mood: 4 };
+  data.dayLines[key(yearAgo)] = { text: "Erster Tag im neuen Kurs.", mood: 5 };
   // Wetter: frischer Cache (ts = jetzt), damit die Wetterkarte im Start-Banner auch ohne Netz gefuellt ist.
   // Form wie renderWeather() in today.js sie schreibt; locKey passt zur Standard-Einstellung (manuell Cologne).
   // Jeder Lab-Start laedt diese Datei neu, ts ist also immer frisch (30-Minuten-Cache).

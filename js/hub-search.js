@@ -105,6 +105,27 @@ function searchBuildIndex() {
   return index;
 }
 
+// Nur lesend, für Auswahl-Dialoge anderer Tabs (z.B. Verknüpfungen in
+// js/project-links.js): Einträge bestimmter Quellen, nach Suchtext sortiert.
+// Leerer Suchtext → alle Einträge in Quellen-Reihenfolge. Ändert nichts,
+// auch nicht searchRecent.
+function searchPickItems(providerIds, query = '', limit = 30) {
+  const index = searchBuildIndex().filter(e => providerIds.includes(e.provider.id));
+  const words = searchNorm(query).split(/\s+/).filter(Boolean);
+  if (!words.length) return index.slice(0, limit);
+  return index.map(e => ({ e, s: searchScore(e, words) })).filter(x => x.s > 0)
+    .sort((a, b) => b.s - a.s).slice(0, limit).map(x => x.e);
+}
+// Ein einzelner Eintrag einer Quelle (oder null, wenn es ihn nicht mehr gibt)
+function searchFindItem(providerId, id) {
+  const p = searchProviders.find(x => x.id === providerId);
+  if (!p) return null;
+  let items = [];
+  try { items = p.items() || []; } catch { return null; }
+  const it = items.find(i => i && i.id === id);
+  return it ? { ...it, provider: p } : null;
+}
+
 // Alle Wörter müssen irgendwo vorkommen; Titel zählt mehr als Inhalt
 function searchScore(entry, words) {
   let score = 0;

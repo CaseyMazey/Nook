@@ -1388,3 +1388,25 @@ body.bg-frosted .modal-box {
   transition-duration: 0.01ms !important;
   scroll-behavior: auto !important;
 }
+
+/* =============================================================
+   GUT LESBARE SCHRIFT (Einstellungen > Darstellung, js/main.js:
+   readableFont) — klare Systemschriften mit gut unterscheidbaren
+   Buchstaben (I/l/1, O/0), kein Download. !important, weil eigene
+   Themes --font inline auf <html> setzen (theme-engine.js).
+============================================================= */
+html[data-readable-font] {
+  --font: Verdana, 'Atkinson Hyperlegible', Tahoma, 'Segoe UI', system-ui, sans-serif !important;
+  --font-heading: var(--font) !important;
+}
+html[data-readable-font] body { letter-spacing: 0.01em; word-spacing: 0.04em; }
+
+/* =============================================================
+   TASTATUR-FOKUS — überall sichtbar, aber nur bei Tastaturbedienung
+   (:focus-visible). :where() hält die Spezifität bei 0, eigene
+   Fokus-Stile einzelner Elemente bleiben also bestehen.
+============================================================= */
+:where(a, button, summary, select, input, textarea, [tabindex], [role="button"]):focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--sage) 75%, var(--text));
+  outline-offset: 2px;
+}

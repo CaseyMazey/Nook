@@ -1,0 +1,113 @@
+/* =============================================================
+   NOOK-JAHRESBUCH (js/today-yearbook.js)
+   Karte auf der Heute-Seite (15.12.–31.1.) und das Buch als Overlay.
+   Farben nur über Theme-Variablen, damit das Buch jedem Theme folgt.
+============================================================= */
+
+/* Karte auf der Heute-Seite */
+.today-yearbook { display: flex; align-items: center; gap: 8px; margin: 4px 0 14px; padding: 10px 12px 10px 14px; }
+.today-yearbook-open {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; text-align: left;
+  border: none; background: none; padding: 0; cursor: pointer; font: inherit; color: var(--text);
+  font-size: calc(13px * var(--core-font-scale)); line-height: 1.4;
+}
+.today-yearbook-cover {
+  flex: none; width: 38px; height: 46px; display: inline-flex; align-items: center; justify-content: center; font-size: 20px;
+  border-radius: 3px 7px 7px 3px;
+  background: color-mix(in srgb, var(--sage) 22%, var(--surface-solid));
+  border-left: 4px solid color-mix(in srgb, var(--sage) 60%, var(--text));
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--shadow-tint) 25%, transparent);
+  transition: transform var(--transition);
+}
+.today-yearbook-open:hover .today-yearbook-cover { transform: rotate(-4deg) translateY(-1px); }
+.today-yearbook-open b { display: block; font-family: var(--font-heading); font-size: calc(15px * var(--core-font-scale)); }
+.today-yearbook-sub { display: block; color: var(--text-3); font-size: calc(12px * var(--core-font-scale)); }
+.today-yearbook-x { flex: none; font: inherit; font-size: 12px; background: none; border: 0; color: var(--text-3); cursor: pointer; padding: 2px 6px; border-radius: 6px; }
+.today-yearbook-x:hover { color: var(--text); background: var(--accent-soft); }
+
+/* Overlay + Buch */
+.yearbook-overlay {
+  position: fixed; inset: 0; z-index: 1200; display: flex; align-items: center; justify-content: center; padding: 16px;
+  background: color-mix(in srgb, var(--shadow-tint) 45%, transparent);
+  -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
+  animation: yb-fade 220ms ease;
+}
+@keyframes yb-fade { from { opacity: 0; } to { opacity: 1; } }
+.yearbook-book {
+  position: relative; width: min(460px, 100%); min-height: min(560px, 86vh); max-height: 92vh; display: flex; flex-direction: column;
+  background: var(--surface-solid); color: var(--text);
+  border-radius: 6px 16px 16px 6px;
+  border-left: 10px solid color-mix(in srgb, var(--sage) 55%, var(--text));
+  box-shadow: 0 18px 50px color-mix(in srgb, var(--shadow-tint) 40%, transparent),
+              inset 10px 0 18px -12px color-mix(in srgb, var(--shadow-tint) 45%, transparent);
+  animation: yb-open 320ms cubic-bezier(.2,.8,.3,1);
+}
+@keyframes yb-open { from { transform: perspective(900px) rotateY(-12deg) scale(.96); opacity: 0; } to { transform: none; opacity: 1; } }
+.yearbook-close {
+  position: absolute; top: 10px; right: 12px; z-index: 1; width: 30px; height: 30px; border-radius: 50%;
+  border: none; background: none; cursor: pointer; color: var(--text-3); font-size: 14px;
+}
+.yearbook-close:hover { color: var(--text); background: var(--accent-soft); }
+.yearbook-page { flex: 1; display: flex; overflow-x: hidden; overflow-y: auto; touch-action: pan-y; }
+.yearbook-page-inner {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 8px;
+  padding: 44px 36px 20px; animation: yb-page 260ms ease;
+}
+@keyframes yb-page { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: none; } }
+.yearbook-page-inner p { margin: 4px 0 0; max-width: 32ch; font-size: calc(14px * var(--core-font-scale)); line-height: 1.55; color: var(--text-2); }
+.yb-kicker { font-size: calc(11px * var(--core-font-scale)); font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--text-3); }
+.yb-title { font-family: var(--font-heading); font-size: calc(34px * var(--core-font-scale)); line-height: 1.15; color: var(--text); }
+.yb-title-sm { font-size: calc(24px * var(--core-font-scale)); max-width: 18ch; }
+.yb-sub { font-size: calc(14px * var(--core-font-scale)); color: var(--text-2); }
+.yb-big { font-family: var(--font-heading); font-size: calc(56px * var(--core-font-scale)); line-height: 1.05; color: color-mix(in srgb, var(--sage) 70%, var(--text)); }
+.yb-label { font-size: calc(15px * var(--core-font-scale)); font-weight: 600; color: var(--text); }
+.yb-note { font-size: calc(12px * var(--core-font-scale)) !important; color: var(--text-3) !important; }
+.yb-ornament { font-size: 28px; color: var(--text-3); margin: 6px 0; }
+.yb-quotes { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; max-width: 34ch; text-align: left; }
+.yb-quotes li { font-size: calc(13px * var(--core-font-scale)); line-height: 1.45; color: var(--text-2); font-style: italic; }
+.yb-quotes li span { font-style: normal; font-weight: 600; color: var(--text-3); margin-right: 4px; }
+
+.yearbook-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 16px 16px; }
+.yearbook-arrow {
+  width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--border); background: none; cursor: pointer;
+  font-size: 20px; line-height: 1; color: var(--text-2);
+}
+.yearbook-arrow:hover:not(:disabled) { background: var(--accent-soft); color: var(--text); }
+.yearbook-arrow:disabled { opacity: .3; cursor: default; }
+.yearbook-dots { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.yearbook-dot { width: 8px; height: 8px; padding: 0; border-radius: 50%; border: none; cursor: pointer; background: var(--border-strong); }
+.yearbook-dot.active { background: color-mix(in srgb, var(--sage) 70%, var(--text)); }
+
+/* RPG-Stil: Pergamentseiten im Ledereinband */
+[data-today-style="rpg"] .yearbook-book {
+  background: none; border: none; box-shadow: none; isolation: isolate;
+  --text: var(--deco-ink);
+  --text-2: color-mix(in srgb, var(--deco-ink) 82%, transparent);
+  --text-3: color-mix(in srgb, var(--deco-ink) 58%, transparent);
+  --border: color-mix(in srgb, var(--deco-ink) 18%, transparent);
+  --border-strong: color-mix(in srgb, var(--deco-ink) 30%, transparent);
+  --accent-soft: color-mix(in srgb, var(--deco-ink) 9%, transparent);
+  filter: drop-shadow(0 14px 24px color-mix(in srgb, var(--shadow-tint) 45%, transparent));
+}
+[data-today-style="rpg"] .yearbook-book::before {
+  content: ''; position: absolute; inset: 0; z-index: -1;
+  border: 22px solid transparent;
+  border-image: url('../assets/questboard/note.webp') 44 fill / 22px / 0 stretch;
+}
+[data-today-style="rpg"] .yearbook-book::after {
+  content: ''; position: absolute; top: 8px; bottom: 8px; left: -12px; width: 14px; z-index: -2; border-radius: 6px 0 0 6px;
+  background: color-mix(in srgb, var(--amber) 45%, var(--shadow-tint));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .yearbook-overlay, .yearbook-book, .yearbook-page-inner { animation: none; }
+}
+@media (max-width: 480px) {
+  .yearbook-page-inner { padding: 40px 20px 16px; }
+  .yb-big { font-size: calc(46px * var(--core-font-scale)); }
+}
+
+/* Einstellungen › Über Nook */
+.about-yearbook-actions { display: flex; gap: 8px; align-items: center; flex: none; }
+.about-yearbook-actions .modal-select { width: auto; min-width: 120px; }
+

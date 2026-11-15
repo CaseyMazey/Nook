@@ -863,6 +863,16 @@ document.getElementById('blocks-row').addEventListener('wheel', e => {
 
 function saveTasks() { DB.set('tasks', tasks); }
 
+// Optionale Felder einer Aufgabe (keine Migration nötig, fehlend = nicht gesetzt):
+//   task.energy  'low' | 'high' — „Wenig Energie heute“ zeigt die kleinen zuerst
+//   task.someday true           — „Irgendwann“, zugeklappt unter der Wochenliste
+const TASK_ENERGY = {
+  low:  { icon: '🍃', label: 'Klein – geht auch an müden Tagen' },
+  high: { icon: '🔥', label: 'Braucht Kraft' },
+};
+let taskShowHighEnergy = false; // „braucht Kraft“ im Wenig-Energie-Modus aufgeklappt (nur bis zum Neuladen)
+let taskSomedayOpen = false;    // „Irgendwann“ aufgeklappt
+
 // Wochenaufgaben von außen anlegen (Schnellnotiz „Ablegen“, Brain Dump,
 // Entscheidungshilfe in Tools) — eine Aufgabe pro Zeile, Aufzählungs-
 // zeichen und leere Zeilen fallen weg. Gibt die Anzahl zurück.
@@ -936,10 +946,15 @@ function renderTasks() {
   list.innerHTML = '';
 
   const tileTasks  = getTasksForTile();
+  const lowEnergy  = isLowEnergyToday();
+  document.getElementById('task-energy-toggle')?.classList.toggle('active', lowEnergy);
+  document.getElementById('task-energy-toggle')?.setAttribute('aria-pressed', String(lowEnergy));
   // "Offen" umfasst hier weiterhin offen + in Bearbeitung — bestehende Sortierung/
   // Aufteilung (offen oben, Erledigt-Trenner unten) bleibt unverändert, nur die
   // Statusanzeige je Aufgabe kommt neu dazu (siehe buildTaskItem).
-  const openTasks  = tileTasks.filter(t => !isTaskCompleted(t)).sort((a,b) => a.priority - b.priority || a.title.localeCompare(b.title));
+  // „Wenig Energie heute“: kleine Aufgaben zuerst, „braucht Kraft“ zugeklappt.
+  const energyRank = t => lowEnergy ? ({ low: 0, high: 2 }[t.energy] ?? 1) : 0;
+  const openTasks  = tileTasks.filter(t => !isTaskCompleted(t)).sort((a,b) => energyRank(a) - energyRank(b) || a.priority - b.priority || a.title.localeCompare(b.title));
   const doneTasks  = tileTasks.filter(t =>  isTaskCompleted(t)).sort((a,b) => (b.completedAt||0) - (a.completedAt||0));
 
   count.textContent = openTasks.length || '';
@@ -967,10 +982,19 @@ function renderTasks() {
   renderTasksMobileTile({ progress: progressCount, planned: openCount, completed: completedCount }, tileTasks.length);
   renderTasksMobileModal(tileTasks);
 
-  if (tileTasks.length === 0) { empty.classList.remove('hidden'); return; }
+  const someday = getSomedayTasks();
+  if (tileTasks.length === 0) { empty.classList.remove('hidden'); appendSomedaySection(list, someday); return; }
   empty.classList.add('hidden');
 
-  openTasks.forEach(task => list.appendChild(buildTaskItem(task)));
+  const hiddenHigh = lowEnergy && !taskShowHighEnergy ? openTasks.filter(t => t.energy === 'high') : [];
+  openTasks.filter(t => !hiddenHigh.includes(t)).forEach(task => list.appendChild(buildTaskItem(task)));
+  if (hiddenHigh.length) {
+    const more = document.createElement('li');
+    more.className = 'task-energy-more';
+    more.innerHTML = `<button type="button">🔥 ${hiddenHigh.length} weitere für einen besseren Tag</button>`;
+    more.querySelector('button').addEventListener('click', () => { taskShowHighEnergy = true; renderTasks(); });
+    list.appendChild(more);
+  }
 
   if (doneTasks.length > 0) {
     const divider = document.createElement('div');
@@ -979,6 +1003,50 @@ function renderTasks() {
     list.appendChild(divider);
     doneTasks.forEach(task => list.appendChild(buildTaskItem(task)));
   }
+  appendSomedaySection(list, someday);
+}
+
+// =========================
+// ENERGIE — „Wenig Energie heute“ gilt nur für den Tag (Key todayLowEnergy = Datum)
+// =========================
+function isLowEnergyToday() { return DB.get('todayLowEnergy', null) === dateKey(new Date()); }
+document.getElementById('task-energy-toggle')?.addEventListener('click', () => {
+  DB.set('todayLowEnergy', isLowEnergyToday() ? null : dateKey(new Date()));
+  taskShowHighEnergy = false;
+  renderTasks();
+});
+
+// =========================
+// IRGENDWANN — zugeklappt unter der Wochenliste (task.someday)
+// =========================
+function appendSomedaySection(list, someday) {
+  if (!someday.length) return;
+  const li = document.createElement('li');
+  li.className = 'task-someday';
+  const details = document.createElement('details');
+  details.open = taskSomedayOpen;
+  details.addEventListener('toggle', () => { taskSomedayOpen = details.open; });
+  details.innerHTML = `<summary>🌙 Irgendwann <span class="task-someday-count">${someday.length}</span></summary><ul class="task-someday-list"></ul>`;
+  const ul = details.querySelector('ul');
+  someday.slice().sort((a, b) => a.priority - b.priority || a.title.localeCompare(b.title)).forEach(task => {
+    const item = document.createElement('li');
+    item.className = 'task-someday-item';
+    const title = document.createElement('button');
+    title.type = 'button'; title.className = 'task-someday-title'; title.textContent = task.title;
+    title.addEventListener('click', () => openTaskModal(task));
+    const back = document.createElement('button');
+    back.type = 'button'; back.className = 'task-someday-back'; back.textContent = '↑ Diese Woche';
+    back.title = 'Zurück in die Wochenliste';
+    back.addEventListener('click', () => { delete task.someday; saveTasks(); renderTasks(); renderBlocks(); });
+    const del = document.createElement('button');
+    del.type = 'button'; del.className = 'task-delete'; del.textContent = '✕';
+    del.title = 'Aufgabe löschen'; del.setAttribute('aria-label', 'Aufgabe löschen');
+    del.addEventListener('click', () => deleteTaskWithUndo(task));
+    item.append(title, back, del);
+    ul.appendChild(item);
+  });
+  li.appendChild(details);
+  list.appendChild(li);
 }
 
 // =========================
@@ -1040,6 +1108,11 @@ function buildTaskItem(task) {
   const dot   = document.createElement('div'); dot.className = 'prio-dot'; dot.dataset.prio = task.priority;
   const info  = document.createElement('div'); info.className = 'task-info';
   const title = document.createElement('span'); title.className = 'task-title'; title.textContent = task.title;
+  if (TASK_ENERGY[task.energy]) {
+    const en = document.createElement('span'); en.className = 'task-energy';
+    en.textContent = TASK_ENERGY[task.energy].icon; en.title = TASK_ENERGY[task.energy].label;
+    title.prepend(en);
+  }
   title.addEventListener('click', () => openTaskModal(task)); info.appendChild(title);
   if (task.notes) { const sub = document.createElement('span'); sub.className = 'task-sub'; sub.textContent = task.notes; info.appendChild(sub); }
   const _blockIds = taskBlockIds(task);
@@ -1212,6 +1285,9 @@ function openTaskModal(existingTask = null, presetBlockId = null) {
   }
   document.querySelectorAll('.prio-btn').forEach(b => b.classList.toggle('active', Number(b.dataset.prio) === state.selectedPriority));
   document.querySelectorAll('#status-picker .status-btn').forEach(b => b.classList.toggle('active', b.dataset.status === state.selectedStatus));
+  state.selectedEnergy = existingTask && TASK_ENERGY[existingTask.energy] ? existingTask.energy : null;
+  document.querySelectorAll('#energy-picker .energy-btn').forEach(b => b.classList.toggle('active', b.dataset.energy === state.selectedEnergy));
+  document.getElementById('modal-task-someday').checked = !!existingTask?.someday;
   taskModal.open();
   setTimeout(() => document.getElementById('modal-task-input').focus(), 50);
 }
@@ -1231,6 +1307,18 @@ document.querySelectorAll('#status-picker .status-btn').forEach(btn => {
     document.querySelectorAll('#status-picker .status-btn').forEach(b => b.classList.toggle('active', b === btn));
   });
 });
+// Energie: ein Klick wählt, ein zweiter Klick auf dieselbe Stufe wählt ab
+document.querySelectorAll('#energy-picker .energy-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    state.selectedEnergy = state.selectedEnergy === btn.dataset.energy ? null : btn.dataset.energy;
+    document.querySelectorAll('#energy-picker .energy-btn').forEach(b => b.classList.toggle('active', b.dataset.energy === state.selectedEnergy));
+  });
+});
+// Energie + Irgendwann aus dem Modal auf die Aufgabe übertragen (leere Werte entfernen)
+function applyTaskModalExtras(task) {
+  if (state.selectedEnergy) task.energy = state.selectedEnergy; else delete task.energy;
+  if (document.getElementById('modal-task-someday').checked) task.someday = true; else delete task.someday;
+}
 document.getElementById('modal-save').addEventListener('click', () => {
   const title = document.getElementById('modal-task-input').value.trim(); if (!title) return;
   // Collect selected block IDs from chips
@@ -1240,11 +1328,13 @@ document.getElementById('modal-save').addEventListener('click', () => {
   if (state.editingTask) {
     Object.assign(state.editingTask, { title, blocks: selectedBlocks, priority: state.selectedPriority, notes: notesTxt });
     setTaskStatus(state.editingTask, state.selectedStatus);
+    applyTaskModalExtras(state.editingTask);
     // Remove legacy field to keep data clean
     delete state.editingTask.block;
   } else {
     const newTask = { id: crypto.randomUUID(), title, notes: notesTxt, priority: state.selectedPriority, blocks: selectedBlocks, createdAt: Date.now() };
     setTaskStatus(newTask, state.selectedStatus);
+    applyTaskModalExtras(newTask);
     tasks.push(newTask);
   }
   saveTasks(); closeTaskModal(); renderTasks(); renderBlocks();
@@ -1332,7 +1422,7 @@ document.addEventListener('visibilitychange', () => {
 // =========================
 const TODAY_RIGHT_STACKS = {
   'clock-sidebar-panel': 0, 'panel-quicknote': 0, 'today-mini-cal': 0,
-  'mealplan-widget': 1, 'national-day-widget': 1,
+  'mealplan-widget': 1, 'national-day-widget': 1, 'today-dayline': 1,
 };
 (function initTodayRightStacks() {
   const right = document.getElementById('today-right');
@@ -1373,7 +1463,7 @@ registerSearchProvider({
 // (theme-skins.js leert sie beim Laden und nimmt danach direkt an).
 (window.__pendingSkinTargets = window.__pendingSkinTargets || []).push(...[
   { id: 'today.cards', label: 'Alle Karten', view: 'today', group: true,
-    selector: '#view-today :is(.block-slot, #panel-tasks, #gd-widget, #clock-sidebar-panel, #panel-quicknote, #mealplan-widget, #today-mini-cal, #national-day-widget)' },
+    selector: '#view-today :is(.block-slot, #panel-tasks, #gd-widget, #clock-sidebar-panel, #panel-quicknote, #mealplan-widget, #today-mini-cal, #national-day-widget, #today-dayline)' },
   { id: 'today.board', label: 'Tafel', view: 'today', selector: '#today-main, #today-right' },
   { id: 'today.banner', label: 'Banner', view: 'today', selector: '#today-main-header' },
   { id: 'today.blocks', label: 'Zeitblöcke', view: 'today', selector: '#blocks-row .block-slot' },

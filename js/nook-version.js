@@ -10,9 +10,22 @@
 // hinten wegfallen, angezeigt werden ohnehin nur die neuesten.
 // =========================
 
-window.NOOK_VERSION = '2026.11.17';
+window.NOOK_VERSION = '2026.11.18';
 
 window.NOOK_CHANGELOG = [
+  {
+    version: '2026.11.18',
+    date: '2026-11-15',
+    items: [
+      'Heute: „Willkommen zurück“ – nach ein paar Tagen Pause sortierst du liegen gebliebene Aufgaben in Ruhe ein: diese Woche, irgendwann, erledigt oder weg',
+      'Aufgaben: „🌙 Irgendwann“ für Aufgaben ohne Druck (zugeklappt unter der Wochenliste) und Energie 🍃 klein / 🔥 braucht Kraft – der 🍃-Knopf zeigt an müden Tagen nur die kleinen',
+      'Heute: „Eine Zeile“ – ein Satz und ein Wetter-Symbol für den Tag, mit „Heute vor einem Jahr“; ohne Serie und ohne Erinnerung',
+      'Nook-Jahresbuch: ab dem 15. Dezember liegt „Dein Jahr“ auf der Heute-Seite, Seite für Seite – jederzeit auch unter Einstellungen › Über Nook',
+      'Projekte: Anleitungen und Pinnwand-Zettel verknüpfen; die Anleitung zeigt dann „Verwendet in“',
+      'Darstellung: gut lesbare Schrift zum Einschalten, Tastatur-Fokus überall sichtbar',
+      'Desktop-App: Strg + Alt + N öffnet die Schnellnotiz, auch wenn Nook im Hintergrund liegt',
+    ],
+  },
   {
     version: '2026.11.17',
     date: '2026-11-15',

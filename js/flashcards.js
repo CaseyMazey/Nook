@@ -32,7 +32,23 @@ function recordAnswer(knew, cardId){
   s.reps = (s.reps||0) + 1;
   if(knew) s.correct++; else s.wrong++;
   DB.set('fc_session_stats', s);
+  recordFcHistory(s);
 }
+
+// Tagesverlauf fürs Jahresbuch (js/today-yearbook.js): fc_session_stats hält
+// nur den heutigen Tag, fc_history behält jeden Tag als kleine Zahlenzeile.
+// { 'YYYY-MM-DD': { learned, reps, correct } } — etwa 365 Einträge im Jahr.
+function recordFcHistory(s){
+  if(!s || !s.date) return;
+  const h = DB.get('fc_history', {});
+  h[s.date] = { learned: s.learned || 0, reps: s.reps || 0, correct: s.correct || 0 };
+  DB.set('fc_history', h);
+}
+// Einmalig: den zuletzt gespeicherten Tag übernehmen, damit er nicht verloren geht
+(function seedFcHistory(){
+  const s = getSessionStats();
+  if(s.date && !(s.date in DB.get('fc_history', {}))) recordFcHistory(s);
+})();
 
 // =========================
 // LEITNER — geteilte Berechnungen

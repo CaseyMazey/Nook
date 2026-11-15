@@ -121,6 +121,7 @@
 #mealplan-widget     { order: 3; }
 #today-mini-cal      { order: 4; }
 #national-day-widget { order: 5; }
+#today-dayline       { order: 6; }
 
 /* Breite Bildschirme (alle Themes): rechte Spalte in zwei Stapeln
    (Uhr · Schnellnotiz · Kalender | Speiseplan · Heute ist), damit die
@@ -1086,3 +1087,108 @@
 .today-review-x:hover { color: var(--text); background: var(--accent-soft); }
 .today-review-next { margin-top: 4px; color: var(--text-2); }
 .today-review-next b { color: var(--text-3); font-weight: 700; margin-right: 4px; }
+
+/* =============================================================
+   AUFGABEN: Energie (🍃/🔥) + „Irgendwann“ (js/today.js)
+============================================================= */
+.task-energy-toggle {
+  width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border); background: none; cursor: pointer;
+  font-size: calc(13px * var(--core-font-scale)); line-height: 1; opacity: 0.55; filter: grayscale(0.6);
+  transition: opacity var(--transition), background var(--transition), border-color var(--transition), filter var(--transition);
+}
+.task-energy-toggle:hover { opacity: 0.9; filter: none; }
+.task-energy-toggle.active { opacity: 1; filter: none; background: var(--sage-bg); border-color: var(--sage); }
+.task-energy { margin-right: 5px; font-size: 0.9em; }
+.task-energy-more { list-style: none; padding: 4px 18px 10px; }
+.task-energy-more button {
+  border: none; background: none; padding: 4px 0; cursor: pointer; font: inherit;
+  font-size: calc(12px * var(--core-font-scale)); color: var(--text-3);
+}
+.task-energy-more button:hover { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
+
+.task-someday { list-style: none; padding: 4px 18px 12px; border-top: 1px dashed var(--border); }
+.task-someday summary {
+  cursor: pointer; padding: 6px 0; font-size: calc(12px * var(--core-font-scale)); font-weight: 600; color: var(--text-3);
+  list-style: none; user-select: none;
+}
+.task-someday summary::-webkit-details-marker { display: none; }
+.task-someday summary::after { content: ' ▸'; }
+.task-someday details[open] summary::after { content: ' ▾'; }
+.task-someday summary:hover { color: var(--text-2); }
+.task-someday-count { font-family: var(--mono); font-weight: 500; margin-left: 2px; }
+.task-someday-list { list-style: none; margin: 0; padding: 0; }
+.task-someday-item { display: flex; align-items: center; gap: 8px; padding: 5px 0; }
+.task-someday-item:hover .task-delete { opacity: 1; }
+.task-someday-title {
+  flex: 1; min-width: 0; text-align: left; border: none; background: none; padding: 0; cursor: pointer; font: inherit;
+  font-size: calc(13px * var(--core-font-scale)); color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.task-someday-title:hover { color: var(--text); }
+.task-someday-back {
+  flex: none; border: 1px solid var(--border); background: none; border-radius: 99px; padding: 2px 9px; cursor: pointer;
+  font-size: calc(11px * var(--core-font-scale)); color: var(--text-3);
+}
+.task-someday-back:hover { color: var(--sage-dark); border-color: var(--sage); background: var(--sage-bg); }
+
+#energy-picker { display: flex; gap: 6px; flex-wrap: wrap; }
+.energy-btn.active { background: var(--sage-bg); color: var(--sage-dark); border-color: var(--sage); }
+.modal-label-optional { text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--text-3); }
+
+/* =============================================================
+   WILLKOMMEN ZURÜCK (js/today-welcome.js)
+============================================================= */
+.today-welcome { margin: 4px 0 14px; padding: 12px 14px; font-size: calc(13px * var(--core-font-scale)); line-height: 1.5; color: var(--text); }
+.today-welcome-head { display: flex; align-items: baseline; gap: 10px; }
+.today-welcome-title { font-weight: 700; }
+.today-welcome-x { margin-left: auto; font: inherit; font-size: 12px; background: none; border: 0; color: var(--text-3); cursor: pointer; padding: 2px 6px; border-radius: 6px; }
+.today-welcome-x:hover { color: var(--text); background: var(--accent-soft); }
+.today-welcome-text { color: var(--text-2); margin-top: 2px; }
+.today-welcome-meanwhile { color: var(--text-3); margin-top: 4px; font-size: calc(12px * var(--core-font-scale)); }
+.today-welcome-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.today-welcome-list { list-style: none; margin: 10px 0 0; padding: 0; }
+.today-welcome-item { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 7px 0; border-top: 1px solid var(--border); }
+.today-welcome-item-title { flex: 1 1 160px; min-width: 0; overflow-wrap: anywhere; }
+.today-welcome-item-actions { display: flex; gap: 4px; flex-wrap: wrap; }
+.today-welcome-item-actions button {
+  border: 1px solid var(--border); background: none; border-radius: 99px; padding: 2px 10px; cursor: pointer;
+  font-size: calc(11.5px * var(--core-font-scale)); color: var(--text-2);
+}
+.today-welcome-item-actions button:hover { border-color: var(--sage); background: var(--sage-bg); color: var(--sage-dark); }
+.today-welcome-item-actions .today-welcome-del:hover { border-color: var(--prio-1); background: none; color: var(--prio-1); }
+
+/* =============================================================
+   EINE ZEILE PRO TAG (js/today-dayline.js)
+============================================================= */
+.today-dayline .panel-header { padding: 10px 12px 10px 18px; }
+.dayline-all-btn { width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; font-size: calc(12px * var(--core-font-scale)); }
+.dayline-body { padding: 4px 18px 14px; display: flex; flex-direction: column; gap: 8px; }
+.dayline-ago { font-size: calc(12px * var(--core-font-scale)); line-height: 1.45; color: var(--text-2); font-style: italic; }
+.dayline-ago span { font-style: normal; font-weight: 600; color: var(--text-3); }
+.dayline-input {
+  width: 100%; resize: none; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2);
+  padding: 8px 10px; font: inherit; font-size: calc(13px * var(--core-font-scale)); line-height: 1.45; color: var(--text);
+}
+.dayline-input:focus { outline: none; border-color: var(--sage); }
+.dayline-moods, .dayline-entry-moods { display: flex; gap: 4px; }
+.dayline-mood {
+  width: 30px; height: 30px; border-radius: 50%; border: 1px solid transparent; background: none; cursor: pointer;
+  font-size: calc(15px * var(--core-font-scale)); line-height: 1; opacity: 0.45; filter: grayscale(0.7);
+  transition: opacity var(--transition), filter var(--transition), background var(--transition), border-color var(--transition);
+}
+.dayline-mood:hover { opacity: 0.85; filter: none; }
+.dayline-mood.active { opacity: 1; filter: none; background: var(--accent-soft); border-color: var(--border-strong); }
+.dayline-open {
+  align-self: flex-start; border: none; background: none; padding: 2px 0; cursor: pointer; font: inherit;
+  font-size: calc(12.5px * var(--core-font-scale)); color: var(--text-3);
+}
+.dayline-open:hover { color: var(--text); }
+
+.dayline-modal-box { width: 520px; }
+.dayline-modal-list { display: flex; flex-direction: column; gap: 18px; max-height: 60vh; overflow-y: auto; }
+.dayline-month-name { font-size: calc(11px * var(--core-font-scale)); font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+.dayline-entry { padding: 8px 0; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; }
+.dayline-entry-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.dayline-entry-date { font-size: calc(12.5px * var(--core-font-scale)); font-weight: 600; color: var(--text-2); }
+.dayline-entry-moods .dayline-mood { width: 26px; height: 26px; font-size: calc(13px * var(--core-font-scale)); }
+.dayline-entry-input { min-height: 0; resize: vertical; padding: 6px 10px; font-size: calc(13px * var(--core-font-scale)); }
+.dayline-list-empty { font-size: calc(13px * var(--core-font-scale)); color: var(--text-3); padding: 8px 0; }

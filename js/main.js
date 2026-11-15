@@ -208,6 +208,10 @@ let uiFontScale      = DB.get('uiFontScale', 100);           // Prozent
 function saveUiFontScale(){ DB.set('uiFontScale', uiFontScale); }
 let reduceMotion     = DB.get('reduceMotion', false);
 function saveReduceMotion(){ DB.set('reduceMotion', reduceMotion); }
+// Gut lesbare Schrift: ersetzt die Theme-Schrift durch eine sehr klare
+// Systemschrift (main.css: html[data-readable-font]), ohne Download.
+let readableFont     = DB.get('readableFont', false);
+function saveReadableFont(){ DB.set('readableFont', readableFont); }
 let sidebarCollapsed = DB.get('sidebarCollapsed', false);    // nur dieses Gerät (sync.js)
 function saveSidebarCollapsed(){ DB.set('sidebarCollapsed', sidebarCollapsed); }
 function applyUiPrefs() {
@@ -215,6 +219,7 @@ function applyUiPrefs() {
   const pct = Math.min(Math.max(Number(uiFontScale) || 100, UI_FONT_SCALE_MIN), UI_FONT_SCALE_MAX);
   root.style.setProperty('--user-font-scale', (pct / 100).toFixed(2));
   root.toggleAttribute('data-reduce-motion', !!reduceMotion);
+  root.toggleAttribute('data-readable-font', !!readableFont);
   root.toggleAttribute('data-sidebar-collapsed', !!sidebarCollapsed);
 }
 applyUiPrefs();
@@ -380,6 +385,9 @@ function getTasksForCalendarDay(date) {
     if (created > dEnd) return false;
 
     if (!isTaskCompleted(t)) {
+      // „Irgendwann“-Aufgaben (task.someday, js/today-welcome.js) stehen
+      // gesammelt unter der Aufgabenliste, nicht in Tagen und Blöcken.
+      if (t.someday) return false;
       // OFFEN oder IN BEARBEITUNG:
       // Nur anzeigen wenn der Kalender-Tag nicht in der Zukunft liegt.
       // dStart > todayEnd bedeutet: dieser Kalendertag ist noch nicht angebrochen.
@@ -408,7 +416,7 @@ function getTasksForTile() {
   return tasks.filter(t => {
     const created = t.createdAt || 0;
     if (created >= weekMonNext) return false;
-    if (!isTaskCompleted(t)) return true;
+    if (!isTaskCompleted(t)) return !t.someday;
     const completed = t.completedAt || 0;
     return completed >= sevenDaysAgo;
   });
@@ -418,6 +426,11 @@ function getTasksForTile() {
  * Tasks für die Block-Ansicht — gleiche Logik wie Kalendertag,
  * angewendet auf state.currentDate.
  */
+// Offene „Irgendwann“-Aufgaben — ohne Druck, zugeklappt unter der Wochenliste
+function getSomedayTasks() {
+  return tasks.filter(t => t.someday && !isTaskCompleted(t));
+}
+
 function getTasksForBlockView() {
   return getTasksForCalendarDay(state.currentDate);
 }
@@ -680,7 +693,7 @@ placeSidebarWidgets(mehrPhoneQuery.matches);
 mehrPhoneQuery.addEventListener('change', e => placeSidebarWidgets(e.matches));
 
 function renderView(name) {
-  if(name==='today')     { renderBlocks(); renderTasks(); refreshTodayTextareas(); renderGruppendienste(); renderMealPlan(); if (typeof renderTodayTracker === 'function') renderTodayTracker(); if (typeof renderTodayBudgetDue === 'function') renderTodayBudgetDue(); if (typeof renderTodayEventsDue === 'function') renderTodayEventsDue(); if (typeof renderTodayLernplan === 'function') renderTodayLernplan(); if (typeof renderTodayReview === 'function') renderTodayReview(); }
+  if(name==='today')     { renderBlocks(); renderTasks(); refreshTodayTextareas(); renderGruppendienste(); renderMealPlan(); if (typeof renderTodayTracker === 'function') renderTodayTracker(); if (typeof renderTodayBudgetDue === 'function') renderTodayBudgetDue(); if (typeof renderTodayEventsDue === 'function') renderTodayEventsDue(); if (typeof renderTodayLernplan === 'function') renderTodayLernplan(); if (typeof renderTodayReview === 'function') renderTodayReview(); if (typeof renderTodayWelcome === 'function') renderTodayWelcome(); if (typeof renderTodayDayline === 'function') renderTodayDayline(); if (typeof renderTodayYearbook === 'function') renderTodayYearbook(); }
   if(name==='pinboard')  { renderDesk(); }
   if(name==='flashcards'){ renderSubjectList(); }
   if(name==='guides')    { initGuides(); }

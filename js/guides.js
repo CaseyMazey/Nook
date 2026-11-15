@@ -1511,6 +1511,8 @@ function renderSingleGuide(guideId) {
   });
 
   main.append(back, header, content);
+  // „Verwendet in: Projekt …“ (js/project-links.js, nur lesend)
+  if (typeof renderLinkedFrom === 'function') { const used = renderLinkedFrom('guides', guide.id); if (used) main.append(used); }
   showGuideScrollBtn();
 
   renderGuideToc(content);

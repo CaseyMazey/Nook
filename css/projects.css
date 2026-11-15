@@ -1405,3 +1405,50 @@
   .detail-tile-sub-actions { opacity: 0.55; }
   .detail-tile-head:active .detail-tile-sub-actions { opacity: 1; }
 }
+
+/* =============================================================
+   VERKNÜPFUNGEN (js/project-links.js): Projektinfos, Auswahl-Dialog,
+   „Verwendet in“ unter Anleitungen
+============================================================= */
+.pdt-links { margin-top: 12px; }
+.pdt-links-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.pdt-links-add {
+  border: 1px solid var(--border); background: none; border-radius: 99px; padding: 2px 10px; cursor: pointer;
+  font-size: calc(11.5px * var(--core-font-scale)); color: var(--text-2);
+}
+.pdt-links-add:hover { border-color: var(--sage); background: var(--sage-bg); color: var(--sage-dark); }
+.pdt-links-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.pdt-link { display: flex; align-items: center; gap: 4px; }
+.pdt-link-open {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 7px; text-align: left; border: none; background: none;
+  padding: 5px 6px; border-radius: var(--radius-sm); cursor: pointer; font: inherit; font-size: calc(12.5px * var(--core-font-scale)); color: var(--text);
+}
+.pdt-link-open:hover:not(:disabled) { background: var(--accent-soft); }
+.pdt-link-title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pdt-link-kind { flex: none; font-size: calc(10.5px * var(--core-font-scale)); color: var(--text-3); }
+.pdt-link.is-missing .pdt-link-open { cursor: default; color: var(--text-3); font-style: italic; }
+.pdt-link-remove { flex: none; border: none; background: none; cursor: pointer; color: var(--text-3); padding: 2px 6px; border-radius: 4px; opacity: 0; transition: opacity var(--transition); }
+.pdt-link:hover .pdt-link-remove, .pdt-link-remove:focus-visible, .pdt-link.is-missing .pdt-link-remove { opacity: 1; }
+.pdt-link-remove:hover { color: var(--prio-1); }
+@media (hover: none) { .pdt-link-remove { opacity: 0.6; } }
+.pdt-links-empty { font-size: calc(12px * var(--core-font-scale)); color: var(--text-3); }
+
+.project-link-box { width: 480px; }
+.project-link-results { list-style: none; margin: 10px 0 0; padding: 0; max-height: 50vh; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
+.project-link-item {
+  width: 100%; display: flex; align-items: center; gap: 8px; text-align: left; border: none; background: none;
+  padding: 8px 10px; border-radius: var(--radius-sm); cursor: pointer; font: inherit; font-size: calc(13px * var(--core-font-scale)); color: var(--text);
+}
+.project-link-item:hover:not(:disabled) { background: var(--accent-soft); }
+.project-link-item.is-linked { cursor: default; opacity: 0.55; }
+.project-link-item-title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.project-link-item-kind { flex: none; max-width: 40%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: calc(11px * var(--core-font-scale)); color: var(--text-3); }
+.project-link-empty { padding: 10px; font-size: calc(13px * var(--core-font-scale)); color: var(--text-3); }
+
+.linked-from { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 24px; padding-top: 14px; border-top: 1px solid var(--border); font-size: calc(12.5px * var(--core-font-scale)); color: var(--text-3); }
+.linked-from-label { font-weight: 600; }
+.linked-from-item {
+  border: 1px solid var(--border); background: none; border-radius: 99px; padding: 3px 11px; cursor: pointer;
+  font-size: calc(12px * var(--core-font-scale)); color: var(--text-2);
+}
+.linked-from-item:hover { border-color: var(--sage); background: var(--sage-bg); color: var(--sage-dark); }

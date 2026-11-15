@@ -136,7 +136,7 @@
 
 /* ── Alle Zettel: gemeinsame Tinte fürs Papier ───────────────── */
 [data-today-style="rpg"] :is(.block-slot, #panel-tasks, #gd-widget, #today-tasks-tile,
-  #clock-sidebar-panel, #panel-quicknote, #mealplan-widget, #today-mini-cal, #national-day-widget, #today-review) {
+  #clock-sidebar-panel, #panel-quicknote, #mealplan-widget, #today-mini-cal, #national-day-widget, #today-review, #today-welcome, #today-dayline, #today-yearbook) {
   --text:   var(--deco-ink);
   --text-2: color-mix(in srgb, var(--deco-ink) 82%, transparent);
   --text-3: color-mix(in srgb, var(--deco-ink) 58%, transparent);
@@ -166,13 +166,13 @@
   transform: rotate(var(--tilt, 0deg));
 }
 [data-today-style="rpg"][data-theme-family="dark"] :is(.block-slot, #panel-tasks, #gd-widget, #today-tasks-tile,
-  #clock-sidebar-panel, #panel-quicknote, #mealplan-widget, #today-mini-cal, #national-day-widget, #today-review) {
+  #clock-sidebar-panel, #panel-quicknote, #mealplan-widget, #today-mini-cal, #national-day-widget, #today-review, #today-welcome, #today-dayline, #today-yearbook) {
   --paper-dim: brightness(.82) saturate(.85);
 }
 
 /* Pergament (border-image) und Reißzwecke */
 [data-today-style="rpg"] :is(.block-slot, #panel-tasks, #gd-widget, #today-tasks-tile,
-  #clock-sidebar-panel, #panel-quicknote, #mealplan-widget, #today-mini-cal, #national-day-widget, #today-review)::before {
+  #clock-sidebar-panel, #panel-quicknote, #mealplan-widget, #today-mini-cal, #national-day-widget, #today-review, #today-welcome, #today-dayline, #today-yearbook)::before {
   content: '';
   position: absolute; inset: 0;
   z-index: -1;
@@ -185,7 +185,7 @@
   pointer-events: none;
 }
 [data-today-style="rpg"] :is(.block-slot, #panel-tasks, #gd-widget, #today-tasks-tile,
-  #clock-sidebar-panel, #panel-quicknote, #mealplan-widget, #today-mini-cal, #national-day-widget, #today-review)::after {
+  #clock-sidebar-panel, #panel-quicknote, #mealplan-widget, #today-mini-cal, #national-day-widget, #today-review, #today-welcome, #today-dayline, #today-yearbook)::after {
   content: '';
   position: absolute;
   top: -9px; left: 50%;
@@ -202,6 +202,8 @@
 [data-today-style="rpg"] #clock-sidebar-panel { padding: 24px 24px 22px; }
 [data-today-style="rpg"] #national-day-widget { padding: 18px 18px 16px; }
 [data-today-style="rpg"] #today-review { padding: 18px 22px 16px; --tilt: -0.4deg; }
+[data-today-style="rpg"] #today-welcome { padding: 18px 22px 16px; --tilt: 0.3deg; }
+[data-today-style="rpg"] #today-dayline { padding: 14px 10px 14px; --tilt: 0.5deg; }
 [data-today-style="rpg"] :is(#panel-tasks, #gd-widget, #today-tasks-tile, #panel-quicknote, #mealplan-widget) .panel-header {
   background: transparent;
   border-bottom-color: var(--border);

@@ -5,11 +5,12 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
-const { app, BrowserWindow, Menu, net, protocol, screen, session, shell } = require('electron');
+const { app, BrowserWindow, globalShortcut, ipcMain, Menu, net, protocol, screen, session, shell } = require('electron');
 
 const { buildMenuTemplate } = require('./lib/menu.js');
 const { resolveAppPath } = require('./lib/protocol.js');
 const { startUpdates } = require('./lib/updates.js');
+const { createQuickCapture, CHANNEL_SET: QUICK_CAPTURE_SET } = require('./lib/quick-capture.js');
 const { loadWindowState, saveWindowState } = require('./lib/window-state.js');
 
 const APP_SCHEME = 'app';
@@ -191,5 +192,9 @@ if (!app.requestSingleInstanceLock()) {
     Menu.setApplicationMenu(Menu.buildFromTemplate(buildMenuTemplate(process.platform)));
     mainWindow = createWindow();
     startUpdates(mainWindow);
+    // Schnellnotiz-Kürzel: die Web-App meldet es an/ab (lib/quick-capture.js)
+    const quickCapture = createQuickCapture({ globalShortcut, getWindow: () => mainWindow });
+    ipcMain.handle(QUICK_CAPTURE_SET, (_event, on) => quickCapture.setEnabled(!!on));
+    app.on('will-quit', () => quickCapture.dispose());
   });
 }

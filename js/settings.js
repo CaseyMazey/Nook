@@ -27,6 +27,9 @@ function renderSettings(){
   if (typeof renderTodayEventsDueSettings === 'function') renderTodayEventsDueSettings();
   if (typeof renderTodayLernplanSettings === 'function') renderTodayLernplanSettings();
   if (typeof renderTodayReviewSettings === 'function') renderTodayReviewSettings();
+  if (typeof renderTodayWelcomeSettings === 'function') renderTodayWelcomeSettings();
+  if (typeof renderTodayDaylineSettings === 'function') renderTodayDaylineSettings();
+  if (typeof renderQuickCaptureSettings === 'function') renderQuickCaptureSettings();
   if (typeof renderGoogleCalendarSettings === 'function') renderGoogleCalendarSettings();
 }
 
@@ -238,6 +241,8 @@ function renderDisplaySettings() {
   }
   const motion = document.getElementById('setting-reduce-motion');
   if (motion) motion.checked = !!reduceMotion;
+  const readable = document.getElementById('setting-readable-font');
+  if (readable) readable.checked = !!readableFont;
   const collapsed = document.getElementById('setting-sidebar-collapsed');
   if (collapsed) collapsed.checked = !!sidebarCollapsed;
 }
@@ -257,6 +262,11 @@ document.getElementById('setting-font-scale-reset')?.addEventListener('click', (
 document.getElementById('setting-reduce-motion')?.addEventListener('change', e => {
   reduceMotion = e.target.checked;
   saveReduceMotion();
+  applyUiPrefs();
+});
+document.getElementById('setting-readable-font')?.addEventListener('change', e => {
+  readableFont = e.target.checked;
+  saveReadableFont();
   applyUiPrefs();
 });
 document.getElementById('setting-sidebar-collapsed')?.addEventListener('change', e => {
@@ -671,7 +681,7 @@ const BACKUP_CACHE_KEYS = ['weatherData', 'currentDate'];
 
 const NOOK_DATA_GROUPS = [
   { id: 'today',      label: 'Heute',        resettable: true,
-    keys: ['tasks', 'blocks', 'notes', 'quicknote', 'berichtsheft', 'mealPlanWeeks', 'mealPlanFavorites', 'mealPlanFavHintHidden','todayTracker', 'todayBudgetDue', 'todayBudgetDaily', 'todayLernplan', 'todayReview', 'todayReviewSeen', 'todayFocusLog','qnSendLastTarget', 'qnSendLastProject', 'brainDump', 'todayEventsDue',
+    keys: ['tasks', 'blocks', 'notes', 'quicknote', 'berichtsheft', 'mealPlanWeeks', 'mealPlanFavorites', 'mealPlanFavHintHidden', 'lastOpenedDay', 'welcomeBack', 'welcomeBackSeen', 'todayLowEnergy', 'dayLines', 'dayLineOn', 'yearbookSeen', 'yearbooks', 'desktopQuickCapture','todayTracker', 'todayBudgetDue', 'todayBudgetDaily', 'todayLernplan', 'todayReview', 'todayReviewSeen', 'todayFocusLog','qnSendLastTarget', 'qnSendLastProject', 'brainDump', 'todayEventsDue',
            'gdDuties', 'gdGroups', 'gdPeople', 'gdSchedule', 'gdScheduleAlgoV2'],
     prefixes: ['schedule'] }, // Stundenplan: scheduleWeek, scheduleLessons, scheduleSubjects, scheduleTeachers, scheduleTemplates
   { id: 'positivity', label: 'Positivity',   resettable: true, prefixes: ['positivity'] },
@@ -690,7 +700,7 @@ const NOOK_DATA_GROUPS = [
   { id: 'tools',      label: 'Tools',        resettable: true, prefixes: ['tools', 'noten'] },
   { id: 'look',       label: 'Darstellung & Einstellungen', resettable: false,
     keys: ['theme', 'themeFamily', 'darkMode', 'customThemes', 'themeBackgrounds', 'dayNightToggle',
-           'themeAutoMode', 'uiFontScale', 'reduceMotion', 'sidebarCollapsed', 'hiddenTabs', 'tabOrder',
+           'themeAutoMode', 'uiFontScale', 'reduceMotion', 'readableFont', 'sidebarCollapsed', 'hiddenTabs', 'tabOrder',
            'tabVisibilityOpen', 'settingsCollapsedGroups', 'bottomNavTabs', 'startView', 'hubUserColors', 'colorAutoAdjust', 'userName',
            'weatherSettings', 'backupLastExport', 'backupReminderDays', 'backupReminderSince',
            'backupReminderSnoozeUntil'] },
@@ -1109,6 +1119,7 @@ document.getElementById('reset-highscores-btn').addEventListener('click', async 
 function renderAboutSettings() {
   const ver = document.getElementById('about-version');
   if (ver) ver.textContent = window.NOOK_VERSION || '—';
+  if (typeof renderYearbookSettings === 'function') renderYearbookSettings();
   const log = document.getElementById('about-changelog');
   if (!log) return;
   const entries = (window.NOOK_CHANGELOG || []).slice(0, 3);
