@@ -12,7 +12,7 @@ let todayLernplan = DB.get('todayLernplan', true);
 function saveTodayLernplan() { DB.set('todayLernplan', todayLernplan); }
 
 const TODAY_LERNPLAN_DAYS = 30; // Prüfungen weiter weg erscheinen noch nicht
-const TODAY_LERNPLAN_MAX = 2;
+const TODAY_LERNPLAN_MAX = 1; // nur die nächste Prüfung — der Kopf soll ruhig bleiben
 
 // → [{ subj, obj, groupIds, info, item, plan }] nach Nähe sortiert.
 function todayLernplanItems() {
@@ -37,36 +37,38 @@ function todayLernplanItems() {
   return out.sort((a, b) => a.item.daysLeft - b.item.daysLeft);
 }
 
+// Ein kleiner Chip in der gemeinsamen Info-Zeile (today-budget.js: todayInfoRow).
 function renderTodayLernplan() {
-  const block = document.getElementById('today-greeting-block');
-  if (!block) return;
   let el = document.getElementById('today-lernplan');
   const hidden = typeof hiddenTabs !== 'undefined' && hiddenTabs.includes('flashcards');
-  const items = todayLernplan && !hidden ? todayLernplanItems().slice(0, TODAY_LERNPLAN_MAX) : [];
-  if (!items.length) { el?.remove(); return; }
+  const all = todayLernplan && !hidden ? todayLernplanItems() : [];
+  const x = all[0];
+  const tidy = () => { if (typeof todayInfoRowTidy === 'function') todayInfoRowTidy(); };
+  if (!x || typeof todayInfoRow !== 'function') { el?.remove(); tidy(); return; }
+  const row = todayInfoRow();
+  if (!row) return;
   if (!el) {
-    el = document.createElement('div');
+    el = document.createElement('button');
+    el.type = 'button';
     el.id = 'today-lernplan';
-    el.className = 'today-budget-due today-lernplan';
-    const anchor = document.getElementById('today-subtitle');
-    anchor ? anchor.after(el) : block.appendChild(el);
+    el.className = 'today-chip';
+    row.prepend(el);
   }
   const days = n => (typeof fcDaysText === 'function' ? fcDaysText(n) : `noch ${n} Tage`);
-  el.innerHTML = `<span class="today-budget-due-label">📚 Lernplan</span>` + items.map((x, i) => {
-    const done = Math.min(x.plan.done, x.plan.target);
-    const state = x.plan.ids.length
-      ? `heute <b>${done} von ${x.plan.target}</b>`
-      : `<b>✓ Tagesziel geschafft</b>`;
-    return `<button type="button" class="today-lernplan-item" data-i="${i}" title="${x.plan.ids.length ? 'Tagesziel jetzt lernen' : 'In den Karteikarten öffnen'}">
-      <span>${escHtml(x.obj.name)} · ${days(x.item.daysLeft)}: ${state}</span></button>`;
-  }).join('');
-  el.querySelectorAll('.today-lernplan-item').forEach(btn => btn.addEventListener('click', () => {
-    const x = items[+btn.dataset.i];
+  const done = Math.min(x.plan.done, x.plan.target);
+  const more = all.length > 1 ? ` (+${all.length - 1} weitere Prüfung${all.length > 2 ? 'en' : ''} mit Termin)` : '';
+  el.title = (x.plan.ids.length
+    ? `Lernplan: ${x.obj.name}, ${days(x.item.daysLeft)}. Heute ${done} von ${x.plan.target} Karten. Klick startet das Tagesziel.`
+    : `Lernplan: ${x.obj.name}, ${days(x.item.daysLeft)}. Tagesziel geschafft.`) + more;
+  el.innerHTML = x.plan.ids.length
+    ? `📚 ${escHtml(x.obj.name)} · <b>${done}/${x.plan.target}</b> heute`
+    : `📚 ${escHtml(x.obj.name)} · <b>✓</b>`;
+  el.onclick = () => {
     showView('flashcards');
     if (x.plan.ids.length && typeof startGroupsLearnSession === 'function') {
       startGroupsLearnSession(x.subj.id, x.groupIds, x.info, { mode: 'plan', cardIds: x.plan.ids });
     }
-  }));
+  };
 }
 
 // ── Einstellungen (Heute-Seite) ──────────────────────────────────────────

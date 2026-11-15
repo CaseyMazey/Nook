@@ -64,30 +64,52 @@ function renderTodayBudgetDue() {
 let todayBudgetDaily = DB.get('todayBudgetDaily', true);
 function saveTodayBudgetDaily() { DB.set('todayBudgetDaily', todayBudgetDaily); }
 
+// Gemeinsame Zeile für kleine Info-Chips (diese Zeile + „Lernplan“,
+// today-lernplan.js): nebeneinander statt je eine volle Zeile, damit der
+// Kopf der Heute-Seite ruhig bleibt. Steht direkt über der Wochen-Navigation;
+// leer wird sie wieder entfernt.
+function todayInfoRow(create = true) {
+  let row = document.getElementById('today-info-row');
+  if (!row && create) {
+    const block = document.getElementById('today-greeting-block');
+    if (!block) return null;
+    row = document.createElement('div');
+    row.id = 'today-info-row';
+    row.className = 'today-info-row';
+    const nav = document.getElementById('week-nav');
+    nav ? nav.before(row) : block.appendChild(row);
+  }
+  return row;
+}
+function todayInfoRowTidy() {
+  const row = todayInfoRow(false);
+  if (row && !row.children.length) row.remove();
+}
+
 function renderTodayBudgetDaily() {
-  const block = document.getElementById('today-greeting-block');
-  if (!block) return;
   let el = document.getElementById('today-budget-daily');
   const hiddenBudget = typeof hiddenTabs !== 'undefined' && hiddenTabs.includes('budget');
   const w = todayBudgetDaily && !hiddenBudget && typeof BudgetTipps !== 'undefined' && typeof nextMoneyEvents === 'function'
     ? BudgetTipps.nextMoneyWindow({ today: todayIso(), balance: kontostand, events: nextMoneyEvents() })
     : null;
-  if (!w) { el?.remove(); return; }
+  if (!w) { el?.remove(); todayInfoRowTidy(); return; }
+  const row = todayInfoRow();
+  if (!row) return;
   if (!el) {
     el = document.createElement('button');
     el.type = 'button';
     el.id = 'today-budget-daily';
-    el.className = 'today-budget-due today-budget-daily';
-    el.title = 'Im Budget öffnen';
+    el.className = 'today-chip';
     el.addEventListener('click', () => showView('budget'));
-    const anchor = document.getElementById('today-budget-due') || document.getElementById('today-tracker') || document.getElementById('today-subtitle');
-    anchor ? anchor.after(el) : block.appendChild(el);
+    row.appendChild(el);
   }
   const when = `${w.date.slice(8, 10)}.${w.date.slice(5, 7)}.`;
-  const who = escHtml(w.name);
+  el.title = w.available > 0
+    ? `Bis zum nächsten Geld (${w.name} am ${when}) bleiben etwa ${fmtEuro(w.perDay)} pro Tag. Klick öffnet das Budget.`
+    : `Bis zum nächsten Geld (${w.name} am ${when}) ist alles verplant. Klick öffnet das Budget.`;
   el.innerHTML = w.available > 0
-    ? `<span class="today-budget-due-label">🌤️ Bis zum nächsten Geld</span><span class="today-budget-due-item"><span>${who} am ${when}: etwa <b>${fmtEuro(w.perDay)}</b> pro Tag</span></span>`
-    : `<span class="today-budget-due-label">🌤️ Bis zum nächsten Geld</span><span class="today-budget-due-item"><span>${who} am ${when}: bis dahin ist alles verplant</span></span>`;
+    ? `🌤️ <b>${fmtEuro(w.perDay)}</b> pro Tag bis ${when}`
+    : `🌤️ bis ${when} alles verplant`;
 }
 
 // ── Einstellungen (Heute-Seite) ──────────────────────────────────────────

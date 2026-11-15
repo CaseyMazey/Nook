@@ -10,9 +10,18 @@
 // hinten wegfallen, angezeigt werden ohnehin nur die neuesten.
 // =========================
 
-window.NOOK_VERSION = '2026.11.15';
+window.NOOK_VERSION = '2026.11.16';
 
 window.NOOK_CHANGELOG = [
+  {
+    version: '2026.11.16',
+    date: '2026-11-15',
+    items: [
+      'Heute: Lernplan und „Bis zum nächsten Geld“ sind jetzt kleine Chips nebeneinander – der Kopf der Seite bleibt ruhig; der Lernplan zeigt die nächste Prüfung',
+      'Heute: Der Wochenrückblick ist ein schlankes Panel in den Farben deines Themes (im RPG-Stil ein Zettel) und nennt mehrtägige Termine nur einmal',
+      'RPG-Stil: „Fokus“ und „Heute / Morgen“ am Stundenplan sind auf dem Holz gut lesbar',
+    ],
+  },
   {
     version: '2026.11.15',
     date: '2026-11-15',

@@ -133,17 +133,19 @@ if (typeof document !== 'undefined') (function initReview() {
     const s = NookReview.stats({ week: w, tasks: Array.isArray(tasks) ? tasks : [], cards: allCardsSafe(), focusLog: DB.get('todayFocusLog', {}), savings: savings() });
     const done = NookReview.doneParts(s, typeof fmtEuro === 'function' ? fmtEuro : v => `${v} €`);
     const up = upcoming(w);
+    // Gleicher Titel an mehreren Tagen (z.B. ein Wochenende) = ein Eintrag mit allen Tagen.
+    const byTitle = new Map();
+    up.events.forEach(e => { if (!byTitle.has(e.title)) byTitle.set(e.title, []); byTitle.get(e.title).push(e.date); });
+    const dayShort = d => short(d).split(' ')[0];
+    const evList = [...byTitle].map(([t, ds]) => `${escHtml(t)} (${ds.length > 1 ? ds.map(dayShort).join(' + ') : dayShort(ds[0])})`);
     const next = [];
-    if (up.events.length) next.push(`📅 ${up.events.length} ${up.events.length === 1 ? 'Termin' : 'Termine'}: ${up.events.slice(0, 3).map(e => `${escHtml(e.title)} (${short(e.date)})`).join(', ')}${up.events.length > 3 ? ' …' : ''}`);
-    up.exams.forEach(x => next.push(`📚 Prüfung ${escHtml(x.name)} am ${short(x.date)}`));
-    if (up.budget.length) {
-      const sum = up.budget.reduce((t, b) => t + b.amount, 0);
-      next.push(`💶 ${fmtEuro(sum)} an Ausgaben, u.a. ${up.budget.slice(0, 2).map(b => `${escHtml(b.name)} (${short(b.date)})`).join(', ')}`);
-    }
+    if (evList.length) next.push(`📅 ${evList.slice(0, 2).join(', ')}${evList.length > 2 ? ` +${evList.length - 2}` : ''}`);
+    up.exams.forEach(x => next.push(`📚 ${escHtml(x.name)} (${dayShort(x.date)})`));
+    if (up.budget.length) next.push(`💶 ${fmtEuro(up.budget.reduce((t, b) => t + b.amount, 0))} Ausgaben`);
     if (!el) {
       el = document.createElement('div');
       el.id = 'today-review';
-      el.className = 'today-review';
+      el.className = 'panel today-review';
       // volle Breite unter Begrüßung + Wetter, über dem Stundenplan
       const header = document.getElementById('today-main-header');
       header ? header.after(el) : block.appendChild(el);
@@ -152,10 +154,10 @@ if (typeof document !== 'undefined') (function initReview() {
     el.innerHTML = `
       <div class="today-review-head">
         <span class="today-review-title">🌿 Deine Woche${kw ? ` · KW ${kw}` : ''}</span>
+        <span class="today-review-done">${done.length ? done.map(p => `<span>${p}</span>`).join('') : '<span>Eine ruhige Woche. Auch das zählt.</span>'}</span>
         <button type="button" class="today-review-x" title="Für diese Woche ausblenden" aria-label="Wochenrückblick ausblenden">✕</button>
       </div>
-      <div class="today-review-done">${done.length ? done.map(p => `<span>${p}</span>`).join('') : '<span>Eine ruhige Woche. Auch das zählt.</span>'}</div>
-      ${next.length ? `<div class="today-review-next"><div class="today-review-label">Nächste Woche</div>${next.map(n => `<div>${n}</div>`).join('')}</div>` : ''}`;
+      ${next.length ? `<div class="today-review-next"><b>Nächste Woche:</b>${next.join(' · ')}</div>` : ''}`;
     el.querySelector('.today-review-x').addEventListener('click', () => { DB.set('todayReviewSeen', w.start); el.remove(); });
   };
 

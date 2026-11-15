@@ -498,7 +498,7 @@ Am einfachsten über den **Prüfungstermin** im Prüfungs-Dialog: Ein Datum legt
 
 Alternativ lässt sich über ⋮ → „Countdown verbinden“ ein Thema oder eine Prüfung mit einem Countdown aus dem Kalender verbinden (`countdownId`, nur lesend über `getCountdownItems()`). Nook verteilt dann alle Karten auf die verbleibenden Tage und zeigt ein Tagesziel: Karten ÷ Tage, zuerst niedrige Boxen und am längsten nicht gesehene Karten. Am Tag davor und am Termin selbst sind alle Karten dran. Liegt der Termin in der Vergangenheit oder ist der Countdown weg, verschwindet die Zeile, die Karten bleiben unberührt.
 
-Auf der Heute-Seite erscheint das Tagesziel der nächsten (höchstens zwei) Prüfungen oder Themen mit Termin in den nächsten 30 Tagen als Zeile „📚 Lernplan“ (js/today-lernplan.js, abschaltbar). Ein Klick startet genau diese Tagesziel-Runde.
+Auf der Heute-Seite erscheint das Tagesziel der nächsten Prüfung bzw. des nächsten Themas mit Termin in den nächsten 30 Tagen als kleiner Chip „📚 Lernplan“ (js/today-lernplan.js, abschaltbar). Ein Klick startet genau diese Tagesziel-Runde.
 
 ---
 

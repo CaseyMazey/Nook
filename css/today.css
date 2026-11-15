@@ -953,19 +953,26 @@
 .today-events-due-item i { font-style: normal; font-family: var(--mono); color: var(--text-3); }
 .today-events-due-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; align-self: center; flex-shrink: 0; }
 
-/* ── Lernplan (js/today-lernplan.js) ─────────────────────── */
-.today-lernplan { cursor: default; }
-.today-lernplan-item {
-  font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-align: left;
+/* ── Info-Chips (today-budget.js: todayInfoRow; Lernplan, Bis zum nächsten Geld) ──
+   Klein und nebeneinander statt je eine volle Zeile. Farben wie die Zeile
+   „Heute fällig“, damit sie auf jedem Start-Banner lesbar bleiben. */
+.today-info-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; max-width: 560px; }
+.today-chip {
+  display: inline-flex; align-items: center; gap: 5px; max-width: 100%; min-width: 0;
+  padding: 3px 11px; border: 1px solid var(--border); border-radius: 99px;
+  background: color-mix(in srgb, var(--surface-solid) 60%, transparent);
+  color: var(--text-2); font: inherit; font-size: calc(12px * var(--core-font-scale));
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer;
+  transition: border-color var(--transition), color var(--transition);
 }
-.today-lernplan-item:hover span { color: var(--text); text-decoration: underline; text-underline-offset: 2px; }
-.today-lernplan-item b { font-weight: 600; color: var(--text); }
+.today-chip:hover { border-color: var(--sage-border); color: var(--text); }
+.today-chip b { color: var(--text); font-weight: 600; }
 
 /* ── Fokusmodus (js/today-focus.js) ──────────────────────── */
 .today-focus-btn {
   margin-left: auto; font: inherit; font-size: calc(12px * var(--core-font-scale)); font-weight: 600;
   color: var(--text-2); background: none; border: 1px solid var(--border); border-radius: 99px;
-  padding: 3px 10px; cursor: pointer; transition: border-color var(--transition), color var(--transition);
+  padding: 3px 10px; cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: border-color var(--transition), color var(--transition);
 }
 .today-focus-btn:hover { color: var(--text); border-color: var(--sage-border); }
 .today-focus-btn + .today-schedule-edit { margin-left: 6px; }
@@ -1006,16 +1013,14 @@
 .focus-task input { accent-color: var(--sage); width: 17px; height: 17px; }
 .focus-task.done span { text-decoration: line-through; color: var(--text-3); }
 
-/* ── Wochenrückblick (js/today-review.js) ─────────────────── */
-.today-review {
-  margin: 4px 0 18px; padding: 12px 16px;
-  border: 1px solid var(--sage-border); border-radius: var(--radius-lg, 14px); background: var(--sage-bg);
-  color: var(--text); font-size: calc(13px * var(--core-font-scale)); line-height: 1.5;
-}
-.today-review-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
-.today-review-title { font-weight: 700; }
-.today-review-x { font: inherit; font-size: 12px; background: none; border: 0; color: var(--text-2); cursor: pointer; padding: 2px 6px; border-radius: 6px; }
-.today-review-x:hover { color: var(--text); background: color-mix(in srgb, var(--text) 6%, transparent); }
-.today-review-done { display: flex; flex-wrap: wrap; gap: 4px 14px; }
-.today-review-next { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--sage-border); color: var(--text-2); }
-.today-review-label { font-size: calc(11.5px * var(--core-font-scale)); font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 2px; }
+/* ── Wochenrückblick (js/today-review.js) ───────────────────
+   Ein normales Panel (Farben/Rand vom Theme, im RPG-Stil ein Zettel:
+   today-rpg.css), kompakt: zwei Zeilen statt einer großen Karte. */
+.today-review { margin: 4px 0 18px; padding: 10px 14px; font-size: calc(13px * var(--core-font-scale)); line-height: 1.5; color: var(--text); }
+.today-review-head { display: flex; align-items: baseline; gap: 10px; }
+.today-review-title { font-weight: 700; white-space: nowrap; }
+.today-review-done { display: flex; flex-wrap: wrap; gap: 2px 12px; color: var(--text-2); flex: 1; min-width: 0; }
+.today-review-x { margin-left: auto; font: inherit; font-size: 12px; background: none; border: 0; color: var(--text-3); cursor: pointer; padding: 2px 6px; border-radius: 6px; align-self: center; }
+.today-review-x:hover { color: var(--text); background: var(--accent-soft); }
+.today-review-next { margin-top: 4px; color: var(--text-2); }
+.today-review-next b { color: var(--text-3); font-weight: 700; margin-right: 4px; }

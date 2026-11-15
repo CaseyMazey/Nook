@@ -63,8 +63,9 @@ Enthält:
 - optional: Fortschritts-Tracker (z.B. „Ausbildung 64 / 156 Wochen“, js/today-tracker.js)
 - optional: „📅 Heute“ — die heutigen Termine aus dem Kalender (js/today-events.js, Key `todayEventsDue`)
 - optional: „💶 Heute fällig“ — heute anstehende Budget-Posten (js/today-budget.js, Key `todayBudgetDue`)
-- optional: „📚 Lernplan“ — Tagesziel für Prüfungen/Themen mit Termin aus den Karteikarten (js/today-lernplan.js, Key `todayLernplan`); ein Klick startet die Tagesziel-Runde
-- optional: „🌤️ Bis zum nächsten Geld“ — was vom Kontostand bis zur nächsten Einnahme pro Tag frei bleibt (js/today-budget.js, Rechnung in budget-tipps.js, Key `todayBudgetDaily`)
+- optional: Info-Chips in einer gemeinsamen Zeile über der Wochen-Navigation (`#today-info-row`, today-budget.js: `todayInfoRow`) — klein und nebeneinander statt je eine volle Zeile, damit der Kopf ruhig bleibt; die volle Aussage steht im Tooltip:
+  - „📚 Lernplan“ — Tagesziel der nächsten Prüfung bzw. des nächsten Themas mit Termin aus den Karteikarten (js/today-lernplan.js, Key `todayLernplan`); ein Klick startet die Tagesziel-Runde
+  - „🌤️ … pro Tag bis …“ — was vom Kontostand bis zur nächsten Einnahme pro Tag frei bleibt (js/today-budget.js, Rechnung in budget-tipps.js, Key `todayBudgetDaily`)
 
 Die optionalen Zeilen sind nur lesend und lassen sich unter Einstellungen → Heute-Seite abschalten; ein Klick führt in den zuständigen Tab (Kalender-Tagesfenster, Budget bzw. Karteikarten).
 
