@@ -1,5 +1,7 @@
 // Hilfsskript für .github/workflows/release.yml.
-// CLI: gh api ... --paginate --slurp | TAG=v1 node scripts/release-check.js <create|publish>
+// CLI: TAG=v1 node scripts/release-check.js <create|publish> [releases.json]
+//   Ohne Datei liest es stdin (gh api ... --paginate --slurp | …). Der Workflow nutzt
+//   release-step.sh, das die Liste erst in eine Datei schreibt (siehe dort, warum).
 //   create : bricht ab, wenn der Tag schon veröffentlicht ist; gibt die ID eines vorhandenen Entwurfs aus (sonst nichts)
 //   publish: verlangt genau einen Entwurf mit vollständigen Assets; gibt dessen ID aus
 'use strict';
@@ -25,10 +27,10 @@ function findReleases(pages, tag) {
   return { drafts: mine.filter((r) => r.draft), published: mine.filter((r) => !r.draft) };
 }
 
-function main(mode) {
+function main(mode, file) {
   const tag = process.env.TAG;
   if (!tag) throw new Error('TAG fehlt');
-  const input = require('fs').readFileSync(0, 'utf8');
+  const input = require('fs').readFileSync(file || 0, 'utf8');
   const { drafts, published } = findReleases(JSON.parse(input), tag);
   if (published.length) throw new Error(`Für ${tag} existiert bereits ein veröffentlichtes Release`);
   if (mode === 'create') {
@@ -49,5 +51,5 @@ function main(mode) {
 module.exports = { missingAssets, findReleases };
 
 if (require.main === module) {
-  try { main(process.argv[2]); } catch (e) { console.error('::error::' + e.message); process.exit(1); }
+  try { main(process.argv[2], process.argv[3]); } catch (e) { console.error('::error::' + e.message); process.exit(1); }
 }
