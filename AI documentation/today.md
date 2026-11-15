@@ -63,8 +63,9 @@ Enthält:
 - optional: Fortschritts-Tracker (z.B. „Ausbildung 64 / 156 Wochen“, js/today-tracker.js)
 - optional: „📅 Heute“ — die heutigen Termine aus dem Kalender (js/today-events.js, Key `todayEventsDue`)
 - optional: „💶 Heute fällig“ — heute anstehende Budget-Posten (js/today-budget.js, Key `todayBudgetDue`)
+- optional: „🌤️ Bis zum nächsten Geld“ — was vom Kontostand bis zur nächsten Einnahme pro Tag frei bleibt (js/today-budget.js, Rechnung in budget-tipps.js, Key `todayBudgetDaily`)
 
-Die drei optionalen Zeilen sind nur lesend und lassen sich unter Einstellungen → Heute-Seite abschalten; ein Klick führt in den zuständigen Tab (Kalender-Tagesfenster bzw. Budget). Die Uhr steht in der rechten Spalte.
+Die vier optionalen Zeilen sind nur lesend und lassen sich unter Einstellungen → Heute-Seite abschalten; ein Klick führt in den zuständigen Tab (Kalender-Tagesfenster bzw. Budget). Die Uhr steht in der rechten Spalte.
 
 Der Header bildet den Einstieg in den Tag.
 

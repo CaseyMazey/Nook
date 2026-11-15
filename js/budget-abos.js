@@ -109,7 +109,16 @@ const BudgetAbos = (() => {
       : `„${d.label}“ steht ${d.entries.length === 2 ? 'zweimal' : `${d.entries.length}-mal`} in deinen Posten, zusammen ${euro(d.monthly)} im Monat.`;
   }
 
-  return { SERVICES, service, cancelUrl, perMonth, duplicates, hintText };
+  // Alle erkannten Abos (Ausgaben, deren Dienst in SERVICES steht) zusammen.
+  // → null unter zwei Abos, sonst { count, monthly, yearly }.
+  function totals(entries) {
+    const abos = entries.filter(e => e.type === 'expense' && service(e.name));
+    if (abos.length < 2) return null;
+    const monthly = Math.round(abos.reduce((t, e) => t + perMonth(e), 0) * 100) / 100;
+    return { count: abos.length, monthly, yearly: Math.round(monthly * 12 * 100) / 100 };
+  }
+
+  return { SERVICES, service, cancelUrl, perMonth, duplicates, hintText, totals };
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = BudgetAbos;
@@ -125,6 +134,14 @@ if (typeof document !== 'undefined') {
   // activeEntries: die im angezeigten Monat geltenden Posten.
   window.renderAboHints = function (listEl, activeEntries) {
     if (!listEl) return;
+    // Abo-Kosten aufs Jahr: eine ruhige Zeile unter der Liste.
+    const t = BudgetAbos.totals(activeEntries);
+    if (t) {
+      const line = document.createElement('div');
+      line.className = 'b-abo-year';
+      line.textContent = `📺 Deine ${t.count} erkannten Abos kosten zusammen ${fmtEuro(t.monthly)} im Monat, also ${fmtEuro(t.yearly)} im Jahr.`;
+      listEl.appendChild(line);
+    }
     const dups = BudgetAbos.duplicates(activeEntries).filter(d => !budgetAboHintsOff.includes(d.id));
     if (!dups.length) return;
     const box = document.createElement('div');

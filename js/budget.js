@@ -5,7 +5,7 @@
 // Lade-Reihenfolge (index.html): budget.js -> budget-schatzkammer.js ->
 // budget-taschengeld.js -> budget-sparziele.js -> budget-financing.js ->
 // budget-analysis.js -> budget-debts.js -> budget-sparprognose.js ->
-// budget-sparplaene.js -> budget-import.js -> budget-abos.js (-> today-budget.js liest nur)
+// budget-sparplaene.js -> budget-import.js -> budget-abos.js -> budget-tipps.js (-> today-budget.js liest nur)
 // =========================
 
 // =========================
@@ -639,6 +639,8 @@ function renderBudget() {
   renderBudgetGoals();
   renderLiquidity();
   renderFinanzgarten();
+  // Tipps (budget-tipps.js): Vorlagen, Rücklage für Jahreskosten, Sparvorschlag
+  if (typeof renderBudgetTips === 'function') renderBudgetTips();
   initSummaryCardToggles();
   initCardInlineToggles();
   initBudgetSubtabs();
@@ -3611,6 +3613,7 @@ if (budgetHeaderMenuBtn) {
       <button type="button" class="b-header-dropdown-item" id="budget-header-menu-rueckblick">📊 Monatsrückblick</button>
       <button type="button" class="b-header-dropdown-item" id="budget-header-menu-csv">⬇️ Monat als CSV exportieren</button>
       <button type="button" class="b-header-dropdown-item" id="budget-header-menu-import">🏦 Kontoauszug importieren</button>
+      <button type="button" class="b-header-dropdown-item" id="budget-header-menu-template">📋 Vorlage laden</button>
     `;
     const rect = budgetHeaderMenuBtn.getBoundingClientRect();
     menu.style.top   = (rect.bottom + 6) + 'px';
@@ -3642,6 +3645,10 @@ if (budgetHeaderMenuBtn) {
     document.getElementById('budget-header-menu-import').addEventListener('click', () => {
       closeBudgetHeaderMenu();
       if (typeof openBudgetImport === 'function') openBudgetImport();
+    });
+    document.getElementById('budget-header-menu-template').addEventListener('click', () => {
+      closeBudgetHeaderMenu();
+      if (typeof openBudgetTemplate === 'function') openBudgetTemplate();
     });
   });
 }

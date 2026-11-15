@@ -1189,6 +1189,9 @@
  
           </div>
  
+          <!-- ── TIPPS (js/budget-tipps.js): Vorlagen, Rücklage, Sparvorschlag ── -->
+          <div id="budget-tips" class="b-tips hidden"></div>
+
           <!-- ── LIQUIDITÄTSVORSCHAU + FINANZGARTEN ────────────── -->
           <div id="budget-mid-row">
             <div id="budget-liquidity"></div>
@@ -1620,6 +1623,10 @@
                 <div class="settings-row">
                   <div><div class="settings-row-title">„Heute fällig“ anzeigen</div><div class="settings-row-sub">Posten aus dem Budget, die heute anstehen — nur zur Info, ein Klick öffnet das Budget</div></div>
                   <label class="toggle"><input type="checkbox" id="setting-today-budget-due"/><span class="toggle-slider"></span></label>
+                </div>
+                <div class="settings-row">
+                  <div><div class="settings-row-title">„Bis zum nächsten Geld“ anzeigen</div><div class="settings-row-sub">Wie viel bis zur nächsten Einnahme pro Tag frei bleibt — aus Kontostand und offenen Posten</div></div>
+                  <label class="toggle"><input type="checkbox" id="setting-today-budget-daily"/><span class="toggle-slider"></span></label>
                 </div>
               </div>
 
@@ -3160,6 +3167,23 @@
     </div>
   </div>
 
+  <!-- Vorlagen zum Start (js/budget-tipps.js) -->
+  <div id="budget-template-modal-overlay" class="modal-backdrop hidden">
+    <div class="modal-box budget-modal-wide b-imp-box">
+      <div class="modal-head">
+        <span id="budget-template-title">&#128203; Mit einer Vorlage starten</span>
+        <button class="modal-x" id="budget-template-close">&#10005;</button>
+      </div>
+      <div id="budget-template-chips" class="b-tip-actions" style="margin:8px 0 4px;"></div>
+      <p class="modal-hint" style="padding:4px 0 6px;">Beispielbeträge, die du direkt anpassen kannst. Übernommen wird nur, was angehakt ist.</p>
+      <div id="budget-template-list" class="b-imp-list"></div>
+      <div class="modal-actions">
+        <button id="budget-template-cancel" class="btn-ghost">Abbrechen</button>
+        <button id="budget-template-save" class="btn-primary">Übernehmen</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Kontoauszug importieren (js/budget-import.js) -->
   <div id="budget-import-modal-overlay" class="modal-backdrop hidden">
     <div class="modal-box budget-modal-wide b-imp-box">
@@ -4334,6 +4358,7 @@
   <script src="js/budget-sparplaene.js"></script>
   <script src="js/budget-import.js"></script>
   <script src="js/budget-abos.js"></script>
+  <script src="js/budget-tipps.js"></script>
   <script src="js/today-budget.js"></script>
   <script src="js/today-events.js"></script>
   <script src="js/today-quicknote-send.js"></script>

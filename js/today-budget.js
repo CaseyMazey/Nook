@@ -37,6 +37,8 @@ function renderTodayBudgetDue() {
   let el = document.getElementById('today-budget-due');
   const hiddenBudget = typeof hiddenTabs !== 'undefined' && hiddenTabs.includes('budget');
   const items = todayBudgetDue && !hiddenBudget ? todayBudgetDueItems() : [];
+  // „Bis zum nächsten Geld“ hängt an derselben Stelle (main.js ruft nur diese Funktion auf).
+  if (typeof renderTodayBudgetDaily === 'function') setTimeout(renderTodayBudgetDaily, 0);
   if (!items.length) { el?.remove(); return; }
   if (!el) {
     el = document.createElement('button');
@@ -54,15 +56,56 @@ function renderTodayBudgetDue() {
        <b class="${i.type === 'income' ? 'income' : 'expense'}">${i.type === 'income' ? '+' : '−'}${fmtEuro(i.amount)}</b></span>`).join('');
 }
 
+// ── „Bis zum nächsten Geld“ (nur lesend) ─────────────────────────────────
+// Ein ruhiger Satz: was vom Kontostand bis zur nächsten Einnahme frei bleibt,
+// geteilt durch die Tage bis dahin. Rechnung: BudgetTipps.nextMoneyWindow
+// (budget-tipps.js) mit allen offenen Posten bis zum Tag vor dem Geld.
+// Eigener Key: todayBudgetDaily (settings.js: NOOK_DATA_GROUPS „Heute“).
+let todayBudgetDaily = DB.get('todayBudgetDaily', true);
+function saveTodayBudgetDaily() { DB.set('todayBudgetDaily', todayBudgetDaily); }
+
+function renderTodayBudgetDaily() {
+  const block = document.getElementById('today-greeting-block');
+  if (!block) return;
+  let el = document.getElementById('today-budget-daily');
+  const hiddenBudget = typeof hiddenTabs !== 'undefined' && hiddenTabs.includes('budget');
+  const w = todayBudgetDaily && !hiddenBudget && typeof BudgetTipps !== 'undefined' && typeof nextMoneyEvents === 'function'
+    ? BudgetTipps.nextMoneyWindow({ today: todayIso(), balance: kontostand, events: nextMoneyEvents() })
+    : null;
+  if (!w) { el?.remove(); return; }
+  if (!el) {
+    el = document.createElement('button');
+    el.type = 'button';
+    el.id = 'today-budget-daily';
+    el.className = 'today-budget-due today-budget-daily';
+    el.title = 'Im Budget öffnen';
+    el.addEventListener('click', () => showView('budget'));
+    const anchor = document.getElementById('today-budget-due') || document.getElementById('today-tracker') || document.getElementById('today-subtitle');
+    anchor ? anchor.after(el) : block.appendChild(el);
+  }
+  const when = `${w.date.slice(8, 10)}.${w.date.slice(5, 7)}.`;
+  const who = escHtml(w.name);
+  el.innerHTML = w.available > 0
+    ? `<span class="today-budget-due-label">🌤️ Bis zum nächsten Geld</span><span class="today-budget-due-item"><span>${who} am ${when}: etwa <b>${fmtEuro(w.perDay)}</b> pro Tag</span></span>`
+    : `<span class="today-budget-due-label">🌤️ Bis zum nächsten Geld</span><span class="today-budget-due-item"><span>${who} am ${when}: bis dahin ist alles verplant</span></span>`;
+}
+
 // ── Einstellungen (Heute-Seite) ──────────────────────────────────────────
 function renderTodayBudgetDueSettings() {
   const toggle = document.getElementById('setting-today-budget-due');
   if (toggle) toggle.checked = !!todayBudgetDue;
+  const daily = document.getElementById('setting-today-budget-daily');
+  if (daily) daily.checked = !!todayBudgetDaily;
 }
 document.getElementById('setting-today-budget-due')?.addEventListener('change', e => {
   todayBudgetDue = e.target.checked;
   saveTodayBudgetDue();
   renderTodayBudgetDue();
+});
+document.getElementById('setting-today-budget-daily')?.addEventListener('change', e => {
+  todayBudgetDaily = e.target.checked;
+  saveTodayBudgetDaily();
+  renderTodayBudgetDaily();
 });
 
 renderTodayBudgetDue();

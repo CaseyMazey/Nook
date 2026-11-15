@@ -437,6 +437,21 @@ js/budget-abos.js. Ruhige Hinweise, keine Warnungen:
 
 Die Dienste-Tabelle (`SERVICES`) ist der einzige Ort für Namen, Gruppen und Links. Neuen Dienst = eine Zeile.
 
+- **Abo-Kosten aufs Jahr:** Ab zwei erkannten Abos steht unter der Liste der wiederkehrenden Posten eine Zeile „Deine 6 erkannten Abos kosten zusammen … im Monat, also … im Jahr“ (nur Dienste aus `SERVICES`, jährliche anteilig).
+
+---
+
+# Tipps
+
+js/budget-tipps.js, zwischen den drei Karten und der Liquiditätsvorschau (`#budget-tips`). Jeder Tipp ist ein Vorschlag: nichts passiert ohne Klick, ✕ blendet ihn aus (`budgetTippsAus`).
+
+- **Vorlagen zum Start:** Solange es keine wiederkehrenden Posten gibt: Ausbildung, Studium, WG, Schule. Der Dialog zeigt typische Posten mit Beispielbeträgen (Stand 2026), Name und Betrag sind änderbar, übernommen wird, was angehakt ist (Startmonat = laufender Monat, mit Rückgängig). Später über das Zahnrad → „Vorlage laden“.
+- **Rücklage für Jahreskosten:** Gibt es jährliche Ausgaben und noch keine Rücklage, schlägt Nook ein Sparziel „Rücklage für Jahreskosten“ vor: Ziel = Summe der Jahreskosten, monatlich ein Zwölftel (aufgerundet), finanziert aus der größten Einnahme über die Finanzierungs-Engine (ohne Einnahme: ohne Reservierung). Markiert mit `yearlyReserve: true`. Ändern sich die Jahreskosten, bietet der Tipp „Auf … anpassen“ an (Ziel und, bei genau einer Quelle, der Monatsbetrag). Ist eine Jahreszahlung in 45 Tagen fällig, sagt der Tipp, ob die Rücklage reicht. Bezahlt wird sie, indem man den Betrag aus der Rücklage abhebt.
+- **Sparvorschlag am Monatsende:** In den letzten 7 Tagen eines Monats, wenn nach dem Monat und den Ausgaben vor dem nächsten Geld (`calcMonthProjection().gap`) mindestens etwas übrig bleibt: „Diesen Monat bleiben etwa … übrig. Magst du davon … in [Sparziel] stecken?“ Vorschlag = 80 % des Überschusses, auf 5 € abgerundet, höchstens was dem Ziel fehlt; wichtigstes offenes Ziel zuerst. „Einzahlen“ öffnet das Einzahlen-Fenster mit dem Betrag. ✕ blendet ihn für diesen Monat aus.
+- **Bis zum nächsten Geld** (Heute-Seite, js/today-budget.js): nächste Einnahme nach heute (wiederkehrend, Taschengeld, Einmalbuchung; höchstens 45 Tage voraus). Frei = Kontostand + heute fällige/überfällige Einnahmen − alle offenen Ausgaben bis zum Vortag. Geteilt durch die Tage bis dahin. Ist nichts frei: „bis dahin ist alles verplant“.
+
+Tests: `node --test tests/` (tests/budget-tipps.test.js).
+
 ---
 
 # Sparziel einzahlen / abheben / Schuld bezahlen
@@ -501,7 +516,8 @@ Budget ist auf mehrere Dateien aufgeteilt, die zusammen den Sub-Tab-Verbund bild
 - **budget-sparprognose.js** — Sparprognose (Szenarien, Zeitstrahl, Was-wäre-wenn)
 - **budget-sparplaene.js** — Sparpläne (eigenständige Spar-Vorhaben mit Einträgen)
 - **budget-import.js** — Kontoauszug importieren (wiederkehrende Posten aus einem Bank-Export vorschlagen; speichert keine Buchungen)
-- **budget-abos.js** — Abo-Hinweise (doppelte Abos, Kündigen-Links)
+- **budget-abos.js** — Abo-Hinweise (doppelte Abos, Kündigen-Links, Abo-Kosten aufs Jahr)
+- **budget-tipps.js** — Tipps: Vorlagen zum Start, Rücklage für Jahreskosten, Sparvorschlag am Monatsende, Rechnung für „Bis zum nächsten Geld“
 - (**today-budget.js** gehört zur Heute-Seite und liest nur)
 
 Zusammen sind sie verantwortlich für:
@@ -589,13 +605,13 @@ Geplante Erweiterungen:
 - Diagramme
 - Kategorien
 - CSV-Import von Buchungen (der Kontoauszug-Import schlägt bisher nur wiederkehrende Posten vor)
-- automatische Sparvorschläge
+- weitere automatische Sparvorschläge (der Monatsend-Vorschlag ist umgesetzt)
 - mehrere Konten
-- Budget-Vorlagen
+- eigene Budget-Vorlagen speichern (feste Vorlagen zum Start sind umgesetzt)
 - Jahresübersicht (der Monatsrückblick deckt die letzten 6 Monate ab)
 - Cloud-Synchronisation
 
-Umgesetzt: Monatsrückblick (Statistik über mehrere Monate), CSV-Export, „Heute fällig“ auf der Heute-Seite (Erinnerung), Kontoauszug-Import für wiederkehrende Posten.
+Umgesetzt: Monatsrückblick (Statistik über mehrere Monate), CSV-Export, „Heute fällig“ auf der Heute-Seite (Erinnerung), Kontoauszug-Import für wiederkehrende Posten, Abo-Hinweise, Rücklage für Jahreskosten, Sparvorschlag am Monatsende, „Bis zum nächsten Geld“, Vorlagen zum Start.
 
 ---
 
