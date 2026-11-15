@@ -5,7 +5,7 @@
 // Lade-Reihenfolge (index.html): budget.js -> budget-schatzkammer.js ->
 // budget-taschengeld.js -> budget-sparziele.js -> budget-financing.js ->
 // budget-analysis.js -> budget-debts.js -> budget-sparprognose.js ->
-// budget-sparplaene.js (-> today-budget.js liest nur)
+// budget-sparplaene.js -> budget-import.js (-> today-budget.js liest nur)
 // =========================
 
 // =========================
@@ -3601,6 +3601,7 @@ if (budgetHeaderMenuBtn) {
       <button type="button" class="b-header-dropdown-item" id="budget-header-menu-archiv">📦 Archiv</button>
       <button type="button" class="b-header-dropdown-item" id="budget-header-menu-rueckblick">📊 Monatsrückblick</button>
       <button type="button" class="b-header-dropdown-item" id="budget-header-menu-csv">⬇️ Monat als CSV exportieren</button>
+      <button type="button" class="b-header-dropdown-item" id="budget-header-menu-import">🏦 Kontoauszug importieren</button>
     `;
     const rect = budgetHeaderMenuBtn.getBoundingClientRect();
     menu.style.top   = (rect.bottom + 6) + 'px';
@@ -3628,6 +3629,10 @@ if (budgetHeaderMenuBtn) {
     document.getElementById('budget-header-menu-csv').addEventListener('click', () => {
       closeBudgetHeaderMenu();
       exportBudgetMonthCsv(budgetMonth);
+    });
+    document.getElementById('budget-header-menu-import').addEventListener('click', () => {
+      closeBudgetHeaderMenu();
+      if (typeof openBudgetImport === 'function') openBudgetImport();
     });
   });
 }

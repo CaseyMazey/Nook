@@ -413,6 +413,19 @@ Erfüllte Sparziele und beglichene Schulden können archiviert werden. Archivier
 
 ---
 
+# Kontoauszug importieren
+
+Zahnrad-Menü → „Kontoauszug importieren“ (js/budget-import.js). Man wählt einen Umsatz-Export aus dem Online-Banking (CSV, OFX oder QIF; am besten drei bis sechs Monate). Nook sucht darin Zahlungen mit festem Rhythmus (wöchentlich, alle 2 Wochen, monatlich, jährlich) und schlägt sie als wiederkehrende Posten vor. Übernommen wird nur, was angehakt ist; der Name ist vorher änderbar.
+
+- Die Buchungen selbst werden nie gespeichert und es gibt keinen neuen localStorage-Key — nur die übernommenen Einträge landen in `budgetRecurring` (Startmonat = laufender Monat). Das hält Budget ein Planer, keine Buchhaltung.
+- Monatliche Posten mit schwankendem Betrag (Strom, Handy) kommen als „variabel“ mit Min/Max. Priorität wird aus dem Namen geraten (Miete, Strom, Versicherung → Muss; Streaming, Spiele → Möchte; sonst Brauche).
+- Wöchentliche Ausgaben zählen nur bei fast gleichem Betrag (sonst wäre der Wocheneinkauf ein „Abo“). Umbuchungen und Bargeld werden übersprungen, beendete Rhythmen nicht vorgeschlagen, vierteljährliche ausgelassen (kennt Nook nicht).
+- Ein Posten mit ähnlichem Namen in `budgetRecurring` ist vorab abgehakt und markiert.
+- Deutsche Exporte (Sparkasse, ING, DKB, Volksbank, N26, comdirect): Vorspann-Zeilen, Windows-1252, Dezimalkomma, getrennte Empfänger-/Zahler-Spalten, PayPal & Co. (Händler aus dem Verwendungszweck). Spalten lassen sich im Dialog korrigieren. PDF geht nicht.
+- Erkennung nach broke (MIT, NextWork), siehe Kopf der Datei. Tests: `node --test tests/`.
+
+---
+
 # Sparziel einzahlen / abheben / Schuld bezahlen
 
 Im Betrag-Fenster ist „Kontostand anpassen“ standardmäßig an (die letzte Wahl wird gemerkt): Einzahlen und Tilgen ziehen den Betrag vom Kontostand ab und legen eine erledigte Einmalbuchung an, Abheben schreibt ihn gut — dieselbe Regel wie bei einer erledigten Sparplan-Rate.
@@ -474,6 +487,7 @@ Budget ist auf mehrere Dateien aufgeteilt, die zusammen den Sub-Tab-Verbund bild
 - **budget-analysis.js** — Geldfluss-Planer (Drag & Drop)
 - **budget-sparprognose.js** — Sparprognose (Szenarien, Zeitstrahl, Was-wäre-wenn)
 - **budget-sparplaene.js** — Sparpläne (eigenständige Spar-Vorhaben mit Einträgen)
+- **budget-import.js** — Kontoauszug importieren (wiederkehrende Posten aus einem Bank-Export vorschlagen; speichert keine Buchungen)
 - (**today-budget.js** gehört zur Heute-Seite und liest nur)
 
 Zusammen sind sie verantwortlich für:
@@ -560,14 +574,14 @@ Geplante Erweiterungen:
 
 - Diagramme
 - Kategorien
-- CSV-Import
+- CSV-Import von Buchungen (der Kontoauszug-Import schlägt bisher nur wiederkehrende Posten vor)
 - automatische Sparvorschläge
 - mehrere Konten
 - Budget-Vorlagen
 - Jahresübersicht (der Monatsrückblick deckt die letzten 6 Monate ab)
 - Cloud-Synchronisation
 
-Umgesetzt: Monatsrückblick (Statistik über mehrere Monate), CSV-Export, „Heute fällig“ auf der Heute-Seite (Erinnerung).
+Umgesetzt: Monatsrückblick (Statistik über mehrere Monate), CSV-Export, „Heute fällig“ auf der Heute-Seite (Erinnerung), Kontoauszug-Import für wiederkehrende Posten.
 
 ---
 

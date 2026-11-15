@@ -3160,6 +3160,34 @@
     </div>
   </div>
 
+  <!-- Kontoauszug importieren (js/budget-import.js) -->
+  <div id="budget-import-modal-overlay" class="modal-backdrop hidden">
+    <div class="modal-box budget-modal-wide b-imp-box">
+      <div class="modal-head">
+        <span>&#127974; Kontoauszug importieren</span>
+        <button class="modal-x" id="budget-import-modal-close">&#10005;</button>
+      </div>
+      <div id="budget-import-step-file">
+        <p class="modal-hint" style="padding:8px 0 6px;">Lade im Online-Banking deine Umsätze als CSV herunter, am besten die letzten drei bis sechs Monate. Nook sucht darin Zahlungen, die sich wiederholen (Miete, Gehalt, Abos …), und schlägt sie als wiederkehrende Posten vor.</p>
+        <p class="modal-hint" style="padding:0 0 10px;">Die Datei bleibt auf deinem Gerät. Nook speichert keine Buchungen, nur die Posten, die du übernimmst.</p>
+        <label class="b-imp-drop">
+          <input type="file" id="budget-import-file" accept=".csv,.txt,.ofx,.qfx,.qif,text/csv"/>
+          <span>Datei auswählen</span>
+          <small>CSV, OFX oder QIF</small>
+        </label>
+      </div>
+      <div id="budget-import-step-result" class="b-imp-result hidden">
+        <p class="modal-hint" id="budget-import-summary" style="padding:8px 0 6px;"></p>
+        <div id="budget-import-mapping"></div>
+        <div id="budget-import-list" class="b-imp-list"></div>
+      </div>
+      <div class="modal-actions">
+        <button id="budget-import-cancel" class="btn-ghost">Abbrechen</button>
+        <button id="budget-import-save" class="btn-primary hidden">Übernehmen</button>
+      </div>
+    </div>
+  </div>
+
   <div id="budget-archiv-modal-overlay" class="modal-backdrop hidden">
     <div class="modal-box" style="width:480px;max-height:76vh;display:flex;flex-direction:column;">
       <div class="modal-head">
@@ -4304,6 +4332,7 @@
   <script src="js/budget-debts.js"></script>
   <script src="js/budget-sparprognose.js"></script>
   <script src="js/budget-sparplaene.js"></script>
+  <script src="js/budget-import.js"></script>
   <script src="js/today-budget.js"></script>
   <script src="js/today-events.js"></script>
   <script src="js/today-quicknote-send.js"></script>

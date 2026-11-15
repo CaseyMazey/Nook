@@ -10,7 +10,7 @@ The UI language is German; keep new UI strings, comments, and variable names in 
 
 ## Running / testing
 
-No install, build, or lint commands exist for the web app. The only automated web-app tests cover the pure schedule calculation: `node --test tests/schedule.test.js` (Node 18+, no dependencies; `tests/` is excluded from deploys). The desktop app has its own tests, see "Desktop app". To work on the app, open `index.html` in a browser (or serve the folder with any static file server). Verify changes by opening the relevant tab in a browser and exercising it manually — there is no automated test suite for the web app.
+No install, build, or lint commands exist for the web app. The only automated web-app tests cover pure calculations (schedule, bank-statement import): `node --test tests/` (Node 18+, no dependencies; `tests/` is excluded from deploys). The desktop app has its own tests, see "Desktop app". To work on the app, open `index.html` in a browser (or serve the folder with any static file server). Verify changes by opening the relevant tab in a browser and exercising it manually — there is no automated test suite for the web app.
 
 ## Architecture
 
@@ -33,7 +33,7 @@ All JS files are loaded via plain `<script src="...">` tags in `index.html`, in 
 
 ### Per-tab file layout
 
-Most tabs are one `js/<tab>.js` + one `css/<tab>.css`. Larger tabs are split into several `js/<tab>-<part>.js` files that share globals and must load in dependency order (documented in a header comment at the top of each file) — Budget is the largest example: `budget.js` (core: overview + Finanzgarten + sub-tab switcher) → `budget-sparziele.js` (savings goals, the single source of truth other budget files read from) → `budget-financing.js` (shared funding/reservation engine) → `budget-analysis.js`, `budget-debts.js`, `budget-sparprognose.js`, `budget-sparplaene.js`.
+Most tabs are one `js/<tab>.js` + one `css/<tab>.css`. Larger tabs are split into several `js/<tab>-<part>.js` files that share globals and must load in dependency order (documented in a header comment at the top of each file) — Budget is the largest example: `budget.js` (core: overview + Finanzgarten + sub-tab switcher) → `budget-sparziele.js` (savings goals, the single source of truth other budget files read from) → `budget-financing.js` (shared funding/reservation engine) → `budget-analysis.js`, `budget-debts.js`, `budget-sparprognose.js`, `budget-sparplaene.js` → `budget-import.js` (bank-statement import; suggests recurring entries, never stores transactions).
 
 `js/hub-utils.js` holds cross-tab shared utilities loaded right after `main.js`: the user color system (`HUB_PALETTE_HEX`, `hubUserColors`, `initColorPickerWidget`, `computeUserColorVars`/`applyUserColorVars` — theme-aware derived colors from one base hex) and the shared code-block renderer (`renderCodeBlock`, used by Guides). It also has the only HTML escaper `escHtml`, the dialogs `hubConfirm`/`hubAlert`, the undo notice `hubUndo(message, restore)` and `loadScriptOnce(src)` for lazily loaded vendor scripts. Reach for these instead of re-implementing color pickers, code blocks, escaping or dialogs in a new tab.
 

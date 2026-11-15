@@ -2069,3 +2069,43 @@
   .b-rb-row { grid-template-columns: 46px 1fr 80px; }
   .b-rb-vals { display: none; }
 }
+
+/* ── Kontoauszug importieren (js/budget-import.js) ───────── */
+#budget-import-modal-overlay .hidden { display: none !important; }
+.modal-box.b-imp-box { max-height: 84vh; display: flex; flex-direction: column; }
+.b-imp-result { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+.b-imp-drop {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 26px 16px; margin-bottom: 6px; cursor: pointer;
+  border: 1.5px dashed var(--border-strong); border-radius: var(--b-radius-sm);
+  color: var(--text); background: color-mix(in srgb, var(--text) 3%, transparent);
+  transition: background var(--transition), border-color var(--transition);
+}
+.b-imp-drop:hover { border-color: var(--sage-border); background: var(--sage-bg); }
+.b-imp-drop input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.b-imp-drop span { font-weight: 600; }
+.b-imp-drop small { color: var(--text-2); font-size: 12px; }
+.b-imp-map { margin: 2px 0 8px; font-size: 13px; }
+.b-imp-map summary { cursor: pointer; color: var(--text-2); padding: 2px 0; }
+.b-imp-map-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-top: 8px; }
+.b-imp-map-field { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--text-2); }
+.b-imp-list { overflow-y: auto; flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 2px; }
+.b-imp-group { font-size: 12px; font-weight: 700; color: var(--text-2); margin: 10px 0 2px; text-transform: uppercase; letter-spacing: .04em; }
+.b-imp-row {
+  display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px;
+  padding: 6px 8px; border-radius: var(--b-radius-sm); cursor: pointer;
+}
+.b-imp-row:hover { background: color-mix(in srgb, var(--text) 4%, transparent); }
+.b-imp-row.off { opacity: .55; }
+.b-imp-row input[type=checkbox] { accent-color: var(--sage); width: 16px; height: 16px; }
+.b-imp-main { display: flex; flex-direction: column; min-width: 0; gap: 1px; }
+.b-imp-name {
+  font: inherit; font-weight: 600; color: var(--text); background: none;
+  border: 1px solid transparent; border-radius: 6px; padding: 1px 4px; margin-left: -5px; min-width: 0;
+}
+.b-imp-name:hover, .b-imp-name:focus { border-color: var(--border); outline: none; background: var(--surface-solid); }
+.b-imp-meta { font-size: 12px; color: var(--text-2); }
+.b-imp-note { margin-left: 6px; font-style: italic; }
+.b-imp-amount { font-family: var(--mono); font-size: 13px; font-weight: 700; white-space: nowrap; }
+.b-imp-amount.income  { color: var(--b-green); }
+.b-imp-amount.expense { color: var(--b-red); }
