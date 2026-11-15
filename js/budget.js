@@ -3440,21 +3440,57 @@ function budgetMonthTotals(y, m) {
   return { mk, income: round2(income), expense: round2(expense) };
 }
 
+// Ansicht: 'six' = letzte sechs Monate (bis zum angezeigten Monat), 'year' = ein
+// Kalenderjahr (Jahresübersicht). Künftige Monate im Jahr sind die Planung nach
+// heutigem Stand und erscheinen blasser.
+let budgetRbMode = 'six', budgetRbYear = new Date().getFullYear();
+function openBudgetRueckblick(mode = 'six') {
+  budgetRbMode = mode;
+  budgetRbYear = mode === 'year' ? new Date().getFullYear() : budgetRbYear;
+  renderBudgetRueckblick();
+  budgetRueckblickModal.open();
+}
+
 function renderBudgetRueckblick() {
   const body = document.getElementById('budget-rueckblick-body');
   if (!body) return;
+  const year = budgetRbMode === 'year';
+  const nowMk = budgetMonthKey(new Date());
   const months = [];
-  for (let k = 5; k >= 0; k--) {
-    const d = new Date(budgetMonth.getFullYear(), budgetMonth.getMonth() - k, 1);
-    months.push({ date: d, ...budgetMonthTotals(d.getFullYear(), d.getMonth() + 1) });
+  if (year) {
+    for (let m = 0; m < 12; m++) { const d = new Date(budgetRbYear, m, 1); months.push({ date: d, ...budgetMonthTotals(budgetRbYear, m + 1) }); }
+  } else {
+    for (let k = 5; k >= 0; k--) {
+      const d = new Date(budgetMonth.getFullYear(), budgetMonth.getMonth() - k, 1);
+      months.push({ date: d, ...budgetMonthTotals(d.getFullYear(), d.getMonth() + 1) });
+    }
   }
+  months.forEach(x => { x.planned = year && x.mk > nowMk; });
+  const hint = document.getElementById('budget-rueckblick-hint');
+  if (hint) hint.textContent = year
+    ? `Einnahmen und Ausgaben in ${budgetRbYear}: wiederkehrende Posten nach heutigem Stand plus Einmalbuchungen. Blasse Monate sind noch Planung. Klick auf einen Monat öffnet ihn.`
+    : 'Einnahmen und Ausgaben der letzten sechs Monate — wiederkehrende Posten nach heutigem Stand, dazu die Einmalbuchungen des jeweiligen Monats. Klick auf einen Monat öffnet ihn.';
+  const tabs = `
+    <div class="b-rb-tabs">
+      <button type="button" class="b-tip-btn${year ? '' : ' primary'}" data-rb="six">Letzte 6 Monate</button>
+      <button type="button" class="b-tip-btn${year ? ' primary' : ''}" data-rb="year">Jahr</button>
+      ${year ? `<span class="b-rb-yearnav"><button type="button" class="b-rb-yearbtn" data-year="-1" aria-label="Vorjahr">‹</button><b>${budgetRbYear}</b><button type="button" class="b-rb-yearbtn" data-year="1" aria-label="Folgejahr">›</button></span>` : ''}
+    </div>`;
   const max = Math.max(1, ...months.map(x => Math.max(x.income, x.expense)));
   const avgSaldo = round2(months.reduce((s, x) => s + x.income - x.expense, 0) / months.length);
-  body.innerHTML = months.map(x => {
+  const done = months.filter(x => !x.planned);
+  const doneSaldo = round2(done.reduce((s, x) => s + x.income - x.expense, 0));
+  const yearSaldo = round2(months.reduce((s, x) => s + x.income - x.expense, 0));
+  const span = done.length ? `${done[0].date.toLocaleDateString('de-DE', { month: 'short' })}–${done[done.length - 1].date.toLocaleDateString('de-DE', { month: 'short' })}` : '';
+  const foot = year
+    ? `<span class="b-rb-avg">${done.length ? `Bis jetzt (${escHtml(span)}): <b class="${doneSaldo < 0 ? 'expense' : 'income'}">${fmtEuroSigned(doneSaldo)}</b>` : 'Noch keine abgeschlossenen Monate'}</span>
+       <span class="b-rb-avg">Ganzes Jahr geplant: <b class="${yearSaldo < 0 ? 'expense' : 'income'}">${fmtEuroSigned(yearSaldo)}</b></span>`
+    : `<span class="b-rb-avg">Ø Saldo: <b class="${avgSaldo < 0 ? 'expense' : 'income'}">${fmtEuroSigned(avgSaldo)}</b></span>`;
+  body.innerHTML = tabs + months.map(x => {
     const saldo = round2(x.income - x.expense);
     const label = x.date.toLocaleDateString('de-DE', { month: 'short', year: '2-digit' });
     return `
-      <button type="button" class="b-rb-row${x.mk === budgetMonthKey(budgetMonth) ? ' current' : ''}" data-mk="${x.mk}" title="${escHtml(budgetMonthLabel(x.date))} öffnen">
+      <button type="button" class="b-rb-row${x.mk === budgetMonthKey(budgetMonth) ? ' current' : ''}${x.planned ? ' planned' : ''}" data-mk="${x.mk}" title="${escHtml(budgetMonthLabel(x.date))} öffnen${x.planned ? ' (Planung)' : ''}">
         <span class="b-rb-month">${escHtml(label)}</span>
         <span class="b-rb-bars">
           <span class="b-rb-bar income" style="width:${(x.income / max * 100).toFixed(1)}%"></span>
@@ -3470,8 +3506,17 @@ function renderBudgetRueckblick() {
     <div class="b-rb-foot">
       <span><i class="b-rb-key income"></i>Einnahmen</span>
       <span><i class="b-rb-key expense"></i>Ausgaben</span>
-      <span class="b-rb-avg">Ø Saldo: <b class="${avgSaldo < 0 ? 'expense' : 'income'}">${fmtEuroSigned(avgSaldo)}</b></span>
+      ${foot}
     </div>`;
+  body.querySelectorAll('[data-rb]').forEach(b => b.addEventListener('click', () => {
+    budgetRbMode = b.dataset.rb;
+    if (budgetRbMode === 'year') budgetRbYear = budgetMonth.getFullYear();
+    renderBudgetRueckblick();
+  }));
+  body.querySelectorAll('[data-year]').forEach(b => b.addEventListener('click', () => {
+    budgetRbYear += Number(b.dataset.year);
+    renderBudgetRueckblick();
+  }));
   body.querySelectorAll('.b-rb-row').forEach(btn => btn.addEventListener('click', () => {
     const [y, m] = btn.dataset.mk.split('-').map(Number);
     budgetMonth = new Date(y, m - 1, 1);
@@ -3611,6 +3656,7 @@ if (budgetHeaderMenuBtn) {
       <button type="button" class="b-header-dropdown-item" id="budget-header-menu-taschengeld">🪙 Taschengeld-Berechnung</button>
       <button type="button" class="b-header-dropdown-item" id="budget-header-menu-archiv">📦 Archiv</button>
       <button type="button" class="b-header-dropdown-item" id="budget-header-menu-rueckblick">📊 Monatsrückblick</button>
+      <button type="button" class="b-header-dropdown-item" id="budget-header-menu-jahr">📅 Jahresübersicht</button>
       <button type="button" class="b-header-dropdown-item" id="budget-header-menu-csv">⬇️ Monat als CSV exportieren</button>
       <button type="button" class="b-header-dropdown-item" id="budget-header-menu-import">🏦 Kontoauszug importieren</button>
       <button type="button" class="b-header-dropdown-item" id="budget-header-menu-template">📋 Vorlage laden</button>
@@ -3635,8 +3681,11 @@ if (budgetHeaderMenuBtn) {
     });
     document.getElementById('budget-header-menu-rueckblick').addEventListener('click', () => {
       closeBudgetHeaderMenu();
-      renderBudgetRueckblick();
-      budgetRueckblickModal.open();
+      openBudgetRueckblick('six');
+    });
+    document.getElementById('budget-header-menu-jahr').addEventListener('click', () => {
+      closeBudgetHeaderMenu();
+      openBudgetRueckblick('year');
     });
     document.getElementById('budget-header-menu-csv').addEventListener('click', () => {
       closeBudgetHeaderMenu();

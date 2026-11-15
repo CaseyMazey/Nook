@@ -154,6 +154,7 @@ Eine Prüfung besitzt:
 
 - Name
 - zugeordnete Themengruppen
+- optional: Prüfungstermin
 
 Sie wird als eine Lernsession über alle Karten ihrer Themen gelernt, bewusst durchgemischt (eine normale Themengruppen-Session bleibt nach Leitner-Box sortiert).
 
@@ -493,7 +494,11 @@ Löschen fragt immer nach (Nook-Dialog, nicht der Browser-Dialog).
 
 # Prüfungsplan
 
-Über ⋮ → „Countdown verbinden“ lässt sich ein Thema oder eine Prüfung mit einem Countdown aus dem Kalender verbinden (`countdownId`, nur lesend über `getCountdownItems()`). Nook verteilt dann alle Karten auf die verbleibenden Tage und zeigt ein Tagesziel: Karten ÷ Tage, zuerst niedrige Boxen und am längsten nicht gesehene Karten. Am Tag davor und am Termin selbst sind alle Karten dran. Liegt der Termin in der Vergangenheit oder ist der Countdown weg, verschwindet die Zeile, die Karten bleiben unberührt.
+Am einfachsten über den **Prüfungstermin** im Prüfungs-Dialog: Ein Datum legt einen Countdown-Termin „Name (Fach)“ im Kalender an und verbindet ihn (`countdownId`, dazu `countdownAuto: true`). Ein anderes Datum verschiebt diesen Termin, ein leeres Feld löscht ihn wieder (js/flashcards-exams.js: `setExamDate`). Einen selbst im Kalender angelegten und verbundenen Countdown fasst Nook dabei nie an, er wird höchstens gelöst.
+
+Alternativ lässt sich über ⋮ → „Countdown verbinden“ ein Thema oder eine Prüfung mit einem Countdown aus dem Kalender verbinden (`countdownId`, nur lesend über `getCountdownItems()`). Nook verteilt dann alle Karten auf die verbleibenden Tage und zeigt ein Tagesziel: Karten ÷ Tage, zuerst niedrige Boxen und am längsten nicht gesehene Karten. Am Tag davor und am Termin selbst sind alle Karten dran. Liegt der Termin in der Vergangenheit oder ist der Countdown weg, verschwindet die Zeile, die Karten bleiben unberührt.
+
+Auf der Heute-Seite erscheint das Tagesziel der nächsten (höchstens zwei) Prüfungen oder Themen mit Termin in den nächsten 30 Tagen als Zeile „📚 Lernplan“ (js/today-lernplan.js, abschaltbar). Ein Klick startet genau diese Tagesziel-Runde.
 
 ---
 

@@ -25,6 +25,8 @@ function renderSettings(){
   if (typeof renderTodayTrackerSettings === 'function') renderTodayTrackerSettings();
   if (typeof renderTodayBudgetDueSettings === 'function') renderTodayBudgetDueSettings();
   if (typeof renderTodayEventsDueSettings === 'function') renderTodayEventsDueSettings();
+  if (typeof renderTodayLernplanSettings === 'function') renderTodayLernplanSettings();
+  if (typeof renderTodayReviewSettings === 'function') renderTodayReviewSettings();
   if (typeof renderGoogleCalendarSettings === 'function') renderGoogleCalendarSettings();
 }
 
@@ -669,7 +671,7 @@ const BACKUP_CACHE_KEYS = ['weatherData', 'currentDate'];
 
 const NOOK_DATA_GROUPS = [
   { id: 'today',      label: 'Heute',        resettable: true,
-    keys: ['tasks', 'blocks', 'notes', 'quicknote', 'berichtsheft', 'mealPlanWeeks', 'todayTracker', 'todayBudgetDue', 'todayBudgetDaily', 'qnSendLastTarget', 'qnSendLastProject', 'brainDump', 'todayEventsDue',
+    keys: ['tasks', 'blocks', 'notes', 'quicknote', 'berichtsheft', 'mealPlanWeeks', 'todayTracker', 'todayBudgetDue', 'todayBudgetDaily', 'todayLernplan', 'todayReview', 'todayReviewSeen', 'todayFocusLog','qnSendLastTarget', 'qnSendLastProject', 'brainDump', 'todayEventsDue',
            'gdDuties', 'gdGroups', 'gdPeople', 'gdSchedule', 'gdScheduleAlgoV2'],
     prefixes: ['schedule'] }, // Stundenplan: scheduleWeek, scheduleLessons, scheduleSubjects, scheduleTeachers, scheduleTemplates
   { id: 'positivity', label: 'Positivity',   resettable: true, prefixes: ['positivity'] },

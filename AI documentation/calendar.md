@@ -467,6 +467,17 @@ Der Kalender bleibt dadurch weiterhin die alleinige Quelle für Nook-eigene Term
 
 ---
 
+# Import und Export (ICS)
+
+Kalender-Einstellungen → „Import und Export“ (js/calendar-ics.js), komplett im Browser, auch offline und in der Desktop-App.
+
+- **Import** einer .ics-Datei: Einzeltermine (mit Uhrzeit, UTC wird in Ortszeit umgerechnet), Ganztags- und Mehrtagestermine (DTEND exklusiv) → `events`; Wiederholungen (täglich, wöchentlich mit Wochentagen, monatlich, jährlich; INTERVAL, COUNT, UNTIL, EXDATE) → `eventSeries` mit gelöschten Ausnahmen. Was Nook nicht abbilden kann (z.B. „jeden 2. Montag“), kommt als einzelner erster Termin, die Meldung sagt das. Der Ort landet in den Notizen. Abgesagte Termine werden übersprungen. Doppelte (gleiche UID in `icsUid` oder gleicher Titel am gleichen Tag) werden übersprungen, ein zweiter Import ändert nichts.
+- **Export** aller eigenen Termine und Serien als `nook-termine-JJJJ-MM-TT.ics` (Termine mit Uhrzeit dauern eine Stunde, Serien mit RRULE und EXDATE). Google-Termine (googleCalCache) und Geburtstage bleiben draußen.
+
+Tests: `node --test tests/` (tests/calendar-ics.test.js).
+
+---
+
 # Zukunft
 
 Geplante Erweiterungen:
@@ -478,7 +489,6 @@ Geplante Erweiterungen:
 - Erinnerungen
 - Anhänge
 - Kalenderfreigaben
-- Import und Export (ICS)
 - Zeitleistenansicht
 - Weitere externe Kalender-Anbieter (z.B. Outlook/CalDAV) neben Google
 

@@ -125,6 +125,9 @@ function openExamModal(subj, exam = null){
   document.getElementById('fc-exam-modal-title').textContent = exam ? 'Prüfung bearbeiten' : 'Neue Prüfung';
   document.getElementById('fc-exam-modal-save').textContent = exam ? 'Speichern' : 'Erstellen';
   document.getElementById('fc-exam-name-input').value = exam ? exam.name : '';
+  // Prüfungstermin = Datum des verbundenen Countdowns (flashcards-study.js: fcLinkedCountdown)
+  const linked = exam && typeof fcLinkedCountdown === 'function' ? fcLinkedCountdown(exam) : null;
+  document.getElementById('fc-exam-date-input').value = linked ? linked.key : '';
   // Neue Prüfung: alle Themen vorausgewählt — meist gehört der ganze Stoff dazu
   const selected = new Set(exam ? exam.groupIds : subj.groups.map(g => g.id));
   document.getElementById('fc-exam-group-list').innerHTML = subj.groups.map(g => `
@@ -144,7 +147,43 @@ document.getElementById('fc-exam-modal-save').addEventListener('click', () => {
   if(!name || !groupIds.length) return;
   const subj = subjects.find(s => s.id === examModalContext.subjId); if(!subj) return;
   if(!subj.exams) subj.exams = [];
-  if(examModalContext.exam) Object.assign(examModalContext.exam, { name, groupIds });
-  else subj.exams.push({ id: crypto.randomUUID(), name, groupIds });
+  let exam = examModalContext.exam;
+  if(exam) Object.assign(exam, { name, groupIds });
+  else { exam = { id: crypto.randomUUID(), name, groupIds }; subj.exams.push(exam); }
+  setExamDate(subj, exam, document.getElementById('fc-exam-date-input').value);
   saveSubjects(); examModal.close(); renderExamList(subj);
+  if(typeof renderTodayLernplan === 'function') renderTodayLernplan();
 });
+
+// Prüfungstermin ↔ Countdown im Kalender. Ein Datum legt einen Countdown-Termin an
+// (oder verschiebt den, den Nook dafür angelegt hat) und verbindet ihn mit der Prüfung —
+// danach greift der vorhandene Prüfungsplan (fcPlanFor). Ein selbst verbundener Termin
+// aus dem Kalender wird nur umgehängt, nie verschoben oder gelöscht.
+function setExamDate(subj, exam, date){
+  if(typeof events === 'undefined') return;
+  const linked = typeof fcLinkedCountdown === 'function' ? fcLinkedCountdown(exam) : null;
+  const own = exam.countdownAuto && exam.countdownId;
+  const removeOwn = () => {
+    Object.keys(events).forEach(k => {
+      events[k] = (events[k] || []).filter(ev => ev.id !== exam.countdownId);
+      if(!events[k].length) delete events[k];
+    });
+    delete countdownVisible[exam.countdownId];
+  };
+  if(!date){
+    if(own){ removeOwn(); delete exam.countdownId; delete exam.countdownAuto; }
+    else if(linked){ /* selbst verbundenen Countdown nicht anfassen, nur lösen */ delete exam.countdownId; }
+  } else if(linked && linked.key === date){
+    return; // nichts geändert
+  } else {
+    const title = `${exam.name} (${subj.name})`;
+    if(own) removeOwn();
+    const id = crypto.randomUUID();
+    (events[date] ||= []).push({ id, title, notes: 'Prüfung aus den Karteikarten', time: '', countdown: true, color: null, showInAgenda: true });
+    countdownVisible[id] = true;
+    exam.countdownId = id;
+    exam.countdownAuto = true;
+  }
+  saveEvents();
+  DB.set('countdownVisible', countdownVisible);
+}

@@ -2165,3 +2165,11 @@
 .b-tpl-amount.income  { color: var(--b-green); }
 .b-tpl-amount.expense { color: var(--b-red); }
 .b-tpl-amount input { width: 84px; padding: 3px 6px; text-align: right; font: inherit; }
+
+/* ── Jahresübersicht im Rückblick ────────────────────────── */
+.b-rb-tabs { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 8px; }
+.b-rb-yearnav { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; }
+.b-rb-yearbtn { font: inherit; background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text); cursor: pointer; padding: 0 8px; }
+.b-rb-yearbtn:hover { border-color: var(--sage-border); }
+.b-rb-row.planned { opacity: .5; }
+.b-rb-foot { flex-wrap: wrap; }

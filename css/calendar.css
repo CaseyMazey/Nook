@@ -1008,3 +1008,7 @@
 }
 #calendar-grid.cal-fade { animation: calGridFade 220ms ease; }
 .cal-settings-hint { margin: -4px 0 4px; }
+
+/* ── Import und Export (js/calendar-ics.js) ──────────────── */
+.cal-ics-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 6px; }
+.cal-ics-btn { cursor: pointer; }

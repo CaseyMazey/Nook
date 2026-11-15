@@ -10,9 +10,20 @@
 // hinten wegfallen, angezeigt werden ohnehin nur die neuesten.
 // =========================
 
-window.NOOK_VERSION = '2026.11.14';
+window.NOOK_VERSION = '2026.11.15';
 
 window.NOOK_CHANGELOG = [
+  {
+    version: '2026.11.15',
+    date: '2026-11-15',
+    items: [
+      'Heute: Wochenrückblick am Wochenende – was du geschafft hast (Aufgaben, Karteikarten, Fokuszeit, Gespartes) und was nächste Woche ansteht',
+      'Heute: Fokusmodus („🎯 Fokus“ am Stundenplan) – nur der laufende Block, seine Aufgaben und ein Timer (25 / 50 Min. oder bis Blockende)',
+      'Karteikarten: Prüfungstermin direkt im Prüfungs-Dialog; das Tagesziel bis zur Prüfung steht als „Lernplan“ auf der Heute-Seite, ein Klick startet die Runde',
+      'Kalender: Termine aus .ics-Dateien importieren (Stundenpläne, Ferien, Prüfungen) und alle Termine als .ics exportieren – unter Kalender-Einstellungen',
+      'Budget: Jahresübersicht im Rückblick – zwölf Monate auf einen Blick, mit Saldo bis jetzt und fürs ganze Jahr',
+    ],
+  },
   {
     version: '2026.11.14',
     date: '2026-11-15',

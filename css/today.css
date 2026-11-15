@@ -952,3 +952,70 @@
 .today-events-due-item { display: inline-flex; gap: 5px; align-items: baseline; min-width: 0; }
 .today-events-due-item i { font-style: normal; font-family: var(--mono); color: var(--text-3); }
 .today-events-due-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; align-self: center; flex-shrink: 0; }
+
+/* ── Lernplan (js/today-lernplan.js) ─────────────────────── */
+.today-lernplan { cursor: default; }
+.today-lernplan-item {
+  font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-align: left;
+}
+.today-lernplan-item:hover span { color: var(--text); text-decoration: underline; text-underline-offset: 2px; }
+.today-lernplan-item b { font-weight: 600; color: var(--text); }
+
+/* ── Fokusmodus (js/today-focus.js) ──────────────────────── */
+.today-focus-btn {
+  margin-left: auto; font: inherit; font-size: calc(12px * var(--core-font-scale)); font-weight: 600;
+  color: var(--text-2); background: none; border: 1px solid var(--border); border-radius: 99px;
+  padding: 3px 10px; cursor: pointer; transition: border-color var(--transition), color var(--transition);
+}
+.today-focus-btn:hover { color: var(--text); border-color: var(--sage-border); }
+.today-focus-btn + .today-schedule-edit { margin-left: 6px; }
+.focus-overlay {
+  position: fixed; inset: 0; z-index: 900; display: flex; align-items: center; justify-content: center;
+  padding: 16px; background: color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter: blur(6px);
+}
+.focus-panel {
+  width: min(520px, 100%); max-height: calc(100vh - 32px); overflow-y: auto;
+  display: flex; flex-direction: column; gap: 22px; padding: 26px 28px;
+  border-radius: var(--radius-xl); border: 1px solid var(--border);
+  background: var(--surface-solid); box-shadow: 0 20px 60px color-mix(in srgb, var(--shadow-tint) 25%, transparent);
+  color: var(--text);
+}
+.focus-head { display: flex; align-items: center; justify-content: space-between; }
+.focus-title { font-weight: 700; color: var(--text-2); font-size: calc(13px * var(--core-font-scale)); letter-spacing: .04em; }
+.focus-x { font: inherit; background: none; border: 0; color: var(--text-2); cursor: pointer; padding: 4px 6px; border-radius: 6px; }
+.focus-x:hover { color: var(--text); background: var(--accent-soft); }
+.focus-now { text-align: center; }
+.focus-label { font-family: var(--font-heading); font-size: calc(24px * var(--core-font-scale)); font-weight: 600; line-height: 1.25; }
+.focus-sub { margin-top: 4px; color: var(--text-2); font-size: calc(13px * var(--core-font-scale)); }
+.focus-timer { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.focus-clock { font-family: var(--mono); font-size: calc(56px * var(--core-font-scale)); font-weight: 600; letter-spacing: .02em; color: var(--sage-dark); }
+.focus-timer-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.focus-btn {
+  font: inherit; font-weight: 600; cursor: pointer; color: var(--sage-fg); background: var(--sage);
+  border: 1px solid var(--sage); border-radius: 99px; padding: 7px 16px;
+}
+.focus-btn:hover { background: var(--sage-dark); border-color: var(--sage-dark); }
+.focus-btn.ghost { color: var(--text); background: none; border-color: var(--border); }
+.focus-btn.ghost:hover { border-color: var(--border-strong); }
+.focus-btn[hidden] { display: none; }
+.focus-done { color: var(--sage-dark); font-weight: 600; }
+.focus-tasks { display: flex; flex-direction: column; gap: 6px; border-top: 1px dashed var(--border); padding-top: 14px; }
+.focus-tasks-title { font-size: calc(12px * var(--core-font-scale)); font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: .05em; }
+.focus-task { display: flex; align-items: center; gap: 10px; padding: 4px 2px; cursor: pointer; }
+.focus-task input { accent-color: var(--sage); width: 17px; height: 17px; }
+.focus-task.done span { text-decoration: line-through; color: var(--text-3); }
+
+/* ── Wochenrückblick (js/today-review.js) ─────────────────── */
+.today-review {
+  margin: 4px 0 18px; padding: 12px 16px;
+  border: 1px solid var(--sage-border); border-radius: var(--radius-lg, 14px); background: var(--sage-bg);
+  color: var(--text); font-size: calc(13px * var(--core-font-scale)); line-height: 1.5;
+}
+.today-review-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.today-review-title { font-weight: 700; }
+.today-review-x { font: inherit; font-size: 12px; background: none; border: 0; color: var(--text-2); cursor: pointer; padding: 2px 6px; border-radius: 6px; }
+.today-review-x:hover { color: var(--text); background: color-mix(in srgb, var(--text) 6%, transparent); }
+.today-review-done { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.today-review-next { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--sage-border); color: var(--text-2); }
+.today-review-label { font-size: calc(11.5px * var(--core-font-scale)); font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 2px; }

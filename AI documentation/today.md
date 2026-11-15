@@ -63,9 +63,14 @@ Enthält:
 - optional: Fortschritts-Tracker (z.B. „Ausbildung 64 / 156 Wochen“, js/today-tracker.js)
 - optional: „📅 Heute“ — die heutigen Termine aus dem Kalender (js/today-events.js, Key `todayEventsDue`)
 - optional: „💶 Heute fällig“ — heute anstehende Budget-Posten (js/today-budget.js, Key `todayBudgetDue`)
+- optional: „📚 Lernplan“ — Tagesziel für Prüfungen/Themen mit Termin aus den Karteikarten (js/today-lernplan.js, Key `todayLernplan`); ein Klick startet die Tagesziel-Runde
 - optional: „🌤️ Bis zum nächsten Geld“ — was vom Kontostand bis zur nächsten Einnahme pro Tag frei bleibt (js/today-budget.js, Rechnung in budget-tipps.js, Key `todayBudgetDaily`)
 
-Die vier optionalen Zeilen sind nur lesend und lassen sich unter Einstellungen → Heute-Seite abschalten; ein Klick führt in den zuständigen Tab (Kalender-Tagesfenster bzw. Budget). Die Uhr steht in der rechten Spalte.
+Die optionalen Zeilen sind nur lesend und lassen sich unter Einstellungen → Heute-Seite abschalten; ein Klick führt in den zuständigen Tab (Kalender-Tagesfenster, Budget bzw. Karteikarten).
+
+**Wochenrückblick** (js/today-review.js, Key `todayReview`): Samstag und Sonntag für die laufende, Montag für die vergangene Woche eine ruhige Karte unter Begrüßung und Wetter. „Diese Woche“: erledigte Aufgaben (`completedAt`), gelernte Karten (`lastSeen`), Fokuszeit (`todayFocusLog`), Gespartes (erledigte Einmalbuchungen „Sparziel — …“ minus „Aus Sparziel — …“) — nur was nicht null ist, sonst „Eine ruhige Woche. Auch das zählt.“ „Nächste Woche“: Termine, Prüfungen mit Termin, Budget-Ausgaben. Nur lesend; ✕ blendet die Karte für diese Woche aus (`todayReviewSeen`).
+
+**Fokusmodus** (js/today-focus.js): „🎯 Fokus“ am Stundenplan öffnet einen ruhigen Vollbild-Modus mit dem laufenden (oder nächsten) Abschnitt und der Restzeit, einem Timer (25 / 50 Min. oder bis Blockende, Pause/Weiter/Beenden) und den offenen Aufgaben dieses Blocks (ohne Block: offene Aufgaben ohne Block), die sich dort abhaken lassen. Esc oder ✕ beendet ihn. Die tatsächlich gelaufene Timerzeit (ab 1 Minute) wird je Tag in `todayFocusLog` gezählt (60 Tage). Die Uhr steht in der rechten Spalte.
 
 Der Header bildet den Einstieg in den Tag.
 
@@ -298,8 +303,8 @@ Today erzeugt selbst nur Today-spezifische Daten.
 
 Geplante Erweiterungen:
 
-- Tagesziele
-- Fokusmodus
+- Tagesziele (für Karteikarten umgesetzt: „Lernplan“)
+- Fokusmodus: Ton oder Benachrichtigung am Timerende
 
 ---
 

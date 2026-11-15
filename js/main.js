@@ -680,7 +680,7 @@ placeSidebarWidgets(mehrPhoneQuery.matches);
 mehrPhoneQuery.addEventListener('change', e => placeSidebarWidgets(e.matches));
 
 function renderView(name) {
-  if(name==='today')     { renderBlocks(); renderTasks(); refreshTodayTextareas(); renderGruppendienste(); renderMealPlan(); if (typeof renderTodayTracker === 'function') renderTodayTracker(); if (typeof renderTodayBudgetDue === 'function') renderTodayBudgetDue(); if (typeof renderTodayEventsDue === 'function') renderTodayEventsDue(); }
+  if(name==='today')     { renderBlocks(); renderTasks(); refreshTodayTextareas(); renderGruppendienste(); renderMealPlan(); if (typeof renderTodayTracker === 'function') renderTodayTracker(); if (typeof renderTodayBudgetDue === 'function') renderTodayBudgetDue(); if (typeof renderTodayEventsDue === 'function') renderTodayEventsDue(); if (typeof renderTodayLernplan === 'function') renderTodayLernplan(); if (typeof renderTodayReview === 'function') renderTodayReview(); }
   if(name==='pinboard')  { renderDesk(); }
   if(name==='flashcards'){ renderSubjectList(); }
   if(name==='guides')    { initGuides(); }

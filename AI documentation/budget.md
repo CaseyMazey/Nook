@@ -460,9 +460,9 @@ Im Betrag-Fenster ist „Kontostand anpassen“ standardmäßig an (die letzte W
 
 ---
 
-# Monatsrückblick & CSV-Export
+# Monatsrückblick, Jahresübersicht & CSV-Export
 
-Der Monatsrückblick (Zahnrad-Menü) zeigt ruhige Balken für Einnahmen und Ausgaben der letzten sechs Monate (wiederkehrende Posten nach heutigem Stand + Einmalbuchungen) und den Durchschnitts-Saldo; ein Klick öffnet den Monat. Der CSV-Export schreibt den angezeigten Monat (Semikolon, Dezimalkomma, UTF-8) — für Excel/Numbers, keine Buchhaltungsfunktion.
+Der Rückblick (Zahnrad-Menü → „Monatsrückblick“ bzw. „Jahresübersicht“) hat zwei Ansichten. „Letzte 6 Monate“ zeigt ruhige Balken für Einnahmen und Ausgaben der letzten sechs Monate (wiederkehrende Posten nach heutigem Stand + Einmalbuchungen) und den Durchschnitts-Saldo; ein Klick öffnet den Monat. „Jahr“ zeigt alle zwölf Monate eines Kalenderjahres (‹ › wechselt das Jahr); Monate nach dem laufenden sind Planung nach heutigem Stand und erscheinen blasser. Unten: Saldo bis jetzt und für das ganze Jahr geplant. Der CSV-Export schreibt den angezeigten Monat (Semikolon, Dezimalkomma, UTF-8) — für Excel/Numbers, keine Buchhaltungsfunktion.
 
 ---
 
@@ -608,10 +608,9 @@ Geplante Erweiterungen:
 - weitere automatische Sparvorschläge (der Monatsend-Vorschlag ist umgesetzt)
 - mehrere Konten
 - eigene Budget-Vorlagen speichern (feste Vorlagen zum Start sind umgesetzt)
-- Jahresübersicht (der Monatsrückblick deckt die letzten 6 Monate ab)
 - Cloud-Synchronisation
 
-Umgesetzt: Monatsrückblick (Statistik über mehrere Monate), CSV-Export, „Heute fällig“ auf der Heute-Seite (Erinnerung), Kontoauszug-Import für wiederkehrende Posten, Abo-Hinweise, Rücklage für Jahreskosten, Sparvorschlag am Monatsende, „Bis zum nächsten Geld“, Vorlagen zum Start.
+Umgesetzt: Monatsrückblick (Statistik über mehrere Monate), CSV-Export, „Heute fällig“ auf der Heute-Seite (Erinnerung), Kontoauszug-Import für wiederkehrende Posten, Abo-Hinweise, Rücklage für Jahreskosten, Sparvorschlag am Monatsende, „Bis zum nächsten Geld“, Vorlagen zum Start, Jahresübersicht.
 
 ---
 
