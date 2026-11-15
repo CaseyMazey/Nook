@@ -1,0 +1,215 @@
+/* =============================================================
+   NOTIZBUCH-STIL „beau“ — Beau's Enchanted Study
+   Zwei Ebenen: die Bibliothek (Hintergrundbild, Holz-Navigation) gibt
+   Atmosphäre, das Notizbuch (Papierkarten) ist die Oberfläche und bleibt
+   ruhig und gut lesbar. Das Magische steckt in Material und kleinen
+   Details (Messinglinien, Washi-Tape, ✦), nicht in Verzierungen, die
+   Bedienelemente verdecken.
+   - [data-today-style="beau"]  Heute-Seite (Banner, Papierkarten)
+   - [data-pages-style="beau"]  Navigation (Walnussholz), Karten der
+                                übrigen Seiten, Knöpfe (Messing)
+   Beide setzt js/theme-engine.js (Preset „Beau“: today/pages.style).
+   Farben nur aus Theme-Tokens, v. a. den Materialfarben --material-wood/
+   -gold/-leaf (css/main.css, vom Preset gesetzt).
+============================================================= */
+
+:root:is([data-today-style="beau"], [data-pages-style="beau"]) {
+  /* Schrift auf Holz: Cremepapier mit einem Hauch Messing. Tagsüber ist
+     --surface-solid das helle Papier, nachts --text die helle Schrift. */
+  --beau-on-wood: color-mix(in srgb, var(--surface-solid) 90%, var(--material-gold));
+  --beau-brass:   color-mix(in srgb, var(--material-gold) 78%, var(--material-wood));
+  --beau-ink:     color-mix(in srgb, var(--material-wood) 88%, var(--sage));
+  --beau-rule:    color-mix(in srgb, var(--border-strong) 70%, transparent);
+  --beau-tape:    color-mix(in srgb, color-mix(in srgb, var(--material-leaf) 55%, var(--surface-solid)) 72%, transparent);
+  --beau-tape-2:  color-mix(in srgb, color-mix(in srgb, var(--material-gold) 50%, var(--surface-solid)) 72%, transparent);
+  --beau-paper-shadow:
+    0 1px 0 color-mix(in srgb, var(--sheen) 40%, transparent) inset,
+    0 2px 4px color-mix(in srgb, var(--shadow-tint) 10%, transparent),
+    0 8px 22px color-mix(in srgb, var(--shadow-tint) 12%, transparent);
+}
+:root:is([data-today-style="beau"], [data-pages-style="beau"])[data-theme-family="dark"] {
+  --beau-on-wood: color-mix(in srgb, var(--text) 92%, var(--material-gold));
+  --beau-ink:     var(--text);
+  --beau-paper-shadow:
+    0 1px 0 color-mix(in srgb, var(--material-gold) 10%, transparent) inset,
+    0 6px 20px color-mix(in srgb, var(--shadow-tint) 55%, transparent);
+}
+
+/* ── Navigation: Walnussholz mit Messing ─────────────────────── */
+/* Statt jedes Element einzeln umzufärben, bekommt die Holzfläche eigene
+   Text-/Flächen-Tokens — alles darin (Countdowns, Positivity, Suche …)
+   wird automatisch lesbar. */
+[data-pages-style="beau"] :is(#sidebar, #mobile-bottom-nav) {
+  --text:        var(--beau-on-wood);
+  --text-2:      color-mix(in srgb, var(--beau-on-wood) 80%, transparent);
+  --text-3:      color-mix(in srgb, var(--beau-on-wood) 58%, transparent);
+  --border:      color-mix(in srgb, var(--material-gold) 16%, transparent);
+  --border-strong: color-mix(in srgb, var(--material-gold) 28%, transparent);
+  --hairline:    color-mix(in srgb, var(--material-gold) 14%, transparent);
+  --surface:     color-mix(in srgb, var(--beau-on-wood) 7%, transparent);
+  --surface-2:   color-mix(in srgb, var(--beau-on-wood) 10%, transparent);
+  --surface-3:   color-mix(in srgb, var(--beau-on-wood) 14%, transparent);
+  --accent-soft: color-mix(in srgb, var(--material-gold) 14%, transparent);
+  --sage-bg:     color-mix(in srgb, var(--material-gold) 14%, transparent);
+  color: var(--text);
+  background:
+    /* feine Maserung */
+    repeating-linear-gradient(97deg,
+      transparent 0 9px,
+      color-mix(in srgb, var(--shadow-tint) 10%, transparent) 9px 10px,
+      transparent 10px 23px),
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--material-wood) 88%, var(--material-gold)),
+      var(--material-wood) 45%,
+      color-mix(in srgb, var(--material-wood) 90%, var(--shadow-tint)));
+  border-color: color-mix(in srgb, var(--material-gold) 35%, var(--material-wood));
+}
+[data-pages-style="beau"] #sidebar {
+  border-right-width: 2px;
+  box-shadow: inset -1px 0 0 color-mix(in srgb, var(--material-gold) 22%, transparent), 4px 0 18px color-mix(in srgb, var(--shadow-tint) 22%, transparent);
+}
+[data-pages-style="beau"] #brand-name { font-family: var(--font-heading); letter-spacing: 0; color: var(--beau-on-wood); }
+[data-pages-style="beau"] #brand-icon { border-radius: 50%; box-shadow: 0 0 0 2px color-mix(in srgb, var(--material-gold) 55%, transparent), 0 2px 10px color-mix(in srgb, var(--material-gold) 30%, transparent); }
+
+[data-pages-style="beau"] :is(#sidebar, #mobile-bottom-nav) .nav-btn svg { color: var(--material-gold); opacity: .8; }
+[data-pages-style="beau"] :is(#sidebar, #mobile-bottom-nav) .nav-btn:hover { background: color-mix(in srgb, var(--material-gold) 13%, transparent); color: var(--text); }
+[data-pages-style="beau"] :is(#sidebar, #mobile-bottom-nav) .nav-btn:hover svg { opacity: 1; }
+[data-pages-style="beau"] #sidebar .nav-btn.active {
+  background: linear-gradient(90deg,
+    color-mix(in srgb, var(--material-gold) 34%, var(--material-wood)),
+    color-mix(in srgb, var(--material-gold) 16%, var(--material-wood)));
+  color: var(--beau-on-wood);
+  box-shadow: inset 3px 0 0 var(--material-gold), 0 1px 6px color-mix(in srgb, var(--shadow-tint) 30%, transparent);
+}
+[data-pages-style="beau"] :is(#sidebar, #mobile-bottom-nav) .nav-btn.active svg { color: var(--material-gold); opacity: 1; }
+[data-pages-style="beau"] #mobile-bottom-nav .nav-btn.active { background: color-mix(in srgb, var(--material-gold) 18%, transparent); color: var(--beau-on-wood); }
+
+/* ── Notizbuchpapier: Karten ─────────────────────────────────── */
+/* Heute-Karten mit dem Heute-Stil, alle übrigen mit dem Seiten-Stil */
+:is([data-today-style="beau"] #view-today, [data-pages-style="beau"] .view:not(#view-today)) .panel {
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--sheen) 22%, transparent), transparent 55%),
+    radial-gradient(90% 70% at 100% 100%, color-mix(in srgb, var(--material-gold) 9%, transparent), transparent 60%),
+    var(--surface);
+  border: 1px solid color-mix(in srgb, var(--border-strong) 85%, var(--material-gold));
+  border-radius: 10px;
+  box-shadow: var(--beau-paper-shadow);
+}
+[data-theme-family="dark"]:is([data-today-style="beau"], [data-pages-style="beau"]) .panel {
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--material-gold) 7%, transparent), transparent 55%),
+    var(--surface);
+}
+/* Kartenkopf: Serifenschrift statt Versalien, Messing-Linie wie ein
+   Lineal, kleiner Funke davor */
+:is([data-today-style="beau"] #view-today, [data-pages-style="beau"] .view:not(#view-today)) .panel-header {
+  border-bottom: 1px dashed var(--beau-rule);
+}
+:is([data-today-style="beau"] #view-today, [data-pages-style="beau"] .view:not(#view-today)) .panel-label {
+  font-family: var(--font-heading);
+  font-size: calc(14px * var(--core-font-scale));
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: .01em;
+  color: var(--beau-ink);
+}
+:is([data-today-style="beau"] #view-today, [data-pages-style="beau"] .view:not(#view-today)) .panel-label::before {
+  content: '✦';
+  margin-right: .45em;
+  color: var(--material-gold);
+  font-size: .85em;
+}
+
+/* ── Knöpfe: Messing und Kupfer ──────────────────────────────── */
+[data-pages-style="beau"] .btn-primary {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--sage) 82%, var(--material-gold)), var(--sage));
+  border: 1px solid color-mix(in srgb, var(--sage) 70%, var(--material-wood));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--sheen) 28%, transparent), 0 2px 5px color-mix(in srgb, var(--shadow-tint) 20%, transparent);
+}
+[data-pages-style="beau"] .btn-primary:hover { background: linear-gradient(180deg, var(--sage), var(--sage-dark)); }
+[data-pages-style="beau"] .view-title { font-family: var(--font-heading); color: var(--beau-ink); }
+/* Seitenköpfe stehen direkt auf der Bibliothek: Papier-Schein für Lesbarkeit */
+[data-pages-style="beau"] :is(.view-header, .view-title, .view-header + p) {
+  text-shadow: 0 0 5px var(--surface-solid), 0 0 12px var(--surface-solid);
+}
+[data-pages-style="beau"][data-theme-family="dark"] :is(.view-header, .view-title, .view-header + p) {
+  text-shadow: 0 0 5px var(--bg), 0 0 12px var(--bg);
+}
+
+/* ── Heute: Banner und Schnellnotiz ──────────────────────────── */
+[data-today-style="beau"][data-start-header-theme]:not([data-start-header-theme="none"]) #today-main-header {
+  border: 1px solid color-mix(in srgb, var(--material-gold) 55%, var(--border-strong));
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 4px color-mix(in srgb, var(--surface-solid) 35%, transparent), var(--beau-paper-shadow);
+}
+[data-today-style="beau"] #today-greeting { font-family: var(--font-heading); color: var(--beau-ink); }
+/* Beau sitzt im Banner rechts; auf schmalen Bannern liegt Text auch über
+   ihm — ein weicher Papier-Schein hält Datum und Begrüßung lesbar */
+[data-today-style="beau"][data-start-header-theme]:not([data-start-header-theme="none"]) #today-greeting-block {
+  text-shadow: 0 0 6px var(--surface-solid), 0 0 14px var(--surface-solid);
+}
+[data-today-style="beau"][data-theme-family="dark"][data-start-header-theme]:not([data-start-header-theme="none"]) #today-greeting-block {
+  text-shadow: 0 0 6px var(--bg), 0 0 14px var(--bg);
+}
+
+/* Schnellnotiz: Seite aus Beaus Notizbuch — Washi-Tape oben, Rand-
+   linie in Kupfer, botanisches Zweiglein in der Ecke */
+[data-today-style="beau"] #panel-quicknote {
+  position: relative;
+  background:
+    linear-gradient(90deg, transparent 30px, color-mix(in srgb, var(--sage) 22%, transparent) 30px 31px, transparent 31px),
+    var(--quicknote-bg);
+  border: 1px solid color-mix(in srgb, var(--border-strong) 85%, var(--material-gold));
+  border-radius: 10px;
+  box-shadow: var(--beau-paper-shadow);
+  overflow: visible;
+}
+[data-today-style="beau"] #panel-quicknote::before {
+  content: '';
+  position: absolute;
+  top: -9px; left: 50%;
+  width: 92px; height: 20px;
+  transform: translateX(-50%) rotate(-2.5deg);
+  background:
+    repeating-linear-gradient(45deg, transparent 0 6px, color-mix(in srgb, var(--sheen) 22%, transparent) 6px 9px),
+    var(--beau-tape);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--shadow-tint) 15%, transparent);
+  pointer-events: none;
+  z-index: 2;
+}
+[data-today-style="beau"] #panel-quicknote::after {
+  content: '';
+  position: absolute;
+  right: 10px; bottom: 8px;
+  width: 38px; height: 38px;
+  background: var(--material-leaf);
+  opacity: .55;
+  /* Zweig als Maske — die Farbe kommt aus --material-leaf */
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath d='M6 36C14 26 22 17 34 6' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round'/%3E%3Cpath d='M14 27c-5-1-8-5-8-9 5 0 8 4 8 9zM20 20c-1-5 1-9 5-11 1 5-1 9-5 11zM22 18c5 0 9 2 10 6-5 1-9-1-10-6zM13 28c4-3 9-3 12 0-4 3-9 3-12 0z'/%3E%3C/svg%3E") center / contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath d='M6 36C14 26 22 17 34 6' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round'/%3E%3Cpath d='M14 27c-5-1-8-5-8-9 5 0 8 4 8 9zM20 20c-1-5 1-9 5-11 1 5-1 9-5 11zM22 18c5 0 9 2 10 6-5 1-9-1-10-6zM13 28c4-3 9-3 12 0-4 3-9 3-12 0z'/%3E%3C/svg%3E") center / contain no-repeat;
+  pointer-events: none;
+}
+[data-today-style="beau"] #panel-quicknote .panel-header { background: transparent; border-bottom: 1px dashed var(--beau-rule); border-radius: 10px 10px 0 0; }
+[data-today-style="beau"] #panel-quicknote #quicknote { padding-left: 42px; }
+
+/* Aufgaben-Kachel: zweites Tape, leicht schräg, in Messington */
+[data-today-style="beau"] #today-tasks-tile { position: relative; overflow: visible; }
+[data-today-style="beau"] #today-tasks-tile::before {
+  content: '';
+  position: absolute;
+  top: -8px; right: 22px;
+  width: 64px; height: 18px;
+  transform: rotate(4deg);
+  background:
+    repeating-linear-gradient(90deg, transparent 0 7px, color-mix(in srgb, var(--sheen) 20%, transparent) 7px 9px),
+    var(--beau-tape-2);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--shadow-tint) 15%, transparent);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Auf kleinen Displays: weniger Deko, Papier bleibt ruhig */
+@media (max-width: 480px) {
+  [data-today-style="beau"] #panel-quicknote::after { display: none; }
+  :is([data-today-style="beau"] #view-today, [data-pages-style="beau"] .view:not(#view-today)) .panel { box-shadow: 0 2px 8px color-mix(in srgb, var(--shadow-tint) 12%, transparent); }
+}

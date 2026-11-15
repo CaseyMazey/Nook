@@ -411,6 +411,10 @@
 [data-cal-image-theme="blockwelt"] .cal-hero-summer { --cal-hero-img: url('../assets/themes/blockwelt/summer.webp'); }
 [data-cal-image-theme="blockwelt"] .cal-hero-autumn { --cal-hero-img: url('../assets/themes/blockwelt/fall.webp'); }
 [data-cal-image-theme="blockwelt"] .cal-hero-winter { --cal-hero-img: url('../assets/themes/blockwelt/winter.webp'); }
+[data-cal-image-theme="beau"] .cal-hero-spring { --cal-hero-img: url('../assets/themes/beau/spring.webp'); }
+[data-cal-image-theme="beau"] .cal-hero-summer { --cal-hero-img: url('../assets/themes/beau/summer.webp'); }
+[data-cal-image-theme="beau"] .cal-hero-autumn { --cal-hero-img: url('../assets/themes/beau/fall.webp'); }
+[data-cal-image-theme="beau"] .cal-hero-winter { --cal-hero-img: url('../assets/themes/beau/winter.webp'); }
 [data-cal-image-theme="muster"] .cal-hero-spring { --cal-hero-img: url('../assets/themes/muster/spring.png'); }
 [data-cal-image-theme="muster"] .cal-hero-summer { --cal-hero-img: url('../assets/themes/muster/summer.png'); }
 [data-cal-image-theme="muster"] .cal-hero-autumn { --cal-hero-img: url('../assets/themes/muster/fall.png'); }

@@ -47,6 +47,7 @@ const CUSTOM_THEME_VARS = [
   '--quicknote-bg', '--quicknote-line', '--quicknote-text', '--highlight-bg', '--user-color-neutral',
   '--core-nav-bg', '--core-modal-bg', '--core-card-opacity',
   '--font', '--font-heading', '--nav-font-scale', '--heading-font-scale', '--theme-font-scale', '--mono',
+  '--material-wood', '--material-gold', '--material-leaf',
 ];
 
 // =========================================================================
@@ -335,6 +336,23 @@ const PRESET_THEMES = [
       cardOpacity: 88, fontSize: 100, bg: { source: 'blockwelt', size: 'cover', dim: 82 } },
     calendar: { imageTheme: 'blockwelt' }, startHeader: { banner: 'blockwelt' }, branding: { theme: 'blockwelt' },
     graphics: { mode: 'theme', theme: 'blockwelt' } },
+  // Beau: „Beau's Enchanted Study“ — Caseys Kater Beau (immer mit Hexenhut)
+  // in seiner gemütlichen Zauberbibliothek. Farben aus dem Handyhintergrund
+  // („Cozy Witchbook“: Cremepapier, Pergament, Kupfer, Walnuss, Bernstein-
+  // gold, Oliv). Tag = „Daylight Study“ (Notizbuchpapier im Sonnenlicht),
+  // Nacht = „Moonlight Study“ (Walnuss + Kerzenlicht, Text bleibt hell auf
+  // deckenden Karten). Überschriften in Alegreya (gut lesbare Serife).
+  // Notizbuch-Stil für Heute + übrige Seiten: css/theme-beau.css. Grafik-
+  // Set aus Caseys eigenen Beau-Bildern, Begleiter: js/theme-companion.js.
+  { id: 'preset_beau', name: 'Beau', family: 'light',
+    coreColors: { bg: '#e9d3ae', surface: '#f7ead3', nav: '#38251c', modal: '#f7ead3', text: '#38251c', border: '#b9793e', accent: '#9a5a28', quicknote: '#f3e3c8', highlight: '#e6e4cc', wood: '#38251c', gold: '#d99a36', leaf: '#75805a', font: DEFAULT_FONT_STACK, headingFont: "'Alegreya', Georgia, serif", navScale: 1.08 },
+    cardOpacity: 94, fontSize: 102, bg: { source: 'beau', size: 'cover', dim: 48 },
+    night: { family: 'dark',
+      coreColors: { bg: '#1c140f', surface: '#2b2019', nav: '#20170f', modal: '#30241b', text: '#f3e3c8', border: '#b9793e', accent: '#a5652c', quicknote: '#30261b', highlight: '#2c2e22', wood: '#170f0a', gold: '#d99a36', leaf: '#8a9467', font: DEFAULT_FONT_STACK, headingFont: "'Alegreya', Georgia, serif", navScale: 1.08 },
+      cardOpacity: 93, fontSize: 102, bg: { source: 'beau', size: 'cover', dim: 72 } },
+    calendar: { imageTheme: 'beau' }, startHeader: { banner: 'beau' }, branding: { theme: 'beau' },
+    today: { style: 'beau' }, pages: { style: 'beau' },
+    graphics: { mode: 'theme', theme: 'beau' } },
   // Zombie: aus Kuros Core (Download 2026-10-21) — Farben und Grafik-Set
   // unverändert. Core nutzt die Schrift „Capture it“, die laut Font-
   // Metadaten „All Rights Reserved“ ist und daher nicht öffentlich
@@ -435,6 +453,10 @@ const GRAPHICS_THEMES = [
   { id: 'bluetenmarmor', label: 'Blütenmarmor', icon: { src: 'assets/themes/bluetenmarmor/icon.png', type: 'image/png' } },
   { id: 'blockwelt', label: 'Blockwelt', icon: { src: 'assets/themes/blockwelt/icon.png', type: 'image/png' } },
   { id: 'rpg',       label: 'RPG',     icon: { src: 'assets/themes/rpg/icon.png',       type: 'image/png' }, questboard: 'rpg', pinboard: 'rpg', guides: 'rpg', calendarStyle: 'rpg', todayStyle: 'rpg', pagesStyle: 'rpg' },
+  // Beau: Bilder aus Caseys eigenen Beau-Illustrationen. companion = kleine
+  // animierte Figur, die beim ersten Öffnen am Tag grüßt (js/theme-companion.js).
+  { id: 'beau',      label: 'Beau',      icon: { src: 'assets/themes/beau/icon.png',      type: 'image/png' }, todayStyle: 'beau', pagesStyle: 'beau',
+    companion: { name: 'Beau', src: 'assets/themes/beau/companion.gif', alt: 'Beau, ein kleiner schwarzer Kater mit Hexenhut, spielt mit einem Schmetterling' } },
   // Muster: Platzhalter in genau den Größen, die eigene Bilder haben sollten
   // (scripts/gen-muster-assets.py) — Vorlage zum Herunterladen und Übermalen.
   { id: 'muster',    label: 'Muster (Bildgrößen)', icon: { src: 'assets/themes/muster/icon.png', type: 'image/png' }, bgFile: 'background.png' },
@@ -601,6 +623,7 @@ function applyCalendarStyle(id, override) {
 const TODAY_STYLES = [
   { id: 'cozy', label: 'Cozy (Standard)' },
   { id: 'rpg',  label: 'Pergament (RPG)' },
+  { id: 'beau', label: 'Notizbuch (Beau)' },
 ];
 function applyTodayStyle(id, override) {
   const ct = getCustomTheme(id);
@@ -614,6 +637,7 @@ function applyTodayStyle(id, override) {
 const PAGES_STYLES = [
   { id: 'cozy', label: 'Cozy (Standard)' },
   { id: 'rpg',  label: 'Pergament (RPG)' },
+  { id: 'beau', label: 'Notizbuch (Beau)' },
 ];
 function applyPagesStyle(id, override) {
   const ct = getCustomTheme(id);
@@ -684,7 +708,14 @@ function deriveThemeVars(core, cardOpacityPct, fontSizePct) {
   // Optionale eigene Überschriften-Schrift (Seitentitel, Begrüßung,
   // Fenstertitel) — ohne Angabe dieselbe wie der Fließtext.
   const headingFont = core.headingFont || font;
+  // Optionale Materialfarben (Holz/Messing/Blatt) — nur gesetzt, wenn das
+  // Theme sie mitbringt; sonst gelten die Mischungen aus main.css.
+  const materials = {};
+  if (core.wood) materials['--material-wood'] = core.wood;
+  if (core.gold) materials['--material-gold'] = core.gold;
+  if (core.leaf) materials['--material-leaf'] = core.leaf;
   return {
+    ...materials,
     '--bg':            core.bg,
     '--bg-2':          mixHex(core.bg, tint, 0.05),
     '--surface-solid': core.surface,
@@ -888,6 +919,8 @@ function applyThemeEngine(id) {
   applyForestStyle(id);
   // Skins (js/theme-skins.js lädt nach dieser Datei; holt den ersten Aufruf selbst nach)
   if (typeof applyThemeSkins === 'function') applyThemeSkins(id);
+  // Begleiter des Grafik-Sets (js/theme-companion.js lädt später, holt den ersten Aufruf selbst nach)
+  if (typeof updateThemeCompanion === 'function') updateThemeCompanion(id);
   // Browser-/PWA-Leiste in der Hintergrundfarbe des aktiven Themes
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.content = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();

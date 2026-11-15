@@ -185,6 +185,14 @@
 
   /* ── Amber — Favoriten/Feiertags-Akzent (guides.css + calendar.css) ── */
   --amber: #c0834a;
+  /* ── Materialfarben — Holz (Navigation/Rahmen), Messing/Gold (Deko,
+     Ringe, Linien), Blatt (botanische Details). Ohne eigene Werte aus
+     den Grundfarben gemischt; Presets können sie über coreColors
+     wood/gold/leaf setzen (deriveThemeVars(), js/theme-engine.js).
+     Genutzt vom Notizbuch-Stil (css/theme-beau.css). ── */
+  --material-wood: color-mix(in srgb, var(--text) 82%, var(--amber));
+  --material-gold: color-mix(in srgb, var(--amber) 70%, var(--deco-orange));
+  --material-leaf: var(--sage);
 }
 
 /* ── Dark Mode ─────────────────────────────────────────────── */

@@ -1,0 +1,95 @@
+/* =============================================================
+   THEME-BEGLEITER (js/theme-companion.js) — z. B. Beau
+   Sitzt unten rechts über allem, grüßt mit einer Sprechblase und geht
+   nach ein paar Sekunden von selbst. Verdeckt nichts dauerhaft; auf dem
+   Handy über der unteren Navigation. Farben aus Theme-Tokens.
+============================================================= */
+.theme-companion {
+  position: fixed;
+  right: 22px;
+  bottom: 14px;
+  z-index: 120;
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  pointer-events: none;
+  animation: companion-arrive 700ms cubic-bezier(.2, .9, .3, 1.2) both;
+}
+.theme-companion.leaving { animation: companion-leave 550ms ease-in both; }
+.theme-companion.hop .theme-companion-figure { animation: companion-hop 420ms ease-out; }
+
+.theme-companion-figure {
+  pointer-events: auto;
+  width: 132px;
+  height: 130px;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  filter: drop-shadow(0 6px 8px color-mix(in srgb, var(--shadow-tint) 28%, transparent));
+}
+.theme-companion-figure img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  /* Pixel-Beau: scharfe Pixel statt Weichzeichnen */
+  image-rendering: pixelated;
+  user-select: none;
+}
+.theme-companion-figure:focus-visible { outline: 2px solid var(--material-gold, var(--sage)); outline-offset: 2px; border-radius: 12px; }
+
+.theme-companion-bubble {
+  pointer-events: auto;
+  position: relative;
+  max-width: 220px;
+  margin-bottom: 92px;
+  padding: 10px 30px 11px 14px;
+  background: var(--surface-solid);
+  color: var(--text);
+  border: 1px solid color-mix(in srgb, var(--material-gold, var(--sage)) 55%, var(--border-strong));
+  border-radius: 14px 14px 4px 14px;
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--shadow-tint) 22%, transparent);
+  font-family: var(--font-heading);
+  font-size: calc(14px * var(--core-font-scale));
+  line-height: 1.35;
+  animation: companion-bubble 450ms 350ms ease-out both;
+}
+.theme-companion-bubble::after {
+  content: '';
+  position: absolute;
+  right: -7px;
+  bottom: 10px;
+  width: 12px;
+  height: 12px;
+  background: inherit;
+  border-right: inherit;
+  border-bottom: inherit;
+  transform: rotate(-45deg);
+}
+.theme-companion-close {
+  position: absolute;
+  top: 3px;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  color: var(--text-3);
+  font-size: 16px;
+  line-height: 1;
+}
+.theme-companion-close:hover { background: var(--accent-soft); color: var(--text); }
+
+@keyframes companion-arrive { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes companion-leave  { to { transform: translateX(60px); opacity: 0; } }
+@keyframes companion-bubble { from { transform: scale(.85); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes companion-hop    { 40% { transform: translateY(-12px); } 100% { transform: none; } }
+
+@media (max-width: 480px) {
+  .theme-companion { right: 8px; bottom: calc(env(safe-area-inset-bottom, 0px) + 74px); }
+  .theme-companion-figure { width: 96px; height: 95px; }
+  .theme-companion-bubble { max-width: 190px; margin-bottom: 66px; font-size: calc(13px * var(--core-font-scale)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-companion, .theme-companion.leaving, .theme-companion-bubble, .theme-companion.hop .theme-companion-figure { animation: none; }
+}

@@ -45,6 +45,7 @@
 [data-start-header-theme="zombie"] #today-main-header { --today-header-img: url('../assets/themes/zombie/banner-day.webp'); }
 [data-start-header-theme="bluetenmarmor"] #today-main-header { --today-header-img: url('../assets/themes/bluetenmarmor/banner-day.webp'); }
 [data-start-header-theme="blockwelt"] #today-main-header { --today-header-img: url('../assets/themes/blockwelt/banner-day.webp'); }
+[data-start-header-theme="beau"] #today-main-header { --today-header-img: url('../assets/themes/beau/banner-day.webp'); }
 [data-start-header-theme="cozy"][data-start-header-daynight="night"] #today-main-header { --today-header-img: url('../assets/themes/cozy/banner-night.webp'); }
 [data-start-header-theme="scifi"][data-start-header-daynight="night"] #today-main-header { --today-header-img: url('../assets/themes/scifi/banner-night.webp'); }
 [data-start-header-theme="forest"][data-start-header-daynight="night"] #today-main-header { --today-header-img: url('../assets/themes/forest/banner-night.webp'); }
@@ -55,6 +56,7 @@
 [data-start-header-theme="zombie"][data-start-header-daynight="night"] #today-main-header { --today-header-img: url('../assets/themes/zombie/banner-night.webp'); }
 [data-start-header-theme="bluetenmarmor"][data-start-header-daynight="night"] #today-main-header { --today-header-img: url('../assets/themes/bluetenmarmor/banner-night.webp'); }
 [data-start-header-theme="blockwelt"][data-start-header-daynight="night"] #today-main-header { --today-header-img: url('../assets/themes/blockwelt/banner-night.webp'); }
+[data-start-header-theme="beau"][data-start-header-daynight="night"] #today-main-header { --today-header-img: url('../assets/themes/beau/banner-night.webp'); }
 [data-start-header-theme="muster"] #today-main-header { --today-header-img: url('../assets/themes/muster/banner-day.png'); }
 [data-start-header-theme="muster"][data-start-header-daynight="night"] #today-main-header { --today-header-img: url('../assets/themes/muster/banner-night.png'); }
 /* Eigene Bilder eines Themes: applyStartHeaderTheme() setzt die Variablen auf <html> */
