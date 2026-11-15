@@ -10,9 +10,21 @@
 // hinten wegfallen, angezeigt werden ohnehin nur die neuesten.
 // =========================
 
-window.NOOK_VERSION = '2026.11.13';
+window.NOOK_VERSION = '2026.11.14';
 
 window.NOOK_CHANGELOG = [
+  {
+    version: '2026.11.14',
+    date: '2026-11-15',
+    items: [
+      'Budget: Kontoauszug importieren (Zahnrad) – aus einem CSV-Export deiner Bank schlägt Nook Gehalt, Miete, Abos & Co. als wiederkehrende Posten vor; Buchungen werden nicht gespeichert',
+      'Budget: Abo-Hinweise – doppelte Abos (z.B. zwei Musikdienste), Kündigen-Link im Posten, Preiserhöhungen beim Import und die Abo-Kosten aufs Jahr',
+      'Budget: Rücklage für Jahreskosten – ein Klick legt ein Sparziel an, das jährliche Posten wie Versicherungen immer deckt',
+      'Budget: Sparvorschlag am Monatsende, wenn Geld übrig bleibt, und Vorlagen zum Start (Ausbildung, Studium, WG, Schule)',
+      'Heute: „Bis zum nächsten Geld“ zeigt, wie viel bis zur nächsten Einnahme pro Tag frei bleibt (abschaltbar unter Einstellungen → Heute-Seite)',
+      'Budget: Status und Karte „Verfügbar“ rechnen Tag für Tag mit offenen Einnahmen; Taschengeld-Auszahlungstag einstellbar; wöchentliche Ausgaben erscheinen jetzt in der Liste',
+    ],
+  },
   {
     version: '2026.11.13',
     date: '2026-11-06',
