@@ -37,6 +37,8 @@
 // Es wird immer nur EINE Woche gehalten — Speichern ersetzt die vorige.
 // Gerichte sind reiner Text; beginnt er mit "VEGAN", zeigt das Widget
 // eine Markierung (so bleibt das Bearbeiten ein einfaches Textfeld).
+// Allergen-Kürzel aus dem PDF stehen gesammelt am Ende, z.B. "… (A, G)";
+// das Widget blendet sie aus und nutzt sie für die Allergiehinweise.
 // =========================
 let mealPlanWeeks = DB.get('mealPlanWeeks', {});
 function saveMealPlanWeeks() { DB.set('mealPlanWeeks', mealPlanWeeks); }
@@ -73,6 +75,77 @@ function mealPlanLookup(date) {
 }
 
 // =========================
+// ALLERGIEHINWEISE
+// [{ id, name, reminder, codes:['G'], keywords:['sahne', …], except:['kokosmilch', …] }]
+// Ein Gericht löst einen Hinweis aus, wenn es eines der Kürzel trägt (aus dem
+// PDF) ODER eines der Stichwörter enthält. Stichwörter sind Teilwörter, damit
+// deutsche Komposita greifen ("sahne" → "Kräutersahnesoße"); Ausnahmen werden
+// vorher aus dem Text gestrichen ("kokosmilch" zählt nicht als "milch").
+// =========================
+let mealPlanAlerts = DB.get('mealPlanAlerts', []);
+function saveMealPlanAlerts() { DB.set('mealPlanAlerts', mealPlanAlerts); }
+
+// Allergen-Kennzeichnung nach LMIV, wie sie deutsche Kantinen meist nutzen
+const MEALPLAN_ALLERGENS = [
+  { code: 'A', label: 'Gluten' },
+  { code: 'B', label: 'Krebstiere' },
+  { code: 'C', label: 'Eier' },
+  { code: 'D', label: 'Fisch' },
+  { code: 'E', label: 'Erdnüsse' },
+  { code: 'F', label: 'Soja' },
+  { code: 'G', label: 'Milch / Laktose' },
+  { code: 'H', label: 'Schalenfrüchte (Nüsse)' },
+  { code: 'L', label: 'Sellerie' },
+  { code: 'M', label: 'Senf' },
+  { code: 'N', label: 'Sesam' },
+  { code: 'O', label: 'Sulfite' },
+  { code: 'P', label: 'Lupinen' },
+  { code: 'R', label: 'Weichtiere' },
+];
+
+const MEALPLAN_ALERT_PRESETS = [
+  { name: 'Laktose', reminder: 'Lactostop mitnehmen', codes: ['G'],
+    keywords: ['sahne', 'rahm', 'milch', 'käse', 'butter', 'quark', 'joghurt', 'schmand', 'mascarpone', 'mozzarella', 'parmesan', 'feta', 'béchamel', 'bechamel', 'gratin', 'überbacken', 'carbonara', 'pudding'],
+    except: ['kokosmilch', 'hafermilch', 'sojamilch', 'mandelmilch', 'reismilch', 'erdnussbutter', 'kakaobutter', 'kokosjoghurt', 'sojajoghurt', 'veganer käse', 'veganem käse'] },
+  { name: 'Gluten', reminder: '', codes: ['A'],
+    keywords: ['nudel', 'pasta', 'spaghetti', 'penne', 'lasagne', 'spätzle', 'brot', 'brötchen', 'paniert', 'panade', 'schnitzel', 'pizza', 'knödel', 'couscous', 'bulgur', 'seitan', 'kuchen', 'teig'],
+    except: [] },
+  { name: 'Nüsse', reminder: '', codes: ['E', 'H'],
+    keywords: ['nuss', 'nüsse', 'mandel', 'cashew', 'pistazie', 'pesto', 'krokant', 'marzipan'],
+    except: ['muskatnuss'] },
+  { name: 'Eier', reminder: '', codes: ['C'],
+    keywords: ['rührei', 'spiegelei', 'omelett', 'mayonnaise', 'mayo', 'eiernudel', 'frittata', 'quiche', 'eiersalat'],
+    except: [] },
+  { name: 'Fisch & Meeresfrüchte', reminder: '', codes: ['B', 'D', 'R'],
+    keywords: ['fisch', 'lachs', 'thunfisch', 'kabeljau', 'forelle', 'hering', 'scholle', 'garnele', 'shrimp', 'scampi', 'muschel', 'calamari', 'tintenfisch'],
+    except: [] },
+];
+
+// Welche Hinweise löst ein Gericht aus? → [{ alert, reasons:['Kennzeichnung G', 'Sahne'] }]
+function mealPlanAlertHits(dishText) {
+  if (!dishText || !mealPlanAlerts.length) return [];
+  const { text, codes } = mealPlanSplitDish(dishText);
+  const lower = text.toLowerCase();
+  return mealPlanAlerts.map(alert => {
+    const reasons = [];
+    (alert.codes || []).filter(c => codes.includes(c)).forEach(c => reasons.push('Kennzeichnung ' + c));
+    let scan = lower;
+    // gleich lang ersetzen, damit Positionen in scan und text übereinstimmen
+    (alert.except || []).forEach(ex => { if (ex) scan = scan.split(ex.toLowerCase()).join(' '.repeat(ex.length)); });
+    (alert.keywords || []).forEach(kw => {
+      const k = kw.toLowerCase();
+      if (!k) return;
+      const idx = scan.indexOf(k);
+      if (idx < 0) return;
+      // ganzes Wort aus dem Gericht als Grund anzeigen ("Kräutersahnesoße")
+      const word = text.slice(0, idx).match(/[\wäöüßÄÖÜéè-]*$/)[0] + text.slice(idx).match(/^[\wäöüßÄÖÜéè-]*/)[0];
+      if (!reasons.includes(word || kw)) reasons.push(word || kw);
+    });
+    return reasons.length ? { alert, reasons } : null;
+  }).filter(Boolean);
+}
+
+// =========================
 // PDF.JS — lazy per <script>-Tag
 // =========================
 // loadScriptOnce (hub-utils.js) lädt jede Datei nur einmal
@@ -103,11 +176,33 @@ function mealPlanRowKey(text) {
   return null;
 }
 
-// Allergen-/Zusatzstoff-Kürzel wie (A,D,G) oder (G,L,1) entfernen,
-// Leerzeichen/Schrägstriche glätten
+// Allergen-/Zusatzstoff-Kürzel wie (A,D,G) oder (G,L,1). Buchstaben =
+// Allergene nach LMIV, Zahlen = Zusatzstoffe (für die Hinweise egal).
+const MEALPLAN_CODE_RE = /\s*\(\s*(?:[A-Z]|\d{1,2})(?:\s*,\s*(?:[A-Z]|\d{1,2}))*\s*\)/g;
+
+// Alle Allergen-Buchstaben aus einem Text, sortiert und ohne Doppelte
+function mealPlanExtractCodes(text) {
+  const codes = new Set();
+  (text.match(MEALPLAN_CODE_RE) || []).forEach(group => {
+    (group.match(/[A-Z]/g) || []).forEach(c => codes.add(c));
+  });
+  return [...codes].sort();
+}
+
+// Gericht → { text (ohne Kürzel), codes }. Die Kürzel stehen im gespeicherten
+// Text am Ende (so bleibt das Bearbeiten ein einfaches Textfeld) und werden
+// im Widget ausgeblendet.
+function mealPlanSplitDish(text) {
+  return {
+    text: text.replace(MEALPLAN_CODE_RE, '').replace(/\s+/g, ' ').trim(),
+    codes: mealPlanExtractCodes(text),
+  };
+}
+
+// Kürzel entfernen, Leerzeichen/Schrägstriche glätten
 function mealPlanCleanText(text) {
   return text
-    .replace(/\s*\(\s*(?:[A-Z]|\d{1,2})(?:\s*,\s*(?:[A-Z]|\d{1,2}))*\s*\)/g, '')
+    .replace(MEALPLAN_CODE_RE, '')
     .replace(/\s+/g, ' ')
     .replace(/\s*\/\s*/g, ' / ')
     .replace(/^\s*\/\s*|\s*\/\s*$/g, '')
@@ -127,18 +222,23 @@ function mealPlanCellText(lines) {
     if (i > 0 && /^VEGAN\b/.test(l.text)) variants.push([]);
     variants[variants.length - 1].push(l.text);
   });
-  const texts = variants.map(v => v.reduce((acc, line) => {
+  const raw = variants.map(v => v.reduce((acc, line) => {
     if (!acc) return line;
     return /-$/.test(acc) ? acc + line : acc + ' ' + line;
-  }, '')).map(mealPlanCleanText).filter(Boolean);
-  if (texts.length < 2) return texts[0] || '';
+  }, ''));
+  // Allergen-Kürzel aller Varianten gesammelt ans Ende (für die Allergiehinweise)
+  const codes = mealPlanExtractCodes(raw.join(' '));
+  const suffix = codes.length ? ` (${codes.join(', ')})` : '';
+  const texts = raw.map(mealPlanCleanText).filter(Boolean);
+  if (!texts.length) return '';
+  if (texts.length < 2) return texts[0] + suffix;
 
   const plain = t => t.replace(/^VEGAN\s*/, '');
   if (texts.every(t => plain(t) === plain(texts[0]))) {
     const anyPlain = texts.some(t => !/^VEGAN\b/.test(t));
-    return anyPlain ? plain(texts[0]) + ' (auch vegan)' : texts[0];
+    return (anyPlain ? plain(texts[0]) + ' (auch vegan)' : texts[0]) + suffix;
   }
-  return texts.join(' · oder: ');
+  return texts.join(' · oder: ') + suffix;
 }
 
 // Textstücke einer Seite → { found, days, labels }
@@ -297,11 +397,37 @@ function mealPlanDayLabel(date) {
   return short;
 }
 
-function mealPlanDishHtml(text) {
+function mealPlanDishHtml(text, hits = []) {
   if (!text) return '<span class="mealplan-dish-empty">—</span>';
-  const vegan = /^VEGAN\b/i.test(text);
-  const clean = vegan ? text.replace(/^VEGAN\s*/i, '') : text;
-  return `${vegan ? '<span class="mealplan-tag">vegan</span>' : ''}${escHtml(clean)}`;
+  const shown = mealPlanSplitDish(text).text;
+  const vegan = /^VEGAN\b/i.test(shown);
+  const clean = vegan ? shown.replace(/^VEGAN\s*/i, '') : shown;
+  const alertTags = hits.map(h => `<span class="mealplan-alert-tag" title="${escHtml('Enthält: ' + h.reasons.join(', '))}">${escHtml(h.alert.name)}</span>`).join('');
+  return `${vegan ? '<span class="mealplan-tag">vegan</span>' : ''}${escHtml(clean)}${alertTags ? `<div class="mealplan-alert-tags">${alertTags}</div>` : ''}`;
+}
+
+// Hinweis-Kasten über den Gerichten: je ausgelöstem Hinweis eine Zeile
+// ("Lactostop mitnehmen — Laktose in Menü 1 und Dessert")
+function mealPlanAlertBannerHtml(day) {
+  const byAlert = new Map();
+  MEALPLAN_SLOTS.forEach(s => {
+    mealPlanAlertHits(day[s.key]).forEach(h => {
+      if (!byAlert.has(h.alert.id)) byAlert.set(h.alert.id, { alert: h.alert, slots: [] });
+      byAlert.get(h.alert.id).slots.push(s.label);
+    });
+  });
+  if (!byAlert.size) return '';
+  const joinDe = arr => arr.length < 2 ? (arr[0] || '') : arr.slice(0, -1).join(', ') + ' und ' + arr[arr.length - 1];
+  const rows = [...byAlert.values()].map(({ alert, slots }) => {
+    const where = `${escHtml(alert.name)} in ${escHtml(joinDe(slots))}`;
+    return `<div class="mealplan-alert-row">${alert.reminder
+      ? `<strong>${escHtml(alert.reminder)}</strong><span class="mealplan-alert-where">${where}</span>`
+      : `<strong>Achtung:</strong><span class="mealplan-alert-where">${where}</span>`}</div>`;
+  }).join('');
+  return `<div class="mealplan-alert" role="note">
+    <svg class="mealplan-alert-icon" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 1.8l6.4 11.4H1.6L8 1.8z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M8 6.3v3.2M8 11.4v.1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    <div class="mealplan-alert-rows">${rows}</div>
+  </div>`;
 }
 
 const MEALPLAN_DAY_SHORT = ['Mo', 'Di', 'Mi', 'Do', 'Fr'];
@@ -318,7 +444,7 @@ function mealPlanItemHtml(slot, text, weekLabels) {
     <li class="mealplan-item${fav ? ' is-fav' : ''}">
       <div class="mealplan-slot">${slot.label}${weekLabels && weekLabels[slot.key] ? `<span class="mealplan-slot-sub">${escHtml(weekLabels[slot.key])}</span>` : ''}</div>
       <div class="mealplan-dish-row">
-        <div class="mealplan-dish">${mealPlanDishHtml(text)}</div>
+        <div class="mealplan-dish">${mealPlanDishHtml(text, mealPlanAlertHits(text))}</div>
         ${text ? `<button type="button" class="mealplan-fav-btn${fav ? ' is-on' : ''}" data-fav-slot="${slot.key}" title="${escHtml(favTitle)}" aria-label="${escHtml(favTitle)}">${fav ? '★' : '☆'}</button>` : ''}
       </div>
     </li>`;
@@ -368,7 +494,7 @@ function renderMealPlan() {
   const hasDay = day && MEALPLAN_SLOTS.some(s => day[s.key]);
 
   const bodyHtml = hasDay
-    ? `<ul class="mealplan-list">${MEALPLAN_SLOTS.map(s => mealPlanItemHtml(s, day[s.key], week.labels)).join('')}</ul>`
+    ? `${mealPlanAlertBannerHtml(day)}<ul class="mealplan-list">${MEALPLAN_SLOTS.map(s => mealPlanItemHtml(s, day[s.key], week.labels)).join('')}</ul>`
     : `<div class="mealplan-empty">
         <div>${week ? 'Für diesen Tag ist nichts eingetragen.' : `Noch kein Speiseplan für KW ${getISOWeek(date)}.`}</div>
         <button type="button" class="btn-ghost mealplan-import-btn" data-mealplan-import>PDF importieren</button>
@@ -386,6 +512,9 @@ function renderMealPlan() {
         <button type="button" class="icon-btn" data-mealplan-import title="Speiseplan-PDF importieren" aria-label="Speiseplan-PDF importieren">
           <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 2v8M4.5 6.5L8 10l3.5-3.5M3 13h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
+        <button type="button" class="icon-btn${mealPlanAlerts.length ? ' mealplan-alerts-on' : ''}" id="mealplan-alerts-btn" title="Allergiehinweise" aria-label="Allergiehinweise">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 1.8l6.4 11.4H1.6L8 1.8z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M8 6.3v3.2M8 11.4v.1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        </button>
         ${week ? `<button type="button" class="icon-btn" id="mealplan-edit" title="Woche bearbeiten" aria-label="Woche bearbeiten">
           <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M11 2.3l2.4 2.4-8.1 8.1-3.1.7.7-3.1 8.1-8.1z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/></svg>
         </button>` : ''}
@@ -398,7 +527,7 @@ function renderMealPlan() {
   widget.querySelector('#mealplan-fav-open').addEventListener('click', () => mealPlanOpenFavorites());
   widget.querySelectorAll('[data-fav-slot]').forEach(b => b.addEventListener('click', () => {
     if (b.classList.contains('is-on')) mealPlanOpenFavorites();
-    else mealPlanOpenFavorites(NookMealFav.suggest(day && day[b.dataset.favSlot]));
+    else mealPlanOpenFavorites(NookMealFav.suggest(day && mealPlanSplitDish(day[b.dataset.favSlot] || '').text));
   }));
   widget.querySelectorAll('[data-fav-goto]').forEach(b => b.addEventListener('click', () => {
     const d = new Date(getWeekStart(mealPlanDefaultDate()));
@@ -419,6 +548,7 @@ function renderMealPlan() {
   widget.querySelectorAll('[data-mealplan-import]').forEach(b => b.addEventListener('click', () => fileInput.click()));
   fileInput.addEventListener('change', () => { if (fileInput.files[0]) mealPlanImport(fileInput.files[0]); });
   widget.querySelector('#mealplan-edit')?.addEventListener('click', () => mealPlanOpenEditor(getWeekStart(date), week, '', 'Speiseplan bearbeiten'));
+  widget.querySelector('#mealplan-alerts-btn').addEventListener('click', mealPlanOpenAlerts);
 }
 
 function mealPlanWireDrop(widget) {
@@ -555,7 +685,7 @@ function mealPlanFavPreviewHtml(fav) {
   if (!week) return '<span class="mealplan-fav-none">Noch kein Speiseplan da – der Stern erscheint, sobald ein passendes Gericht dabei ist.</span>';
   const [hit] = NookMealFav.weekHits(week, [fav], MEALPLAN_SLOTS.map(s => s.key));
   if (!hit.dishes.length) return `<span class="mealplan-fav-none">In KW ${escHtml(String(week.kw || ''))} nicht dabei.</span>`;
-  return hit.dishes.map(d => `<span class="mealplan-fav-match"><b>${MEALPLAN_DAY_SHORT[d.dayIndex]}</b> ${escHtml(NookMealFav.suggest(d.text))}</span>`).join('');
+  return hit.dishes.map(d => `<span class="mealplan-fav-match"><b>${MEALPLAN_DAY_SHORT[d.dayIndex]}</b> ${escHtml(NookMealFav.suggest(mealPlanSplitDish(d.text).text))}</span>`).join('');
 }
 
 function mealPlanRenderFavList() {
@@ -641,5 +771,111 @@ document.getElementById('mealplan-fav-input')?.addEventListener('keydown', e => 
   if (e.key === 'Enter') { e.preventDefault(); mealPlanAddFavorite(); }
 });
 document.getElementById('mealplan-fav-add')?.addEventListener('click', mealPlanAddFavorite);
+
+// =========================
+// ALLERGIEHINWEISE-MODAL — Hinweise anlegen/bearbeiten (Entwurf, erst
+// "Speichern" schreibt nach mealPlanAlerts)
+// =========================
+const mealPlanAlertsModal = wireModal('mealplan-alerts-overlay', { closeIds: ['mealplan-alerts-close', 'mealplan-alerts-cancel'] });
+let mealPlanAlertsDraft = [];
+
+function mealPlanNewAlertId() { return `mpa_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`; }
+
+function mealPlanOpenAlerts() {
+  mealPlanAlertsDraft = mealPlanAlerts.map(a => ({ ...a, codes: [...(a.codes || [])], keywords: [...(a.keywords || [])], except: [...(a.except || [])] }));
+  mealPlanRenderAlertsDraft();
+  mealPlanAlertsModal.open();
+}
+
+// Liste "a, b ,c" → ['a','b','c'] (klein, ohne Leere/Doppelte)
+function mealPlanParseWordList(value) {
+  return [...new Set(value.split(/[,;\n]/).map(w => w.trim().toLowerCase()).filter(Boolean))];
+}
+
+function mealPlanRenderAlertsDraft() {
+  const list = document.getElementById('mealplan-alerts-list');
+  list.innerHTML = mealPlanAlertsDraft.length
+    ? mealPlanAlertsDraft.map((a, i) => `
+      <div class="mealplan-alert-edit" data-idx="${i}">
+        <div class="mealplan-alert-edit-head">
+          <input type="text" class="modal-input" data-field="name" value="${escHtml(a.name)}" placeholder="Name, z.B. Laktose" aria-label="Name" />
+          <button type="button" class="icon-btn" data-alert-remove title="Hinweis löschen" aria-label="Hinweis löschen">&#10005;</button>
+        </div>
+        <label class="mealplan-edit-row"><span>Erinnerung</span>
+          <input type="text" class="modal-input" data-field="reminder" value="${escHtml(a.reminder || '')}" placeholder="z.B. Lactostop mitnehmen (optional)" /></label>
+        <div class="mealplan-edit-row"><span>Kürzel</span>
+          <div class="mealplan-code-chips">${MEALPLAN_ALLERGENS.map(al => `
+            <button type="button" class="mealplan-code-chip${a.codes.includes(al.code) ? ' active' : ''}" data-code="${al.code}" title="${escHtml(al.label)}" aria-pressed="${a.codes.includes(al.code)}">${al.code}</button>`).join('')}
+          </div></div>
+        <label class="mealplan-edit-row"><span>Stichwörter</span>
+          <textarea class="modal-textarea mealplan-edit-input" rows="2" data-field="keywords" placeholder="sahne, käse, butter …">${escHtml(a.keywords.join(', '))}</textarea></label>
+        <label class="mealplan-edit-row"><span>Ausnahmen</span>
+          <input type="text" class="modal-input" data-field="except" value="${escHtml(a.except.join(', '))}" placeholder="kokosmilch, hafermilch … (optional)" /></label>
+      </div>`).join('')
+    : '<div class="mealplan-alerts-empty">Noch keine Hinweise. Nimm eine Vorlage oder leg einen eigenen an.</div>';
+
+  // Vorlagen, die noch nicht angelegt sind
+  const used = new Set(mealPlanAlertsDraft.map(a => a.name.trim().toLowerCase()));
+  document.getElementById('mealplan-alerts-presets').innerHTML = MEALPLAN_ALERT_PRESETS
+    .map((p, i) => used.has(p.name.toLowerCase()) ? '' : `<button type="button" class="btn-ghost mealplan-preset-btn" data-preset="${i}">+ ${escHtml(p.name)}</button>`)
+    .join('') + '<button type="button" class="btn-ghost mealplan-preset-btn" data-preset="custom">+ Eigener Hinweis</button>';
+}
+
+// Eingaben der Felder in den Entwurf übernehmen (vor jedem Neuzeichnen)
+function mealPlanSyncAlertsDraft() {
+  document.querySelectorAll('#mealplan-alerts-list .mealplan-alert-edit').forEach(row => {
+    const a = mealPlanAlertsDraft[Number(row.dataset.idx)];
+    if (!a) return;
+    a.name = row.querySelector('[data-field="name"]').value.trim();
+    a.reminder = row.querySelector('[data-field="reminder"]').value.trim();
+    a.keywords = mealPlanParseWordList(row.querySelector('[data-field="keywords"]').value);
+    a.except = mealPlanParseWordList(row.querySelector('[data-field="except"]').value);
+  });
+}
+
+document.getElementById('mealplan-alerts-list')?.addEventListener('click', e => {
+  const row = e.target.closest('.mealplan-alert-edit');
+  if (!row) return;
+  const a = mealPlanAlertsDraft[Number(row.dataset.idx)];
+  const chip = e.target.closest('[data-code]');
+  if (chip) {
+    const c = chip.dataset.code;
+    a.codes = a.codes.includes(c) ? a.codes.filter(x => x !== c) : [...a.codes, c].sort();
+    chip.classList.toggle('active', a.codes.includes(c));
+    chip.setAttribute('aria-pressed', a.codes.includes(c));
+    return;
+  }
+  if (e.target.closest('[data-alert-remove]')) {
+    mealPlanSyncAlertsDraft();
+    mealPlanAlertsDraft.splice(Number(row.dataset.idx), 1);
+    mealPlanRenderAlertsDraft();
+  }
+});
+
+document.getElementById('mealplan-alerts-presets')?.addEventListener('click', e => {
+  const btn = e.target.closest('[data-preset]');
+  if (!btn) return;
+  mealPlanSyncAlertsDraft();
+  const p = btn.dataset.preset === 'custom'
+    ? { name: '', reminder: '', codes: [], keywords: [], except: [] }
+    : MEALPLAN_ALERT_PRESETS[Number(btn.dataset.preset)];
+  mealPlanAlertsDraft.push({ id: mealPlanNewAlertId(), name: p.name, reminder: p.reminder, codes: [...p.codes], keywords: [...p.keywords], except: [...p.except] });
+  mealPlanRenderAlertsDraft();
+  if (btn.dataset.preset === 'custom') {
+    const rows = document.querySelectorAll('#mealplan-alerts-list [data-field="name"]');
+    rows[rows.length - 1]?.focus();
+  }
+});
+
+document.getElementById('mealplan-alerts-save')?.addEventListener('click', () => {
+  mealPlanSyncAlertsDraft();
+  // Hinweise ohne Namen bekommen einen aus den Kürzeln; ganz leere fallen weg
+  mealPlanAlerts = mealPlanAlertsDraft
+    .filter(a => a.codes.length || a.keywords.length)
+    .map(a => ({ ...a, name: a.name || (a.codes.length ? 'Allergen ' + a.codes.join(', ') : a.keywords[0]) }));
+  saveMealPlanAlerts();
+  mealPlanAlertsModal.close();
+  renderMealPlan();
+});
 
 renderMealPlan();

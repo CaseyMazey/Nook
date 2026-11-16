@@ -124,6 +124,9 @@
     labels: { menu1: "Menü 1", menu2: "Menü 2", menu3: "Menü 3", dessert: "Dessert" },
     days: meals.map(m => ({ menu1: m[0], menu2: m[1], menu3: m[2], dessert: m[3] })),
   });
+  // Allergiehinweis, der an jedem Wochentag greift — so ist der Hinweis-Kasten im Widget immer sichtbar
+  data.mealPlanAlerts = [{ id: "mpa_sample", name: "Laktose", reminder: "Lactostop mitnehmen", codes: ["G"],
+    keywords: ["lasagne", "pudding", "joghurt", "pizza", "quiche"], except: [] }];
   const thisMonday = mondayOf(new Date());
   data.mealPlanWeeks = {};
   data.mealPlanWeeks[key(thisMonday)] = mealWeek(thisMonday);

@@ -203,6 +203,8 @@ Quelle ist das wöchentliche Speiseplan-PDF aus Dock B (Browser-Export einer Int
 
 Code: `js/today-mealplan.js`, DB-Key `mealPlanWeeks` (nach Montag der Woche; es wird immer nur die aktuelle Woche gehalten, Speichern ersetzt die vorige).
 
+**Allergiehinweise:** Der Nutzer legt Hinweise an (z.B. „Laktose“ mit Erinnerung „Lactostop mitnehmen“), aus Vorlagen oder selbst. Ein Hinweis greift, wenn ein Gericht eines seiner Allergen-Kürzel trägt (LMIV-Buchstaben aus dem PDF, z.B. G = Milch; sie stehen gesammelt am Ende des Gerichtstexts und werden im Widget ausgeblendet) oder eines seiner Stichwörter enthält (Teilwort-Suche, Ausnahmen wie „kokosmilch“ werden übersprungen). Das Widget zeigt dann oben einen Hinweis-Kasten und am Gericht eine Markierung. DB-Key `mealPlanAlerts`. Die Hinweise sind eine Erinnerungshilfe, keine verlässliche Allergen-Auskunft.
+
 Keine Suppen, Beilagen oder Allergene — bewusst nur, was für die Essensauswahl gebraucht wird.
 
 ---

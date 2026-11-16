@@ -787,6 +787,49 @@
 .mealplan-edit-input { min-height: 0; padding: 7px 10px; resize: vertical; font-size: calc(13px * var(--core-font-scale)); line-height: 1.4; }
 .mealplan-modal-delete { margin-right: auto; color: var(--prio-1); }
 
+/* Allergiehinweise — Kasten im Widget + Markierung am Gericht */
+.mealplan-alert {
+  display: flex; gap: 8px; align-items: flex-start; margin: 6px 0 4px; padding: 8px 10px;
+  border-radius: var(--radius-sm); color: var(--text);
+  background: color-mix(in srgb, var(--amber) 13%, transparent);
+  border: 1px solid color-mix(in srgb, var(--amber) 35%, transparent);
+  font-size: calc(12px * var(--core-font-scale)); line-height: 1.4;
+}
+.mealplan-alert-icon { flex-shrink: 0; margin-top: 1px; color: var(--amber); }
+.mealplan-alert-rows { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.mealplan-alert-row strong { font-weight: 700; margin-right: 6px; }
+.mealplan-alert-where { color: var(--text-2); }
+.mealplan-alert-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.mealplan-alert-tag {
+  padding: 1px 7px; border-radius: 999px; cursor: help;
+  font-size: calc(9.5px * var(--core-font-scale)); font-weight: 700; letter-spacing: 0.04em;
+  color: var(--text-2); background: color-mix(in srgb, var(--amber) 20%, transparent);
+}
+.mealplan-head-actions .icon-btn.mealplan-alerts-on { color: var(--amber); }
+
+/* Allergiehinweise-Modal */
+.mealplan-alerts-intro { margin-bottom: 12px; line-height: 1.5; }
+.mealplan-alerts-list { display: flex; flex-direction: column; gap: 14px; }
+.mealplan-alert-edit { display: flex; flex-direction: column; gap: 6px; }
+.mealplan-alert-edit + .mealplan-alert-edit { padding-top: 14px; border-top: 1px solid var(--border); }
+.mealplan-alert-edit-head { display: flex; gap: 6px; align-items: center; }
+.mealplan-alert-edit-head .modal-input { font-weight: 700; }
+.mealplan-code-chips { display: flex; flex-wrap: wrap; gap: 4px; padding-top: 3px; }
+.mealplan-code-chip {
+  min-width: 28px; height: 26px; padding: 0 6px; border-radius: var(--radius-sm); cursor: pointer;
+  font-family: var(--mono); font-size: calc(11.5px * var(--core-font-scale)); font-weight: 700;
+  color: var(--text-3); background: transparent; border: 1px solid var(--border);
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+}
+.mealplan-code-chip:hover { color: var(--text); }
+.mealplan-code-chip.active {
+  color: var(--text); border-color: color-mix(in srgb, var(--amber) 60%, transparent);
+  background: color-mix(in srgb, var(--amber) 22%, transparent);
+}
+.mealplan-alerts-empty { padding: 10px 0; font-size: calc(12.5px * var(--core-font-scale)); color: var(--text-3); text-align: center; }
+.mealplan-alerts-presets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+.mealplan-preset-btn { font-size: calc(12px * var(--core-font-scale)); }
+
 @media (max-width: 480px) {
   .mealplan-edit-row { grid-template-columns: 1fr; gap: 4px; }
   .mealplan-edit-row > span { padding-top: 0; }

@@ -4234,6 +4234,20 @@
     </div>
   </div>
 
+  <!-- Speiseplan: Allergiehinweise (js/today-mealplan.js) -->
+  <div id="mealplan-alerts-overlay" class="modal-backdrop hidden">
+    <div class="modal-box mealplan-modal-box">
+      <div class="modal-head"><span>Allergiehinweise</span><button class="modal-x" id="mealplan-alerts-close">&#10005;</button></div>
+      <div class="modal-hint mealplan-alerts-intro">Enthält ein Gericht eines der Kürzel aus dem Speiseplan (z.B. G = Milch/Laktose) oder eines der Stichwörter, zeigt das Widget einen Hinweis. Stichwörter greifen auch in zusammengesetzten Wörtern („sahne“ → „Kräutersahnesoße“), Ausnahmen werden dabei übersprungen.</div>
+      <div id="mealplan-alerts-list" class="mealplan-alerts-list"></div>
+      <div id="mealplan-alerts-presets" class="mealplan-alerts-presets"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn-ghost" id="mealplan-alerts-cancel">Abbrechen</button>
+        <button type="button" class="btn-primary" id="mealplan-alerts-save">Speichern</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Projekte: Anleitung / Pinnwand-Zettel verknüpfen (js/project-links.js) -->
   <div id="project-link-overlay" class="modal-backdrop hidden">
     <div class="modal-box project-link-box">
