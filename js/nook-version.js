@@ -4,15 +4,23 @@
 // unter Einstellungen > Über Nook (js/settings.js: renderAboutSettings).
 // Lädt direkt vor settings.js.
 //
-// Pflege: bei einem nennenswerten Update NOOK_VERSION hochzählen
-// (Jahr.Monat.Laufnummer) und oben in NOOK_CHANGELOG einen Eintrag
-// ergänzen — kurz, aus Nutzersicht, deutsch. Ältere Einträge dürfen
-// hinten wegfallen, angezeigt werden ohnehin nur die neuesten.
+// Pflege (Pflicht, siehe CLAUDE.md): bei JEDER Änderung an der App
+// NOOK_VERSION hochzählen (Jahr.Monat.Laufnummer) und oben in
+// NOOK_CHANGELOG einen Eintrag ergänzen — kurz, aus Nutzersicht, deutsch.
+// Ältere Einträge dürfen hinten wegfallen, angezeigt werden ohnehin nur
+// die neuesten.
 // =========================
 
-window.NOOK_VERSION = '2026.11.18';
+window.NOOK_VERSION = '2026.11.19';
 
 window.NOOK_CHANGELOG = [
+  {
+    version: '2026.11.19',
+    date: '2026-11-16',
+    items: [
+      'Speiseplan: Allergiehinweise (⚠ im Speiseplan) – lege z.B. „Laktose“ mit der Erinnerung „Lactostop mitnehmen“ an; Nook erkennt betroffene Gerichte an den Allergen-Kürzeln aus dem PDF (G = Milch) und an Stichwörtern wie Sahne oder Käse und warnt oben im Speiseplan. Vorlagen für Laktose, Gluten, Nüsse, Eier und Fisch',
+    ],
+  },
   {
     version: '2026.11.18',
     date: '2026-11-15',
