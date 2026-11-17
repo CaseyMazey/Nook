@@ -562,7 +562,12 @@
   [data-today-style="rpg"] #today-right { padding-top: 16px; padding-bottom: 8px; }
   [data-today-style="rpg"] .today-right-stack { gap: 16px; }
   [data-today-style="rpg"] #panel-quicknote #quicknote { min-height: 104px; max-height: 136px; }
+  /* Nur ein Stapel sichtbar (js/today-visibility.js): schmale Spalte */
+  [data-today-style="rpg"] #today-layout[data-visible-stacks="1"] { grid-template-columns: 1fr 330px; }
+  [data-today-style="rpg"] #today-layout[data-visible-stacks="1"] #today-right { width: 330px; }
 }
+/* Ganze rechte Spalte ausgeschaltet */
+[data-today-style="rpg"] #today-layout[data-visible-stacks="0"] { grid-template-columns: minmax(0, 1fr); }
 
 /* Uhrzeit auf den Eichenschildern: kleines helles Etikett statt 10-px-
    Mono-Schrift direkt auf der Maserung (war kaum lesbar) */

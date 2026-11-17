@@ -22,6 +22,7 @@ function renderSettings(){
   renderStorageSettings();
   renderAboutSettings();
   if (typeof renderPositivitySettings === 'function') renderPositivitySettings();
+  if (typeof renderTodayVisibilitySettings === 'function') renderTodayVisibilitySettings();
   if (typeof renderTodayTrackerSettings === 'function') renderTodayTrackerSettings();
   if (typeof renderTodayBudgetDueSettings === 'function') renderTodayBudgetDueSettings();
   if (typeof renderTodayEventsDueSettings === 'function') renderTodayEventsDueSettings();

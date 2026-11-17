@@ -138,7 +138,18 @@
     align-items: start;
   }
   .today-right-stack { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  /* Nur ein Stapel übrig (Rest ausgeblendet): wieder eine schmale Spalte */
+  #today-layout[data-visible-stacks="1"] { grid-template-columns: 1fr 314px; }
+  #today-layout[data-visible-stacks="1"] #today-right { width: 314px; grid-template-columns: 1fr; }
+  .today-right-stack.today-stack-empty { display: none; }
 }
+
+/* Bereiche, die unter Einstellungen › Heute-Seite ausgeschaltet sind
+   (js/today-visibility.js). Ist die ganze rechte Spalte leer, nimmt der
+   Hauptbereich die volle Breite. */
+.today-widget-off { display: none !important; }
+#today-layout[data-visible-stacks="0"] { grid-template-columns: minmax(0, 1fr); }
+#today-layout[data-visible-stacks="0"] #today-right { display: none; }
 
 /* ═══════════════════════════════════════════════════════════
    BLOCKS SECTION

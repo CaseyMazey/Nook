@@ -1579,6 +1579,13 @@
           <h2 class="settings-group-head"><button type="button" class="settings-group-toggle" aria-expanded="true"><span class="settings-group-title">Heute-Seite</span><span class="settings-group-chevron" aria-hidden="true"></span></button></h2>
           <div class="settings-grid">
             <div class="settings-col">
+              <!-- Bereiche ein-/ausblenden (js/today-visibility.js) -->
+              <div class="panel settings-panel">
+                <div class="panel-header"><span class="panel-label">Bereiche der Heute-Seite</span></div>
+                <div class="settings-row-sub settings-panel-intro">Was ausgeschaltet ist, verschwindet nur von der Heute-Seite – die Daten bleiben erhalten. Weitere Karten (Termine, Budget, Lernplan …) haben ihre Schalter weiter unten.</div>
+                <div id="today-visibility-list"></div>
+              </div>
+
               <div class="panel settings-panel">
                 <div class="panel-header"><span class="panel-label">Wetter</span></div>
                 <div class="settings-row">
@@ -4499,6 +4506,7 @@
   <script src="js/garden.js"></script>
   <script src="js/questboard.js"></script>
   <script src="js/today-yearbook.js"></script>
+  <script src="js/today-visibility.js"></script>
   <!-- Spiele: games.js ist der Hub, games-list.js die einzige Stelle,
        die beim Hinzufügen/Entfernen eines Spiels angepasst werden muss -->
   <script src="js/games.js"></script>

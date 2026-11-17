@@ -11,9 +11,16 @@
 // die neuesten.
 // =========================
 
-window.NOOK_VERSION = '2026.11.19';
+window.NOOK_VERSION = '2026.11.20';
 
 window.NOOK_CHANGELOG = [
+  {
+    version: '2026.11.20',
+    date: '2026-11-17',
+    items: [
+      'Einstellungen › Heute-Seite: neue Schalter „Bereiche der Heute-Seite“ – Wetter, Zeitblöcke, Aufgaben, Gruppenpflichten, Uhr, Schnellnotiz, Mini-Kalender, Speiseplan und „Heute ist“ lassen sich einzeln aus- und wieder einblenden. Die Daten bleiben dabei erhalten; ist die rechte Spalte ganz leer, nutzt der Rest die volle Breite',
+    ],
+  },
   {
     version: '2026.11.19',
     date: '2026-11-16',
