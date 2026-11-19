@@ -11,9 +11,16 @@
 // die neuesten.
 // =========================
 
-window.NOOK_VERSION = '2026.11.23';
+window.NOOK_VERSION = '2026.11.24';
 
 window.NOOK_CHANGELOG = [
+  {
+    version: '2026.11.24',
+    date: '2026-11-19',
+    items: [
+      'Heute: Der Bild-Banner oben wächst jetzt mit seinem Inhalt – die Begrüßung wird auf Laptop-Bildschirmen nicht mehr abgeschnitten.',
+    ],
+  },
   {
     version: '2026.11.23',
     date: '2026-11-19',

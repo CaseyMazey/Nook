@@ -27,7 +27,10 @@
    Wetterdaten), gilt die Tag-Variante. */
 [data-start-header-theme]:not([data-start-header-theme="none"]) #today-main-header {
   position: relative;
-  height: 190px;
+  /* min-height statt fester Höhe: Begrüßung, Datum, Tracker, Chips und
+     Wochen-Navigation brauchen auf Laptop-Breite mehr als 190px — mit fester
+     Höhe + overflow:hidden wurde die Begrüßung oben abgeschnitten. */
+  min-height: 190px;
   padding: 24px 28px;
   border-radius: var(--radius-lg);
   border: 1px solid var(--border);
