@@ -11,9 +11,17 @@
 // die neuesten.
 // =========================
 
-window.NOOK_VERSION = '2026.11.21';
+window.NOOK_VERSION = '2026.11.22';
 
 window.NOOK_CHANGELOG = [
+  {
+    version: '2026.11.22',
+    date: '2026-11-19',
+    items: [
+      'Budget: Die Vorschau „bis zum nächsten Geld“ zeigt die Abbuchungen des nächsten Monats jetzt mit Datum, nach Fälligkeit sortiert und mit dem Namen der ersten Einnahme.',
+      'Budget: Das Abzeichen „Brauche“ ist jetzt orange statt grün, damit es nicht wie eine Einnahme aussieht.',
+    ],
+  },
   {
     version: '2026.11.21',
     date: '2026-11-19',

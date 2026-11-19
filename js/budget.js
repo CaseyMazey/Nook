@@ -402,8 +402,9 @@ function calcMonthProjection() {
   const nextItems      = getMonthRecurringItems(nextYear, nextMonth);
   const nextIncomes    = nextItems.filter(i => i.type === 'income').sort((a,b) => a.day - b.day);
   const nextExpenses   = nextItems.filter(i => i.type === 'expense');
-  const firstIncomeDay = nextIncomes.length > 0 ? nextIncomes[0].day : 31;
-  const expensesBefore = nextExpenses.filter(i => i.day < firstIncomeDay);
+  const firstIncomeDay  = nextIncomes.length > 0 ? nextIncomes[0].day : 31;
+  const firstIncomeName = nextIncomes.length > 0 ? nextIncomes[0].name : '';
+  const expensesBefore  = nextExpenses.filter(i => i.day < firstIncomeDay).sort((a,b) => a.day - b.day);
 
   const byPrio = {
     must: expensesBefore.filter(i => i.priority === 'must').reduce((s,i) => s+i.amount, 0),
@@ -425,7 +426,7 @@ function calcMonthProjection() {
 
   return {
     kontostand, pendingIncome, pendingExpense, endOfMonth,
-    nextMonthDate, firstIncomeDay, expensesBefore,
+    nextMonthDate, firstIncomeDay, firstIncomeName, expensesBefore,
     byPrio, totalBeforeSalary, gap, canAfford,
     afterMust, afterNeed, afterWant,
     mustCovered, needCovered, wantCovered,
@@ -1183,27 +1184,31 @@ function renderLiquidity() {
 
   const {
     pendingIncome, pendingExpense, endOfMonth,
-    nextMonthDate, firstIncomeDay, expensesBefore,
+    nextMonthDate, firstIncomeDay, firstIncomeName, expensesBefore,
     byPrio, totalBeforeSalary, gap, canAfford,
   } = proj;
-
-  const now = new Date();
 
   const card = document.createElement('div');
   card.className = 'b-liquidity-card' + (canAfford ? '' : ' warn');
 
-  // Expenses before salary grouped by priority
-  const expenseGroupHTML = ['must','need','want'].map(prio => {
-    const items = expensesBefore.filter(i => i.priority === prio);
-    if (!items.length) return '';
-    return items.map(i => `
+  // Datum im Vorschaumonat, z. B. "01.12." — macht klar, dass es die
+  // Abbuchungen des NÄCHSTEN Monats sind, nicht die schon bezahlten
+  const mm = String(nextMonthDate.getMonth() + 1).padStart(2, '0');
+  const fmtDay = d => `${String(d).padStart(2, '0')}.${mm}.`;
+
+  // Ausgaben vor der ersten Einnahme, nach Fälligkeit sortiert
+  const expenseGroupHTML = expensesBefore
+    .filter(i => ['must','need','want'].includes(i.priority))
+    .map(i => `
       <div class="b-liq-expense-item">
-        <span>${escHtml(i.name)} ${priorityBadge(i.priority)}</span>
+        <span><span class="b-liq-date">${fmtDay(i.day)}</span> ${escHtml(i.name)} ${priorityBadge(i.priority)}</span>
         <span class="expense">-${fmtEuro(i.amount)}</span>
       </div>`).join('');
-  }).join('');
 
   const nextMonthName = nextMonthDate.toLocaleDateString('de-DE', {month:'long'});
+  const beforeLabel = firstIncomeName
+    ? `Ausgaben bis zur ersten Einnahme (${escHtml(firstIncomeName)}, ${fmtDay(firstIncomeDay)})`
+    : `Ausgaben im ${nextMonthName} (keine Einnahme geplant)`;
 
   card.innerHTML = `
     <div class="b-liq-header">
@@ -1215,7 +1220,7 @@ function renderLiquidity() {
       <span class="b-liq-row-value ${endOfMonth >= 0 ? 'income' : 'expense'}">${fmtEuroSigned(endOfMonth)}</span>
     </div>
     <div class="b-liq-row">
-      <span class="b-liq-row-label">Ausgaben vor ${firstIncomeDay > 28 ? 'Monatsende' : 'Tag ' + firstIncomeDay} (vor Gehalt)</span>
+      <span class="b-liq-row-label">${beforeLabel}</span>
       <span class="b-liq-row-value expense">-${fmtEuro(totalBeforeSalary)}</span>
     </div>
     ${expenseGroupHTML ? `<div class="b-liq-expense-list">${expenseGroupHTML}</div>` : ''}

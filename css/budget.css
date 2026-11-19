@@ -770,6 +770,11 @@
   color: var(--text-2);
   gap: 8px;
 }
+.b-liq-expense-item .b-liq-date {
+  color: var(--b-warm-gray);
+  font-variant-numeric: tabular-nums;
+  margin-right: 4px;
+}
 .b-liq-expense-item .expense {
   color: var(--b-red);
   font-family: var(--font);
@@ -911,7 +916,8 @@
   flex-shrink: 0;
 }
 .budget-badge-must { background: var(--b-red-soft);   color: var(--b-red); }
-.budget-badge-need { background: var(--b-green-soft);  color: var(--b-green); }
+/* Brauche = Orange wie die Prioritätspunkte — Grün läse sich wie eine Einnahme */
+.budget-badge-need { background: color-mix(in srgb, var(--b-card-need) 14%, transparent); color: color-mix(in srgb, var(--b-card-need) 80%, var(--text)); }
 .budget-badge-want { background: var(--b-olive-soft);  color: var(--b-olive); }
 
 /* ── Sparziel-Karte: kompakte Aktionsleiste (ersetzt 4 volle Buttons) ── */
