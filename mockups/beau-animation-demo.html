@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Beau Animation Test</title>
+<!--
+  Integrationstest für die Beau-Animation (assets/themes/beau/).
+  Zeigt alle Einbauwege nebeneinander auf wechselndem Hintergrund, damit man
+  sieht, dass die Transparenz erhalten bleibt. Liegt in mockups/ und wird
+  nicht deployt; direkt per Doppelklick (file://) oder über einen lokalen
+  Server öffnen.
+-->
+<style>
+  :root { --bg: #f4efe6; --text: #2a241c; --card: #fffaf2; --line: #d8cbb4; }
+  :root[data-bg="dark"]    { --bg: #1b1d27; --text: #ece7df; --card: #252836; --line: #3a3e52; }
+  :root[data-bg="checker"] { --bg: #ffffff; --card: transparent; }
+  body { margin: 0; font: 15px/1.5 system-ui, sans-serif; background: var(--bg); color: var(--text); padding: 24px 16px 48px; }
+  :root[data-bg="checker"] body {
+    background-image: conic-gradient(#ccc 25%, #fff 0 50%, #ccc 0 75%, #fff 0);
+    background-size: 24px 24px;
+  }
+  h1 { margin: 0 0 4px; font-size: 22px; }
+  .bar { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0 24px; }
+  .bar button { padding: 6px 12px; border-radius: 99px; border: 1px solid var(--line); background: var(--card); color: inherit; cursor: pointer; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+  .card h2 { font-size: 15px; margin: 0 0 8px; }
+  .card p { margin: 8px 0 0; font-size: 13px; opacity: .8; }
+  code { font-size: 12px; }
+
+  /* ── So wird Beau eingebunden: nur Breite setzen, Seitenverhältnis 1:1 ── */
+  .beau {
+    display: block;
+    width: 100%;           /* Größe über das umgebende Element steuern … */
+    max-width: 320px;      /* … oder direkt, z.B. width: 120px */
+    aspect-ratio: 1 / 1;
+    background: transparent; /* kein Hintergrund → Alpha-Kanal bleibt sichtbar */
+    object-fit: contain;
+  }
+  .sizes { display: flex; align-items: end; gap: 12px; flex-wrap: wrap; }
+  .sizes .beau { width: 64px; } .sizes .beau.m { width: 128px; } .sizes .beau.l { width: 220px; }
+</style>
+</head>
+<body>
+<h1>Beau spielt mit einem Schmetterling</h1>
+<div>Gezeichnete Animation · 18 s Loop · 24 fps · 512 × 512 und 768 × 768 · transparenter Hintergrund</div>
+<div class="bar" role="group" aria-label="Hintergrund">
+  <button data-bg="light">Hell</button><button data-bg="dark">Dunkel</button><button data-bg="checker">Schachbrett (Transparenz)</button>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <h2>1. Video: WebM (VP9 + Alpha) mit Rückfall</h2>
+    <!-- autoplay + muted + playsinline: startet überall ohne Klick; loop: Endlosschleife.
+         Safari kann den Alpha-Kanal von VP9 nicht darstellen → Skript unten tauscht
+         dort gegen das animierte WebP. Ohne Video-Unterstützung greift das <img>. -->
+    <video class="beau" id="beau-video" autoplay loop muted playsinline preload="auto"
+           aria-label="Beau, eine schwarze Katze mit Hexenhut, spielt mit einem Schmetterling">
+      <source src="../assets/themes/beau/beau-butterfly-768.webm" type="video/webm" media="(min-resolution: 2dppx)">
+      <source src="../assets/themes/beau/beau-butterfly-512.webm" type="video/webm">
+      <img class="beau" src="../assets/themes/beau/beau-butterfly-512.webp" alt="Beau spielt mit einem Schmetterling">
+    </video>
+    <p><code>&lt;video autoplay loop muted playsinline&gt;</code> + WebM, Rückfall WebP</p>
+  </div>
+
+  <div class="card">
+    <h2>2. Bild: Animated WebP</h2>
+    <img class="beau" src="../assets/themes/beau/beau-butterfly-512.webp"
+         srcset="../assets/themes/beau/beau-butterfly-512.webp 512w, ../assets/themes/beau/beau-butterfly-768.webp 768w"
+         sizes="320px" alt="Beau spielt mit einem Schmetterling">
+    <p>Läuft in allen aktuellen Browsern inkl. Safari, Loop ist in der Datei hinterlegt.</p>
+  </div>
+
+  <div class="card">
+    <h2>3. Bild: APNG (Fallback)</h2>
+    <img class="beau" src="../assets/themes/beau/beau-butterfly-320.apng" alt="Beau spielt mit einem Schmetterling">
+    <p>Notfall-Rückfall (320 px, 12 fps), wenn weder Video noch WebP geht.</p>
+  </div>
+
+</div>
+
+<div class="card" style="margin-top:16px">
+  <h2>Größen</h2>
+  <div class="sizes">
+    <img class="beau" src="../assets/themes/beau/beau-butterfly-512.webp" alt="Beau klein">
+    <img class="beau m" src="../assets/themes/beau/beau-butterfly-512.webp" alt="Beau mittel">
+    <img class="beau l" src="../assets/themes/beau/beau-butterfly-768.webp" alt="Beau groß">
+  </div>
+</div>
+
+<script>
+  // Safari (ohne Chrome/Edge-Kennung) zeigt VP9-Alpha schwarz → auf WebP wechseln
+  const ua = navigator.userAgent;
+  if (/Safari\//.test(ua) && !/(Chrome|Chromium|Edg)\//.test(ua)) {
+    const v = document.getElementById('beau-video');
+    const img = v.querySelector('img');
+    v.replaceWith(img);
+  }
+
+  document.querySelectorAll('[data-bg]').forEach(b => b.addEventListener('click', () => {
+    document.documentElement.dataset.bg = b.dataset.bg;
+  }));
+</script>
+</body>
+</html>

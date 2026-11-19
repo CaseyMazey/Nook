@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Beau Live-Animation</title>
+<!--
+  Test für die Live-Animation von Beau (assets/themes/beau/beau-rig.js).
+  Die gemalten Einzelteile (assets/themes/beau/rig/, aus scripts/rig-beau.py)
+  werden mit 60 fps bewegt. Liegt in mockups/ und wird nicht deployt;
+  direkt per Doppelklick (file://) öffnen.
+-->
+<style>
+  :root { --bg: #f4efe6; --text: #2a241c; --card: #fffaf2; --line: #d8cbb4; }
+  :root[data-bg="dark"]    { --bg: #1b1d27; --text: #ece7df; --card: #252836; --line: #3a3e52; }
+  :root[data-bg="checker"] { --bg: #ffffff; --card: transparent; }
+  body { margin: 0; font: 15px/1.5 system-ui, sans-serif; background: var(--bg); color: var(--text); padding: 24px 16px 48px; }
+  :root[data-bg="checker"] body {
+    background-image: conic-gradient(#ccc 25%, #fff 0 50%, #ccc 0 75%, #fff 0);
+    background-size: 24px 24px;
+  }
+  h1 { margin: 0 0 4px; font-size: 22px; }
+  .bar { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0 24px; }
+  .bar button { padding: 6px 12px; border-radius: 99px; border: 1px solid var(--line); background: var(--card); color: inherit; cursor: pointer; }
+  .bar button[aria-pressed="true"] { outline: 2px solid currentColor; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+  .card h2 { font-size: 15px; margin: 0 0 8px; }
+  .card p { margin: 8px 0 0; font-size: 13px; opacity: .8; }
+  .beau { width: 100%; max-width: 480px; }
+  .old { display: block; width: 100%; max-width: 480px; aspect-ratio: 1/1; }
+  .sizes { display: flex; align-items: end; gap: 12px; flex-wrap: wrap; }
+  .sizes > div { width: 72px; } .sizes > div.m { width: 140px; } .sizes > div.l { width: 240px; }
+</style>
+</head>
+<body>
+<h1>Beau beobachtet einen Schmetterling</h1>
+<div>Live animiert aus gemalten Einzelteilen · 60 fps · 20 s Runde · transparenter Hintergrund</div>
+<div class="bar" role="group" aria-label="Hintergrund">
+  <button data-bg="light">Hell</button><button data-bg="dark">Dunkel</button><button data-bg="checker">Schachbrett (Transparenz)</button>
+</div>
+<div class="bar" role="group" aria-label="Tempo">
+  <button data-speed="1" aria-pressed="true">Normal</button><button data-speed="0.3">Zeitlupe</button><button data-speed="0">Pause</button>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <h2>Neu: Live-Animation</h2>
+    <div class="beau" id="beau-main"></div>
+    <p>Blick folgt dem Schmetterling, Kopf neigt sich mit, Schwanz schwingt, Atmen, Blinzeln.</p>
+  </div>
+  <div class="card">
+    <h2>Vorher: Posen-Video</h2>
+    <img class="old" src="../assets/themes/beau/beau-butterfly-512.webp" alt="Alte Animation zum Vergleich">
+    <p>Zum Vergleich: einzelne KI-Posen nacheinander.</p>
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px">
+  <h2>Größen</h2>
+  <div class="sizes"><div id="beau-s"></div><div class="m" id="beau-m"></div><div class="l" id="beau-l"></div></div>
+</div>
+
+<script src="../assets/themes/beau/rig/rig-layout.js"></script>
+<script src="../assets/themes/beau/beau-rig.js"></script>
+<script>
+  const base = '../assets/themes/beau/rig/';
+  const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const rigs = ['beau-main', 'beau-s', 'beau-m', 'beau-l']
+    .map((id) => BeauRig.mount(document.getElementById(id), { base, still }));
+
+  document.querySelectorAll('[data-bg]').forEach((b) => b.addEventListener('click', () => {
+    document.documentElement.dataset.bg = b.dataset.bg;
+  }));
+  document.querySelectorAll('[data-speed]').forEach((b) => b.addEventListener('click', () => {
+    rigs.forEach((r) => r.setSpeed(Number(b.dataset.speed)));
+    document.querySelectorAll('[data-speed]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+  }));
+</script>
+</body>
+</html>
