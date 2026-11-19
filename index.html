@@ -1127,10 +1127,18 @@
                 <button class="sp-savedby-trigger hidden" id="sparplan-savedby-btn" title="Gespart bis... — kleine Zusatzrechnung, unabhängig von deinen Sparzielen">⭐ Gespart bis...</button>
               </div>
             </div>
-            <button id="budget-ks-header-btn" class="b-ks-header-pill" title="Kontostand anpassen">
-              <span class="b-ks-pill-label">Kontostand</span>
-              <span id="b-ks-header-value" class="b-ks-pill-value">—</span>
-            </button>
+            <!-- Kontostand + Schnell-Eintrag: oben, damit man auf dem Handy
+                 nicht bis zu "Einmalige Buchungen" scrollen muss -->
+            <div id="budget-ks-group">
+              <button id="budget-ks-header-btn" class="b-ks-header-pill" title="Kontostand anpassen">
+                <span class="b-ks-pill-label">Kontostand</span>
+                <span id="b-ks-header-value" class="b-ks-pill-value">—</span>
+              </button>
+              <button id="add-onetime-btn-3" class="b-quick-add-btn" title="Einnahme oder Ausgabe eintragen">
+                <span class="b-quick-add-plus" aria-hidden="true">+</span>
+                <span class="b-quick-add-label">Ein-/Ausgabe</span>
+              </button>
+            </div>
             <div id="budget-actions">
               <div id="budget-month-picker">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">

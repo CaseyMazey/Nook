@@ -3713,6 +3713,7 @@ function bindSecondaryButtons() {
   const pairs = [
     ['add-recurring-btn-2',   'add-recurring-btn'],
     ['add-onetime-btn-2',     'add-onetime-btn'],
+    ['add-onetime-btn-3',     'add-onetime-btn'], // Schnell-Eintrag neben dem Kontostand
     ['add-goal-btn-2',        'add-goal-btn'],
     ['sparziel-add-btn-2',    'add-goal-btn'],
   ];

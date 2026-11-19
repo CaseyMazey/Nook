@@ -11,9 +11,16 @@
 // die neuesten.
 // =========================
 
-window.NOOK_VERSION = '2026.11.22';
+window.NOOK_VERSION = '2026.11.23';
 
 window.NOOK_CHANGELOG = [
+  {
+    version: '2026.11.23',
+    date: '2026-11-19',
+    items: [
+      'Budget: Neuer Knopf „+ Ein-/Ausgabe“ direkt neben dem Kontostand – so trägst du Buchungen auch auf dem Handy ein, ohne nach unten zu scrollen.',
+    ],
+  },
   {
     version: '2026.11.22',
     date: '2026-11-19',

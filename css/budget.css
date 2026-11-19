@@ -191,7 +191,29 @@
   gap: 24px;
 }
 #budget-title-block { min-width: 0; }
-.b-ks-header-pill { justify-self: center; }
+#budget-ks-group { justify-self: center; display: flex; align-items: stretch; gap: 10px; }
+
+/* Schnell-Eintrag (einmalige Ein-/Ausgabe) direkt neben dem Kontostand */
+.b-quick-add-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 8px 16px;
+  border-radius: var(--radius-xl);
+  border: 1px solid color-mix(in srgb, var(--sage) 45%, var(--border));
+  background: color-mix(in srgb, var(--sage) 14%, var(--surface));
+  color: var(--sage-dark);
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  white-space: nowrap;
+  font-family: inherit;
+  transition: box-shadow var(--transition), background var(--transition);
+}
+.b-quick-add-btn:hover { box-shadow: var(--shadow-md); background: color-mix(in srgb, var(--sage) 22%, var(--surface)); }
+.b-quick-add-plus { font-size: calc(20px * var(--core-font-scale)); font-weight: 600; line-height: 1; }
+.b-quick-add-label { font-size: calc(9.5px * var(--core-font-scale)); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
 #budget-actions { justify-self: end; }
 
 /* Menü-Button: unabhängig vom Grid-Fluss in die obere rechte Ecke der
@@ -1812,7 +1834,7 @@
   /* Header: 1fr-auto-1fr-Grid samt fest 240px breitem Monatspicker in
      der rechten Spalte passt ab hier nicht mehr nebeneinander. */
   #budget-header { grid-template-columns: 1fr; gap: 14px; }
-  .b-ks-header-pill { justify-self: flex-start; }
+  #budget-ks-group { justify-self: flex-start; }
   #budget-actions { justify-self: stretch; flex-wrap: wrap; padding-top: 0; }
 
   /* 3 gleich breite Summary-Karten -> 2, dritte rutscht in eigene Zeile */
