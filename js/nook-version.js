@@ -11,9 +11,16 @@
 // die neuesten.
 // =========================
 
-window.NOOK_VERSION = '2026.11.20';
+window.NOOK_VERSION = '2026.11.21';
 
 window.NOOK_CHANGELOG = [
+  {
+    version: '2026.11.21',
+    date: '2026-11-19',
+    items: [
+      'Karteikarten: Beim Lernen scheint die Frage nicht mehr gespiegelt durch die Antwortseite – die Antwort ist wieder gut lesbar.',
+    ],
+  },
   {
     version: '2026.11.20',
     date: '2026-11-17',

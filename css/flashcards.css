@@ -261,6 +261,11 @@
 #learn-card-front, #learn-card-back { grid-area: 1 / 1; white-space: pre-wrap; overflow-wrap: anywhere; width: 100%; min-height: 0; overflow-y: auto; display: flex; align-items: safe center; justify-content: safe center; padding: 24px 24px 30px; text-align: center; font-size: calc(17px * var(--core-font-scale)); line-height: 1.5; backface-visibility: hidden; border-radius: var(--radius-lg); border: 1px solid var(--border-strong); }
 #learn-card-front { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); }
 #learn-card-back { background: var(--sage); color: var(--sage-fg); transform: rotateY(180deg); white-space: normal; }
+/* Verdeckte Seite zusätzlich ausblenden (Wechsel zur Hälfte der Drehung):
+   backface-visibility allein reicht nicht, wenn ein Theme (Glas-/Filter-Effekte)
+   den 3D-Kontext flach macht – dann schiene die Frage gespiegelt durch die Antwort. */
+#learn-card-front, #learn-card-back { transition: visibility 0s linear 200ms; }
+#learn-card-inner.flipped #learn-card-front, #learn-card-inner:not(.flipped) #learn-card-back { visibility: hidden; }
 #learn-card:focus-visible { outline: 2px solid var(--sage); outline-offset: 3px; border-radius: var(--radius-lg); }
 /* Markdown-Rückseite (fcRenderBack): schlichter Absatz zentriert, Listen/Code/Tabellen linksbündig */
 .fc-md { max-width: 100%; }
